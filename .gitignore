@@ -5,10 +5,11 @@
 
 # Compiled Dynamic libraries
 *.so
+*.chug
 
 # Compiled Static libraries
 *.lai
 *.la
 *.a
 
-Saturator/.DS_Store
+.DS_Store

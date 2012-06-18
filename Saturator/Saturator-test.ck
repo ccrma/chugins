@@ -1,13 +1,7 @@
 
-adc => Delay d => Bitcrusher bc => dac;
+adc => Delay d => Saturator sat => dac;
 
-0.5::second => d.max => d.delay;
-
-0.5 => bc.gain;
-5 => bc.bits;
-12 => bc.downsampleFactor;
-
-<<< "bits:", bc.bits(), "downsampling:", bc.downsampleFactor() >>>;
+20 => sat.drive;
 
 while(true)
 {

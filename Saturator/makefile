@@ -4,12 +4,15 @@ CHUGIN_NAME=Saturator
 
 # all of the c/cpp files that compose this chugin
 C_MODULES=
-CXX_MODULES=Saturator.cpp
+CXX_MODULES=Saturator.cpp Filters.cpp
 
 # where the chuck source code is
 CK_SRC_PATH=../../chuck/trunk/src/
 
-# you won't generally need to change anything below this line for a new chugin
+
+# ---------------------------------------------------------------------------- #
+# you won't generally need to change anything below this line for a new chugin #
+# ---------------------------------------------------------------------------- #
 
 # default target: print usage message and quit
 current: 
@@ -57,13 +60,13 @@ include makefile.win32
 endif
 
 ifneq ($(CHUCK_DEBUG),)
-CFLAGS+= -g
+FLAGS+= -g
 else
-CFLAGS+= -O3
+FLAGS+= -O3
 endif
 
 ifneq ($(CHUCK_STRICT),)
-CFLAGS+= -Wall
+FLAGS+= -Wall
 endif
 
 # default: build a dynamic chugin
@@ -85,9 +88,9 @@ all: $(CHUG)
 
 $(CHUG): $(C_OBJECTS) $(CXX_OBJECTS)
 ifeq ($(CK_CHUGIN_STATIC),0)
-	g++ $(LDFLAGS) -o $@ $?
+	g++ $(LDFLAGS) -o $@ $^
 else
-	ar rv $@ $?
+	ar rv $@ $^
 	ranlib $@
 endif
 

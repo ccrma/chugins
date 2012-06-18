@@ -5,30 +5,118 @@
 
 #include <stdio.h>
 #include <limits.h>
+#include <math.h>
+
+#include "Biquad.h"
+#include "Filters.h"
+#include "dsp.h"
 
 
 CK_DLL_CTOR(saturator_ctor);
 CK_DLL_DTOR(saturator_dtor);
 
-CK_DLL_MFUN(saturator_setBits);
-CK_DLL_MFUN(saturator_getBits);
-CK_DLL_MFUN(saturator_setDownsampleFactor);
-CK_DLL_MFUN(saturator_getDownsampleFactor);
+CK_DLL_MFUN(saturator_setDrive);
+CK_DLL_MFUN(saturator_getDrive);
 
 CK_DLL_TICK(saturator_tick);
 
 t_CKINT saturator_data_offset = 0;
 
 
-struct SaturatorData
+const static double AACoefs[6][5] =
 {
-    int bits;
-    int downsampleFactor;
-    
-    int currentSampleCount;
-    SAMPLE currentSample;
+    /*** type = cheby2, order = 12, cutoff = 0.078125 ***/
+    {2.60687e-05, 2.98697e-05, 2.60687e-05, -1.31885, 0.437162},
+    {1, -0.800256, 1, -1.38301, 0.496576},
+    {1, -1.42083, 1, -1.48787, 0.594413},
+    {1, -1.6374, 1, -1.60688, 0.707142},
+    {1, -1.7261, 1, -1.7253, 0.822156},
+    {1, -1.75999, 1, -1.84111, 0.938811}
 };
 
+class Saturator
+{
+public:
+    
+    Saturator(float fs)
+    {
+        for(int j = 0; j < kAAOrder; j++)
+        {
+            AIFilter[j].setCoefs((double *) AACoefs[j]);
+            AAFilter[j].setCoefs((double *) AACoefs[j]);
+        }
+    }
+    
+    SAMPLE tick(SAMPLE in)
+    {
+        double isignal, fsignal, osignal, usignal, dsignal;
+        
+        fsignal = m_drive*in;
+        
+		// upsample, apply distortion, downsample
+		for(int k = 0; k < kUSRatio; k++)
+        {
+			// upsample (insert zeros)
+            usignal = (k == 0) ? kUSRatio*fsignal : 0.0;
+            
+			// apply antiimaging filter
+			for(int j = 0; j < kAAOrder; j++)
+				AIFilter[j].process(usignal,usignal);
+            
+			// apply distortion
+			// note: x / (1+|x|) gives a soft saturation
+			// where as min(1, max(-1, x)) gives a hard clipping
+			//dsignal = usignal / (1.0 + fabs(usignal));
+            //dsignal = min(1.0, max(-1.0, usignal));
+            dsignal = (usignal + dcOffset) / (1.0 + fabs(usignal + dcOffset));
+            
+//            dcBlocker[0].process(dsignal, dsignal);
+//            dcBlocker[1].process(dsignal, dsignal);
+            
+			// apply antialiasing filter
+			for(int j = 0; j < kAAOrder; j++)
+				AAFilter[j].process(dsignal,dsignal);
+		}
+        
+        return dsignal;
+    }
+    
+    float setDrive(float d)
+    {
+        m_drive = d;
+        return m_drive;
+    }
+    
+    float getDrive() { return m_drive; }
+    
+private:
+    
+    float m_drive;
+    
+    float inputFilterGain;
+    float inputFilterCutoff;
+    float inputFilterQ;
+    
+    float outputFilterGain;
+    float outputFilterCutoff;
+    float outputFilterQ;
+    
+    float dcOffset;
+    
+    double InCoefs[5];	// input filter coefficients
+	Biquad InFilter;	// input filter
+    
+	double OutCoefs[5];	// input filter coefficients
+	Biquad OutFilter;	// output filter
+    
+    Biquad dcBlocker[2];
+    
+	enum{kUSRatio = 8};	// upsampling factor, sampling rate ratio
+	enum{kAAOrder = 6};	// antialiasing/antiimaging filter order, biquads
+	Biquad AIFilter[kAAOrder];	// antiimaging filter
+	Biquad AAFilter[kAAOrder];	// antialiasing filter
+    
+};
 
 CK_DLL_QUERY(Saturator)
 {
@@ -41,17 +129,12 @@ CK_DLL_QUERY(Saturator)
     
     QUERY->add_ugen_func(QUERY, saturator_tick, NULL, 1, 1);
     
-    QUERY->add_mfun(QUERY, saturator_setBits, "int", "bits");
-    QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->add_mfun(QUERY, saturator_setDrive, "float", "drive");
+    QUERY->add_arg(QUERY, "float", "arg");
     
-    QUERY->add_mfun(QUERY, saturator_getBits, "int", "bits");
+    QUERY->add_mfun(QUERY, saturator_getDrive, "float", "drive");
     
-    QUERY->add_mfun(QUERY, saturator_setDownsampleFactor, "int", "downsampleFactor");
-    QUERY->add_arg(QUERY, "int", "arg");
-    
-    QUERY->add_mfun(QUERY, saturator_getDownsampleFactor, "int", "downsampleFactor");
-    
-    saturator_data_offset = QUERY->add_mvar(QUERY, "int", "@bc_data", false);
+    saturator_data_offset = QUERY->add_mvar(QUERY, "int", "@sat_data", false);
     
     QUERY->end_class(QUERY);
 
@@ -63,18 +146,14 @@ CK_DLL_CTOR(saturator_ctor)
 {
     OBJ_MEMBER_INT(SELF, saturator_data_offset) = 0;
     
-    SaturatorData * bcdata = new SaturatorData;
-    bcdata->bits = 32;
-    bcdata->downsampleFactor = 1;
-    bcdata->currentSampleCount = 0;
-    bcdata->currentSample = 0;
+    Saturator * bcdata = new Saturator(API->vm->get_srate());
     
     OBJ_MEMBER_INT(SELF, saturator_data_offset) = (t_CKINT) bcdata;
 }
 
 CK_DLL_DTOR(saturator_dtor)
 {
-    SaturatorData * bcdata = (SaturatorData *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
+    Saturator * bcdata = (Saturator *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
     if(bcdata)
     {
         delete bcdata;
@@ -85,63 +164,26 @@ CK_DLL_DTOR(saturator_dtor)
 
 CK_DLL_TICK(saturator_tick)
 {
-    SaturatorData * bcdata = (SaturatorData *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
+    Saturator * s = (Saturator *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
     
-    SAMPLE theSample;
-
-    if((bcdata->currentSampleCount % bcdata->downsampleFactor) == 0)
-    {
-        // clamp to [-1,1]
-        if(in > 1) in = 1;
-        else if(in < -1) in = -1;
-        
-        // sample and hold
-        bcdata->currentSample = theSample = in;
-    }
-    else
-    {
-        // decimate!
-        theSample = bcdata->currentSample;
-    }
-    
-    bcdata->currentSampleCount = (bcdata->currentSampleCount+1) % bcdata->downsampleFactor;
-    
-    // convert to 32-bit int
-    int shift = 32-bcdata->bits;
-    int q32 = theSample * INT_MAX;
-    q32 = (q32 >> shift) << shift;
-    
-    *out = q32 / ((float) INT_MAX);
+    if(s)
+        *out = s->tick(in);
 
     return TRUE;
 }
 
-CK_DLL_MFUN(saturator_setBits)
+CK_DLL_MFUN(saturator_setDrive)
 {
-    SaturatorData * bcdata = (SaturatorData *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
+    Saturator * bcdata = (Saturator *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
     // TODO: sanity check
-    bcdata->bits = GET_NEXT_INT(ARGS);
-    RETURN->v_int = bcdata->bits;
+    bcdata->setDrive(GET_NEXT_FLOAT(ARGS));
+    RETURN->v_int = bcdata->getDrive();
 }
 
-CK_DLL_MFUN(saturator_getBits)
+CK_DLL_MFUN(saturator_getDrive)
 {
-    SaturatorData * bcdata = (SaturatorData *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
-    RETURN->v_int = bcdata->bits;
-}
-
-CK_DLL_MFUN(saturator_setDownsampleFactor)
-{
-    SaturatorData * bcdata = (SaturatorData *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
-    // TODO: sanity check
-    bcdata->downsampleFactor = GET_NEXT_INT(ARGS);
-    RETURN->v_int = bcdata->downsampleFactor;
-}
-
-CK_DLL_MFUN(saturator_getDownsampleFactor)
-{
-    SaturatorData * bcdata = (SaturatorData *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
-    RETURN->v_int = bcdata->downsampleFactor;
+    Saturator * bcdata = (Saturator *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
+    RETURN->v_float = bcdata->getDrive();
 }
 
 
