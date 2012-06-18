@@ -17,6 +17,8 @@ CK_DLL_DTOR(saturator_dtor);
 
 CK_DLL_MFUN(saturator_setDrive);
 CK_DLL_MFUN(saturator_getDrive);
+CK_DLL_MFUN(saturator_setDCOffset);
+CK_DLL_MFUN(saturator_getDCOffset);
 
 CK_DLL_TICK(saturator_tick);
 
@@ -40,11 +42,22 @@ public:
     
     Saturator(float fs)
     {
+        m_drive = 1;
+        m_dcOffset = 0;
+        
         for(int j = 0; j < kAAOrder; j++)
         {
             AIFilter[j].setCoefs((double *) AACoefs[j]);
             AAFilter[j].setCoefs((double *) AACoefs[j]);
         }
+        
+        double wc_dc = 5*2*M_PI;
+        //                           b0 b1 b2     a0 a1 a2
+        double dcblockScoeffs[6] = {  0, 1, 0, wc_dc, 1, 0 };
+        double dcblockZcoeffs[5];
+        Filters::bilinearTranform(dcblockScoeffs, dcblockZcoeffs, fs*kUSRatio);
+        dcBlocker[0].setCoefs(dcblockZcoeffs);
+        dcBlocker[1].setCoefs(dcblockZcoeffs);
     }
     
     SAMPLE tick(SAMPLE in)
@@ -68,10 +81,10 @@ public:
 			// where as min(1, max(-1, x)) gives a hard clipping
 			//dsignal = usignal / (1.0 + fabs(usignal));
             //dsignal = min(1.0, max(-1.0, usignal));
-            dsignal = (usignal + dcOffset) / (1.0 + fabs(usignal + dcOffset));
+            dsignal = (usignal + m_dcOffset) / (1.0 + fabs(usignal + m_dcOffset));
             
-//            dcBlocker[0].process(dsignal, dsignal);
-//            dcBlocker[1].process(dsignal, dsignal);
+            dcBlocker[0].process(dsignal, dsignal);
+            dcBlocker[1].process(dsignal, dsignal);
             
 			// apply antialiasing filter
 			for(int j = 0; j < kAAOrder; j++)
@@ -83,11 +96,19 @@ public:
     
     float setDrive(float d)
     {
-        m_drive = d;
+        m_drive = dB2lin(d);
         return m_drive;
     }
     
     float getDrive() { return m_drive; }
+    
+    float setDCOffset(float d)
+    {
+        m_dcOffset = d;
+        return m_dcOffset;
+    }
+    
+    float getDCOffset() { return m_dcOffset; }
     
 private:
     
@@ -101,7 +122,7 @@ private:
     float outputFilterCutoff;
     float outputFilterQ;
     
-    float dcOffset;
+    float m_dcOffset;
     
     double InCoefs[5];	// input filter coefficients
 	Biquad InFilter;	// input filter
@@ -133,6 +154,11 @@ CK_DLL_QUERY(Saturator)
     QUERY->add_arg(QUERY, "float", "arg");
     
     QUERY->add_mfun(QUERY, saturator_getDrive, "float", "drive");
+    
+    QUERY->add_mfun(QUERY, saturator_setDCOffset, "float", "dcOffset");
+    QUERY->add_arg(QUERY, "float", "arg");
+    
+    QUERY->add_mfun(QUERY, saturator_getDCOffset, "float", "dcOffset");
     
     saturator_data_offset = QUERY->add_mvar(QUERY, "int", "@sat_data", false);
     
@@ -184,6 +210,20 @@ CK_DLL_MFUN(saturator_getDrive)
 {
     Saturator * bcdata = (Saturator *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
     RETURN->v_float = bcdata->getDrive();
+}
+
+CK_DLL_MFUN(saturator_setDCOffset)
+{
+    Saturator * bcdata = (Saturator *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
+    // TODO: sanity check
+    bcdata->setDCOffset(GET_NEXT_FLOAT(ARGS));
+    RETURN->v_int = bcdata->getDCOffset();
+}
+
+CK_DLL_MFUN(saturator_getDCOffset)
+{
+    Saturator * bcdata = (Saturator *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
+    RETURN->v_float = bcdata->getDCOffset();
 }
 
 

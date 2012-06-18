@@ -7,3 +7,8 @@
 #ifndef dB2mag
 #define dB2mag(x)           pow( 10.0, (x) / 20.0 )
 #endif
+
+#ifndef dB2lin
+#define dB2lin(x)           pow( 10.0, (x) / 20.0 )
+#endif
+
