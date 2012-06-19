@@ -12,17 +12,17 @@
 #include "dsp.h"
 
 
-CK_DLL_CTOR(saturator_ctor);
-CK_DLL_DTOR(saturator_dtor);
+CK_DLL_CTOR(absaturator_ctor);
+CK_DLL_DTOR(absaturator_dtor);
 
-CK_DLL_MFUN(saturator_setDrive);
-CK_DLL_MFUN(saturator_getDrive);
-CK_DLL_MFUN(saturator_setDCOffset);
-CK_DLL_MFUN(saturator_getDCOffset);
+CK_DLL_MFUN(absaturator_setDrive);
+CK_DLL_MFUN(absaturator_getDrive);
+CK_DLL_MFUN(absaturator_setDCOffset);
+CK_DLL_MFUN(absaturator_getDCOffset);
 
-CK_DLL_TICK(saturator_tick);
+CK_DLL_TICK(absaturator_tick);
 
-t_CKINT saturator_data_offset = 0;
+t_CKINT absaturator_data_offset = 0;
 
 
 const static double AACoefs[6][5] =
@@ -36,11 +36,11 @@ const static double AACoefs[6][5] =
     {1, -1.75999, 1, -1.84111, 0.938811}
 };
 
-class Saturator
+class ABSaturator
 {
 public:
     
-    Saturator(float fs)
+    ABSaturator(float fs)
     {
         m_drive = 1;
         m_dcOffset = 0;
@@ -139,28 +139,28 @@ private:
     
 };
 
-CK_DLL_QUERY(Saturator)
+CK_DLL_QUERY(ABSaturator)
 {
-    QUERY->setname(QUERY, "Saturator");
+    QUERY->setname(QUERY, "ABSaturator");
     
-    QUERY->begin_class(QUERY, "Saturator", "UGen");
+    QUERY->begin_class(QUERY, "ABSaturator", "UGen");
     
-    QUERY->add_ctor(QUERY, saturator_ctor);
-    QUERY->add_dtor(QUERY, saturator_dtor);
+    QUERY->add_ctor(QUERY, absaturator_ctor);
+    QUERY->add_dtor(QUERY, absaturator_dtor);
     
-    QUERY->add_ugen_func(QUERY, saturator_tick, NULL, 1, 1);
+    QUERY->add_ugen_func(QUERY, absaturator_tick, NULL, 1, 1);
     
-    QUERY->add_mfun(QUERY, saturator_setDrive, "float", "drive");
+    QUERY->add_mfun(QUERY, absaturator_setDrive, "float", "drive");
     QUERY->add_arg(QUERY, "float", "arg");
     
-    QUERY->add_mfun(QUERY, saturator_getDrive, "float", "drive");
+    QUERY->add_mfun(QUERY, absaturator_getDrive, "float", "drive");
     
-    QUERY->add_mfun(QUERY, saturator_setDCOffset, "float", "dcOffset");
+    QUERY->add_mfun(QUERY, absaturator_setDCOffset, "float", "dcOffset");
     QUERY->add_arg(QUERY, "float", "arg");
     
-    QUERY->add_mfun(QUERY, saturator_getDCOffset, "float", "dcOffset");
+    QUERY->add_mfun(QUERY, absaturator_getDCOffset, "float", "dcOffset");
     
-    saturator_data_offset = QUERY->add_mvar(QUERY, "int", "@sat_data", false);
+    absaturator_data_offset = QUERY->add_mvar(QUERY, "int", "@sat_data", false);
     
     QUERY->end_class(QUERY);
 
@@ -168,29 +168,29 @@ CK_DLL_QUERY(Saturator)
 }
 
 
-CK_DLL_CTOR(saturator_ctor)
+CK_DLL_CTOR(absaturator_ctor)
 {
-    OBJ_MEMBER_INT(SELF, saturator_data_offset) = 0;
+    OBJ_MEMBER_INT(SELF, absaturator_data_offset) = 0;
     
-    Saturator * bcdata = new Saturator(API->vm->get_srate());
+    ABSaturator * bcdata = new ABSaturator(API->vm->get_srate());
     
-    OBJ_MEMBER_INT(SELF, saturator_data_offset) = (t_CKINT) bcdata;
+    OBJ_MEMBER_INT(SELF, absaturator_data_offset) = (t_CKINT) bcdata;
 }
 
-CK_DLL_DTOR(saturator_dtor)
+CK_DLL_DTOR(absaturator_dtor)
 {
-    Saturator * bcdata = (Saturator *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
+    ABSaturator * bcdata = (ABSaturator *) OBJ_MEMBER_INT(SELF, absaturator_data_offset);
     if(bcdata)
     {
         delete bcdata;
-        OBJ_MEMBER_INT(SELF, saturator_data_offset) = 0;
+        OBJ_MEMBER_INT(SELF, absaturator_data_offset) = 0;
         bcdata = NULL;
     }
 }
 
-CK_DLL_TICK(saturator_tick)
+CK_DLL_TICK(absaturator_tick)
 {
-    Saturator * s = (Saturator *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
+    ABSaturator * s = (ABSaturator *) OBJ_MEMBER_INT(SELF, absaturator_data_offset);
     
     if(s)
         *out = s->tick(in);
@@ -198,31 +198,31 @@ CK_DLL_TICK(saturator_tick)
     return TRUE;
 }
 
-CK_DLL_MFUN(saturator_setDrive)
+CK_DLL_MFUN(absaturator_setDrive)
 {
-    Saturator * bcdata = (Saturator *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
+    ABSaturator * bcdata = (ABSaturator *) OBJ_MEMBER_INT(SELF, absaturator_data_offset);
     // TODO: sanity check
     bcdata->setDrive(GET_NEXT_FLOAT(ARGS));
     RETURN->v_int = bcdata->getDrive();
 }
 
-CK_DLL_MFUN(saturator_getDrive)
+CK_DLL_MFUN(absaturator_getDrive)
 {
-    Saturator * bcdata = (Saturator *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
+    ABSaturator * bcdata = (ABSaturator *) OBJ_MEMBER_INT(SELF, absaturator_data_offset);
     RETURN->v_float = bcdata->getDrive();
 }
 
-CK_DLL_MFUN(saturator_setDCOffset)
+CK_DLL_MFUN(absaturator_setDCOffset)
 {
-    Saturator * bcdata = (Saturator *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
+    ABSaturator * bcdata = (ABSaturator *) OBJ_MEMBER_INT(SELF, absaturator_data_offset);
     // TODO: sanity check
     bcdata->setDCOffset(GET_NEXT_FLOAT(ARGS));
     RETURN->v_int = bcdata->getDCOffset();
 }
 
-CK_DLL_MFUN(saturator_getDCOffset)
+CK_DLL_MFUN(absaturator_getDCOffset)
 {
-    Saturator * bcdata = (Saturator *) OBJ_MEMBER_INT(SELF, saturator_data_offset);
+    ABSaturator * bcdata = (ABSaturator *) OBJ_MEMBER_INT(SELF, absaturator_data_offset);
     RETURN->v_float = bcdata->getDCOffset();
 }
 

@@ -1,10 +1,10 @@
 
 # chugin name
-CHUGIN_NAME=Saturator
+CHUGIN_NAME=ABSaturator
 
 # all of the c/cpp files that compose this chugin
 C_MODULES=
-CXX_MODULES=Saturator.cpp Filters.cpp
+CXX_MODULES=ABSaturator.cpp Filters.cpp
 
 # where the chuck source code is
 CK_SRC_PATH=../../chuck/trunk/src/
