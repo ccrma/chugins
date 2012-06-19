@@ -1,0 +1,285 @@
+#!/usr/bin/python
+
+import sys
+import re
+
+if len(sys.argv) != 3:
+    print "usage: chugerate [chugin name] [destination directory]"
+    sys.exit(-1)
+
+chugin_name = sys.argv[1]
+dest_dir = sys.argv[2]
+
+chugin_lcname = chugin_name.lower()
+chugin_initials = re.sub('[a-z]', '', chugin_name).lower()
+
+# print "name: %s lc: %s initials: %s" % (chugin_name, chugin_lcname, chugin_initials)
+
+code = dict();
+filepath = dict();
+
+code['cpp'] = '''
+
+#include "chuck_dl.h"
+#include "chuck_def.h"
+
+#include <stdio.h>
+#include <limits.h>
+
+
+CK_DLL_CTOR(%(CHUGIN_LCNAME)%_ctor);
+CK_DLL_DTOR(%(CHUGIN_LCNAME)%_dtor);
+
+CK_DLL_MFUN(%(CHUGIN_LCNAME)%_setParam);
+CK_DLL_MFUN(%(CHUGIN_LCNAME)%_getParam);
+
+CK_DLL_TICK(%(CHUGIN_LCNAME)%_tick);
+
+t_CKINT %(CHUGIN_LCNAME)%_data_offset = 0;
+
+
+class %(CHUGIN_NAME)%
+{
+public:
+    
+    %(CHUGIN_NAME)%(float fs)
+    {
+        m_param = 0;
+    }
+    
+    SAMPLE tick(SAMPLE in)
+    {
+        return in;
+    }
+    
+    float setParam(float p)
+    {
+        m_param = p;
+        return p;
+    }
+    
+    float getParam() { return m_param; }
+    
+private:
+    
+    float m_param;
+};
+
+CK_DLL_QUERY(%(CHUGIN_NAME)%)
+{
+    QUERY->setname(QUERY, "%(CHUGIN_NAME)%");
+    
+    QUERY->begin_class(QUERY, "%(CHUGIN_NAME)%", "UGen");
+    
+    QUERY->add_ctor(QUERY, %(CHUGIN_LCNAME)%_ctor);
+    QUERY->add_dtor(QUERY, %(CHUGIN_LCNAME)%_dtor);
+    
+    QUERY->add_ugen_func(QUERY, %(CHUGIN_LCNAME)%_tick, NULL, 1, 1);
+    
+    QUERY->add_mfun(QUERY, %(CHUGIN_LCNAME)%_setParam, "float", "param");
+    QUERY->add_arg(QUERY, "float", "arg");
+    
+    QUERY->add_mfun(QUERY, %(CHUGIN_LCNAME)%_getParam, "float", "param");
+    
+    %(CHUGIN_LCNAME)%_data_offset = QUERY->add_mvar(QUERY, "int", "@%(CHUGIN_INITIALS)%_data", false);
+    
+    QUERY->end_class(QUERY);
+
+    return TRUE;
+}
+
+
+CK_DLL_CTOR(%(CHUGIN_LCNAME)%_ctor)
+{
+    OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset) = 0;
+    
+    %(CHUGIN_NAME)% * bcdata = new %(CHUGIN_NAME)%(API->vm->get_srate());
+    
+    OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset) = (t_CKINT) bcdata;
+}
+
+CK_DLL_DTOR(%(CHUGIN_LCNAME)%_dtor)
+{
+    %(CHUGIN_NAME)% * bcdata = (%(CHUGIN_NAME)% *) OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset);
+    if(bcdata)
+    {
+        delete bcdata;
+        OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset) = 0;
+        bcdata = NULL;
+    }
+}
+
+CK_DLL_TICK(%(CHUGIN_LCNAME)%_tick)
+{
+    %(CHUGIN_NAME)% * c = (%(CHUGIN_NAME)% *) OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset);
+    
+    if(c) *out = c->tick(in);
+
+    return TRUE;
+}
+
+CK_DLL_MFUN(%(CHUGIN_LCNAME)%_setParam)
+{
+    %(CHUGIN_NAME)% * bcdata = (%(CHUGIN_NAME)% *) OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset);
+    // TODO: sanity check
+    RETURN->v_float = bcdata->setParam(GET_NEXT_FLOAT(ARGS));
+}
+
+CK_DLL_MFUN(%(CHUGIN_LCNAME)%_getParam)
+{
+    %(CHUGIN_NAME)% * bcdata = (%(CHUGIN_NAME)% *) OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset);
+    RETURN->v_float = bcdata->getParam();
+}
+
+'''
+code['makefile'] = '''
+# chugin name
+CHUGIN_NAME=%(CHUGIN_NAME)%
+
+# all of the c/cpp files that compose this chugin
+C_MODULES=
+CXX_MODULES=%(CHUGIN_NAME)%.cpp
+
+# where the chuck source code is
+CK_SRC_PATH=../../chuck/trunk/src/
+
+
+# ---------------------------------------------------------------------------- #
+# you won't generally need to change anything below this line for a new chugin #
+# ---------------------------------------------------------------------------- #
+
+# default target: print usage message and quit
+current: 
+	@echo "[chuck build]: please use one of the following configurations:"
+	@echo "   make linux, make osx, or make win32"
+
+ifneq ($(CK_TARGET),)
+.DEFAULT_GOAL:=$(CK_TARGET)
+ifeq ($(MAKECMDGOALS),)
+MAKECMDGOALS:=$(.DEFAULT_GOAL)
+endif
+endif
+
+.PHONY: osx linux linux-oss linux-jack linux-alsa win32
+osx linux linux-oss linux-jack linux-alsa win32: all
+
+CC=gcc
+CXX=gcc
+LD=g++
+
+CHUGIN_PATH=/usr/lib/chuck
+
+ifneq (,$(strip $(filter osx bin-dist-osx,$(MAKECMDGOALS))))
+include makefile.osx
+endif
+
+ifneq (,$(strip $(filter linux,$(MAKECMDGOALS))))
+include makefile.linux
+endif
+
+ifneq (,$(strip $(filter linux-oss,$(MAKECMDGOALS))))
+include makefile.linux
+endif
+
+ifneq (,$(strip $(filter linux-jack,$(MAKECMDGOALS))))
+include makefile.linux
+endif
+
+ifneq (,$(strip $(filter linux-alsa,$(MAKECMDGOALS))))
+include makefile.linux
+endif
+
+ifneq (,$(strip $(filter win32,$(MAKECMDGOALS))))
+include makefile.win32
+endif
+
+ifneq ($(CHUCK_DEBUG),)
+FLAGS+= -g
+else
+FLAGS+= -O3
+endif
+
+ifneq ($(CHUCK_STRICT),)
+FLAGS+= -Wall
+endif
+
+# default: build a dynamic chugin
+CK_CHUGIN_STATIC?=0
+
+ifeq ($(CK_CHUGIN_STATIC),0)
+SUFFIX=.chug
+else
+SUFFIX=.schug
+FLAGS+= -D__CK_DLL_STATIC__
+endif
+
+C_OBJECTS=$(addsuffix .o,$(basename $(C_MODULES)))
+CXX_OBJECTS=$(addsuffix .o,$(basename $(CXX_MODULES)))
+
+CHUG=$(addsuffix $(SUFFIX),$(CHUGIN_NAME))
+
+all: $(CHUG)
+
+$(CHUG): $(C_OBJECTS) $(CXX_OBJECTS)
+ifeq ($(CK_CHUGIN_STATIC),0)
+	g++ $(LDFLAGS) -o $@ $^
+else
+	ar rv $@ $^
+	ranlib $@
+endif
+
+$(C_OBJECTS): %.o: %.c
+	$(CC) $(FLAGS) -c -o $@ $<
+
+$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chuck_dl.h
+	$(CXX) $(FLAGS) -c -o $@ $<
+
+install: $(CHUG)
+	mkdir -p $(CHUGIN_PATH)
+	cp $^ $(CHUGIN_PATH)
+	chmod 755 $(CHUGIN_PATH)/$(CHUG)
+
+clean: 
+	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG)
+
+'''
+code['makefile.osx'] = '''
+FLAGS=-m32 -D__MACOSX_CORE__ -I$(CK_SRC_PATH)
+LDFLAGS=-m32 -bundle -lstdc++
+
+LD=gcc
+CXX=g++
+'''
+code['makefile.linux'] = '''
+CHUGIN_PATH=/usr/lib/chuck
+
+FLAGS=-D__LINUX_ALSA__ -I$(CK_SRC_PATH)
+LDFLAGS=-shared -lstdc++
+
+LD=gcc
+CXX=g++
+'''
+code['makefile.win32'] = '''
+FLAGS=-D__WINDOWS_DS_ -D__WINDOWS_PTHREAD__ -I$(CK_SRC_PATH)
+LDFLAGS=-shared -lstdc++
+
+CXX=g++
+LD=g++
+'''
+
+filepath['cpp'] = "%s/%s.cpp" % (dest_dir, chugin_name)
+filepath['makefile'] = "%s/makefile" % (dest_dir)
+filepath['makefile.osx'] = "%s/makefile.osx" % (dest_dir)
+filepath['makefile.linux'] = "%s/makefile.linux" % (dest_dir)
+filepath['makefile.win32'] = "%s/makefile.win32" % (dest_dir)
+
+code['cpp'] = re.sub('\%\(CHUGIN_NAME\)\%', chugin_name, code['cpp'])
+code['cpp'] = re.sub('\%\(CHUGIN_LCNAME\)\%', chugin_lcname, code['cpp'])
+code['cpp'] = re.sub('\%\(CHUGIN_INITIALS\)\%', chugin_lcname, code['cpp'])
+
+code['makefile'] = re.sub('\%\(CHUGIN_NAME\)\%', chugin_name, code['makefile'])
+
+for key in code:
+    f = open(filepath[key], "w")
+    f.write(code[key])
+    f.close()

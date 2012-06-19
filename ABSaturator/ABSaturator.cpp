@@ -203,7 +203,7 @@ CK_DLL_MFUN(absaturator_setDrive)
     ABSaturator * bcdata = (ABSaturator *) OBJ_MEMBER_INT(SELF, absaturator_data_offset);
     // TODO: sanity check
     bcdata->setDrive(GET_NEXT_FLOAT(ARGS));
-    RETURN->v_int = bcdata->getDrive();
+    RETURN->v_float = bcdata->getDrive();
 }
 
 CK_DLL_MFUN(absaturator_getDrive)
@@ -217,7 +217,7 @@ CK_DLL_MFUN(absaturator_setDCOffset)
     ABSaturator * bcdata = (ABSaturator *) OBJ_MEMBER_INT(SELF, absaturator_data_offset);
     // TODO: sanity check
     bcdata->setDCOffset(GET_NEXT_FLOAT(ARGS));
-    RETURN->v_int = bcdata->getDCOffset();
+    RETURN->v_float = bcdata->getDCOffset();
 }
 
 CK_DLL_MFUN(absaturator_getDCOffset)
