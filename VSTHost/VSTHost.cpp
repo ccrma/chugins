@@ -42,6 +42,7 @@
 #include "chuck_def.h"
 
 #include <CoreFoundation/CoreFoundation.h>
+#include <Carbon/Carbon.h>
 
 #include <stdio.h>
 #include <limits.h>
@@ -55,6 +56,7 @@ CK_DLL_DTOR(vsthost_dtor);
 CK_DLL_TICKV(vsthost_tick);
 
 CK_DLL_MFUN(vsthost_load);
+CK_DLL_MFUN(vsthost_edit);
 
 t_CKINT vsthost_data_offset = 0;
 
@@ -220,6 +222,18 @@ public:
         return rval;
     }
     
+    int edit()
+    {
+        if(m_effect)
+        {
+//            HIViewRef view;
+//            WindowRef win = (WindowRef) MacGetTopLevelWindowRef();
+//            HIViewFindByID(HIViewGetRoot(win), kHIViewWindowContentID, &view);
+            
+            callDispatcher(effEditOpen, 0, 0, NULL, 0.0);
+        }
+    }
+    
     long callDispatcher(long opcode, long index, long value, 
                         void *ptr, float opt)
     {
@@ -339,6 +353,8 @@ CK_DLL_QUERY(VSTHost)
     QUERY->add_mfun(QUERY, vsthost_load, "int", "load");
     QUERY->add_arg(QUERY, "string", "arg");
     
+    QUERY->add_mfun(QUERY, vsthost_edit, "int", "edit");
+    
     vsthost_data_offset = QUERY->add_mvar(QUERY, "int", "@vsthost_data", false);
     
     QUERY->end_class(QUERY);
@@ -381,5 +397,12 @@ CK_DLL_MFUN(vsthost_load)
     VSTHost * bcdata = (VSTHost *) OBJ_MEMBER_INT(SELF, vsthost_data_offset);
     // TODO: sanity check
     RETURN->v_int = bcdata->load(GET_NEXT_STRING(ARGS)->str);
+}
+
+CK_DLL_MFUN(vsthost_edit)
+{
+    VSTHost * bcdata = (VSTHost *) OBJ_MEMBER_INT(SELF, vsthost_data_offset);
+    // TODO: sanity check
+    RETURN->v_int = bcdata->edit();
 }
 
