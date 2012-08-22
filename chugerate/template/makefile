@@ -7,7 +7,7 @@ C_MODULES=
 CXX_MODULES=%(CHUGIN_NAME)%.cpp
 
 # where the chuck source code is
-CK_SRC_PATH=../../chuck/trunk/src/
+CK_SRC_PATH?=../../chuck/trunk/src/
 
 
 # ---------------------------------------------------------------------------- #

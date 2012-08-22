@@ -7,7 +7,7 @@ C_MODULES=
 CXX_MODULES=MagicSine.cpp
 
 # where the chuck source code is
-CK_SRC_PATH=../../chuck/trunk/src/
+CK_SRC_PATH?=../../chuck/trunk/src/
 
 
 # ---------------------------------------------------------------------------- #
