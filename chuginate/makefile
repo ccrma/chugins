@@ -1,11 +1,12 @@
 
-chugerate: chugerate.py bootstrap.py template/ChuGin.cpp template/makefile \
-template/makefile.osx template/makefile.linux template/makefile.win32
-	python bootstrap.py < chugerate.py > chugerate
-	chmod u+x chugerate
+chuginate: chuginate.py bootstrap.py template/ChuGin.cpp template/makefile \
+template/makefile.osx template/makefile.linux template/makefile.win32 \
+template/ChuGin.dsw template/ChuGin.dsp
+	python bootstrap.py < chuginate.py > chuginate
+	chmod u+x chuginate
 
 clean:
-	rm -rf chugerate
+	rm -rf chuginate
 
-install: chugerate
-	cp chugerate /usr/bin/
+install: chuginate
+	cp chuginate /usr/bin/
