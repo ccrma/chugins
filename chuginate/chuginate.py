@@ -3,6 +3,7 @@
 import sys
 import re
 import os
+import io
 
 if len(sys.argv) != 2 and len(sys.argv) != 3:
     print "usage: chugerate chugin_name [destination_directory]"
@@ -31,16 +32,17 @@ def substitute(text):
 
 # print "name: %s lc: %s initials: %s" % (chugin_name, chugin_lcname, chugin_initials)
 
-code = dict();
-filepath = dict();
+code = dict()
+filepath = dict()
+newlines = dict()
 
-code['cpp'] = '''%(CPP_CODE)%'''
-code['makefile'] = '''%(MAKEFILE_CODE)%'''
-code['makefile.osx'] = '''%(MAKEFILEOSX_CODE)%'''
-code['makefile.linux'] = '''%(MAKEFILELINUX_CODE)%'''
-code['makefile.win32'] = '''%(MAKEFILEWIN32_CODE)%'''
-code['.dsw'] = '''%(DSW_CODE)%'''
-code['.dsp'] = '''%(DSP_CODE)%'''
+code['cpp'] = u'''%(CPP_CODE)%'''
+code['makefile'] = u'''%(MAKEFILE_CODE)%'''
+code['makefile.osx'] = u'''%(MAKEFILEOSX_CODE)%'''
+code['makefile.linux'] = u'''%(MAKEFILELINUX_CODE)%'''
+code['makefile.win32'] = u'''%(MAKEFILEWIN32_CODE)%'''
+code['.dsw'] = u'''%(DSW_CODE)%'''
+code['.dsp'] = u'''%(DSP_CODE)%'''
 
 filepath['cpp'] = "%s/%s.cpp" % (dest_dir, chugin_name)
 filepath['makefile'] = "%s/makefile" % (dest_dir)
@@ -50,13 +52,20 @@ filepath['makefile.win32'] = "%s/makefile.win32" % (dest_dir)
 filepath['.dsw'] = "%s/%s.dsw" % (dest_dir, chugin_name)
 filepath['.dsp'] = "%s/%s.dsp" % (dest_dir, chugin_name)
 
+newlines['.dsw'] = '\r\n'
+newlines['.dsp'] = '\r\n'
+
 code['cpp'] = substitute(code['cpp'])
 code['makefile'] = substitute(code['makefile'])
 code['.dsw'] = substitute(code['.dsw'])
 code['.dsp'] = substitute(code['.dsp'])
 
 for key in code:
-    f = open(filepath[key], "w")
+    if key in newlines:
+        nl = newlines[key]
+    else:
+        nl = '\n'
+    f = io.open(filepath[key], "wt", newline=nl)
     f.write(code[key])
     f.close()
 
