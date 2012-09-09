@@ -6,7 +6,7 @@ CHUGIN_NAME=Bitcrusher
 MODULES=Bitcrusher.cpp
 
 # where the chuck source code is
-CK_SRC_PATH=../../../
+CK_SRC_PATH=../../chuck/trunk/src
 
 # you won't generally need to change anything below this line for a new chugin
 
@@ -15,8 +15,8 @@ CK_CHUGIN_STATIC?=0
 
 CHUGIN_PATH=/usr/lib/chuck
 
-FLAGS=-m32 -D__MACOSX_CORE__ -I$(CK_SRC_PATH)
-LDFLAGS=-m32 -bundle -lstdc++
+FLAGS=-D__MACOSX_CORE__ -I$(CK_SRC_PATH) -arch i386 -arch x86_64
+LDFLAGS=-bundle -lstdc++ -arch i386 -arch x86_64
 
 ifeq ($(CK_CHUGIN_STATIC),0)
 SUFFIX=.chug

@@ -320,8 +320,11 @@ clean:
 
 '''
 code['makefile.osx'] = u'''
-FLAGS=-m32 -D__MACOSX_CORE__ -I$(CK_SRC_PATH)
-LDFLAGS=-m32 -bundle -lstdc++
+ARCHS?=i386 x86_64
+ARCHOPTS=$(addprefix -arch ,$(ARCHS))
+
+FLAGS=-D__MACOSX_CORE__ -I$(CK_SRC_PATH) $(ARCHOPTS)
+LDFLAGS=-bundle -lstdc++ $(ARCHOPTS)
 
 LD=gcc
 CXX=g++
