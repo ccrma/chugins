@@ -75,6 +75,7 @@ void Chuck_UI_Manager::init()
     m_hasStarted = false;
     m_doStart = false;
     m_doShutdown = false;
+    m_hook = NULL;
 }
 
 void Chuck_UI_Manager::run()
@@ -155,6 +156,11 @@ void Chuck_UI_Manager::start()
 {
     if( !m_hasStarted )
         m_doStart = true;
+    if(m_hook != NULL)
+    {
+        m_hook->activate(m_hook);
+        m_hook = NULL;
+    }
 }
 
 void Chuck_UI_Manager::shutdown()

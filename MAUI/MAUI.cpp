@@ -46,7 +46,8 @@ CK_DLL_QUERY( MAUI )
     Chuck_UI_Manager * ui_manager = Chuck_UI_Manager::instance();
     ui_manager->init();
     
-    QUERY->set_main_thread_hook( QUERY, maui_main_loop_hook, maui_main_loop_quit, ui_manager );
+    Chuck_DL_MTHook * hook = QUERY->create_main_thread_hook( QUERY, maui_main_loop_hook, maui_main_loop_quit, ui_manager );
+    ui_manager->set_hook( hook );
     
     init_maui( QUERY );
 

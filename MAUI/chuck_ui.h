@@ -33,6 +33,8 @@
 #ifndef __CHUCK_UI_H__
 #define __CHUCK_UI_H__
 
+#include "chuck_dl.h"
+
 class Chuck_UI_Manager
 {
 public:
@@ -49,12 +51,15 @@ public:
     // shutdown the UI
     void shutdown();
     
+    void set_hook(Chuck_DL_MTHook * hook) { m_hook = hook; }
+    
 private:
     Chuck_UI_Manager();
     
     bool m_doStart;
     bool m_hasStarted;
     bool m_doShutdown;
+    Chuck_DL_MTHook * m_hook;
 };
 
 #endif 

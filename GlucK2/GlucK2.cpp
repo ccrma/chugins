@@ -21,6 +21,8 @@
 #include <GL/glut.h>
 #endif
 
+Chuck_DL_MTHook * g_hook = NULL;
+
 GLsizei g_width = 1024;
 GLsizei g_height = 768;
 
@@ -199,8 +201,10 @@ CK_DLL_QUERY( GlucK2 )
     // hmm, don't change this...
     QUERY->setname(QUERY, "GlucK2");
     
-    QUERY->set_main_thread_hook(QUERY, glut_main_thread_hook,
-                                glut_main_thread_quit, NULL);
+    g_hook = QUERY->create_main_thread_hook(QUERY, glut_main_thread_hook,
+                                            glut_main_thread_quit, NULL);
+    
+    g_hook->activate(g_hook);
     
     // begin the class definition
     // can change the second argument to extend a different ChucK class
