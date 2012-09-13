@@ -21,7 +21,7 @@
 #include <GL/glut.h>
 #endif
 
-Chuck_DL_MTHook * g_hook = NULL;
+Chuck_DL_MainThreadHook * g_hook = NULL;
 
 GLsizei g_width = 1024;
 GLsizei g_height = 768;

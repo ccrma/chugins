@@ -51,7 +51,7 @@ public:
     // shutdown the UI
     void shutdown();
     
-    void set_hook(Chuck_DL_MTHook * hook) { m_hook = hook; }
+    void set_hook(Chuck_DL_MainThreadHook * hook) { m_hook = hook; }
     
 private:
     Chuck_UI_Manager();
@@ -59,7 +59,7 @@ private:
     bool m_doStart;
     bool m_hasStarted;
     bool m_doShutdown;
-    Chuck_DL_MTHook * m_hook;
+    Chuck_DL_MainThreadHook * m_hook;
 };
 
 #endif 
