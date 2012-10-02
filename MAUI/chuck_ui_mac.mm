@@ -34,8 +34,8 @@
 
 #import <AppKit/AppKit.h>
 #import <Foundation/Foundation.h>
-//#import "chuck_vm.h"
-//#import "chuck_globals.h"
+#import "chuck_vm.h"
+#import "chuck_globals.h"
 #import "util_icon.h"
 
 
@@ -75,6 +75,7 @@ void Chuck_UI_Manager::init()
     m_hasStarted = false;
     m_doStart = false;
     m_doShutdown = false;
+    m_hookActivated = false;
     m_hook = NULL;
 }
 
@@ -149,18 +150,21 @@ void Chuck_UI_Manager::run()
     [app run];
     
     [arpool release];
+    
+    m_hook->deactivate(m_hook);
 }
 
 
 void Chuck_UI_Manager::start()
 {
-    if( !m_hasStarted )
-        m_doStart = true;
-    if(m_hook != NULL)
+    if( !m_hookActivated )
     {
         m_hook->activate(m_hook);
-        m_hook = NULL;
+        m_hookActivated = true;
     }
+    
+    if( !m_hasStarted )
+        m_doStart = true;
 }
 
 void Chuck_UI_Manager::shutdown()
@@ -185,7 +189,7 @@ void Chuck_UI_Manager::shutdown()
 
 - (void)quit
 {
-//    if(g_vm) g_vm->stop(); // termination of vm will cause application exit
+    if(g_vm) g_vm->stop(); // termination of vm will cause application exit
 }
 
 @end

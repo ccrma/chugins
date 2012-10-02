@@ -56,6 +56,7 @@ public:
 private:
     Chuck_UI_Manager();
     
+    bool m_hookActivated;
     bool m_doStart;
     bool m_hasStarted;
     bool m_doShutdown;
