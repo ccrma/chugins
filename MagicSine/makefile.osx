@@ -1,6 +1,13 @@
+ARCHS?=i386 x86_64
+ARCHOPTS=$(addprefix -arch ,$(ARCHS))
 
-FLAGS=-m32 -D__MACOSX_CORE__ -I$(CK_SRC_PATH)
-LDFLAGS=-m32 -bundle -lstdc++
+FRAMEWORKS=Cocoa Foundation
 
-LD=gcc
-CXX=g++
+FLAGS+=-D__MACOSX_CORE__ -I$(CK_SRC_PATH) $(ARCHOPTS)
+LDFLAGS+=-shared -lstdc++ $(addprefix -framework ,$(FRAMEWORKS)) \
+-ObjC $(ARCHOPTS) \
+-Wl,-undefined,dynamic_lookup
+
+LD=clang++
+CXX=clang++
+OBJCXX=clang++
