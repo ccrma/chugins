@@ -1,8 +1,0 @@
-
-CHUGIN_PATH=/usr/lib/chuck
-
-FLAGS=-D__LINUX_ALSA__ -I$(CK_SRC_PATH)
-LDFLAGS=-shared -lstdc++
-
-LD=gcc
-CXX=g++

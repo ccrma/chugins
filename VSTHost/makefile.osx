@@ -1,6 +1,0 @@
-
-FLAGS=-m32 -D__MACOSX_CORE__ -I$(CK_SRC_PATH)
-LDFLAGS=-m32 -bundle -lstdc++ -framework CoreFoundation -framework Carbon
-
-LD=gcc
-CXX=g++
