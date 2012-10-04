@@ -3,6 +3,8 @@ Repository for Officially Supported ChuGins
 
 To compile and install all chugins:
 
+    git clone https://github.com/ccrma/chugins.git
+    cd chugins
     make [osx|win32|linux]
     sudo make install
 
