@@ -140,8 +140,15 @@ public:
         m_fs = fs;
         m_timestamp.mSampleTime = 0;
         m_timestamp.mFlags = kAudioTimeStampSampleTimeValid;
+        m_au = NULL;
+        m_buffer = NULL;
     }
-
+    
+    ~CKAudioUnit()
+    {
+        close();
+    }
+    
     // for Chugins extending UGen
     t_CKBOOL tick( SAMPLE * in, SAMPLE * out, t_CKUINT nframes )
     {
@@ -208,8 +215,31 @@ public:
     error:
         if(au)
             AudioComponentInstanceDispose(au);
+        if(m_buffer)
+        {
+            delete m_buffer;
+            m_buffer = NULL;
+        }
         
         return FALSE;
+    }
+    
+    t_CKBOOL close()
+    {
+        if(m_au)
+        {
+            AudioUnitUninitialize(m_au);
+            AudioComponentInstanceDispose(m_au);
+            m_au = NULL;
+        }
+        
+        if(m_buffer)
+        {
+            delete m_buffer;
+            m_buffer = NULL;
+        }
+        
+        return TRUE;
     }
     
     t_CKBOOL send_midi(t_CKUINT data1, t_CKUINT data2, t_CKUINT data3)

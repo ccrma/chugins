@@ -27,7 +27,7 @@ if(me.args())
 
 while(true)
 {
-    56 + Math.random2(0,1)*12 + scale[Math.random2(0,4)] => int note;
+    59 + Math.random2(0,1)*12 + scale[Math.random2(0,4)] => int note;
     // noteOn
     au.send(0x90, note, 127);
     
