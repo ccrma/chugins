@@ -6,8 +6,8 @@ CHUGIN_NAME=MagicSine
 C_MODULES=
 CXX_MODULES=MagicSine.cpp
 
-# where the chuck source code is
-CK_SRC_PATH?=../../chuck/trunk/src/
+# where the chuck headers are
+CK_SRC_PATH?=../chuck/include/
 
 
 # ---------------------------------------------------------------------------- #

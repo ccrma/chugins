@@ -6,8 +6,8 @@ CHUGIN_NAME=%(CHUGIN_NAME)%
 C_MODULES=
 CXX_MODULES=%(CHUGIN_NAME)%.cpp
 
-# where the chuck source code is
-CK_SRC_PATH?=../../chuck/trunk/src/
+# where the chuck headers are
+CK_SRC_PATH?=../chuck/include/
 
 
 # ---------------------------------------------------------------------------- #
