@@ -13,3 +13,5 @@
 *.a
 
 .DS_Store
+
+*.tgz
