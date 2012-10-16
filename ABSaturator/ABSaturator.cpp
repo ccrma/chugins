@@ -75,7 +75,7 @@ public:
             AAFilter[j].setCoefs((double *) AACoefs[j]);
         }
         
-        double wc_dc = 5*2*M_PI;
+        double wc_dc = 5*2*ONE_PI;
         //                           b0 b1 b2     a0 a1 a2
         double dcblockScoeffs[6] = {  0, 1, 0, wc_dc, 1, 0 };
         double dcblockZcoeffs[5];
@@ -95,9 +95,9 @@ public:
         {
 			// upsample (insert zeros)
             usignal = (k == 0) ? kUSRatio*fsignal : 0.0;
-            
+            int j;
 			// apply antiimaging filter
-			for(int j = 0; j < kAAOrder; j++)
+			for(j = 0; j < kAAOrder; j++)
 				AIFilter[j].process(usignal,usignal);
             
 			// apply distortion
@@ -111,7 +111,7 @@ public:
             dcBlocker[1].process(dsignal, dsignal);
             
 			// apply antialiasing filter
-			for(int j = 0; j < kAAOrder; j++)
+			for(j = 0; j < kAAOrder; j++)
 				AAFilter[j].process(dsignal,dsignal);
 		}
         

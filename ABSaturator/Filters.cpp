@@ -1,6 +1,7 @@
 
 #include "Filters.h"
 #include <math.h>
+#include "chuck_def.h"
 
 //------------------------------------------------------------------------------
 void Filters::bilinearTranform(double acoefs[], double dcoefs[], double fs)
@@ -60,7 +61,7 @@ void Filters::designParametric(double* dcoefs, double center, double gain, doubl
  	///////////////START//////////////////
 	
     double Q = qval;
-    double wc = center*2*M_PI;
+    double wc = center*2*ONE_PI;
     
 	// 2nd order butterworth RLP
 	b2 = 0.0;
