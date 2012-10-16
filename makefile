@@ -38,3 +38,13 @@ bin-dist-osx:
 	cp -rf $(CHUGS) chugins-mac-$(DATE)/chugins/
 	tar czf chugins-mac-$(DATE).tgz chugins-mac-$(DATE)
 	rm -rf chugins-mac-$(DATE)/
+
+bin-dist-win32: 
+	mkdir -p chugins-windows-$(DATE)/chugins/
+	mkdir -p chugins-windows-$(DATE)/examples/
+	cp -f notes/README-windows.txt chugins-windows-$(DATE)/
+	cp -rf $(EXAMPLES) chugins-windows-$(DATE)/examples/
+	cp -rf $(CHUGS) chugins-windows-$(DATE)/chugins/
+	tar czf chugins-windows-$(DATE).tgz chugins-windows-$(DATE)
+	rm -rf chugins-windows-$(DATE)/
+
