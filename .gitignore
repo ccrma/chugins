@@ -17,3 +17,5 @@
 *.tgz
 /chugins.opt
 /chugins.ncb
+/chugins-windows-*
+/chugins-mac-*
