@@ -17,6 +17,8 @@ List of Current Chugins
   - sample-width reducer + sample rate decimator, bringing to mind the sounds of your favorite low-fidelity vintage audio equipment.
 - **MagicSine**
   - Efficient means of computing a sine wave with 2 adds and 2 multiples per sample, at the expense of being able to dynamically adjust phase.
+- **KasFilter**
+  - Undersampling-based resonant lowpass filter by Kassen
 
 Chugins That We Are Working On
 ==
