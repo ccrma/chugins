@@ -48,6 +48,7 @@ Rob Hordijk for sharing his insights there.
 #include <limits.h>
 #include <math.h> //because we need fabs
 
+
 CK_DLL_CTOR(kasfilter_ctor);
 CK_DLL_DTOR(kasfilter_dtor);
 
@@ -154,14 +155,14 @@ CK_DLL_TICK(kasfilter_tick)
 			float interp = kfdata->phase / PhaseInc; //this division should be safe; PhaseInc should never be 0 at this moment
 			kfdata->storeB = (in * interp) + (kfdata->lastIn * (1 - interp)); //interpolate based on how far we overshot the extreme of the wave.
 			kfdata->storeB += (kfdata->resonance * kfdata->storeA); //apply feedback.
-			kfdata->storeB = std::max (-1.0f ,  std::min ( 1.0f , kfdata->storeB)); //clamp because if we don't it'll build up indefinitely at certain inputs. Thanks to the x-fading the eventual output won't hard-clip.
+            kfdata->storeB = ck_max (-1.0f ,  ck_min ( 1.0f , kfdata->storeB)); //clamp because if we don't it'll build up indefinitely at certain inputs. Thanks to the x-fading the eventual output won't hard-clip.
 		}
 		else if (kfdata->phase > ONE_PI && lastPhase < ONE_PI)	//and again for the other s&h
 		{	
 			float interp = (kfdata->phase - ONE_PI) / PhaseInc;
 			kfdata->storeA =  ( in * interp) + (kfdata->lastIn * (1 - interp)); 
 			kfdata->storeA += (kfdata->resonance * kfdata->storeB); 
-			kfdata->storeA = std::max (-1.0f ,  std::min ( 1.0f , kfdata->storeA)); 
+			kfdata->storeA = ck_max (-1.0f ,  ck_min ( 1.0f , kfdata->storeA)); 
 		}
 	}
 	float mix = cos(kfdata->phase);
