@@ -157,7 +157,7 @@ CK_DLL_MFUN(FIR_setCoeff)  // form: blah.coeff(N,value);
     FIRData * firdata = (FIRData *) OBJ_MEMBER_INT(SELF, FIR_data_offset);
     int temp = GET_NEXT_INT(ARGS);
     float temp2 = GET_NEXT_FLOAT(ARGS);
-    if (temp > firdata->order-1 | temp < 0) 
+    if (temp > firdata->order-1 || temp < 0) 
 	printf("Illegal coefficient location! %i\n",temp);
     else firdata->coeff[temp] = temp2;
     RETURN->v_float = firdata->coeff[temp];
