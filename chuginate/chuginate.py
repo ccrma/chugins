@@ -6,7 +6,7 @@ import os
 import io
 
 if len(sys.argv) != 2 and len(sys.argv) != 3:
-    print "usage: chugerate chugin_name [destination_directory]"
+    print "usage: chuginate chugin_name [destination_directory]"
     sys.exit(-1)
 
 chugin_name = sys.argv[1]
