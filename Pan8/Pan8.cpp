@@ -54,8 +54,8 @@ public:
         
         for(int i = 0; i < nframes; i++)
         {
-            out[i*8+c] = g * in[i];
-            out[i*8+c_1] = g_1 * in[i];
+            out[i*8+c] = g * in[i*8];
+            out[i*8+c_1] = g_1 * in[i*8];
         }
     }
 
@@ -93,7 +93,7 @@ CK_DLL_QUERY( Pan8 )
     QUERY->add_dtor(QUERY, pan8_dtor);
     
     // for UGen's only: add tick function
-    QUERY->add_ugen_funcf(QUERY, pan8_tickf, NULL, 1, 8);
+    QUERY->add_ugen_funcf(QUERY, pan8_tickf, NULL, 8, 8);
     
     // NOTE: if this is to be a UGen with more than 1 channel, 
     // e.g., a multichannel UGen -- will need to use add_ugen_funcf()

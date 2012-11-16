@@ -5,6 +5,6 @@ BlitSquare source => Pan8 pan => dac;
 
 while(true)
 {
-    pan.pan() + 0.02 => pan.pan;
+    pan.pan() + 0.01 => pan.pan;
     20::ms => now;
 }
