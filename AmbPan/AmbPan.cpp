@@ -10,93 +10,144 @@
 // general includes
 #include <stdio.h>
 #include <limits.h>
+#include <math.h>
 
 // declaration of chugin constructor
-CK_DLL_CTOR(ambpan_ctor);
+CK_DLL_CTOR(ambpan3_ctor);
 // declaration of chugin desctructor
-CK_DLL_DTOR(ambpan_dtor);
+CK_DLL_DTOR(ambpan3_dtor);
 
 // example of getter/setter
-CK_DLL_MFUN(ambpan_setParam);
-CK_DLL_MFUN(ambpan_getParam);
+CK_DLL_MFUN(ambpan3_setAzimuth);
+CK_DLL_MFUN(ambpan3_getAzimuth);
+
+CK_DLL_MFUN(ambpan3_setElevation);
+CK_DLL_MFUN(ambpan3_getElevation);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
-CK_DLL_TICK(ambpan_tick);
+CK_DLL_TICKF(ambpan3_tickf);
 
 // this is a special offset reserved for Chugin internal data
-t_CKINT ambpan_data_offset = 0;
+t_CKINT ambpan3_data_offset = 0;
 
 
-// class definition for internal Chugin data
-// (note: this isn't strictly necessary, but serves as example
-// of one recommended approach)
-class AmbPan
+class AmbPan3
 {
 public:
     // constructor
-    AmbPan( t_CKFLOAT fs)
+    AmbPan3( t_CKFLOAT fs)
     {
-        m_param = 0;
+        m_azimuth = 0;
+        m_elevation = 0;
+        compute_gains();
     }
 
     // for Chugins extending UGen
-    SAMPLE tick( SAMPLE in )
+    void tick( SAMPLE * in, SAMPLE * out, int nframes )
     {
-        // default: this passes whatever input is patched into Chugin
-        return in;
     }
 
     // set parameter example
-    float setParam( t_CKFLOAT p )
+    float setAzimuth( t_CKFLOAT a )
     {
-        m_param = p;
-        return p;
+        m_azimuth = a;
+        compute_gains();
+        return m_azimuth;
     }
-
+    
     // get parameter example
-    float getParam() { return m_param; }
+    float getAzimuth() { return m_azimuth; }
+    
+    // set parameter example
+    float setElevation( t_CKFLOAT e )
+    {
+        m_elevation = e;
+        compute_gains();
+        return m_elevation;
+    }
+    
+    // get parameter example
+    float getElevation() { return m_elevation; }
     
 private:
+    
+    void compute_gains()
+    {
+        float cosA = cosf(m_azimuth);
+		float sinA = sinf(m_azimuth);
+		float cos2A = cosA*cosA - sinA*sinA;
+		float sin2A = 2*cosA*sinA;
+		float cos3A = cosA*cos2A - sinA*sin2A;
+		float sin3A = sin2A*cosA + sinA*cos2A;
+        float cosE = cosf(m_elevation);
+		float sinE = sinf(m_elevation);
+		float cos2E = cosE*cosE - sinE*sinE;
+		float sin2E = 2*cosE*sinE;
+		
+		m_gain[0] = 1.; //W
+		m_gain[1] = cosA*cosE; //X
+		m_gain[2] = sinA*cosE; //Y
+		m_gain[3] = sinE; //Z
+		m_gain[4] = (3.*sinE*sinE-1) / 2.; //R
+		m_gain[5] = sqrtf(3.) * cosA * sin2E / 2.; //S
+		m_gain[6] = sqrtf(3.) * sinA * sin2E / 2.; //T
+		m_gain[7] = sqrtf(3.) * cos2A * cosE * cosE / 2.; //U
+		m_gain[8] = sqrtf(3.) * sin2A * cosE * cosE / 2.; //V
+		m_gain[9] = sinE * (5.*sinE*sinE - 3.) / 2.; //K
+		m_gain[10] = sqrtf(3.) * cosA * cosE * (5*sinE*sinE - 1) / 8.; //L
+		m_gain[11] = sqrtf(3.) * sinA * cosE * (5*sinE*sinE - 1) / 8.; //M
+		m_gain[12] = sqrtf(15.) * cos2A * sinE * cosE * cosE / 2.; //N
+		m_gain[13] = sqrtf(15.) * sin2A * sinE * cosE * cosE / 2.; //O
+		m_gain[14] = sqrtf(5.) * cos3A * cosE * cosE * cosE / 8.; //P
+		m_gain[15] = sqrtf(5.) * sin3A * cosE * cosE * cosE / 8.; //Q
+    }
+    
     // instance data
-    float m_param;
+    float m_azimuth;
+    float m_elevation;
+    float m_gain[16];
 };
 
 
 // query function: chuck calls this when loading the Chugin
 // NOTE: developer will need to modify this function to
 // add additional functions to this Chugin
-CK_DLL_QUERY( AmbPan )
+CK_DLL_QUERY( AmbPan3 )
 {
     // hmm, don't change this...
     QUERY->setname(QUERY, "AmbPan");
     
     // begin the class definition
     // can change the second argument to extend a different ChucK class
-    QUERY->begin_class(QUERY, "AmbPan", "UGen");
+    QUERY->begin_class(QUERY, "AmbPan3", "UGen");
 
     // register the constructor (probably no need to change)
-    QUERY->add_ctor(QUERY, ambpan_ctor);
+    QUERY->add_ctor(QUERY, ambpan3_ctor);
     // register the destructor (probably no need to change)
-    QUERY->add_dtor(QUERY, ambpan_dtor);
+    QUERY->add_dtor(QUERY, ambpan3_dtor);
     
     // for UGen's only: add tick function
-    QUERY->add_ugen_func(QUERY, ambpan_tick, NULL, 1, 1);
+    QUERY->add_ugen_funcf(QUERY, ambpan3_tickf, NULL, 16, 16);
     
-    // NOTE: if this is to be a UGen with more than 1 channel, 
-    // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
-    // and declare a tickf function using CK_DLL_TICKF
-
     // example of adding setter method
-    QUERY->add_mfun(QUERY, ambpan_setParam, "float", "param");
+    QUERY->add_mfun(QUERY, ambpan3_setAzimuth, "float", "azimuth");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
-
-    // example of adding getter method
-    QUERY->add_mfun(QUERY, ambpan_getParam, "float", "param");
     
-    // this reserves a variable in the ChucK internal class to store 
+    // example of adding getter method
+    QUERY->add_mfun(QUERY, ambpan3_getAzimuth, "float", "paazimuthram");
+    
+    // example of adding setter method
+    QUERY->add_mfun(QUERY, ambpan3_setElevation, "float", "elevation");
+    // example of adding argument to the above method
+    QUERY->add_arg(QUERY, "float", "arg");
+    
+    // example of adding getter method
+    QUERY->add_mfun(QUERY, ambpan3_getElevation, "float", "elevation");
+    
+    // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
-    ambpan_data_offset = QUERY->add_mvar(QUERY, "int", "@ap_data", false);
+    ambpan3_data_offset = QUERY->add_mvar(QUERY, "int", "@ap_data", false);
 
     // end the class definition
     // IMPORTANT: this MUST be called!
@@ -108,64 +159,84 @@ CK_DLL_QUERY( AmbPan )
 
 
 // implementation for the constructor
-CK_DLL_CTOR(ambpan_ctor)
+CK_DLL_CTOR(ambpan3_ctor)
 {
     // get the offset where we'll store our internal c++ class pointer
-    OBJ_MEMBER_INT(SELF, ambpan_data_offset) = 0;
+    OBJ_MEMBER_INT(SELF, ambpan3_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    AmbPan * bcdata = new AmbPan(API->vm->get_srate());
+    AmbPan3 * bcdata = new AmbPan3(API->vm->get_srate());
     
     // store the pointer in the ChucK object member
-    OBJ_MEMBER_INT(SELF, ambpan_data_offset) = (t_CKINT) bcdata;
+    OBJ_MEMBER_INT(SELF, ambpan3_data_offset) = (t_CKINT) bcdata;
 }
 
 
 // implementation for the destructor
-CK_DLL_DTOR(ambpan_dtor)
+CK_DLL_DTOR(ambpan3_dtor)
 {
     // get our c++ class pointer
-    AmbPan * bcdata = (AmbPan *) OBJ_MEMBER_INT(SELF, ambpan_data_offset);
+    AmbPan3 * bcdata = (AmbPan3 *) OBJ_MEMBER_INT(SELF, ambpan3_data_offset);
     // check it
     if( bcdata )
     {
         // clean up
         delete bcdata;
-        OBJ_MEMBER_INT(SELF, ambpan_data_offset) = 0;
+        OBJ_MEMBER_INT(SELF, ambpan3_data_offset) = 0;
         bcdata = NULL;
     }
 }
 
 
 // implementation for tick function
-CK_DLL_TICK(ambpan_tick)
+CK_DLL_TICKF(ambpan3_tickf)
 {
     // get our c++ class pointer
-    AmbPan * c = (AmbPan *) OBJ_MEMBER_INT(SELF, ambpan_data_offset);
+    AmbPan3 * c = (AmbPan3 *) OBJ_MEMBER_INT(SELF, ambpan3_data_offset);
  
     // invoke our tick function; store in the magical out variable
-    if(c) *out = c->tick(in);
-
+    if(c) c->tick(in, out, nframes);
+    
     // yes
     return TRUE;
 }
 
 
 // example implementation for setter
-CK_DLL_MFUN(ambpan_setParam)
+CK_DLL_MFUN(ambpan3_setAzimuth)
 {
     // get our c++ class pointer
-    AmbPan * bcdata = (AmbPan *) OBJ_MEMBER_INT(SELF, ambpan_data_offset);
+    AmbPan3 * bcdata = (AmbPan3 *) OBJ_MEMBER_INT(SELF, ambpan3_data_offset);
     // set the return value
-    RETURN->v_float = bcdata->setParam(GET_NEXT_FLOAT(ARGS));
+    RETURN->v_float = bcdata->setAzimuth(GET_NEXT_FLOAT(ARGS));
 }
 
 
 // example implementation for getter
-CK_DLL_MFUN(ambpan_getParam)
+CK_DLL_MFUN(ambpan3_getAzimuth)
 {
     // get our c++ class pointer
-    AmbPan * bcdata = (AmbPan *) OBJ_MEMBER_INT(SELF, ambpan_data_offset);
+    AmbPan3 * bcdata = (AmbPan3 *) OBJ_MEMBER_INT(SELF, ambpan3_data_offset);
     // set the return value
-    RETURN->v_float = bcdata->getParam();
+    RETURN->v_float = bcdata->getAzimuth();
+}
+
+
+// example implementation for setter
+CK_DLL_MFUN(ambpan3_setElevation)
+{
+    // get our c++ class pointer
+    AmbPan3 * bcdata = (AmbPan3 *) OBJ_MEMBER_INT(SELF, ambpan3_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->setElevation(GET_NEXT_FLOAT(ARGS));
+}
+
+
+// example implementation for getter
+CK_DLL_MFUN(ambpan3_getElevation)
+{
+    // get our c++ class pointer
+    AmbPan3 * bcdata = (AmbPan3 *) OBJ_MEMBER_INT(SELF, ambpan3_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->getElevation();
 }
