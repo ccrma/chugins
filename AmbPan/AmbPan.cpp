@@ -35,7 +35,10 @@ class AmbPan3
 {
 public:
     // constructor
-    AmbPan3( t_CKFLOAT fs)
+    AmbPan3( t_CKFLOAT fs) :
+    SQRT3(sqrtf(3)),
+    SQRT5(sqrtf(5)),
+    SQRT15(sqrtf(15))
     {
         m_azimuth = 0;
         m_elevation = 0;
@@ -89,23 +92,27 @@ private:
 		m_gain[2] = sinA*cosE; //Y
 		m_gain[3] = sinE; //Z
 		m_gain[4] = (3.*sinE*sinE-1) / 2.; //R
-		m_gain[5] = sqrtf(3.) * cosA * sin2E / 2.; //S
-		m_gain[6] = sqrtf(3.) * sinA * sin2E / 2.; //T
-		m_gain[7] = sqrtf(3.) * cos2A * cosE * cosE / 2.; //U
-		m_gain[8] = sqrtf(3.) * sin2A * cosE * cosE / 2.; //V
+		m_gain[5] = SQRT3 * cosA * sin2E / 2.; //S
+		m_gain[6] = SQRT3 * sinA * sin2E / 2.; //T
+		m_gain[7] = SQRT3 * cos2A * cosE * cosE / 2.; //U
+		m_gain[8] = SQRT3 * sin2A * cosE * cosE / 2.; //V
 		m_gain[9] = sinE * (5.*sinE*sinE - 3.) / 2.; //K
-		m_gain[10] = sqrtf(3.) * cosA * cosE * (5*sinE*sinE - 1) / 8.; //L
-		m_gain[11] = sqrtf(3.) * sinA * cosE * (5*sinE*sinE - 1) / 8.; //M
-		m_gain[12] = sqrtf(15.) * cos2A * sinE * cosE * cosE / 2.; //N
-		m_gain[13] = sqrtf(15.) * sin2A * sinE * cosE * cosE / 2.; //O
-		m_gain[14] = sqrtf(5.) * cos3A * cosE * cosE * cosE / 8.; //P
-		m_gain[15] = sqrtf(5.) * sin3A * cosE * cosE * cosE / 8.; //Q
+		m_gain[10] = SQRT3 * cosA * cosE * (5*sinE*sinE - 1) / 8.; //L
+		m_gain[11] = SQRT3 * sinA * cosE * (5*sinE*sinE - 1) / 8.; //M
+		m_gain[12] = SQRT15 * cos2A * sinE * cosE * cosE / 2.; //N
+		m_gain[13] = SQRT15 * sin2A * sinE * cosE * cosE / 2.; //O
+		m_gain[14] = SQRT5 * cos3A * cosE * cosE * cosE / 8.; //P
+		m_gain[15] = SQRT5 * sin3A * cosE * cosE * cosE / 8.; //Q
     }
     
     // instance data
     float m_azimuth;
     float m_elevation;
     float m_gain[16];
+    
+    const float SQRT3;
+    const float SQRT5;
+    const float SQRT15;
 };
 
 
@@ -135,7 +142,7 @@ CK_DLL_QUERY( AmbPan3 )
     QUERY->add_arg(QUERY, "float", "arg");
     
     // example of adding getter method
-    QUERY->add_mfun(QUERY, ambpan3_getAzimuth, "float", "paazimuthram");
+    QUERY->add_mfun(QUERY, ambpan3_getAzimuth, "float", "azimuth");
     
     // example of adding setter method
     QUERY->add_mfun(QUERY, ambpan3_setElevation, "float", "elevation");
