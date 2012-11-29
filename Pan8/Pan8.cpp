@@ -29,8 +29,6 @@ t_CKINT pan8_data_offset = 0;
 
 
 // class definition for internal Chugin data
-// (note: this isn't strictly necessary, but serves as example
-// of one recommended approach)
 class Pan8
 {
 public:
@@ -38,24 +36,34 @@ public:
     Pan8( t_CKFLOAT fs)
     {
         m_pan = 0.5;
+        m_channel_map = new t_CKUINT[8];
+        // default channel map: alternate left then right from front to back
+        m_channel_map[0] = 0;
+        m_channel_map[1] = 1;
+        m_channel_map[2] = 3;
+        m_channel_map[3] = 5;
+        m_channel_map[4] = 7;
+        m_channel_map[5] = 6;
+        m_channel_map[6] = 4;
+        m_channel_map[7] = 2;
     }
 
     // for Chugins extending UGen
     void tick( SAMPLE * in, SAMPLE * out, int nframes )
     {
-        int c = ((int)floorf(m_pan))%8;
-        int c_1 = ((int)ceilf(m_pan))%8;
+        int c_l = ((int)floorf(m_pan))%8;
+        int c_r = ((int)ceilf(m_pan))%8;
         float mod = m_pan - floorf(m_pan);
         
-        float g = cosf(M_PI/2*mod);
-        float g_1 = sinf(M_PI/2*mod);
+        float g_l = cosf(M_PI/2*mod);
+        float g_r = sinf(M_PI/2*mod);
         
         memset(out, 0, sizeof(SAMPLE)*8*nframes);
         
         for(int i = 0; i < nframes; i++)
         {
-            out[i*8+c] = g * in[i*8];
-            out[i*8+c_1] = g_1 * in[i*8];
+            out[i*8+m_channel_map[c_l]] = g_l * in[i*8];
+            out[i*8+m_channel_map[c_r]] = g_r * in[i*8];
         }
     }
 
@@ -71,7 +79,8 @@ public:
     
 private:
     // instance data
-    float m_pan;
+    t_CKFLOAT m_pan;
+    t_CKUINT * m_channel_map;
 };
 
 

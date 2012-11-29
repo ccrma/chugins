@@ -1,10 +1,11 @@
 
-BlitSquare source => Pan8 pan => dac;
+CNoise noise => Pan8 pan => dac;
 
-220 => source.freq;
+"pink" => noise.mode;
+0.1 => noise.gain;
 
 while(true)
 {
     pan.pan() + 0.01 => pan.pan;
-    20::ms => now;
+    10::ms => now;
 }
