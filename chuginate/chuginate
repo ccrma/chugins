@@ -298,7 +298,7 @@ all: $(CHUG)
 
 $(CHUG): $(C_OBJECTS) $(CXX_OBJECTS)
 ifeq ($(CK_CHUGIN_STATIC),0)
-	g++ $(LDFLAGS) -o $@ $^
+	$(LD) $(LDFLAGS) -o $@ $^
 else
 	ar rv $@ $^
 	ranlib $@
@@ -323,7 +323,7 @@ code['makefile.osx'] = u'''
 ARCHS?=i386 x86_64
 ARCHOPTS=$(addprefix -arch ,$(ARCHS))
 
-FLAGS=-D__MACOSX_CORE__ -I$(CK_SRC_PATH) $(ARCHOPTS)
+FLAGS=-D__MACOSX_CORE__ -I$(CK_SRC_PATH) $(ARCHOPTS) -fPIC
 LDFLAGS=-bundle -lstdc++ $(ARCHOPTS)
 
 LD=clang++
@@ -332,7 +332,7 @@ CXX=clang++
 code['makefile.linux'] = u'''
 CHUGIN_PATH=/usr/lib/chuck
 
-FLAGS=-D__LINUX_ALSA__ -I$(CK_SRC_PATH)
+FLAGS=-D__LINUX_ALSA__ -I$(CK_SRC_PATH) -fPIC
 LDFLAGS=-shared -lstdc++
 
 LD=gcc

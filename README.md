@@ -28,6 +28,8 @@ List of Current Chugins
   - Efficient means of computing a sine wave with 2 adds and 2 multiples per sample, at the expense of being able to dynamically adjust phase.
 - **KasFilter**
   - Undersampling-based resonant lowpass filter by Kassen
+- **FIR**
+  - Arbitrary order FIR filter by Perry Cook
 
 Chugins That We Are Working On
 --
