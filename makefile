@@ -13,6 +13,8 @@ endif
 
 osx: $(CHUGS)
 linux: $(CHUGS)
+linux-alsa: $(CHUGS)
+linux-jack: $(CHUGS)
 win32: $(CHUGS)
 
 $(CHUGS): 
