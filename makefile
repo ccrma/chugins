@@ -1,5 +1,5 @@
 
-CHUGINS=ABSaturator Bitcrusher KasFilter MagicSine
+CHUGINS=ABSaturator Bitcrusher KasFilter MagicSine FIR
 CHUGS=$(foreach CHUG,$(CHUGINS),$(CHUG)/$(CHUG).chug)
 
 INSTALL_DIR=/usr/lib/chuck
@@ -13,6 +13,8 @@ endif
 
 osx: $(CHUGS)
 linux: $(CHUGS)
+linux-alsa: $(CHUGS)
+linux-jack: $(CHUGS)
 win32: $(CHUGS)
 
 $(CHUGS): 
@@ -26,8 +28,15 @@ install: $(CHUGS)
 	cp -rf $(CHUGS) $(INSTALL_DIR)
 
 DATE=$(shell date +"%Y-%m-%d")
+
+FIR_EXAMPLES=CCRMAHallShort.wav FIRConvolve.ck FIRConvolveHomer.ck \
+FIRFOFTest.ck FIRGaussImpulseTests.ck FIRGaussTests.ck FIRSincBPSweepTest.ck \
+FIRSincExplicit.ck FIRSincImpulseTests.ck FIRSincTests.ck \
+GreyholeDownUpDecimateDemo.ck
+
 EXAMPLES=Bitcrusher/Bitcrusher-test.ck MagicSine/MagicSine-test.ck \
-ABSaturator/ABSaturator-test.ck KasFilter/README-KasFilter.ck
+ABSaturator/ABSaturator-test.ck KasFilter/README-KasFilter.ck \
+$(addprefix FIR/examples/,$(FIR_EXAMPLES))
 
 bin-dist-osx: 
 	make osx
