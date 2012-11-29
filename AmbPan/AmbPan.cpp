@@ -48,6 +48,13 @@ public:
     // for Chugins extending UGen
     void tick( SAMPLE * in, SAMPLE * out, int nframes )
     {
+        for(int f = 0; f < nframes; f++)
+        {
+            for(int c = 0; c < 16; c++)
+            {
+                out[f*16+c] = m_gain[f*16+c] * in[f*16];
+            }
+        }
     }
 
     // set parameter example
