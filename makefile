@@ -1,5 +1,5 @@
 
-CHUGINS=ABSaturator Bitcrusher KasFilter MagicSine FIR
+CHUGINS=ABSaturator Bitcrusher KasFilter MagicSine FIR PanN
 CHUGS=$(foreach CHUG,$(CHUGINS),$(CHUG)/$(CHUG).chug)
 
 INSTALL_DIR=/usr/lib/chuck
@@ -36,7 +36,8 @@ GreyholeDownUpDecimateDemo.ck
 
 EXAMPLES=Bitcrusher/Bitcrusher-test.ck MagicSine/MagicSine-test.ck \
 ABSaturator/ABSaturator-test.ck KasFilter/README-KasFilter.ck \
-$(addprefix FIR/examples/,$(FIR_EXAMPLES))
+$(addprefix FIR/examples/,$(FIR_EXAMPLES)) \
+PanN/Pan4-test.ck PanN/Pan8-test.ck
 
 bin-dist-osx: 
 	make osx
