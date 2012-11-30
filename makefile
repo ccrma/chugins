@@ -37,7 +37,7 @@ GreyholeDownUpDecimateDemo.ck
 EXAMPLES=Bitcrusher/Bitcrusher-test.ck MagicSine/MagicSine-test.ck \
 ABSaturator/ABSaturator-test.ck KasFilter/README-KasFilter.ck \
 $(addprefix FIR/examples/,$(FIR_EXAMPLES)) \
-PanN/Pan8-test.ck
+PanN/Pan4-test.ck PanN/Pan8-test.ck
 
 bin-dist-osx: 
 	make osx
