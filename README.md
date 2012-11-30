@@ -3,9 +3,9 @@ Repository for Officially Supported ChuGins
 
 Prepackaged Binaries
 --
-[CCRMA ChuGins for Mac OS X](https://github.com/downloads/ccrma/chugins/chugins-mac-2012-10-16.tgz)
+[CCRMA ChuGins for Mac OS X](https://github.com/downloads/ccrma/chugins/chugins-mac-2012-11-29.tgz)
 
-[CCRMA ChuGins for Windows](https://github.com/downloads/ccrma/chugins/chugins-windows-2012-10-16.zip)
+[CCRMA ChuGins for Windows](https://github.com/downloads/ccrma/chugins/chugins-windows-2012-11-29.zip)
 
 Installation instructions are included in the binary packages. 
 
