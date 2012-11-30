@@ -59,6 +59,8 @@ ifneq (,$(strip $(filter win32,$(MAKECMDGOALS))))
 include makefile.win32
 endif
 
+LDFLAGS+= -Wl,-undefined,dynamic_lookup
+
 ifneq ($(CHUCK_DEBUG),)
 FLAGS+= -g
 else

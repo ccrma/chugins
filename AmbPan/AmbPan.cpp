@@ -6,29 +6,12 @@
 // this should align with the correct versions of these ChucK files
 #include "chuck_dl.h"
 #include "chuck_def.h"
+#include "chuck_oo.h"
 
 // general includes
 #include <stdio.h>
 #include <limits.h>
 #include <math.h>
-
-// declaration of chugin constructor
-CK_DLL_CTOR(ambpan3_ctor);
-// declaration of chugin desctructor
-CK_DLL_DTOR(ambpan3_dtor);
-
-// example of getter/setter
-CK_DLL_MFUN(ambpan3_setAzimuth);
-CK_DLL_MFUN(ambpan3_getAzimuth);
-
-CK_DLL_MFUN(ambpan3_setElevation);
-CK_DLL_MFUN(ambpan3_getElevation);
-
-// for Chugins extending UGen, this is mono synthesis function for 1 sample
-CK_DLL_TICKF(ambpan3_tickf);
-
-// this is a special offset reserved for Chugin internal data
-t_CKINT ambpan3_data_offset = 0;
 
 
 class AmbPan3
@@ -43,6 +26,10 @@ public:
         m_azimuth = 0;
         m_elevation = 0;
         compute_gains();
+        for(int i = 0; i < 16; i++)
+        {
+            m_channel_map[i] = i;
+        }
     }
 
     // for Chugins extending UGen
@@ -52,7 +39,7 @@ public:
         {
             for(int c = 0; c < 16; c++)
             {
-                out[f*16+c] = m_gain[f*16+c] * in[f*16];
+                out[f*16+m_channel_map[c]] = m_gain[f*16+m_channel_map[c]] * in[f*16];
             }
         }
     }
@@ -79,20 +66,27 @@ public:
     // get parameter example
     float getElevation() { return m_elevation; }
     
+    void setChannelMap(Chuck_Array4 * map)
+    {
+        int len = ck_min(map->size(), 16);
+        for(int i = 0; i < len; i++)
+            map->get(i, &m_channel_map[i]);
+    }
+    
 private:
     
     void compute_gains()
     {
-        float cosA = cosf(m_azimuth);
-		float sinA = sinf(m_azimuth);
-		float cos2A = cosA*cosA - sinA*sinA;
-		float sin2A = 2*cosA*sinA;
-		float cos3A = cosA*cos2A - sinA*sin2A;
-		float sin3A = sin2A*cosA + sinA*cos2A;
-        float cosE = cosf(m_elevation);
-		float sinE = sinf(m_elevation);
-		float cos2E = cosE*cosE - sinE*sinE;
-		float sin2E = 2*cosE*sinE;
+        t_CKFLOAT cosA = cosf(m_azimuth);
+		t_CKFLOAT sinA = sinf(m_azimuth);
+		t_CKFLOAT cos2A = cosA*cosA - sinA*sinA;
+		t_CKFLOAT sin2A = 2*cosA*sinA;
+		t_CKFLOAT cos3A = cosA*cos2A - sinA*sin2A;
+		t_CKFLOAT sin3A = sin2A*cosA + sinA*cos2A;
+        t_CKFLOAT cosE = cosf(m_elevation);
+		t_CKFLOAT sinE = sinf(m_elevation);
+		t_CKFLOAT cos2E = cosE*cosE - sinE*sinE;
+		t_CKFLOAT sin2E = 2*cosE*sinE;
 		
 		m_gain[0] = 1.; //W
 		m_gain[1] = cosA*cosE; //X
@@ -113,19 +107,39 @@ private:
     }
     
     // instance data
-    float m_azimuth;
-    float m_elevation;
-    float m_gain[16];
+    t_CKFLOAT m_azimuth;
+    t_CKFLOAT m_elevation;
+    t_CKFLOAT m_gain[16];
+    t_CKUINT m_channel_map[16];
     
-    const float SQRT3;
-    const float SQRT5;
-    const float SQRT15;
+    const t_CKFLOAT SQRT3;
+    const t_CKFLOAT SQRT5;
+    const t_CKFLOAT SQRT15;
 };
 
 
+// declaration of chugin constructor
+CK_DLL_CTOR(ambpan3_ctor);
+// declaration of chugin desctructor
+CK_DLL_DTOR(ambpan3_dtor);
+
+// example of getter/setter
+CK_DLL_MFUN(ambpan3_setAzimuth);
+CK_DLL_MFUN(ambpan3_getAzimuth);
+
+CK_DLL_MFUN(ambpan3_setElevation);
+CK_DLL_MFUN(ambpan3_getElevation);
+
+CK_DLL_MFUN(ambpan3_setChannelMap);
+
+// for Chugins extending UGen, this is mono synthesis function for 1 sample
+CK_DLL_TICKF(ambpan3_tickf);
+
+// this is a special offset reserved for Chugin internal data
+t_CKINT ambpan3_data_offset = 0;
+
+
 // query function: chuck calls this when loading the Chugin
-// NOTE: developer will need to modify this function to
-// add additional functions to this Chugin
 CK_DLL_QUERY( AmbPan3 )
 {
     // hmm, don't change this...
@@ -158,6 +172,11 @@ CK_DLL_QUERY( AmbPan3 )
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, ambpan3_getElevation, "float", "elevation");
+    
+    // example of adding setter method
+    QUERY->add_mfun(QUERY, ambpan3_setChannelMap, "void", "channelMap");
+    // example of adding argument to the above method
+    QUERY->add_arg(QUERY, "int[]", "arg");
     
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
@@ -254,3 +273,12 @@ CK_DLL_MFUN(ambpan3_getElevation)
     // set the return value
     RETURN->v_float = bcdata->getElevation();
 }
+
+
+CK_DLL_MFUN(ambpan3_setChannelMap)
+{
+    // get our c++ class pointer
+    AmbPan3 * bcdata = (AmbPan3 *) OBJ_MEMBER_INT(SELF, ambpan3_data_offset);
+    
+}
+
