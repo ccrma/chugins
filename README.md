@@ -38,10 +38,9 @@ Chugins That We Are Working On
 - MAUI for chuck
 - GlucK (OpenGL)
 - AudioUnit loader
+- Ambisonics
 
 Chugins We would like to see happen
 --
 - More configurable reverbs, dynamics processors, and distortion units
 - VST loader
-- Ambisonics
-- General spatial processing
