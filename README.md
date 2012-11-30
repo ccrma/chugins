@@ -3,9 +3,9 @@ Repository for Officially Supported ChuGins
 
 Prepackaged Binaries
 --
-[CCRMA ChuGins for Mac OS X](https://github.com/downloads/ccrma/chugins/chugins-mac-2012-10-16.tgz)
+[CCRMA ChuGins for Mac OS X](https://github.com/downloads/ccrma/chugins/chugins-mac-2012-11-29.tgz)
 
-[CCRMA ChuGins for Windows](https://github.com/downloads/ccrma/chugins/chugins-windows-2012-10-16.zip)
+[CCRMA ChuGins for Windows](https://github.com/downloads/ccrma/chugins/chugins-windows-2012-11-29.zip)
 
 Installation instructions are included in the binary packages. 
 
@@ -30,16 +30,17 @@ List of Current Chugins
   - Undersampling-based resonant lowpass filter by Kassen
 - **FIR**
   - Arbitrary order FIR filter by Perry Cook
+- **Pan4 / Pan8 / Pan16**
+  - Basic equal-power panners for 4, 8, and 16 channels
 
 Chugins That We Are Working On
 --
 - MAUI for chuck
 - GlucK (OpenGL)
 - AudioUnit loader
+- Ambisonics
 
 Chugins We would like to see happen
 --
 - More configurable reverbs, dynamics processors, and distortion units
 - VST loader
-- Ambisonics
-- General spatial processing

@@ -1,10 +1,10 @@
 
 # chugin name
-CHUGIN_NAME=%(CHUGIN_NAME)%
+CHUGIN_NAME=PanN
 
 # all of the c/cpp files that compose this chugin
 C_MODULES=
-CXX_MODULES=%(CHUGIN_NAME)%.cpp
+CXX_MODULES=PanN.cpp
 
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/
