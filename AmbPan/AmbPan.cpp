@@ -39,7 +39,7 @@ public:
         {
             for(int c = 0; c < 16; c++)
             {
-                out[f*16+m_channel_map[c]] = m_gain[f*16+m_channel_map[c]] * in[f*16];
+                out[f*16+m_channel_map[c]] = m_gain[c] * in[f*16];
             }
         }
     }
@@ -68,9 +68,9 @@ public:
     
     void setChannelMap(Chuck_Array4 * map)
     {
-        int len = ck_min(map->size(), 16);
+        int len = ck_min(map->m_vector.size(), 16);
         for(int i = 0; i < len; i++)
-            map->get(i, &m_channel_map[i]);
+            m_channel_map[i] = map->m_vector[i];
     }
     
 private:
@@ -87,7 +87,7 @@ private:
 		t_CKFLOAT sinE = sinf(m_elevation);
 		t_CKFLOAT cos2E = cosE*cosE - sinE*sinE;
 		t_CKFLOAT sin2E = 2*cosE*sinE;
-		
+		/*
 		m_gain[0] = 1.; //W
 		m_gain[1] = cosA*cosE; //X
 		m_gain[2] = sinA*cosE; //Y
@@ -104,6 +104,47 @@ private:
 		m_gain[13] = SQRT15 * sin2A * sinE * cosE * cosE / 2.; //O
 		m_gain[14] = SQRT5 * cos3A * cosE * cosE * cosE / 8.; //P
 		m_gain[15] = SQRT5 * sin3A * cosE * cosE * cosE / 8.; //Q
+        //*/
+        
+		// constant = sqrt(21 / 8) / sqrt(224 / 45)
+        t_CKFLOAT k_lmt = sqrtf(21.0f/8.0f)/sqrtf(224.0f/45.0f);
+		// constant = sqrt(3) * 3 / 2
+        t_CKFLOAT k_ont = sqrtf(3.0f)*3.0f/2.0f;
+
+		t_CKFLOAT W = 1.0f/sqrtf(2.0f);
+		t_CKFLOAT X = cosA*cosE;
+		t_CKFLOAT Y = sinA*cosE;
+		t_CKFLOAT Z = sinE;
+		t_CKFLOAT R = (3.0f*Z*Z-1.0f)/2.0f;
+		t_CKFLOAT S = 2.0f*Z*X;
+		t_CKFLOAT T = 2.0f*Z*Y;
+		t_CKFLOAT U = X*X-Y*Y;
+		t_CKFLOAT V = 2.0f*X*Y;
+		t_CKFLOAT K = Z*((5.0f*Z*Z)-3.0f)/2.0f;
+		t_CKFLOAT L = k_lmt*((5.0f*Z*Z)-1.0f)*X;
+		t_CKFLOAT M = k_lmt*((5.0f*Z*Z)-1.0f)*Y;
+		t_CKFLOAT N = k_ont*Z*U;
+		t_CKFLOAT O = k_ont*Z*V;
+		t_CKFLOAT P = (X*X-(3.0f*Y*Y))*X;
+		t_CKFLOAT Q = ((3*X*X)-Y*Y)*Y;
+
+        m_gain[0] = W;
+        m_gain[1] = X;
+        m_gain[2] = Y;
+        m_gain[3] = Z;
+        m_gain[4] = R;
+        m_gain[5] = S;
+        m_gain[6] = T;
+        m_gain[7] = U;
+        m_gain[8] = V;
+        m_gain[9] = K;
+        m_gain[10] = L;
+        m_gain[11] = M;
+        m_gain[12] = N;
+        m_gain[13] = O;
+        m_gain[14] = P;
+        m_gain[15] = Q;
+        //*/
     }
     
     // instance data
@@ -279,6 +320,7 @@ CK_DLL_MFUN(ambpan3_setChannelMap)
 {
     // get our c++ class pointer
     AmbPan3 * bcdata = (AmbPan3 *) OBJ_MEMBER_INT(SELF, ambpan3_data_offset);
-    
+    Chuck_Array4 * map = (Chuck_Array4 *) GET_NEXT_OBJECT(ARGS);
+    bcdata->setChannelMap(map);
 }
 
