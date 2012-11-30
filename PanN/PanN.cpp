@@ -31,8 +31,8 @@ public:
         int c_r = ((int)ceilf(m_pan))%m_chans;
         float mod = m_pan - floorf(m_pan);
         
-        float g_l = cosf(M_PI/2*mod);
-        float g_r = sinf(M_PI/2*mod);
+        float g_l = cosf(ONE_PI/2*mod);
+        float g_r = sinf(ONE_PI/2*mod);
         
         memset(out, 0, sizeof(SAMPLE)*m_chans*nframes);
         
