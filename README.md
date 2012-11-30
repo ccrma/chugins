@@ -29,7 +29,9 @@ List of Current Chugins
 - **KasFilter**
   - Undersampling-based resonant lowpass filter by Kassen
 - **FIR**
-  - Arbitrary order FIR filter by Perry Cook
+  - Arbitrary order FIR filter by Perry Cook-
+- **PanN**
+  - Basic equal-power panners for 4, 8, and 16 channels
 
 Chugins That We Are Working On
 --
