@@ -27,6 +27,18 @@ Package=<4>
 
 ###############################################################################
 
+Project: "FIR"=".\FIR\FIR.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
 Project: "KasFilter"=".\KasFilter\KasFilter.dsp" - Package Owner=<4>
 
 Package=<5>
