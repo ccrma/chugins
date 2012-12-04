@@ -41,6 +41,62 @@
 
 char fiddle_version[] = "fiddle version 1.1 TEST4";
 
+#ifdef CHUCK
+
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef float t_float;
+typedef float t_floatarg;
+
+
+void post(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    
+    vfprintf(stdout, fmt, ap);
+    fprintf(stdout, "\n");
+    
+    va_end(ap);
+}
+
+void error(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    
+    va_end(ap);
+}
+
+
+static void *getbytes(size_t nbytes)
+{
+    void *ret;
+    if (nbytes < 1) nbytes = 1;
+    ret = (void *)malloc(nbytes);
+    return (ret);
+}
+
+static void *resizebytes(void *old, size_t oldsize, size_t newsize)
+{
+    void *ret;
+    if (newsize < 1) newsize = 1;
+    ret = (void *)realloc((char *)old, newsize);
+    return (ret);
+}
+
+static void freebytes(void *fatso, size_t nbytes)
+{
+    free(fatso);
+}
+
+#endif
+
 #ifdef JMAX
 #include "fts.h"
 #include <stdio.h>
