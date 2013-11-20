@@ -19,3 +19,8 @@
 /chugins.ncb
 /chugins-windows-*
 /chugins-mac-*
+
+/Release/
+/Debug/
+*/*.vcxproj.user
+*/*.vcxproj.filters
