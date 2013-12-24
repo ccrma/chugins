@@ -47,9 +47,9 @@ public:
       float damping = 0.5f;
       float spread = 15.0f;
       float inputbandwidth = 0.5f;
-      float drylevel = 0.0f; //-1.9832f;
-      float earlylevel = 0.0f; //-1.9832f;
-      float taillevel = 0.0f;
+      float drylevel = 0.5f; //-1.9832f;
+      float earlylevel = 0.5f; //-1.9832f;
+      float taillevel = 0.6f;
       
       float ga,gb,gt;
       unsigned int i;
