@@ -25,7 +25,7 @@ CK_DLL_MFUN(gverb_setParam);
 CK_DLL_MFUN(gverb_getParam);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
-CK_DLL_TICK(gverb_tick);
+CK_DLL_TICKF(gverb_tick);
 
 // this is a special offset reserved for Chugin internal data
 t_CKINT gverb_data_offset = 0;
@@ -41,7 +41,7 @@ public:
     GVerb( t_CKFLOAT fs)
     {
       
-      float maxroomsize = 300.0f;
+      const float maxroomsize = 300.0f;
       float roomsize = 50.0f;
       float revtime = 7.0f;
       float damping = 0.5f;
@@ -62,38 +62,156 @@ public:
       p = &realp;
       bzero((void *)p, sizeof (ty_gverb));
       p->rate = fs;
+      
+      p->fdndamping = damping;
+      p->maxroomsize = maxroomsize;
+      p->roomsize = CLIP(roomsize, 0.1f, maxroomsize);
+      p->revtime = revtime;
+      p->drylevel = drylevel;
+      p->earlylevel = earlylevel;
+      p->taillevel = taillevel;
+      
+      p->maxdelay = p->rate*p->maxroomsize/340.0;
+      p->largestdelay = p->rate*p->roomsize/340.0;
+      
+      /* Input damper */
+      
+      p->inputbandwidth = inputbandwidth;
+      p->inputdamper = damper_make(1.0 - p->inputbandwidth);
+      
+   	/* FDN section */
 
+	p->fdndels = (ty_fixeddelay **)malloc(FDNORDER*sizeof(ty_fixeddelay *));
+	for(i = 0; i < FDNORDER; i++)
+	{
+		p->fdndels[i] = fixeddelay_make((int)p->maxdelay+1000);
+	}
+	p->fdngains = (float *)malloc(FDNORDER*sizeof(float));
+	p->fdnlens = (int *)malloc(FDNORDER*sizeof(int));
+
+	p->fdndamps = (ty_damper **)malloc(FDNORDER*sizeof(ty_damper *));
+
+	for(i = 0; i < FDNORDER; i++)
+	{
+		p->fdndamps[i] = damper_make(p->fdndamping);
+	}
+
+	ga = 60.0;
+	gt = p->revtime;
+	ga = pow(10.0,-ga/20.0);
+	n = (int)(p->rate*gt);
+	p->alpha = pow((double)ga,(double)1.0/(double)n);
+
+	gb = 0.0;
+	for(i = 0; i < FDNORDER; i++)
+	{
+		if (i == 0) gb = 1.000000*p->largestdelay;
+		if (i == 1) gb = 0.816490*p->largestdelay;
+		if (i == 2) gb = 0.707100*p->largestdelay;
+		if (i == 3) gb = 0.632450*p->largestdelay;
+
+#if 0
+		p->fdnlens[i] = nearest_prime((int)gb, 0.5);
+#else
+		p->fdnlens[i] = (int)gb;
+#endif
+		// p->fdngains[i] = -pow(p->alpha,(double)p->fdnlens[i]);
+		p->fdngains[i] = -powf((float)p->alpha,p->fdnlens[i]);
+	}
+
+	p->d = (float *)malloc(FDNORDER*sizeof(float));
+	p->u = (float *)malloc(FDNORDER*sizeof(float));
+	p->f = (float *)malloc(FDNORDER*sizeof(float));
+
+	/* Diffuser section */
+
+	diffscale = (float)p->fdnlens[3]/(210+159+562+410);
+	spread1 = spread;
+	spread2 = 3.0*spread;
+
+	b = 210;
+	r = 0.125541f;
+	a = (int)(spread1*r);
+	c = 210+159+a;
+	cc = c-b;
+	r = 0.854046f;
+	a = (int)(spread2*r);
+	d = 210+159+562+a;
+	dd = d-c;
+	e = 1341-d;
+
+	p->ldifs = (ty_diffuser **)malloc(4*sizeof(ty_diffuser *));
+
+	p->ldifs[0] = diffuser_make((int)(diffscale*b),0.75);
+	p->ldifs[1] = diffuser_make((int)(diffscale*cc),0.75);
+	p->ldifs[2] = diffuser_make((int)(diffscale*dd),0.625);
+	p->ldifs[3] = diffuser_make((int)(diffscale*e),0.625);
+
+	b = 210;
+	r = -0.568366f;
+	a = (int)(spread1*r);
+	c = 210+159+a;
+	cc = c-b;
+	r = -0.126815f;
+	a = (int)(spread2*r);
+	d = 210+159+562+a;
+	dd = d-c;
+	e = 1341-d;
+
+	p->rdifs = (ty_diffuser **)malloc(4*sizeof(ty_diffuser *));
+
+	p->rdifs[0] = diffuser_make((int)(diffscale*b),0.75);
+	p->rdifs[1] = diffuser_make((int)(diffscale*cc),0.75);
+	p->rdifs[2] = diffuser_make((int)(diffscale*dd),0.625);
+	p->rdifs[3] = diffuser_make((int)(diffscale*e),0.625);
+
+	/* Tapped delay section */
+
+	p->tapdelay = fixeddelay_make(44000);
+	p->taps = (int *)malloc(FDNORDER*sizeof(int));
+	p->tapgains = (float *)malloc(FDNORDER*sizeof(float));
+
+	p->taps[0] = (int)(5+0.410*p->largestdelay);
+	p->taps[1] = (int)(5+0.300*p->largestdelay);
+	p->taps[2] = (int)(5+0.155*p->largestdelay);
+	p->taps[3] = (int)(5+0.000*p->largestdelay);
+
+	for(i = 0; i < FDNORDER; i++)
+	{
+		p->tapgains[i] = pow(p->alpha,(double)p->taps[i]);
+	}
+	
     }
 
     // for Chugins extending UGen
-    SAMPLE tick( SAMPLE in )
+    void tick( SAMPLE * in, SAMPLE * out, int nframes )
     {
-        // default: this passes whatever input is patched into Chugin
-        return in;
+      float rev[2];
+      memset(out, 0, sizeof(SAMPLE)*2*nframes);
+
+      for (int i=0; i < nframes; i+=2)
+	{
+	  gverb_do(p, in[i], rev, rev+1);
+	  
+	  out[i] = rev[0] + in[i] * p->drylevel;
+	  out[i+1] = rev[1] + in[i+1] * p->drylevel;
+	}
     }
 
     // set parameter example
-    float setParam( t_CKFLOAT p )
+    float setParam( t_CKFLOAT x )
     {
-        m_param = p;
-        return p;
+        p->roomsize = x;
+        return x;
     }
 
     // get parameter example
-    float getParam() { return m_param; }
+    float getParam() { return p->roomsize; }
     
 private:
     // instance data
-  float m_param;
   ty_gverb realp;
   ty_gverb *p;
-  float *in;
-  
-  float amp;
-  int branch;
-  int inputframes;
-  int inputchan;
-  t_CKFLOAT SR;
 };
 
 
@@ -115,7 +233,7 @@ CK_DLL_QUERY( GVerb )
     QUERY->add_dtor(QUERY, gverb_dtor);
     
     // for UGen's only: add tick function
-    QUERY->add_ugen_func(QUERY, gverb_tick, NULL, 1, 1);
+    QUERY->add_ugen_funcf(QUERY, gverb_tick, NULL, 8, 8);
     
     // NOTE: if this is to be a UGen with more than 1 channel, 
     // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
@@ -173,13 +291,13 @@ CK_DLL_DTOR(gverb_dtor)
 
 
 // implementation for tick function
-CK_DLL_TICK(gverb_tick)
+CK_DLL_TICKF(gverb_tick)
 {
     // get our c++ class pointer
     GVerb * c = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
  
     // invoke our tick function; store in the magical out variable
-    if(c) *out = c->tick(in);
+    if(c) c->tick(in,out, nframes);
 
     // yes
     return TRUE;
