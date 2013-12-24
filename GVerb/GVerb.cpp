@@ -7,9 +7,13 @@
 #include "chuck_dl.h"
 #include "chuck_def.h"
 
+#include "gverbdsp.h"
+#include "gverbdefs.h"
+
 // general includes
 #include <stdio.h>
 #include <limits.h>
+//#include <stdlib.h>
 
 // declaration of chugin constructor
 CK_DLL_CTOR(gverb_ctor);
@@ -36,7 +40,29 @@ public:
     // constructor
     GVerb( t_CKFLOAT fs)
     {
-        m_param = 0;
+      
+      float maxroomsize = 300.0f;
+      float roomsize = 50.0f;
+      float revtime = 7.0f;
+      float damping = 0.5f;
+      float spread = 15.0f;
+      float inputbandwidth = 0.5f;
+      float drylevel = 0.0f; //-1.9832f;
+      float earlylevel = 0.0f; //-1.9832f;
+      float taillevel = 0.0f;
+      
+      float ga,gb,gt;
+      unsigned int i;
+      int n;
+      float r;
+      float diffscale;
+      int a,b,c,cc,d,dd,e;
+      float spread1,spread2;
+      
+      p = &realp;
+      bzero((void *)p, sizeof (ty_gverb));
+      p->rate = fs;
+
     }
 
     // for Chugins extending UGen
@@ -58,7 +84,16 @@ public:
     
 private:
     // instance data
-    float m_param;
+  float m_param;
+  ty_gverb realp;
+  ty_gverb *p;
+  float *in;
+  
+  float amp;
+  int branch;
+  int inputframes;
+  int inputchan;
+  t_CKFLOAT SR;
 };
 
 

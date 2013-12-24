@@ -4,7 +4,7 @@ CHUGIN_NAME=GVerb
 
 # all of the c/cpp files that compose this chugin
 C_MODULES=
-CXX_MODULES=GVerb.cpp
+CXX_MODULES=gverbdsp.cpp GVerb.cpp
 
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/
