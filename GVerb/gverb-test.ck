@@ -1,9 +1,11 @@
-TriOsc foo => GVerb gverb => dac;
+adc => GVerb gverb => dac;
+50 => gverb.roomsize;
+2 => gverb.revtime;
+0.3 => gverb.dry;
+0.2 => gverb.early;
+0.5 => gverb.tail;
+
 while (true)
 {
-  0.25 => foo.gain;
   second => now;
-  0 => foo.gain;
-  second => now;
-  <<< Math.random2f(5,300) => gverb.roomsize >>>;
 }

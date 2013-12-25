@@ -339,26 +339,26 @@ CK_DLL_QUERY( GVerb )
     QUERY->add_arg(QUERY, "float", "arg");
 
     // example of adding getter method
-    QUERY->add_mfun(QUERY, gverb_getDryLevel, "float", "bandwidth");
+    QUERY->add_mfun(QUERY, gverb_getDryLevel, "float", "dry");
 
     // example of adding setter method
-    QUERY->add_mfun(QUERY, gverb_setDryLevel, "float", "bandwidth");
+    QUERY->add_mfun(QUERY, gverb_setDryLevel, "float", "dry");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
 
     // example of adding getter method
-    QUERY->add_mfun(QUERY, gverb_getEarlyLevel, "float", "bandwidth");
+    QUERY->add_mfun(QUERY, gverb_getEarlyLevel, "float", "early");
 
     // example of adding setter method
-    QUERY->add_mfun(QUERY, gverb_setEarlyLevel, "float", "bandwidth");
+    QUERY->add_mfun(QUERY, gverb_setEarlyLevel, "float", "early");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
 
     // example of adding getter method
-    QUERY->add_mfun(QUERY, gverb_getTailLevel, "float", "bandwidth");
+    QUERY->add_mfun(QUERY, gverb_getTailLevel, "float", "tail");
 
     // example of adding setter method
-    QUERY->add_mfun(QUERY, gverb_setTailLevel, "float", "bandwidth");
+    QUERY->add_mfun(QUERY, gverb_setTailLevel, "float", "tail");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
     
