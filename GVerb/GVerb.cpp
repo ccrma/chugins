@@ -219,7 +219,17 @@ public:
   
   // get parameter example
   float getRoomsize() { return p->roomsize; }
+
+  // set parameter example
+  float setRevTime( t_CKFLOAT x )
+  {
+	gverb_set_revtime(p, x);
+	return x;
+  }
   
+  // get parameter example
+  float getRevTime() { return p->revtime; }
+
 private:
   // instance data
   ty_gverb realp;
@@ -258,6 +268,14 @@ CK_DLL_QUERY( GVerb )
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, gverb_getRoomsize, "float", "roomsize");
+
+    // example of adding setter method
+    QUERY->add_mfun(QUERY, gverb_setRevTime, "float", "revtime");
+    // example of adding argument to the above method
+    QUERY->add_arg(QUERY, "float", "arg");
+
+    // example of adding getter method
+    QUERY->add_mfun(QUERY, gverb_getRevTime, "float", "revtime");
     
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above
@@ -333,4 +351,23 @@ CK_DLL_MFUN(gverb_getRoomsize)
     GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
     // set the return value
     RETURN->v_float = bcdata->getRoomsize();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(gverb_setRevTime)
+{
+    // get our c++ class pointer
+    GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->setRevTime(GET_NEXT_FLOAT(ARGS));
+}
+
+
+// example implementation for getter
+CK_DLL_MFUN(gverb_getRevTime)
+{
+    // get our c++ class pointer
+    GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->getRevTime();
 }
