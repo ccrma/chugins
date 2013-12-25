@@ -1,13 +1,5 @@
-Repository for Officially Supported ChuGins
+Joel Matthys' Fork of CCRMA ChuGins
 ==
-
-Prepackaged Binaries
---
-[CCRMA ChuGins for Mac OS X](http://chuck.stanford.edu/chugins/chugins-mac-2013-02-06.tgz)
-
-[CCRMA ChuGins for Windows](http://chuck.stanford.edu/chugins/chugins-windows-2013-02-06.zip)
-
-Installation instructions are included in the binary packages. 
 
 ### Linux/Advanced Users
 To compile and install all chugins:
@@ -32,15 +24,13 @@ List of Current Chugins
   - Arbitrary order FIR filter by Perry Cook
 - **Pan4 / Pan8 / Pan16**
   - Basic equal-power panners for 4, 8, and 16 channels
+- **PitchTrack**
+  - Monophonic autocorrelation pitch tracker, based on [helmholtz~] by Katja, http://www.katjaas.nl/helmholtz/helmholtz.html
+- **GVerb**
+  - Good quality stereo reverb
 
-Chugins That We Are Working On
+Chugins That I Am Working On
 --
-- MAUI for chuck
-- GlucK (OpenGL)
-- AudioUnit loader
-- Ambisonics
-
-Chugins We would like to see happen
---
-- More configurable reverbs, dynamics processors, and distortion units
-- VST loader
+- RTcmix's excellent PLACE and MOVE room simulations
+- MESH2D STK instrument
+- Spectral Delay
