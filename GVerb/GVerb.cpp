@@ -223,12 +223,12 @@ public:
   // set parameter example
   float setRevTime( t_CKFLOAT x )
   {
-	gverb_set_revtime(p, x);
+	gverb_set_revtime(p, x/p->rate);
 	return x;
   }
   
   // get parameter example
-  float getRevTime() { return p->revtime; }
+  float getRevTime() { return (p->revtime*p->rate); }
 
   float setDamping( t_CKFLOAT x )
   {
@@ -315,12 +315,12 @@ CK_DLL_QUERY( GVerb )
     QUERY->add_mfun(QUERY, gverb_getRoomsize, "float", "roomsize");
 
     // example of adding setter method
-    QUERY->add_mfun(QUERY, gverb_setRevTime, "float", "revtime");
+    QUERY->add_mfun(QUERY, gverb_setRevTime, "dur", "revtime");
     // example of adding argument to the above method
-    QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->add_arg(QUERY, "dur", "arg");
 
     // example of adding getter method
-    QUERY->add_mfun(QUERY, gverb_getRevTime, "float", "revtime");
+    QUERY->add_mfun(QUERY, gverb_getRevTime, "dur", "revtime");
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, gverb_getDamping, "float", "damping");
@@ -444,7 +444,7 @@ CK_DLL_MFUN(gverb_setRevTime)
     // get our c++ class pointer
     GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
     // set the return value
-    RETURN->v_float = bcdata->setRevTime(GET_NEXT_FLOAT(ARGS));
+    RETURN->v_dur = bcdata->setRevTime(GET_NEXT_DUR(ARGS));
 }
 
 
