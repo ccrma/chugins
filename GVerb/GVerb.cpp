@@ -60,7 +60,7 @@ public:
       float spread1,spread2;
       
       p = &realp;
-      bzero((void *)p, sizeof (ty_gverb));
+      memset((void *)p, 0, sizeof (ty_gverb));
       p->rate = fs;
       
       p->fdndamping = damping;
