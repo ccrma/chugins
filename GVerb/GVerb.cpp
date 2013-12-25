@@ -213,7 +213,7 @@ public:
   // set parameter example
   float setRoomsize( t_CKFLOAT x )
   {
-	gverb_set_roomsize(p, CLIP(x, 0.1f, p->maxroomsize));
+	gverb_set_roomsize(p, x);
 	return x;
   }
   
@@ -229,6 +229,51 @@ public:
   
   // get parameter example
   float getRevTime() { return p->revtime; }
+
+  float setDamping( t_CKFLOAT x )
+  {
+	gverb_set_damping(p, x);
+	return x;
+  }
+  
+  // get parameter example
+  float getDamping() { return p->fdndamping; }
+
+  float setBandwidth( t_CKFLOAT x )
+  {
+	gverb_set_inputbandwidth(p, x);
+	return x;
+  }
+  
+  // get parameter example
+  float getBandwidth() { return p->inputbandwidth; }
+
+  float setDryLevel( t_CKFLOAT x )
+  {
+	gverb_set_drylevel(p, x);
+	return x;
+  }
+  
+  // get parameter example
+  float getDryLevel() { return p->drylevel; }
+
+  float setEarlyLevel( t_CKFLOAT x )
+  {
+	gverb_set_earlylevel(p, x);
+	return x;
+  }
+  
+  // get parameter example
+  float getEarlyLevel() { return p->earlylevel; }
+
+  float setTailLevel( t_CKFLOAT x )
+  {
+	gverb_set_taillevel(p, x);
+	return x;
+  }
+  
+  // get parameter example
+  float getTailLevel() { return p->taillevel; }
 
 private:
   // instance data
@@ -276,6 +321,46 @@ CK_DLL_QUERY( GVerb )
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, gverb_getRevTime, "float", "revtime");
+
+    // example of adding getter method
+    QUERY->add_mfun(QUERY, gverb_getDamping, "float", "damping");
+
+    // example of adding setter method
+    QUERY->add_mfun(QUERY, gverb_setDamping, "float", "damping");
+    // example of adding argument to the above method
+    QUERY->add_arg(QUERY, "float", "arg");
+
+    // example of adding getter method
+    QUERY->add_mfun(QUERY, gverb_getBandwidth, "float", "bandwidth");
+
+    // example of adding setter method
+    QUERY->add_mfun(QUERY, gverb_setBandwidth, "float", "bandwidth");
+    // example of adding argument to the above method
+    QUERY->add_arg(QUERY, "float", "arg");
+
+    // example of adding getter method
+    QUERY->add_mfun(QUERY, gverb_getDryLevel, "float", "bandwidth");
+
+    // example of adding setter method
+    QUERY->add_mfun(QUERY, gverb_setDryLevel, "float", "bandwidth");
+    // example of adding argument to the above method
+    QUERY->add_arg(QUERY, "float", "arg");
+
+    // example of adding getter method
+    QUERY->add_mfun(QUERY, gverb_getEarlyLevel, "float", "bandwidth");
+
+    // example of adding setter method
+    QUERY->add_mfun(QUERY, gverb_setEarlyLevel, "float", "bandwidth");
+    // example of adding argument to the above method
+    QUERY->add_arg(QUERY, "float", "arg");
+
+    // example of adding getter method
+    QUERY->add_mfun(QUERY, gverb_getTailLevel, "float", "bandwidth");
+
+    // example of adding setter method
+    QUERY->add_mfun(QUERY, gverb_setTailLevel, "float", "bandwidth");
+    // example of adding argument to the above method
+    QUERY->add_arg(QUERY, "float", "arg");
     
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above
@@ -370,4 +455,99 @@ CK_DLL_MFUN(gverb_getRevTime)
     GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
     // set the return value
     RETURN->v_float = bcdata->getRevTime();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(gverb_setDamping)
+{
+    // get our c++ class pointer
+    GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->setDamping(GET_NEXT_FLOAT(ARGS));
+}
+
+
+// example implementation for getter
+CK_DLL_MFUN(gverb_getDamping)
+{
+    // get our c++ class pointer
+    GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->getDamping();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(gverb_setBandwidth)
+{
+    // get our c++ class pointer
+    GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->setBandwidth(GET_NEXT_FLOAT(ARGS));
+}
+
+
+// example implementation for getter
+CK_DLL_MFUN(gverb_getBandwidth)
+{
+    // get our c++ class pointer
+    GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->getBandwidth();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(gverb_setDryLevel)
+{
+    // get our c++ class pointer
+    GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->setDryLevel(GET_NEXT_FLOAT(ARGS));
+}
+
+
+// example implementation for getter
+CK_DLL_MFUN(gverb_getDryLevel)
+{
+    // get our c++ class pointer
+    GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->getDryLevel();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(gverb_setEarlyLevel)
+{
+    // get our c++ class pointer
+    GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->setEarlyLevel(GET_NEXT_FLOAT(ARGS));
+}
+
+
+// example implementation for getter
+CK_DLL_MFUN(gverb_getEarlyLevel)
+{
+    // get our c++ class pointer
+    GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->getEarlyLevel();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(gverb_setTailLevel)
+{
+    // get our c++ class pointer
+    GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->setTailLevel(GET_NEXT_FLOAT(ARGS));
+}
+
+
+// example implementation for getter
+CK_DLL_MFUN(gverb_getTailLevel)
+{
+    // get our c++ class pointer
+    GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
+    // set the return value
+    RETURN->v_float = bcdata->getTailLevel();
 }

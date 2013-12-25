@@ -235,20 +235,20 @@ static inline void gverb_set_inputbandwidth(ty_gverb *p, double a)
 
 static inline void gverb_set_drylevel(ty_gverb *p, double a)
 {
-	a = CLIP(a, -90.0f, 0.0f);
-	p->drylevel = DB_CO(a);
+	a = CLIP(a, 0.0f, 1.0f);
+	p->drylevel = a;
 }
 
 static inline void gverb_set_earlylevel(ty_gverb *p, double a)
 {
-	a = CLIP(a, -90.0f, 0.0f);
-	p->earlylevel = DB_CO(a);
+	a = CLIP(a, 0.0f, 1.0f);
+	p->earlylevel = a;
 }
 
 static inline void gverb_set_taillevel(ty_gverb *p, double a)
 {
-	a = CLIP(a, -90.0f, 0.0f);
-	p->taillevel = DB_CO(a);
+	a = CLIP(a, 0.0f, 1.0f);
+	p->taillevel = a;
 }
 
 #endif
