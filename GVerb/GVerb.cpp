@@ -17,12 +17,24 @@
 
 // declaration of chugin constructor
 CK_DLL_CTOR(gverb_ctor);
-// declaration of chugin desctructor
+// declaration of chugin destructor
 CK_DLL_DTOR(gverb_dtor);
 
 // example of getter/setter
-CK_DLL_MFUN(gverb_setParam);
-CK_DLL_MFUN(gverb_getParam);
+CK_DLL_MFUN(gverb_setRoomsize);
+CK_DLL_MFUN(gverb_getRoomsize);
+CK_DLL_MFUN(gverb_setRevTime);
+CK_DLL_MFUN(gverb_getRevTime);
+CK_DLL_MFUN(gverb_setDamping);
+CK_DLL_MFUN(gverb_getDamping);
+CK_DLL_MFUN(gverb_setBandwidth);
+CK_DLL_MFUN(gverb_getBandwidth);
+CK_DLL_MFUN(gverb_setDryLevel);
+CK_DLL_MFUN(gverb_getDryLevel);
+CK_DLL_MFUN(gverb_setEarlyLevel);
+CK_DLL_MFUN(gverb_getEarlyLevel);
+CK_DLL_MFUN(gverb_setTailLevel);
+CK_DLL_MFUN(gverb_getTailLevel);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICKF(gverb_tick);
@@ -196,20 +208,20 @@ public:
 	  out[i] = rev[0] + in[i] * p->drylevel;
 	  out[i+1] = rev[1] + in[i+1] * p->drylevel;
 	}
-    }
-
-    // set parameter example
-    float setParam( t_CKFLOAT x )
-    {
-        p->roomsize = x;
-        return x;
-    }
-
-    // get parameter example
-    float getParam() { return p->roomsize; }
-    
+	}
+  
+  // set parameter example
+  float setRoomsize( t_CKFLOAT x )
+  {
+	gverb_set_roomsize(p, CLIP(x, 0.1f, p->maxroomsize));
+	return x;
+  }
+  
+  // get parameter example
+  float getRoomsize() { return p->roomsize; }
+  
 private:
-    // instance data
+  // instance data
   ty_gverb realp;
   ty_gverb *p;
 };
@@ -240,12 +252,12 @@ CK_DLL_QUERY( GVerb )
     // and declare a tickf function using CK_DLL_TICKF
 
     // example of adding setter method
-    QUERY->add_mfun(QUERY, gverb_setParam, "float", "param");
+    QUERY->add_mfun(QUERY, gverb_setRoomsize, "float", "roomsize");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
 
     // example of adding getter method
-    QUERY->add_mfun(QUERY, gverb_getParam, "float", "param");
+    QUERY->add_mfun(QUERY, gverb_getRoomsize, "float", "roomsize");
     
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above
@@ -305,20 +317,20 @@ CK_DLL_TICKF(gverb_tick)
 
 
 // example implementation for setter
-CK_DLL_MFUN(gverb_setParam)
+CK_DLL_MFUN(gverb_setRoomsize)
 {
     // get our c++ class pointer
     GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
     // set the return value
-    RETURN->v_float = bcdata->setParam(GET_NEXT_FLOAT(ARGS));
+    RETURN->v_float = bcdata->setRoomsize(GET_NEXT_FLOAT(ARGS));
 }
 
 
 // example implementation for getter
-CK_DLL_MFUN(gverb_getParam)
+CK_DLL_MFUN(gverb_getRoomsize)
 {
     // get our c++ class pointer
     GVerb * bcdata = (GVerb *) OBJ_MEMBER_INT(SELF, gverb_data_offset);
     // set the return value
-    RETURN->v_float = bcdata->getParam();
+    RETURN->v_float = bcdata->getRoomsize();
 }
