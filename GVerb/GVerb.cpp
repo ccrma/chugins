@@ -54,14 +54,14 @@ public:
     {
       
       const float maxroomsize = 300.0f;
-      float roomsize = 50.0f;
-      float revtime = 7.0f;
-      float damping = 0.5f;
+      float roomsize = 30.0f;
+      float revtime = 5.0f;
+      float damping = 0.8f;
       float spread = 15.0f;
       float inputbandwidth = 0.5f;
-      float drylevel = 0.5f; //-1.9832f;
-      float earlylevel = 0.5f; //-1.9832f;
-      float taillevel = 0.6f;
+      float drylevel = 0.6f; //-1.9832f;
+      float earlylevel = 0.4f; //-1.9832f;
+      float taillevel = 0.5f;
       
       float ga,gb,gt;
       unsigned int i;
