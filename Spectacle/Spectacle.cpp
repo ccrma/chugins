@@ -41,6 +41,9 @@ CK_DLL_MFUN(spectacle_getMinFreq);
 CK_DLL_MFUN(spectacle_setMaxFreq);
 CK_DLL_MFUN(spectacle_getMaxFreq);
 
+CK_DLL_MFUN(spectacle_setDelayTimes);
+CK_DLL_MFUN(spectacle_getDelayTimes);
+
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICKF(spectacle_tick);
@@ -107,8 +110,13 @@ public:
   void tick( SAMPLE* in, SAMPLE* out, int nframes)
   {
     memset (out, 0, sizeof(SAMPLE)*nframes);
+	for (int i=0; i<nframes; i+=2)
+	  {
+		spectdelay->run(in+i, out+i, 1);
+		spectdelay->run(in+i, out+i+1, 1);
+	  }
     // process a block of samples
-    spectdelay->run(in, out, nframes);
+    //spectdelay->run(in, out, nframes);
   }
 
   void clear()
@@ -125,6 +133,11 @@ public:
   
   // get parameter example
   float getParam() { return m_param; }
+
+  int setDelayTimes ( Chuck_Object *o)
+  {
+    fprintf(stderr, "**** %d %d", (int)o->data[0], o->data[1]);
+  }
   
 private:
   // instance data
@@ -172,6 +185,11 @@ CK_DLL_QUERY( Spectacle )
   QUERY->add_mfun(QUERY, spectacle_setParam, "float", "param");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "float", "arg");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_setDelayTimes, "Object", "setDelayTimes");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "Object", "arg");
   
   // example of adding getter method
   QUERY->add_mfun(QUERY, spectacle_getParam, "float", "param");
@@ -250,4 +268,13 @@ CK_DLL_MFUN(spectacle_getParam)
   Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
   // set the return value
   RETURN->v_float = bcdata->getParam();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_setDelayTimes)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_int = bcdata->setDelayTimes(GET_NEXT_OBJECT(ARGS));
 }
