@@ -193,6 +193,31 @@ public:
   // get parameter example
   int getPostEQ() { return posteq; }
 
+  // set parameter example
+  int setFFTlen( t_CKINT p )
+  {
+	clear();
+	int newfft = 1;
+	// ensure it's a power of 2
+	while (newfft < p) newfft = newfft << 1;
+	fftlen = newfft;
+	windowlen = newfft * 2;
+    spectdelay->init(fftlen, windowlen, overlap, srate, maxdeltime);
+    return fftlen;
+  }
+
+  int getFFTlen() { return fftlen; };
+
+  // set parameter example
+  int setOverlap( t_CKINT p )
+  {
+	clear();
+	overlap = p;
+    spectdelay->init(fftlen, windowlen, overlap, srate, maxdeltime);
+    return overlap;
+  }
+
+  int getOverlap() { return overlap; };
   
 private:
   // instance data
@@ -268,6 +293,22 @@ CK_DLL_QUERY( Spectacle )
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_getPostEQ, "int", "posteq");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_setFFTlen, "int", "fftlen");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "int", "arg");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_getFFTlen, "int", "fftlen");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_setOverlap, "int", "overlap");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "int", "arg");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_getOverlap, "int", "overlap");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setMaxDelay, "dur", "setMaxDelay");
@@ -414,4 +455,40 @@ CK_DLL_MFUN(spectacle_getPostEQ)
   Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
   // set the return value
   RETURN->v_int = bcdata->getPostEQ();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_setFFTlen)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_int = bcdata->setFFTlen(GET_NEXT_INT(ARGS));
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_getFFTlen)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_int = bcdata->getFFTlen();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_setOverlap)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_int = bcdata->setOverlap(GET_NEXT_INT(ARGS));
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_getOverlap)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_int = bcdata->getOverlap();
 }

@@ -3,5 +3,8 @@ Spectacle spect => dac;
 10::second => spect.setMaxDelay;
 <<< spect.getMaxDelay()/second >>>;
 spect.clear();
+2048 => spect.fftlen;
+4 => spect.overlap;
 2 => spect.hold;
 3 => spect.posteq;
+second => now;
