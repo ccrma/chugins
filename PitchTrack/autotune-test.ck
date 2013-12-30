@@ -8,8 +8,8 @@ obama => Delay del => PitShift autotune => Envelope fade => dac;
 1 => fade.target;
 
 // uncomment these to produce a wav file of the output
-//dac => WvOut2 record => blackhole;
-//"obama_autotuned" => record.wavFilename;
+dac => WvOut2 record => blackhole;
+"obama_autotuned" => record.wavFilename;
 
 pt.frame()::samp => del.delay;
 "data/obama.wav" => obama.read;
