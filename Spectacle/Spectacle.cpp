@@ -33,14 +33,20 @@ CK_DLL_MFUN(spectacle_setMaxDelay);
 CK_DLL_MFUN(spectacle_getMaxDelay);
 
 CK_DLL_MFUN(spectacle_clear);
-CK_DLL_MFUN(spectacle_hold);
-CK_DLL_MFUN(spectacle_posteq);
+
+CK_DLL_MFUN(spectacle_setHold);
+CK_DLL_MFUN(spectacle_getHold);
+
+CK_DLL_MFUN(spectacle_setPosteq);
+CK_DLL_MFUN(spectacle_getPosteq);
 
 CK_DLL_MFUN(spectacle_setMinFreq);
 CK_DLL_MFUN(spectacle_getMinFreq);
 
 CK_DLL_MFUN(spectacle_setMaxFreq);
 CK_DLL_MFUN(spectacle_getMaxFreq);
+
+CK_DLL_MFUN(spectacle_setFreqRange);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICKF(spectacle_tick);
@@ -118,6 +124,7 @@ public:
 
   void clear()
   {
+	printf ( "Spectacle: cleared.\n" );
     spectdelay->clear();
   }
   
@@ -144,6 +151,23 @@ public:
   {
     return (maxdeltime * srate);
   }
+
+  // set parameter example
+  int setHold( t_CKINT p )
+  {
+	if (p > 1 || p < 0)
+	  {
+		p = 1;
+		printf ("Spectacle: hold must be 0 or 1\n");
+	  }
+	hold = p;
+	spectdelay->set_hold(p);
+    return p;
+  }
+  
+  // get parameter example
+  int getHold() { return hold; }
+
   
 private:
   // instance data
@@ -200,6 +224,17 @@ CK_DLL_QUERY( Spectacle )
 
   // example of adding getter method
   QUERY->add_mfun(QUERY, spectacle_getParam, "float", "param");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_clear, "void", "clear");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_setHold, "int", "hold");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "int", "arg");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_getHold, "int", "hold");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setMaxDelay, "dur", "setMaxDelay");
@@ -301,4 +336,31 @@ CK_DLL_MFUN(spectacle_getMaxDelay)
   Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
   // set the return value
   RETURN->v_dur = bcdata->getMaxDelay();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_clear)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  bcdata->clear();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_setHold)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_int = bcdata->setHold(GET_NEXT_INT(ARGS));
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_getHold)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_int = bcdata->getHold();
 }
