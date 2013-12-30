@@ -37,8 +37,8 @@ CK_DLL_MFUN(spectacle_clear);
 CK_DLL_MFUN(spectacle_setHold);
 CK_DLL_MFUN(spectacle_getHold);
 
-CK_DLL_MFUN(spectacle_setPosteq);
-CK_DLL_MFUN(spectacle_getPosteq);
+CK_DLL_MFUN(spectacle_setPostEQ);
+CK_DLL_MFUN(spectacle_getPostEQ);
 
 CK_DLL_MFUN(spectacle_setMinFreq);
 CK_DLL_MFUN(spectacle_getMinFreq);
@@ -177,6 +177,22 @@ public:
   // get parameter example
   int getHold() { return hold; }
 
+  // set parameter example
+  int setPostEQ( t_CKINT p )
+  {
+	if (p > 1 || p < 0)
+	  {
+		p = 1;
+		printf ("Spectacle: posteq must be 0 or 1\n");
+	  }
+	posteq = p;
+	spectdelay->set_posteq(p);
+    return p;
+  }
+  
+  // get parameter example
+  int getPostEQ() { return posteq; }
+
   
 private:
   // instance data
@@ -244,6 +260,14 @@ CK_DLL_QUERY( Spectacle )
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_getHold, "int", "hold");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_setPostEQ, "int", "posteq");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "int", "arg");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_getPostEQ, "int", "posteq");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setMaxDelay, "dur", "setMaxDelay");
@@ -372,4 +396,22 @@ CK_DLL_MFUN(spectacle_getHold)
   Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
   // set the return value
   RETURN->v_int = bcdata->getHold();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_setPostEQ)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_int = bcdata->setPostEQ(GET_NEXT_INT(ARGS));
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_getPostEQ)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_int = bcdata->getPostEQ();
 }
