@@ -6,6 +6,7 @@
 // this should align with the correct versions of these ChucK files
 #include "chuck_dl.h"
 #include "chuck_def.h"
+#include "ulib_math.h"
 
 #include "Spectacle-dsp.h"
 
@@ -40,10 +41,6 @@ CK_DLL_MFUN(spectacle_getMinFreq);
 
 CK_DLL_MFUN(spectacle_setMaxFreq);
 CK_DLL_MFUN(spectacle_getMaxFreq);
-
-CK_DLL_MFUN(spectacle_setDelayTimes);
-CK_DLL_MFUN(spectacle_getDelayTimes);
-
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICKF(spectacle_tick);
@@ -134,9 +131,18 @@ public:
   // get parameter example
   float getParam() { return m_param; }
 
-  int setDelayTimes ( Chuck_Object *o)
+  float setMaxDelay ( t_CKDUR p)
   {
-    fprintf(stderr, "**** %d %d", (int)o->data[0], o->data[1]);
+    float dt = (p / srate);
+    dt = CLIP(dt, kMinMaxDelTime, kMaxMaxDelTime);
+    maxdeltime = dt;
+    spectdelay->set_maxdeltime(dt);
+    return p;
+  }
+
+  float getMaxDelay ()
+  {
+    return (maxdeltime * srate);
   }
   
 private:
@@ -154,6 +160,12 @@ private:
   int eqtablen, dttablen, fbtablen, eqbinmaplen, delaybinmaplen;
   float minfreq, maxfreq, dminfreq, dmaxfreq;
   bool hold, posteq;
+
+  float rand2f (float min, float max)
+  {
+    return min + (max-min)*(::random()/(t_CKFLOAT)CK_RANDOM_MAX);
+  }
+
 };
 
 
@@ -186,13 +198,16 @@ CK_DLL_QUERY( Spectacle )
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "float", "arg");
 
-  // example of adding setter method
-  QUERY->add_mfun(QUERY, spectacle_setDelayTimes, "Object", "setDelayTimes");
-  // example of adding argument to the above method
-  QUERY->add_arg(QUERY, "Object", "arg");
-  
   // example of adding getter method
   QUERY->add_mfun(QUERY, spectacle_getParam, "float", "param");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_setMaxDelay, "dur", "setMaxDelay");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "dur", "delay");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_getMaxDelay, "dur", "getMaxDelay");
   
   // this reserves a variable in the ChucK internal class to store 
   // referene to the c++ class we defined above
@@ -271,10 +286,19 @@ CK_DLL_MFUN(spectacle_getParam)
 }
 
 // example implementation for setter
-CK_DLL_MFUN(spectacle_setDelayTimes)
+CK_DLL_MFUN(spectacle_setMaxDelay)
 {
   // get our c++ class pointer
   Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
   // set the return value
-  RETURN->v_int = bcdata->setDelayTimes(GET_NEXT_OBJECT(ARGS));
+  RETURN->v_dur = bcdata->setMaxDelay(GET_NEXT_DUR(ARGS));
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_getMaxDelay)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_dur = bcdata->getMaxDelay();
 }
