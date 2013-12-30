@@ -3,8 +3,8 @@
 CHUGIN_NAME=Spectacle
 
 # all of the c/cpp files that compose this chugin
-C_MODULES=
-CXX_MODULES=Spectacle.cpp
+C_MODULES=fft.c
+CXX_MODULES=JGFilter.cpp DLineN.cpp Spectacle.cpp
 
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/

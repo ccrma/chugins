@@ -10,6 +10,7 @@
 // general includes
 #include <stdio.h>
 #include <limits.h>
+#include "DLineN.h"
 
 // declaration of chugin constructor
 CK_DLL_CTOR(spectacle_ctor);
@@ -20,12 +21,23 @@ CK_DLL_DTOR(spectacle_dtor);
 CK_DLL_MFUN(spectacle_setParam);
 CK_DLL_MFUN(spectacle_getParam);
 
-// for Chugins extending UGen, this is mono synthesis function for 1 sample
-CK_DLL_TICK(spectacle_tick);
+// for Chugins extending UGen, this is stereo synthesis for 8 samples
+CK_DLL_TICKF(spectacle_tick);
 
 // this is a special offset reserved for Chugin internal data
 t_CKINT spectacle_data_offset = 0;
 
+#define MAXFFTLEN    4096
+#define MAXWINDOWLEN MAXFFTLEN * 8
+#define MINOVERLAP   0.25
+#define MAXOVERLAP   64.0
+#define MAXDELTIME   20.0
+#define FFTLEN       1024
+
+typedef enum {
+  Hamming = 0,
+  Rectangle
+} WindowType;
 
 // class definition for internal Chugin data
 // (note: this isn't strictly necessary, but serves as example
@@ -33,32 +45,393 @@ t_CKINT spectacle_data_offset = 0;
 class Spectacle
 {
 public:
-    // constructor
-    Spectacle( t_CKFLOAT fs)
-    {
-        m_param = 0;
-    }
+  // constructor
+  Spectacle( t_CKFLOAT fs)
+  {
+      /* create segmented input buffer */
+      int num_segments = (window_len / FFTLEN) + 2;
+      int extrasamps = FFTLEN - framesToRun();
+      if (extrasamps)
+	num_segments++;
+      int inbuf_samps = num_segments * FFTLEN * inputChannels();
+      inbuf = new float [inbuf_samps];
+      for (int i = 0; i < inbuf_samps; i++)
+	inbuf[i] = 0.0;
+      
+      /* Read ptr chases write ptr by <window_len>.  Set read ptr to a position
+         <window_len> frames from right end of input buffer.  Set write ptr to
+         beginning of buffer, or, if framesToRun() is not the same as the RTcmix
+         buffer size, set it so that the next run invocation after this one
+         will find the write ptr at the start of the second buffer segment.
+      */
+      inbuf_readptr = inbuf + (inbuf_samps - (window_len * inputChannels()));
+      inbuf_startptr = inbuf + (extrasamps * inputChannels());
+      inbuf_writeptr = inbuf_startptr;
+      inbuf_endptr = inbuf + inbuf_samps;
+      
+      int outbuf_samps = num_segments * FFTLEN * outputChannels();
+      outbuf = new float [outbuf_samps];
+      for (int i = 0; i < outbuf_samps; i++)
+	outbuf[i] = 0.0;
+      
+      outbuf_readptr = outbuf + (outbuf_samps
+				 - (framesToRun() * outputChannels()));
+      outbuf_writeptr = outbuf_readptr;
+      outbuf_endptr = outbuf + outbuf_samps;
+      first_time = 0;
+  }
 
-    // for Chugins extending UGen
-    SAMPLE tick( SAMPLE in )
-    {
-        // default: this passes whatever input is patched into Chugin
-        return in;
-    }
-
-    // set parameter example
-    float setParam( t_CKFLOAT p )
-    {
-        m_param = p;
-        return p;
-    }
-
-    // get parameter example
-    float getParam() { return m_param; }
+  ~Spectacle()
+  {
+   delete [] anal_window;
+   delete [] synth_window;
+   delete [] fft_buf;
+   delete [] anal_chans;
+   delete [] drybuf;
+   delete [] inbuf;
+   delete [] outbuf;
+   delete dry_delay;
+  }
+  
+  // for Chugins extending UGen
+  void tick( SAMPLE *in, SAMPLE *out, int nframes )
+  {    
+    memset(out, 0, sizeof(SAMPLE)*nframes);
     
+    for (int i=0; i < nframes; i++)
+      {
+	shiftin();
+	fold();
+	JGrfft(fft_buf, half_fft_len, FORWARD);
+	leanconvert();
+      }
+    flush_dry_delay();
+    modify_analysis();
+    leanunconvert();
+    JGrfft(fft_buf, half_fft_len, INVERSE);
+    overlapadd(currentFrame());
+    shiftout();
+    
+    increment(decimation);
+  }
+
+   if (currentFrame() < input_end_frame) {
+      inbuf_writeptr += insamps;
+      if (inbuf_writeptr >= inbuf_endptr)
+         inbuf_writeptr = inbuf;
+   }
+
+   rtbaddout(outbuf_readptr, framesToRun());
+   outbuf_readptr += framesToRun() * outputChannels();
+   if (outbuf_readptr >= outbuf_endptr)
+      outbuf_readptr = outbuf;
+
+   return framesToRun();
+
+    // sythesis function here
+  }
+  
+  // set parameter example
+  float setParam( t_CKFLOAT p )
+  {
+    m_param = p;
+    return p;
+  }
+  
+  // get parameter example
+  float getParam() { return m_param; }
+  
+  /* ---------------------------------------------------------- make_windows -- */
+/* Make balanced pair of analysis and synthesis windows.
+*/
+  int make_windows()
+  {
+    switch (window_type) {
+    case Hamming:
+      for (int i = 0; i < window_len; i++)
+	anal_window[i] = synth_window[i] = 0.54 - 0.46
+	  * cos(TWO_PI * i / (window_len - 1));
+      break;
+    case Rectangle:
+      //FIXME: is this right?
+      for (int i = 0; i < window_len; i++)
+	anal_window[i] = synth_window[i] = 1.0;
+      break;
+    }
+    
+    /* When window_len > fft_len, also apply interpolating (sinc) windows to
+       ensure that window are 0 at increments of fft_len away from the center
+       of the analysis window and of decimation away from the center of the
+       synthesis window.
+    */
+    if (window_len > fft_len) {
+      float x;
+      
+      /* Take care to create symmetrical windows. */
+      x = -(window_len - 1) / 2.;
+      for (int i = 0; i < window_len; i++, x += 1.)
+	if (x != 0.) {
+	  anal_window[i] *= fft_len * sin(PI * x / fft_len) / (PI * x);
+	  if (decimation)
+	    synth_window[i] *= decimation * sin(PI * x / decimation)
+	      / (PI * x);
+	}
+    }
+    
+    /* Normalize windows for unity gain across unmodified
+       analysis-synthesis procedure.
+    */
+    float sum = 0.0;
+    for (int i = 0; i < window_len; i++)
+      sum += anal_window[i];
+    
+    for (int i = 0; i < window_len; i++) {
+      float afac = 2. / sum;
+      float sfac = window_len > fft_len ? 1. / afac : afac;
+      anal_window[i] *= afac;
+      synth_window[i] *= sfac;
+    }
+    
+    if (window_len <= fft_len && decimation) {
+      sum = 0.0;
+      for (int i = 0; i < window_len; i += decimation)
+	sum += synth_window[i] * synth_window[i];
+      sum = 1.0 / sum;
+      for (int i = 0; i < window_len; i++)
+	synth_window[i] *= sum;
+    }
+    
+    return 0;
+  }
+
+  double * resample_functable(double *table, int oldsize, int newsize)
+  {
+    double *newtable = new double [newsize];
+    
+    if (newsize == oldsize) {                  // straight copy
+      for (int i = 0; i < newsize; i++)
+	newtable[i] = table[i];
+    }
+    else {
+      double incr = (double) oldsize / (double) newsize;
+      double f = 0.0;
+      for (int i = 0; i < newsize; i++) {
+	int n = (int) f;
+	double frac = f - (double) n;
+	double diff = 0.0;
+	if (frac) {
+	  double next = (n + 1 < oldsize) ? table[n + 1] : table[oldsize - 1];
+	  diff = next - table[n];
+	}
+	newtable[i] = table[n] + (diff * frac);
+	f += incr;
+      }
+    }
+    return newtable;
+  }
+
+  /* ------------------------------------------------------------------ init -- */
+  WindowType getWindowType(double pval)
+  {
+    int intval = int(pval);
+    WindowType type;
+    
+    switch (intval) {
+    case 1:
+      type = Rectangle;
+      break;
+    default:
+      type = Hamming;
+    }
+    return type;
+  }
+
+  /* ---------------------------------------------------------------- shiftin -- */
+  void shiftin()
+  {
+    int _cursamp = currentFrame();
+    
+    /* Shift samples in <input> from right to left by <decimation>. */
+    for (int i = 0; i < window_len_minus_decimation; i++)
+      input[i] = input[i + decimation];
+    
+    /* Copy <decimation> samples from <inbuf> to right end of <input> and
+       to left end of <drybuf>.
+    */
+    int j = 0;
+    for (int i = window_len_minus_decimation; i < window_len; i++, j++)
+      {
+	if (--iamp_branch <= 0)
+	  {
+	    /* Since inbuf_readptr trails inbuf_writeptr, we delay the start of
+	       the envelope until we reach actual input rather than zero padding.
+	    */
+	    if (iamparray && _cursamp >= window_len)
+	      iamp = tablei(_cursamp - window_len, iamparray, iamptabs);
+	    iamp_branch = skip;
+	  }
+	float sig = inbuf_readptr[inchan] * iamp;
+	drybuf[j] = dry_delay->tick(sig);
+	input[i] = sig;
+	inbuf_readptr += inputChannels();
+	if (inbuf_readptr >= inbuf_endptr)
+	  {
+	    inbuf_readptr = inbuf_startptr;
+	    /* <inbuf_startptr> might not == <inbuf> in first call to run(). */
+	    inbuf_startptr = inbuf;
+	  }
+	_cursamp++;
+      }
+  }
+
+  void fold(int n)
+  {
+    for (int i = 0; i < fft_len; i++)
+      fft_buf[i] = 0.0;
+    
+    n %= fft_len;
+    
+    for (int i = 0; i < window_len; i++) {
+      fft_buf[n] += input[i] * anal_window[i];
+      if (++n == fft_len)
+	n = 0;
+    }
+  }
+
+/* ----------------------------------------------------------- leanconvert -- */
+/* <fft_buf> is a spectrum in JGrfft format, i.e. it contains <half_fft_len> * 2
+   real values, arranged in pairs of real and imaginary values, except for
+   the first two values, which are the real parts of 0 and Nyquist frequencies.
+   Converts these into <half_fft_len> + 1 pairs of magnitude and phase values,
+   and stores them into the output array <anal_chans>.
+*/
+  void leanconvert()
+  {
+    int   real_index, imag_index, amp_index, phase_index;
+    float a, b;
+    
+    for (int i = 0; i <= half_fft_len; i++) {
+      real_index = amp_index = i << 1;
+      imag_index = phase_index = real_index + 1;
+      if (i == half_fft_len) {
+	a = fft_buf[1];
+	b = 0.0;
+      }
+      else {
+	a = fft_buf[real_index];
+	b = (i == 0) ? 0.0 : fft_buf[imag_index];
+      }
+      anal_chans[amp_index] = hypot(a, b);
+      anal_chans[phase_index] = -atan2(b, a);
+    }
+  }
+  
+  /* ------------------------------------------------------- flush_dry_delay -- */
+  void flush_dry_delay()
+  {
+    if (currentFrame() < input_end_frame + window_len_minus_decimation) {
+      for (int i = 0; i < decimation; i++)
+	drybuf[i] = dry_delay->tick(0.0);
+    }
+  }
+  
+  
+  /* --------------------------------------------------------- leanunconvert -- */
+  /* leanunconvert essentially undoes what leanconvert does, i.e., it turns
+     <half_fft_len> + 1 pairs of amplitude and phase values in <anal_chans>
+     into <half_fft_len> pairs of complex spectrum data (in JGrfft format) in
+     output array <fft_buf>.
+  */
+  void leanunconvert()
+  {
+    int   real_index, imag_index, amp_index, phase_index;
+    float mag, phase;
+    
+    for (int i = 0; i <= half_fft_len; i++) {
+      real_index = amp_index = i << 1;
+      imag_index = phase_index = real_index + 1;
+      if (i == half_fft_len)
+	real_index = 1;
+      mag = anal_chans[amp_index];
+      phase = anal_chans[phase_index];
+      fft_buf[real_index] = mag * cos(phase);
+      if (i != half_fft_len)
+	fft_buf[imag_index] = -mag * sin(phase);
+    }
+  }
+  
+  
+  /* ------------------------------------------------------------ overlapadd -- */
+  /* <fft_buf> is a folded spectrum of length <fft_len>.  <output> and
+     <synth_window> are of length <window_len>.  Overlap-add windowed,
+     unrotated, unfolded <fft_buf> data into <output>.
+  */
+  void overlapadd(int n)
+  {
+    n %= fft_len;
+    for (int i = 0; i < window_len; i++) {
+      output[i] += fft_buf[n] * synth_window[i];
+      if (++n == fft_len)
+	n = 0;
+    }
+  }
+  
+
+  /* -------------------------------------------------------------- shiftout -- */
+  void shiftout()
+  {
+    int _cursamp = currentFrame();
+    
+    for (int i = 0; i < decimation; i++) {
+      if (--oamp_branch <= 0) {
+	if (oamparray && (_cursamp >= latency))
+	  oamp = tablei(_cursamp - latency, oamparray, oamptabs) * amp;
+	oamp_branch = skip;
+      }
+      float sig;
+      if (_cursamp < input_end_frame)
+	sig = ((output[i] * wetdry) + ((1.0 - wetdry) * drybuf[i])) * oamp;
+      else
+	sig = output[i] * wetdry * oamp;
+      if (outputChannels() == 2) {
+	*outbuf_writeptr++ = sig * pctleft;
+	*outbuf_writeptr++ = sig * (1.0 - pctleft);
+      }
+      else
+	*outbuf_writeptr++ = sig;
+      if (outbuf_writeptr >= outbuf_endptr) {
+	outbuf_writeptr = outbuf;
+      }
+      _cursamp++;
+    }
+    
+    /* shift samples in <output> from right to left by <decimation> */
+    for (int i = 0; i < window_len_minus_decimation; i++)
+      output[i] = output[i + decimation];
+    for (int i = window_len_minus_decimation; i < window_len; i++)  
+      output[i] = 0.0;
+  }
+
+  
 private:
-    // instance data
-    float m_param;
+  // instance data
+  float m_param;
+  float    *anal_window, *synth_window, *input, *output, *fft_buf, *drybuf;
+  float    *inbuf, *inbuf_startptr, *inbuf_readptr, *inbuf_writeptr,
+    *inbuf_endptr;
+  float    *outbuf, *outbuf_startptr, *outbuf_readptr, *outbuf_writeptr,
+    *outbuf_endptr;
+  float    iamptabs[2], oamptabs[2];
+  double   *iamparray, *oamparray;
+  DLineN   *dry_delay;
+  WindowType window_type;
+protected:
+  int      inchan, skip, total_insamps, first_time, int_overlap;
+  int      fft_len, window_len, decimation, window_len_minus_decimation,
+    half_fft_len, latency, input_end_frame;
+  float    wetdry, pctleft, inputdur, ringdur, fund_anal_freq;
+  float    *anal_chans;
+
 };
 
 
@@ -67,105 +440,105 @@ private:
 // add additional functions to this Chugin
 CK_DLL_QUERY( Spectacle )
 {
-    // hmm, don't change this...
-    QUERY->setname(QUERY, "Spectacle");
-    
-    // begin the class definition
-    // can change the second argument to extend a different ChucK class
-    QUERY->begin_class(QUERY, "Spectacle", "UGen");
-
-    // register the constructor (probably no need to change)
-    QUERY->add_ctor(QUERY, spectacle_ctor);
-    // register the destructor (probably no need to change)
-    QUERY->add_dtor(QUERY, spectacle_dtor);
-    
-    // for UGen's only: add tick function
-    QUERY->add_ugen_func(QUERY, spectacle_tick, NULL, 1, 1);
-    
-    // NOTE: if this is to be a UGen with more than 1 channel, 
-    // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
-    // and declare a tickf function using CK_DLL_TICKF
-
-    // example of adding setter method
-    QUERY->add_mfun(QUERY, spectacle_setParam, "float", "param");
-    // example of adding argument to the above method
-    QUERY->add_arg(QUERY, "float", "arg");
-
-    // example of adding getter method
-    QUERY->add_mfun(QUERY, spectacle_getParam, "float", "param");
-    
-    // this reserves a variable in the ChucK internal class to store 
-    // referene to the c++ class we defined above
-    spectacle_data_offset = QUERY->add_mvar(QUERY, "int", "@s_data", false);
-
-    // end the class definition
-    // IMPORTANT: this MUST be called!
-    QUERY->end_class(QUERY);
-
-    // wasn't that a breeze?
-    return TRUE;
+  // hmm, don't change this...
+  QUERY->setname(QUERY, "Spectacle");
+  
+  // begin the class definition
+  // can change the second argument to extend a different ChucK class
+  QUERY->begin_class(QUERY, "Spectacle", "UGen");
+  
+  // register the constructor (probably no need to change)
+  QUERY->add_ctor(QUERY, spectacle_ctor);
+  // register the destructor (probably no need to change)
+  QUERY->add_dtor(QUERY, spectacle_dtor);
+  
+  // for UGen's only: add tick function
+  QUERY->add_ugen_funcf(QUERY, spectacle_tick, NULL, 8, 8);
+  
+  // NOTE: if this is to be a UGen with more than 1 channel, 
+  // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
+  // and declare a tickf function using CK_DLL_TICKF
+  
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_setParam, "float", "param");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "float", "arg");
+  
+  // example of adding getter method
+  QUERY->add_mfun(QUERY, spectacle_getParam, "float", "param");
+  
+  // this reserves a variable in the ChucK internal class to store 
+  // referene to the c++ class we defined above
+  spectacle_data_offset = QUERY->add_mvar(QUERY, "int", "@s_data", false);
+  
+  // end the class definition
+  // IMPORTANT: this MUST be called!
+  QUERY->end_class(QUERY);
+  
+  // wasn't that a breeze?
+  return TRUE;
 }
 
 
 // implementation for the constructor
 CK_DLL_CTOR(spectacle_ctor)
 {
-    // get the offset where we'll store our internal c++ class pointer
-    OBJ_MEMBER_INT(SELF, spectacle_data_offset) = 0;
-    
-    // instantiate our internal c++ class representation
-    Spectacle * bcdata = new Spectacle(API->vm->get_srate());
-    
-    // store the pointer in the ChucK object member
-    OBJ_MEMBER_INT(SELF, spectacle_data_offset) = (t_CKINT) bcdata;
+  // get the offset where we'll store our internal c++ class pointer
+  OBJ_MEMBER_INT(SELF, spectacle_data_offset) = 0;
+  
+  // instantiate our internal c++ class representation
+  Spectacle * bcdata = new Spectacle(API->vm->get_srate());
+  
+  // store the pointer in the ChucK object member
+  OBJ_MEMBER_INT(SELF, spectacle_data_offset) = (t_CKINT) bcdata;
 }
 
 
 // implementation for the destructor
 CK_DLL_DTOR(spectacle_dtor)
 {
-    // get our c++ class pointer
-    Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
-    // check it
-    if( bcdata )
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // check it
+  if( bcdata )
     {
-        // clean up
-        delete bcdata;
-        OBJ_MEMBER_INT(SELF, spectacle_data_offset) = 0;
-        bcdata = NULL;
+      // clean up
+      delete bcdata;
+      OBJ_MEMBER_INT(SELF, spectacle_data_offset) = 0;
+      bcdata = NULL;
     }
 }
 
 
 // implementation for tick function
-CK_DLL_TICK(spectacle_tick)
+CK_DLL_TICKF(spectacle_tick)
 {
-    // get our c++ class pointer
-    Spectacle * c = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
- 
-    // invoke our tick function; store in the magical out variable
-    if(c) *out = c->tick(in);
-
-    // yes
-    return TRUE;
+  // get our c++ class pointer
+  Spectacle * c = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  
+  // invoke our tick function; store in the magical out variable
+  if(c) c->tick(in,out, nframes);
+  
+  // yes
+  return TRUE;
 }
 
 
 // example implementation for setter
 CK_DLL_MFUN(spectacle_setParam)
 {
-    // get our c++ class pointer
-    Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
-    // set the return value
-    RETURN->v_float = bcdata->setParam(GET_NEXT_FLOAT(ARGS));
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_float = bcdata->setParam(GET_NEXT_FLOAT(ARGS));
 }
 
 
 // example implementation for getter
 CK_DLL_MFUN(spectacle_getParam)
 {
-    // get our c++ class pointer
-    Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
-    // set the return value
-    RETURN->v_float = bcdata->getParam();
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_float = bcdata->getParam();
 }
