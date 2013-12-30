@@ -21,7 +21,7 @@
 // bands (int) : set number of frequency bands, 1-512, default 128
 // delay (dur) : set the same duration for all bands
 // eq (float) : set the same EQ value for all bands (value is +/- dB)
-// fb (float) : set the same feedback value for all bands (-1.0 - 1.0)
+// feedback (float) : set the same feedback value for all bands (-1.0 - 1.0)
 //
 // table (string, string) : set delay, eq, or feedback tables to
 //                          random, ascending, or descending
@@ -29,7 +29,16 @@
 
 // warning: use headphones or you'll get feedback!
 adc => Spectacle spect => dac;
+spect.range(0,5000);
+<<< "Spectacle: random delay by default." >>>;
 10::second => now;
+<<< "Spectacle: switching to ascending delay and descending eq.">>>;
 spect.table("delay","ascending");
 spect.table("eq","descending");
 10::second => now;
+<<< "Spectacle: ascending eq, with feedback." >>>;
+0 => spect.eq;
+0.8 => spect.feedback;
+20::second => now;
+adc =< spect; // disconnect input
+minute => now; // let it ring down

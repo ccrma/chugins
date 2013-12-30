@@ -270,7 +270,7 @@ public:
 
   float getMaxFreq () { return maxfreq; }
 
-  void setFreqRange ( t_CKFLOAT p, t_CKFLOAT q )
+  void setFreqRange ( t_CKFLOAT q, t_CKFLOAT p )
   {
 	const float nyquist = srate / 2;
 	float min = CLIP(p, 0.0, nyquist);
@@ -557,8 +557,8 @@ CK_DLL_QUERY( Spectacle )
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setFreqRange, "void", "range");
   // example of adding argument to the above method
-  QUERY->add_arg(QUERY, "float", "min");
-  QUERY->add_arg(QUERY, "float", "max");
+  QUERY->add_arg(QUERY, "float", "arg1");
+  QUERY->add_arg(QUERY, "float", "arg2");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setTableLen, "int", "bands");
