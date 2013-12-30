@@ -97,7 +97,7 @@ public:
       }
     dttablen = eqtablen = fbtablen = 0;
     eqbinmaplen = delaybinmaplen = 0;
-    dminfreq = dmaxfreq = minfreq = maxfreq = 0.0;
+    minfreq = maxfreq = 0.0;
     posteq = hold = false;
     
     spectdelay = new Spectacle_dsp();
@@ -218,6 +218,52 @@ public:
   }
 
   int getOverlap() { return overlap; };
+
+  float setMinFreq ( t_CKFLOAT p )
+  {
+	float min = CLIP(p, 0.0, maxfreq);
+	if (min != minfreq)
+	  {
+		minfreq = min;
+		spectdelay->set_delay_freqrange(minfreq, maxfreq);
+		spectdelay->set_freqrange(minfreq, maxfreq);
+	  }
+  }
+
+  float getMinFreq () { return minfreq; }
+
+  float setMaxFreq ( t_CKFLOAT p )
+  {
+	const float nyquist = srate / 2;
+	if (p == 0) p = nyquist;
+	float max = CLIP(p, minfreq, nyquist);
+	if (max != maxfreq)
+	  {
+		maxfreq = max;
+		spectdelay->set_delay_freqrange(minfreq, maxfreq);
+		spectdelay->set_freqrange(minfreq, maxfreq);
+	  }
+  }
+
+  float getMaxFreq () { return maxfreq; }
+
+  void setFreqRange ( t_CKFLOAT p, t_CKFLOAT q )
+  {
+	const float nyquist = srate / 2;
+	float min = CLIP(p, 0.0, nyquist);
+	if (q == 0) q = nyquist;
+	float max = CLIP(q, min, nyquist);
+	if (max != maxfreq || min != minfreq)
+	  {
+		maxfreq = max;
+		minfreq = min;
+		spectdelay->set_delay_freqrange(minfreq, maxfreq);
+		spectdelay->set_freqrange(minfreq, maxfreq);
+	  }
+  }
+
+
+
   
 private:
   // instance data
@@ -232,7 +278,7 @@ private:
   int eqbinmap[kMaxTableLen];
   int delaybinmap[kMaxTableLen];
   int eqtablen, dttablen, fbtablen, eqbinmaplen, delaybinmaplen;
-  float minfreq, maxfreq, dminfreq, dmaxfreq;
+  float minfreq, maxfreq;
   bool hold, posteq;
 
   float rand2f (float min, float max)
@@ -317,6 +363,28 @@ CK_DLL_QUERY( Spectacle )
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_getMaxDelay, "dur", "getMaxDelay");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_setMinFreq, "float", "minFreq");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "float", "arg");
+
+  // example of adding getter method
+  QUERY->add_mfun(QUERY, spectacle_getMinFreq, "float", "minFreq");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_setMaxFreq, "float", "maxFreq");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "float", "arg");
+
+  // example of adding getter method
+  QUERY->add_mfun(QUERY, spectacle_getMaxFreq, "float", "maxFreq");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_setFreqRange, "void", "range");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "float", "min");
+  QUERY->add_arg(QUERY, "float", "max");
   
   // this reserves a variable in the ChucK internal class to store 
   // referene to the c++ class we defined above
@@ -491,4 +559,51 @@ CK_DLL_MFUN(spectacle_getOverlap)
   Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
   // set the return value
   RETURN->v_int = bcdata->getOverlap();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_setMinFreq)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_float = bcdata->setMinFreq(GET_NEXT_FLOAT(ARGS));
+}
+
+
+// example implementation for getter
+CK_DLL_MFUN(spectacle_getMinFreq)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_float = bcdata->getMinFreq();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_setMaxFreq)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_float = bcdata->setMaxFreq(GET_NEXT_FLOAT(ARGS));
+}
+
+
+// example implementation for getter
+CK_DLL_MFUN(spectacle_getMaxFreq)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_float = bcdata->getMaxFreq();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_setFreqRange)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  bcdata->setFreqRange(GET_NEXT_FLOAT(ARGS),GET_NEXT_FLOAT(ARGS));
 }

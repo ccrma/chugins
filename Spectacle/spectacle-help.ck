@@ -8,3 +8,5 @@ spect.clear();
 2 => spect.hold;
 3 => spect.posteq;
 second => now;
+spect.range(1000,5000);
+<<< spect.minFreq() >>>;
