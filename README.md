@@ -18,8 +18,9 @@ List of New Chugins
   - Good quality stereo reverb with adjustable parameters
 - **Mesh2D**
   - STK instrument that simulates a rectilinear, 2-dimensional digital waveguide mesh structure. Basically sounds like striking a metal plate.
+- **Spectacle**
+  - FFT-based spectral delay and EQ
 
 Chugins That I Am Working On
 --
 - RTcmix's excellent PLACE and MOVE room simulations
-- Spectral Delay

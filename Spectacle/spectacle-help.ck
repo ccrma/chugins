@@ -18,7 +18,7 @@
 // freqMax (float) : maximum frequency processed by Spectacle
 // freqMin (float) : minimum frequency processed by Spectacle
 // range (float, float) : set both min and min freqs in one command
-// bands (int) : set number of frequency bands, 1-512, default 128
+// bands (int) : set number of frequency bands, 1-512, default 64
 // delay (dur) : set the same duration for all bands
 // eq (float) : set the same EQ value for all bands (value is +/- dB)
 // feedback (float) : set the same feedback value for all bands (-1.0 - 1.0)
@@ -29,16 +29,21 @@
 
 // warning: use headphones or you'll get feedback!
 adc => Spectacle spect => dac;
-spect.range(0,5000);
-<<< "Spectacle: random delay by default." >>>;
+spect.range(100,4100); // limit frequency range
+20 => spect.bands; // set number of bands to 20
+// This will divide the spectrum evenly within the frequency range.
+// Band 1 will cover 100-300 Hz, Band 2 will cover 300-500 Hz, etc.
+// up to Band 20, which covers 3900-4100 Hz.
+<<< spect.bands(), "frequency bands with random delay by default" >>>;
 10::second => now;
-<<< "Spectacle: switching to ascending delay and descending eq.">>>;
+<<< "switching to ascending delay and descending eq","">>>;
 spect.table("delay","ascending");
 spect.table("eq","descending");
 10::second => now;
-<<< "Spectacle: ascending eq, with feedback." >>>;
+<<< "switching to ascending eq with feedback","" >>>;
 0 => spect.eq;
 0.8 => spect.feedback;
 20::second => now;
 adc =< spect; // disconnect input
+<<< "ringing down","" >>>;
 minute => now; // let it ring down

@@ -85,7 +85,7 @@ t_CKINT spectacle_data_offset = 0;
 #define kMinMaxDelTime           0.1f
 #define kMaxMaxDelTime           20.0f
 #define kMaxTableLen             512
-#define kDefaultTableSize        128
+#define kDefaultTableSize        64
 
 // class definition for internal Chugin data
 // (note: this isn't strictly necessary, but serves as example

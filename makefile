@@ -1,5 +1,5 @@
 
-CHUGINS=ABSaturator Bitcrusher KasFilter MagicSine FIR PanN PitchTrack GVerb Mesh2D
+CHUGINS=ABSaturator Bitcrusher KasFilter MagicSine FIR PanN PitchTrack GVerb Mesh2D Spectacle
 CHUGS=$(foreach CHUG,$(CHUGINS),$(CHUG)/$(CHUG).chug)
 
 INSTALL_DIR=/usr/lib/chuck
