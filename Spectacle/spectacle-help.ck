@@ -1,2 +1,3 @@
-adc => Spectacle spec => dac;
-<<< 0.494 => spec.param >>>;
+adc => Spectacle spect => dac;
+<<< 0.494 => spect.param >>>;
+minute => now;

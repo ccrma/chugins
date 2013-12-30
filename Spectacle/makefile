@@ -3,8 +3,9 @@
 CHUGIN_NAME=Spectacle
 
 # all of the c/cpp files that compose this chugin
-C_MODULES=fft.c
-CXX_MODULES=JGFilter.cpp DLineN.cpp Spectacle.cpp
+CXX_MODULES=genlib/FFTReal.cpp  genlib/Obucket.cpp  genlib/Odelay.cpp  genlib/Offt.cpp  genlib/Ooscil.cpp  genlib/RandGen.cpp
+CXX_MODULES+=SpectacleBase.cpp SpectEQ.cpp Spectacle-dsp.cpp
+CXX_MODULES+=Spectacle.cpp
 
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/
