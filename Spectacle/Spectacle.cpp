@@ -142,6 +142,15 @@ public:
   {
     float dt = (p / srate);
     dt = CLIP(dt, kMinMaxDelTime, kMaxMaxDelTime);
+	if (dt > maxdeltime)
+	  {
+		// pin existing delay times to new maximum
+		for (int i = 0; i < dttablen; i++)
+		  {
+			if (dttable[i] > dt)
+			  dttable[i] = dt;
+		  }
+	  }
     maxdeltime = dt;
     spectdelay->set_maxdeltime(dt);
     return p;
