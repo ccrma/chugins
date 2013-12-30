@@ -24,9 +24,6 @@ CK_DLL_CTOR(pitchtrack_ctor);
 CK_DLL_DTOR(pitchtrack_dtor);
 
 // example of getter/setter
-CK_DLL_MFUN(pitchtrack_setParam);
-CK_DLL_MFUN(pitchtrack_getParam);
-
 CK_DLL_MFUN(pitchtrack_getFreq);
 CK_DLL_MFUN(pitchtrack_setFidelity);
 CK_DLL_MFUN(pitchtrack_getFidelity);
@@ -104,18 +101,6 @@ public:
     return in;
   }
   
-  // set parameter example
-  float setParam( t_CKFLOAT p )
-  {
-    _freq = p;
-    return p;
-  }
-
-  // get parameter example
-  float getParam() { return _freq; }
-  
-  //float getFreq() { return 99.25; }
-
   float getFreq()
   {
 	return _freq;
