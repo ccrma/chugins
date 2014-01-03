@@ -1,0 +1,11 @@
+
+ARCHS?=x86_64
+ARCHOPTS=$(addprefix -arch ,$(ARCHS))
+
+FLUIDSYNTH_PREFIX=/opt/local
+
+FLAGS=-D__MACOSX_CORE__ -I$(CK_SRC_PATH) $(ARCHOPTS) -I$(FLUIDSYNTH_PREFIX)/include
+LDFLAGS=-bundle -lstdc++ $(ARCHOPTS) -L$(FLUIDSYNTH_PREFIX)/lib -lfluidsynth
+
+LD=clang++
+CXX=clang++
