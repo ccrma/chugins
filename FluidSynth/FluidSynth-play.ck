@@ -1,17 +1,11 @@
-
-NRev reverb => dac;
-0.01 => reverb.mix;
+NRev rev => dac;
+0.01 => rev.mix;
 
 MidiFileIn min;
 MidiMsg msg;
 
-string sfont;
+"HS_African_Percussion.sf2" => string sfont;
 if(me.args() > 0) me.arg(0) => sfont;
-else 
-{
-    cherr <= "error: no soundfont specified\n";
-    me.exit();
-}
 
 me.sourceDir() + "/bwv772.mid" => string filename;
 if(me.args() > 1) me.arg(1) => filename;
@@ -34,9 +28,13 @@ while(done < min.numTracks())
 
 min.close();
 
+minute => now;
+
 fun void track(int t)
 {
-    FluidSynth m => reverb;
+    FluidSynth m => rev;
+    m => dac;
+    0.91 => m.gain;
     m.open(sfont);
     
     while(min.read(msg, t))
