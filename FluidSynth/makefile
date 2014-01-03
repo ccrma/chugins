@@ -5,7 +5,7 @@ CHUGIN_NAME=FluidSynth
 # all of the c/cpp files that compose this chugin
 C_MODULES=
 CXX_MODULES=fluidsynth.cpp
-
+LIBS=-lfluidsynth
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/
 

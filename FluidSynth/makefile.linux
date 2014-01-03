@@ -3,6 +3,5 @@ CHUGIN_PATH=/usr/lib/chuck
 
 FLAGS=-D__LINUX_ALSA__ -I$(CK_SRC_PATH) -fPIC
 LDFLAGS=-shared -lstdc++
-LIBS=-lfluidsynth
 LD=gcc
 CXX=g++
