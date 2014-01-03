@@ -14,9 +14,9 @@
 // damping: (float), [0.0 - 1.0], default 0.8
 // spread: (float), default 15.0
 // inputbandwidth: (float) [0.0 - 1.0], default 0.5
-// drylevel (float) [0.0 - 1.0], default 0.6
-// earlylevel (float) [0.0 - 1.0], default 0.4
-// taillevel (float) [0.0 - 1.0], default 0.5
+// dry (float) [0.0 - 1.0], default 0.6
+// early (float) [0.0 - 1.0], default 0.4
+// tail (float) [0.0 - 1.0], default 0.5
 
 adc => GVerb gverb => dac;
 50 => gverb.roomsize;
