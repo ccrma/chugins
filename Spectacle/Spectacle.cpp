@@ -58,6 +58,9 @@ CK_DLL_MFUN(spectacle_getMinFreq);
 CK_DLL_MFUN(spectacle_setMaxFreq);
 CK_DLL_MFUN(spectacle_getMaxFreq);
 
+CK_DLL_MFUN(spectacle_setMix);
+CK_DLL_MFUN(spectacle_getMix);
+
 CK_DLL_MFUN(spectacle_setFreqRange);
 
 CK_DLL_MFUN(spectacle_setTable);
@@ -103,6 +106,7 @@ public:
     maxdeltime = CLIP(maxdeltime, kMinMaxDelTime, kMaxMaxDelTime);
 	mindeltime = 0.0;
     srate = fs;
+    mix = 1.0;
     spectdelay = NULL;
     float *del = dttable;
     float *eq = eqtable;
@@ -137,6 +141,8 @@ public:
 	  {
 		spectdelay->run(in+i, out+i, 1);
 		spectdelay->run(in+i, out+i+1, 1);
+		out[i] = out[i] * mix + in[i] * (1-mix);
+		out[i+1] = out[i+1] * mix + in[i+1] * (1-mix);
 	  }
     // process a block of samples
     //spectdelay->run(in, out, nframes);
@@ -270,6 +276,14 @@ public:
 
   float getMaxFreq () { return maxfreq; }
 
+  float setMix ( t_CKFLOAT p )
+  {
+    mix = CLIP(p,0,1);
+    return mix;
+  }
+
+  float getMix () { return mix; }
+
   void setFreqRange ( t_CKFLOAT q, t_CKFLOAT p )
   {
 	const float nyquist = srate / 2;
@@ -396,6 +410,7 @@ private:
   int eqtablen, dttablen, fbtablen;
   float minfreq, maxfreq;
   bool hold, posteq;
+  float mix;
 
   void setDelayTable (int type)
   {
@@ -553,6 +568,14 @@ CK_DLL_QUERY( Spectacle )
 
   // example of adding getter method
   QUERY->add_mfun(QUERY, spectacle_getMaxFreq, "float", "freqMax");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, spectacle_setMix, "float", "mix");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "float", "mix");
+
+  // example of adding getter method
+  QUERY->add_mfun(QUERY, spectacle_getMix, "float", "mix");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setFreqRange, "void", "range");
@@ -798,6 +821,25 @@ CK_DLL_MFUN(spectacle_getMaxFreq)
   Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
   // set the return value
   RETURN->v_float = bcdata->getMaxFreq();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(spectacle_setMix)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_float = bcdata->setMix(GET_NEXT_FLOAT(ARGS));
+}
+
+
+// example implementation for getter
+CK_DLL_MFUN(spectacle_getMix)
+{
+  // get our c++ class pointer
+  Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
+  // set the return value
+  RETURN->v_float = bcdata->getMix();
 }
 
 // example implementation for setter

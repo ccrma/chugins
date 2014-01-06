@@ -10,6 +10,7 @@
 
 // Options
 //
+// mix (float) [0-1]: mix of processed and unprocessed signal. default 1.0
 // clear (void) : reset Spectacle
 // fftlen (int) : set FFT frame size (power of 2)
 // overlap (int) : set frame overlap; best between 2 and 6
@@ -29,6 +30,7 @@
 
 // warning: use headphones or you'll get feedback!
 adc => Spectacle spect => dac;
+0.5 => spect.mix; // mix half processed and unprocessed signal
 spect.range(100,4100); // limit frequency range
 20 => spect.bands; // set number of bands to 20
 // This will divide the spectrum evenly within the frequency range.
