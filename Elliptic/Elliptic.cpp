@@ -35,7 +35,7 @@ CK_DLL_MFUN(elliptic_hip);
 CK_DLL_MFUN(elliptic_bp);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
-CK_DLL_TICK(elliptic_tick);
+CK_DLL_TICKF(elliptic_tick);
 
 // this is a special offset reserved for Chugin internal data
 t_CKINT elliptic_data_offset = 0;
@@ -60,7 +60,6 @@ public:
   {
     nsects = 0;
     srate = fs;
-    es = new EllSect;
     ripple = 0.2;
     atten = 90;
     f1 = 400;
@@ -70,17 +69,30 @@ public:
 
   ~Elliptic()
   {
-    delete es;
+	es[0] = NULL;
+	es[1] = NULL;
+	delete [] es[0];
+	delete [] es[1];
   }
   
   // for Chugins extending UGen
-  SAMPLE tick( SAMPLE in )
+  void tick( SAMPLE* in, SAMPLE* out, int nframes)
   {
     // default: this passes whatever input is patched into Chugin
-    if (nsects == 0)
-      return in;
-    else
-      return ellipse(in, nsects, es, xnorm);
+	
+	if (nsects==0)
+	  {
+		out = in;
+	  }
+	else
+	  {
+		memset (out, 0, sizeof(SAMPLE)*2*nframes);
+		for (int i=0; i<nframes; i++)
+		  {
+			out[i] = ellipse(in[i], nsects, es[0], xnorm);
+			out[i+1] = ellipse(in[i+1], nsects, es[1], xnorm);
+		  }
+	  }
   }
   
   float setRipple ( t_CKFLOAT p)
@@ -130,7 +142,10 @@ private:
   {
     ellset (f1, f2, f3, ripple, atten, srate);
     nsects = get_nsections();
-    ellpset(es, &xnorm);
+	es[0] = new EllSect[nsects];
+    ellpset(es[0], &xnorm);
+	es[1] = new EllSect[nsects];
+    ellpset(es[1], &xnorm);
     if (nsects == 0)
       printf("Ellipse: filter not yet initialized. (You may need to relax the specs.)\n");
     else
@@ -143,7 +158,7 @@ private:
   float xnorm;
   float srate;
   int nsects;
-  EllSect *es;
+  EllSect *es[2];
 };
 
 
@@ -165,7 +180,7 @@ CK_DLL_QUERY( Elliptic )
   QUERY->add_dtor(QUERY, elliptic_dtor);
   
   // for UGen's only: add tick function
-  QUERY->add_ugen_func(QUERY, elliptic_tick, NULL, 1, 1);
+  QUERY->add_ugen_funcf(QUERY, elliptic_tick, NULL, 2, 2);
   
   // NOTE: if this is to be a UGen with more than 1 channel, 
   // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
@@ -249,14 +264,15 @@ CK_DLL_DTOR(elliptic_dtor)
 
 
 // implementation for tick function
-CK_DLL_TICK(elliptic_tick)
+CK_DLL_TICKF(elliptic_tick)
 {
   // get our c++ class pointer
   Elliptic * c = (Elliptic *) OBJ_MEMBER_INT(SELF, elliptic_data_offset);
   
   // invoke our tick function; store in the magical out variable
-  if(c) *out = c->tick(in);
-  
+  //if(c) *out = c->tick(in);
+  if(c) c->tick(in, out, nframes);
+
   // yes
   return TRUE;
 }
