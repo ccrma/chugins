@@ -28,6 +28,7 @@
 //
 // atten (float): filter attenuation in dB. Default 90.0
 // ripple (float): filter ripple in dB. Default 0.2
+// bypass (int): switch bypass on or off. Default 0
 //
 // Before using the filter, you must initialize it as a
 // low-pass (lpf), high-pass (hpf), or band-pass filter and
@@ -51,4 +52,8 @@ ell.bpf(500,600,650); // create band-pass filter which
                       // unattenuated, then slopes from
                       // 600-650 Hz (and 450-500 Hz)
 
+true => ell.bypass; // bypass filter
+2::second => now;
+
+false => ell.bypass; // activate filter
 minute => now;

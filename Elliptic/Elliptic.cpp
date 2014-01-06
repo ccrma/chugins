@@ -30,6 +30,9 @@ CK_DLL_MFUN(elliptic_getRipple);
 CK_DLL_MFUN(elliptic_setAtten);
 CK_DLL_MFUN(elliptic_getAtten);
 
+CK_DLL_MFUN(elliptic_setBypass);
+CK_DLL_MFUN(elliptic_getBypass);
+
 CK_DLL_MFUN(elliptic_lop);
 CK_DLL_MFUN(elliptic_hip);
 CK_DLL_MFUN(elliptic_bp);
@@ -58,6 +61,7 @@ public:
   // constructor
   Elliptic( t_CKFLOAT fs)
   {
+	bypass = false;
     nsects = 0;
     srate = fs;
     ripple = 0.2;
@@ -79,14 +83,18 @@ public:
   void tick( SAMPLE* in, SAMPLE* out, int nframes)
   {
     // default: this passes whatever input is patched into Chugin
+	memset (out, 0, sizeof(SAMPLE)*2*nframes);
 	
-	if (nsects==0)
+	if (nsects==0 || bypass)
 	  {
-		out = in;
+		for (int i=0; i<nframes; i++)
+		  {
+			out[i] = in[i];
+			out[i+1] = in[i+1];
+		  }
 	  }
 	else
 	  {
-		memset (out, 0, sizeof(SAMPLE)*2*nframes);
 		for (int i=0; i<nframes; i++)
 		  {
 			out[i] = ellipse(in[i], nsects, es[0], xnorm);
@@ -108,6 +116,24 @@ public:
     ellset (f1, f2, f3, ripple, atten, srate);
     return p;
   }
+
+  int setBypass ( t_CKINT p)
+  {
+	int val = (int)p;
+	if (val > 0)
+	  {
+		bypass = true;
+		printf ("Elliptic: bypass on\n");
+	  }
+	else
+	  {
+		bypass = false;
+		printf ("Elliptic: turning off bypass\n");
+	  }		
+	return p;
+  }
+
+  int getBypass () { return bypass ? 1 : 0; }
 
   float getRipple() { return ripple; }
   float getAtten() { return atten; }
@@ -147,12 +173,13 @@ private:
 	es[1] = new EllSect[nsects];
     ellpset(es[1], &xnorm);
     if (nsects == 0)
-      printf("Ellipse: filter not yet initialized. (You may need to relax the specs.)\n");
+      printf("Elliptic: filter not yet initialized. (You may need to relax the specs.)\n");
     else
-      printf("Ellipse: filter initialized.\n");
+      printf("Elliptic: filter initialized.\n");
   }
     
   // instance data
+  bool bypass;
   double f1, f2, f3;
   float atten, ripple;
   float xnorm;
@@ -200,6 +227,14 @@ CK_DLL_QUERY( Elliptic )
   QUERY->add_mfun(QUERY, elliptic_getRipple, "float", "ripple");
   // example of adding getter method
   QUERY->add_mfun(QUERY, elliptic_getAtten, "float", "atten");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, elliptic_setBypass, "int", "bypass");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "int", "arg");
+  
+  // example of adding getter method
+  QUERY->add_mfun(QUERY, elliptic_getBypass, "int", "bypass");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, elliptic_lop, "void", "lpf");
@@ -312,6 +347,24 @@ CK_DLL_MFUN(elliptic_getAtten)
   Elliptic * bcdata = (Elliptic *) OBJ_MEMBER_INT(SELF, elliptic_data_offset);
   // set the return value
   RETURN->v_float = bcdata->getAtten();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(elliptic_setBypass)
+{
+  // get our c++ class pointer
+  Elliptic * bcdata = (Elliptic *) OBJ_MEMBER_INT(SELF, elliptic_data_offset);
+  // set the return value
+  RETURN->v_int = bcdata->setBypass(GET_NEXT_INT(ARGS));
+}
+
+// example implementation for getter
+CK_DLL_MFUN(elliptic_getBypass)
+{
+  // get our c++ class pointer
+  Elliptic * bcdata = (Elliptic *) OBJ_MEMBER_INT(SELF, elliptic_data_offset);
+  // set the return value
+  RETURN->v_int = bcdata->getBypass();
 }
 
 // example implementation for getter
