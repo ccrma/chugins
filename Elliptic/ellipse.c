@@ -4,7 +4,8 @@
 
 #define VERBOSE 0      /* print stuff during filter design (in setell) */
 
-double ellset(float p[], int n_args);
+double ellset(double f1, double f2, double f3,
+	      double ripple, double atten, double srate);
 int get_nsections(void);
 int ellpset(EllSect [], float *);
 float ellipse(float, int, EllSect [], float);
@@ -16,24 +17,15 @@ static int    nsections = 0;            /* number of sections */
 
 
 double
-ellset(float p[], int n_args)
+ellset(double f1, double f2, double f3,
+       double ripple, double atten, double srate)
 {
-  double srate, f1, f2, f3, ripple, atten;
-  
-  f1 = (double)p[0];
-  f2 = (double)p[1];
-  f3 = (double)p[2];
-  ripple = (double)p[3];
-  atten = (double)p[4];
-  srate = (double)p[5];
-  
   // ***FIXME: do some input validation here
   
   setell(srate, f1, f2, f3, ripple, atten, coeffs, &nsections, VERBOSE);
   
   if (nsections < 1 || nsections > MAX_SECTIONS)
-    //die("ELL", "Filter design failed! Try relaxing specs.");
-  
+    printf("Ellipse: Filter design failed! Try relaxing specs.");
   return 0.0;
 }
 

@@ -28,7 +28,8 @@ CK_DLL_TICK(elliptic_tick);
 t_CKINT elliptic_data_offset = 0;
 
 extern "C" {
-  extern double ellset(float p[], int n_args);
+  extern double ellset(double f1, double f2, double f3,
+		       double ripple, double atten, double srate);
   extern int get_nsections(void);
   extern int ellpset(EllSect [], float *);
   
@@ -67,6 +68,7 @@ public:
 private:
   // instance data
   float m_param;
+  
 };
 
 
