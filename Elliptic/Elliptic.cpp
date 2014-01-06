@@ -12,6 +12,9 @@
 #include <stdio.h>
 #include <limits.h>
 
+#define MAX(a,b) ( (a)>(b)?(a):(b) )
+#define MIN(a,b) ( (a)<(b)?(a):(b) )
+
 // declaration of chugin constructor
 CK_DLL_CTOR(elliptic_ctor);
 // declaration of chugin desctructor
@@ -20,6 +23,16 @@ CK_DLL_DTOR(elliptic_dtor);
 // example of getter/setter
 CK_DLL_MFUN(elliptic_setParam);
 CK_DLL_MFUN(elliptic_getParam);
+
+CK_DLL_MFUN(elliptic_setRipple);
+CK_DLL_MFUN(elliptic_getRipple);
+
+CK_DLL_MFUN(elliptic_setAtten);
+CK_DLL_MFUN(elliptic_getAtten);
+
+CK_DLL_MFUN(elliptic_lop);
+CK_DLL_MFUN(elliptic_hip);
+CK_DLL_MFUN(elliptic_bp);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICK(elliptic_tick);
@@ -45,30 +58,92 @@ public:
   // constructor
   Elliptic( t_CKFLOAT fs)
   {
-    m_param = 0;
+    nsects = 0;
+    srate = fs;
+    es = new EllSect;
+    ripple = 0.2;
+    atten = 90;
+    f1 = 400;
+    f2 = 800;
+    f3 = 0;
+  }
+
+  ~Elliptic()
+  {
+    delete es;
   }
   
   // for Chugins extending UGen
   SAMPLE tick( SAMPLE in )
   {
     // default: this passes whatever input is patched into Chugin
-    return in;
+    if (nsects == 0)
+      return in;
+    else
+      return ellipse(in, nsects, es, xnorm);
   }
   
-  // set parameter example
-  float setParam( t_CKFLOAT p )
+  float setRipple ( t_CKFLOAT p)
   {
-    m_param = p;
+    ripple = p;
+    ellset (f1, f2, f3, ripple, atten, srate);
     return p;
   }
-  
-  // get parameter example
-  float getParam() { return m_param; }
-  
+
+  float setAtten ( t_CKFLOAT p)
+  {
+    atten = p;
+    ellset (f1, f2, f3, ripple, atten, srate);
+    return p;
+  }
+
+  float getRipple() { return ripple; }
+  float getAtten() { return atten; }
+
+  void lowPass ( t_CKFLOAT p, t_CKFLOAT s)
+  {
+    f1 = MIN(p,s);
+    f2 = MAX(p,s);
+    f3 = 0;
+    initialize_filter();
+  }
+
+  void highPass ( t_CKFLOAT p, t_CKFLOAT s)
+  {
+    f1 = MAX(p,s);
+    f2 = MIN(p,s);
+    f3 = 0;
+    initialize_filter();
+  }
+
+  void bandPass ( t_CKFLOAT p, t_CKFLOAT q, t_CKFLOAT r )
+  {
+    f1 = MIN(p,q);
+    f2 = MAX(p,q);
+    f3 = r;
+    initialize_filter();
+  }
+
 private:
+
+  void initialize_filter ()
+  {
+    ellset (f1, f2, f3, ripple, atten, srate);
+    nsects = get_nsections();
+    ellpset(es, &xnorm);
+    if (nsects == 0)
+      printf("Ellipse: filter not yet initialized. (You may need to relax the specs.)\n");
+    else
+      printf("Ellipse: filter initialized.\n");
+  }
+    
   // instance data
-  float m_param;
-  
+  double f1, f2, f3;
+  float atten, ripple;
+  float xnorm;
+  float srate;
+  int nsects;
+  EllSect *es;
 };
 
 
@@ -97,12 +172,38 @@ CK_DLL_QUERY( Elliptic )
   // and declare a tickf function using CK_DLL_TICKF
   
   // example of adding setter method
-  QUERY->add_mfun(QUERY, elliptic_setParam, "float", "param");
+  QUERY->add_mfun(QUERY, elliptic_setRipple, "float", "ripple");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "float", "arg");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, elliptic_setAtten, "float", "atten");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "float", "arg");
   
   // example of adding getter method
-  QUERY->add_mfun(QUERY, elliptic_getParam, "float", "param");
+  QUERY->add_mfun(QUERY, elliptic_getRipple, "float", "ripple");
+  // example of adding getter method
+  QUERY->add_mfun(QUERY, elliptic_getAtten, "float", "atten");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, elliptic_lop, "void", "lpf");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "float", "stop");
+  QUERY->add_arg(QUERY, "float", "pass");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, elliptic_hip, "void", "hpf");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "float", "stop");
+  QUERY->add_arg(QUERY, "float", "pass");
+
+  // example of adding setter method
+  QUERY->add_mfun(QUERY, elliptic_hip, "void", "bpf");
+  // example of adding argument to the above method
+  QUERY->add_arg(QUERY, "float", "stop");
+  QUERY->add_arg(QUERY, "float", "hip");
+  QUERY->add_arg(QUERY, "float", "lop");
   
   // this reserves a variable in the ChucK internal class to store 
   // referene to the c++ class we defined above
@@ -162,20 +263,71 @@ CK_DLL_TICK(elliptic_tick)
 
 
 // example implementation for setter
-CK_DLL_MFUN(elliptic_setParam)
+CK_DLL_MFUN(elliptic_setRipple)
 {
   // get our c++ class pointer
   Elliptic * bcdata = (Elliptic *) OBJ_MEMBER_INT(SELF, elliptic_data_offset);
   // set the return value
-  RETURN->v_float = bcdata->setParam(GET_NEXT_FLOAT(ARGS));
+  RETURN->v_float = bcdata->setRipple(GET_NEXT_FLOAT(ARGS));
 }
 
-
-// example implementation for getter
-CK_DLL_MFUN(elliptic_getParam)
+// example implementation for setter
+CK_DLL_MFUN(elliptic_setAtten)
 {
   // get our c++ class pointer
   Elliptic * bcdata = (Elliptic *) OBJ_MEMBER_INT(SELF, elliptic_data_offset);
   // set the return value
-  RETURN->v_float = bcdata->getParam();
+  RETURN->v_float = bcdata->setAtten(GET_NEXT_FLOAT(ARGS));
+}
+
+// example implementation for getter
+CK_DLL_MFUN(elliptic_getRipple)
+{
+  // get our c++ class pointer
+  Elliptic * bcdata = (Elliptic *) OBJ_MEMBER_INT(SELF, elliptic_data_offset);
+  // set the return value
+  RETURN->v_float = bcdata->getRipple();
+}
+
+// example implementation for getter
+CK_DLL_MFUN(elliptic_getAtten)
+{
+  // get our c++ class pointer
+  Elliptic * bcdata = (Elliptic *) OBJ_MEMBER_INT(SELF, elliptic_data_offset);
+  // set the return value
+  RETURN->v_float = bcdata->getAtten();
+}
+
+// example implementation for getter
+CK_DLL_MFUN(elliptic_lop)
+{
+  // get our c++ class pointer
+  Elliptic * bcdata = (Elliptic *) OBJ_MEMBER_INT(SELF, elliptic_data_offset);
+  // set the return value
+  t_CKFLOAT stop = GET_NEXT_FLOAT(ARGS);
+  t_CKFLOAT pass = GET_NEXT_FLOAT(ARGS);
+  bcdata->lowPass(pass,stop);
+}
+
+// example implementation for getter
+CK_DLL_MFUN(elliptic_hip)
+{
+  // get our c++ class pointer
+  Elliptic * bcdata = (Elliptic *) OBJ_MEMBER_INT(SELF, elliptic_data_offset);
+  // set the return value
+  t_CKFLOAT stop = GET_NEXT_FLOAT(ARGS);
+  t_CKFLOAT pass = GET_NEXT_FLOAT(ARGS);
+  bcdata->highPass(pass,stop);
+}
+
+// example implementation for getter
+CK_DLL_MFUN(elliptic_bp)
+{
+  // get our c++ class pointer
+  Elliptic * bcdata = (Elliptic *) OBJ_MEMBER_INT(SELF, elliptic_data_offset);
+  // set the return value
+  t_CKFLOAT stop = GET_NEXT_FLOAT(ARGS);
+  t_CKFLOAT hip = GET_NEXT_FLOAT(ARGS); 
+  t_CKFLOAT lop = GET_NEXT_FLOAT(ARGS);
+  bcdata->bandPass(lop, hip, stop);
 }

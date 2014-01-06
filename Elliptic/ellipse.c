@@ -24,8 +24,8 @@ ellset(double f1, double f2, double f3,
   
   setell(srate, f1, f2, f3, ripple, atten, coeffs, &nsections, VERBOSE);
   
-  if (nsections < 1 || nsections > MAX_SECTIONS)
-    printf("Ellipse: Filter design failed! Try relaxing specs.");
+  //if (nsections < 1 || nsections > MAX_SECTIONS)
+  //printf("Ellipse: Filter design failed! Try relaxing specs.\n");
   return 0.0;
 }
 
