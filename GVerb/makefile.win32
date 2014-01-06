@@ -1,0 +1,6 @@
+
+FLAGS=-D__WINDOWS_DS_ -D__WINDOWS_PTHREAD__ -I$(CK_SRC_PATH)
+LDFLAGS=-shared -lstdc++
+
+CXX=g++
+LD=g++
