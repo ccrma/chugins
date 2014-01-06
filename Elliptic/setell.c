@@ -338,7 +338,7 @@ void stuff1_(double q, double r, char *whatsi)
   b_1.cd[b_1.md - 1] = d_1 * d_1 + d_2 * d_2;
  L6:
   if(print_diagnostics_)
-    fprintf(stderr,"complex %.4s pair at %f +-j %f\n",whatsi,z.r,z.i);
+    printf("complex %.4s pair at %f +-j %f\n",whatsi,z.r,z.i);
   
   if (j > 0 || r == 0.) {
     return;
@@ -362,7 +362,7 @@ void stuff1_(double q, double r, char *whatsi)
   b_1.cd[b_1.md - 1] = 0.;
  L8:
   if(print_diagnostics_)
-    fprintf(stderr,"real %.4s at %f\n",whatsi,x);
+    printf("real %.4s at %f\n",whatsi,x);
   
   if (j > 0) {
     return;
@@ -395,10 +395,10 @@ void fresp_(long int k, double samr, double f1, double f2, double f3)
   
   if(print_diagnostics_)
     {
-      fprintf(stderr,"//\nelliptic filter with %ld sections\n",m2);
+      printf("//\nelliptic filter with %ld sections\n",m2);
       i_1 = b_1.mn;
       for (i = 1; i <= i_1; ++i) {
-	fprintf(stderr,"%f %f ",b_1.cn[i - 1],b_1.cd[i - 1]);
+	printf("%f %f ",b_1.cn[i - 1],b_1.cd[i - 1]);
       }
     }
   
@@ -433,7 +433,7 @@ void fresp_(long int k, double samr, double f1, double f2, double f3)
   b_1.const_ = 1. / z_abs(&tf);
   
   if(print_diagnostics_)
-    fprintf(stderr,"\nconst= %f\n",b_1.const_);
+    printf("\nconst= %f\n",b_1.const_);
   
   i_2 = k;
   for (j = 1; j <= i_2; ++j) {
@@ -483,7 +483,7 @@ void fresp_(long int k, double samr, double f1, double f2, double f3)
     db = log10(d_1) * 20.;
     /* L3: */
     if(print_diagnostics_)
-      fprintf(stderr,"%f \t %f \t %f \t %f\n",freq,phase,amp,db);
+      printf("%f \t %f \t %f \t %f\n",freq,phase,amp,db);
   }
   return;
 } /* fresp_ */
