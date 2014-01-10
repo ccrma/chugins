@@ -40,7 +40,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <TargetExt>.chug</TargetExt>
-    <IncludePath>../chuck/include;$(IncludePath)</IncludePath>
+    <IncludePath>../chuck/include;genlib;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -82,6 +82,12 @@
     <ClCompile Include="SpectacleBase.cpp" />
     <ClCompile Include="SpectEQ.cpp" />
     <ClCompile Include="Spectacle-dsp.cpp" />
+    <ClCompile Include="genlib/FFTReal.cpp" />
+    <ClCompile Include="genlib/Obucket.cpp" />
+    <ClCompile Include="genlib/Odelay.cpp" />
+    <ClCompile Include="genlib/Offt.cpp" />
+    <ClCompile Include="genlib/Ooscil.cpp" />
+    <ClCompile Include="genlib/RandGen.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
