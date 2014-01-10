@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{DBB9C041-D133-4016-BA1C-61B3ED1B4FE5}</ProjectGuid>
+    <ProjectGuid>{84C0BCA4-D074-48FC-8A19-6151CC996451}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>PitchTrack</RootNamespace>
   </PropertyGroup>

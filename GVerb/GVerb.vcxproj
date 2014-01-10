@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{DBB9C041-D133-4016-BA1C-61B3ED1B4FE5}</ProjectGuid>
+    <ProjectGuid>{818DF75D-345C-481A-8265-C723784F0F4A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>GVerb</RootNamespace>
   </PropertyGroup>

@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{DBB9C041-D133-4016-BA1C-61B3ED1B4FE5}</ProjectGuid>
+    <ProjectGuid>{6B4C1420-CD0A-401B-BF70-AA58685958C6}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Mesh2D</RootNamespace>
   </PropertyGroup>
