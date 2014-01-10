@@ -22,5 +22,8 @@
 
 /Release/
 /Debug/
+*/Release/
+*/Debug/
 */*.vcxproj.user
 */*.vcxproj.filters
+ipch

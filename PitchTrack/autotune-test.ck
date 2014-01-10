@@ -12,7 +12,7 @@ dac => WvOut2 record => blackhole;
 "obama_autotuned" => record.wavFilename;
 
 pt.frame()::samp => del.delay;
-"data/obama.wav" => obama.read;
+me.dir() + "/data/obama.wav" => obama.read;
 0 => obama.pos;
 obama.length() => dur length;
 
