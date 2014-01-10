@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{DBB9C041-D133-4016-BA1C-61B3ED1B4FE5}</ProjectGuid>
+    <ProjectGuid>{4245F2DB-9F68-4F90-B976-A38AEE16FE75}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Elliptic</RootNamespace>
   </PropertyGroup>
