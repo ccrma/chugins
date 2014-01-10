@@ -27,6 +27,15 @@
 #include <stdio.h>
 #include <limits.h>
 
+#ifdef WIN32
+#include <stdlib.h>
+#define random() rand()
+#endif
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+
 // declaration of chugin constructor
 CK_DLL_CTOR(spectacle_ctor);
 // declaration of chugin desctructor
@@ -257,6 +266,7 @@ public:
 		spectdelay->set_delay_freqrange(minfreq, maxfreq);
 		spectdelay->set_freqrange(minfreq, maxfreq);
 	  }
+    return minfreq;
   }
 
   float getMinFreq () { return minfreq; }
@@ -272,6 +282,7 @@ public:
 		spectdelay->set_delay_freqrange(minfreq, maxfreq);
 		spectdelay->set_freqrange(minfreq, maxfreq);
 	  }
+    return maxfreq;
   }
 
   float getMaxFreq () { return maxfreq; }
