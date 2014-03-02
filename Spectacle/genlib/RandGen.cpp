@@ -7,11 +7,6 @@
 #include <math.h>
 #include <assert.h>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-
 // Classes for generating random numbers   JGG, 6/22/04
 // Most of this code is based on C functions written by Luke Dubois.
 // One class is based on code written by Mara Helmuth.

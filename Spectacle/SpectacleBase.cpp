@@ -36,15 +36,6 @@
 #define atan2f(y, x) atan2((y), (x))
 #endif
 
-#ifdef WIN32
-#include <stdlib.h>
-#define random() rand()
-#endif
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-
 const int kMaxWindowLen = kMaxFFTLen * 8;
 const int kMinOverlap = 1;
 const int kMaxOverlap = 64;
@@ -531,7 +522,7 @@ void SpectacleBase::update_bin_groups(
       const int extrabins = (highshelfbin - lowshelfbin) - cntltablen;
       //if (extrabins <= 0)
       //error("%s: program error - contact johgibso@gmail.com", instname());
-      const int nsums = int(sqrt(2.0 * extrabins) + 2.0);
+      const int nsums = int(sqrt(2 * extrabins) + 2);
       
       // Compute the sum of integers for n in [nsums-2, nsums);
       // formula is the closed-form equation: x = n * (n + 1) / 2.

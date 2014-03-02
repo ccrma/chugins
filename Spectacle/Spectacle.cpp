@@ -27,15 +27,6 @@
 #include <stdio.h>
 #include <limits.h>
 
-#ifdef WIN32
-#include <stdlib.h>
-#define random() rand()
-#endif
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
-
 // declaration of chugin constructor
 CK_DLL_CTOR(spectacle_ctor);
 // declaration of chugin desctructor
@@ -266,7 +257,6 @@ public:
 		spectdelay->set_delay_freqrange(minfreq, maxfreq);
 		spectdelay->set_freqrange(minfreq, maxfreq);
 	  }
-    return minfreq;
   }
 
   float getMinFreq () { return minfreq; }
@@ -282,7 +272,6 @@ public:
 		spectdelay->set_delay_freqrange(minfreq, maxfreq);
 		spectdelay->set_freqrange(minfreq, maxfreq);
 	  }
-    return maxfreq;
   }
 
   float getMaxFreq () { return maxfreq; }
@@ -357,12 +346,10 @@ public:
 	return x;
   }
 
-  int setTable ( Chuck_String * q, Chuck_String * p)
+    int setTable ( const char* p, const char* q )
   {
-	const char p0 = p->str.c_str()[0];
-	const char q0 = q->str.c_str()[0];
-	//const char p0 = tablestring[0];
-	//const char q0 = typestring[0];
+	const char p0 = p[0];
+	const char q0 = q[0];
 	int table, type;
 
 	switch (p0)
@@ -380,7 +367,7 @@ public:
 		type = 3;
 		break;
 	  default:
-		printf ("Spectacle: error: first argument \"%s\" not valid.\n",p->str.c_str());
+		printf ("Spectacle: error: first argument \"%s\" not valid.\n",p);
 		return 0;
 	  }
 
@@ -396,7 +383,7 @@ public:
 		type = 2;
 		break;
 	  default:
-		printf ("Spectacle: error: second argument \"%s\" not valid.\n",q->str.c_str());
+		printf ("Spectacle: error: second argument \"%s\" not valid.\n",q);
 		return 0;
 	  }
 
@@ -507,7 +494,7 @@ CK_DLL_QUERY( Spectacle )
   QUERY->add_dtor(QUERY, spectacle_dtor);
   
   // for UGen's only: add tick function
-  QUERY->add_ugen_funcf(QUERY, spectacle_tick, NULL, 8, 8);
+  QUERY->add_ugen_funcf(QUERY, spectacle_tick, NULL, 2, 2);
   
   // NOTE: if this is to be a UGen with more than 1 channel, 
   // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
@@ -868,7 +855,9 @@ CK_DLL_MFUN(spectacle_setTable)
   // get our c++ class pointer
   Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
   // set the return value
-  RETURN->v_int = bcdata->setTable(GET_NEXT_STRING(ARGS),GET_NEXT_STRING(ARGS));
+  const char* q = GET_NEXT_STRING(ARGS)->str.c_str();
+  const char* p = GET_NEXT_STRING(ARGS)->str.c_str();
+  RETURN->v_int = bcdata->setTable(q,p);
 }
 
 // example implementation for setter

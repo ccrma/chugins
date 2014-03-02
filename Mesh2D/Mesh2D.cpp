@@ -158,7 +158,7 @@ private:
     QUERY->add_dtor(QUERY, mesh2d_dtor);
     
     // for UGen's only: add tick function
-    QUERY->add_ugen_func(QUERY, mesh2d_tick, NULL, 1, 1);
+    QUERY->add_ugen_func(QUERY, mesh2d_tick, NULL, 0, 1);
     
     // NOTE: if this is to be a UGen with more than 1 channel, 
     // e.g., a multichannel UGen -- will need to use add_ugen_funcf()

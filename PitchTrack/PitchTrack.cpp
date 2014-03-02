@@ -59,8 +59,8 @@ public:
     _bias = DEF_BIAS;
     _frame = DEF_FRAME;
     
-    _buffer = (float *) malloc(sizeof(float) * _frame);
-    _null_buffer = (float *) malloc(sizeof(float) * _frame);
+    _buffer = new float[_frame];
+    _null_buffer = new float[_frame];
     _index = 0;
     
     for (int i = 0; i < _frame; i++)
@@ -137,10 +137,10 @@ public:
     int pow2 = 128;
     while (pow2 < i) pow2 *= 2;
     _frame = pow2;
-    free(_buffer);
-    free(_null_buffer);
-    _buffer = (float *) malloc(sizeof(float) * _frame);
-    _null_buffer = (float *) malloc(sizeof(float) * _frame);
+    delete _buffer;
+    delete _null_buffer;
+    _buffer = new float[_frame];
+    _null_buffer = new float[_frame];
     _index = 0;
     
     for (int i = 0; i < _frame; i++)
