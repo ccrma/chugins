@@ -19,3 +19,11 @@
 /chugins.ncb
 /chugins-windows-*
 /chugins-mac-*
+
+/Release/
+/Debug/
+*/Release/
+*/Debug/
+*/*.vcxproj.user
+*/*.vcxproj.filters
+ipch

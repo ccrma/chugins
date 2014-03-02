@@ -1,5 +1,5 @@
 
-CHUGINS=ABSaturator Bitcrusher KasFilter MagicSine FIR PanN
+CHUGINS=ABSaturator Bitcrusher KasFilter MagicSine FIR PanN PitchTrack GVerb Mesh2D Spectacle FluidSynth Elliptic
 CHUGS=$(foreach CHUG,$(CHUGINS),$(CHUG)/$(CHUG).chug)
 
 INSTALL_DIR=/usr/lib/chuck
@@ -39,8 +39,7 @@ ABSaturator/ABSaturator-test.ck KasFilter/README-KasFilter.ck \
 $(addprefix FIR/examples/,$(FIR_EXAMPLES)) \
 PanN/Pan4-test.ck PanN/Pan8-test.ck
 
-bin-dist-osx: 
-	make osx
+bin-dist-osx: osx
 	mkdir -p chugins-mac-$(DATE)/chugins/
 	mkdir -p chugins-mac-$(DATE)/examples/
 	cp -f notes/README-mac.txt chugins-mac-$(DATE)/
@@ -51,7 +50,8 @@ bin-dist-osx:
 
 WIN_CHUGS=$(foreach CHUG,$(CHUGINS),$(CHUG)/Release/$(CHUG).chug)
     
-bin-dist-win32: 
+bin-dist-win32:
+	-echo '*** Please ensure you have built all chugins from within Visual Studio ***'
 	mkdir -p chugins-windows-$(DATE)/chugins/
 	mkdir -p chugins-windows-$(DATE)/examples/
 	cp -f notes/README-windows.txt chugins-windows-$(DATE)/
@@ -61,3 +61,9 @@ bin-dist-win32:
 	zip -q -9 -r -m chugins-windows-$(DATE).zip chugins-windows-$(DATE)
 	rm -rf chugins-windows-$(DATE)/
 
+src-dist:
+	mkdir -p chugins-src-$(DATE)/src/
+	mkdir -p chugins-src-$(DATE)/examples/
+	cp -rf $(EXAMPLES) chugins-windows-$(DATE)/examples/
+	git checkout-index -a -f --prefix=
+	tar czf chugins-mac-$(DATE).tgz chugins-mac-$(DATE)

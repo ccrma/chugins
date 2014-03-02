@@ -3,9 +3,9 @@ Repository for Officially Supported ChuGins
 
 Prepackaged Binaries
 --
-[CCRMA ChuGins for Mac OS X](https://github.com/downloads/ccrma/chugins/chugins-mac-2012-11-29.tgz)
+[CCRMA ChuGins for Mac OS X](http://chuck.stanford.edu/chugins/chugins-mac-2013-02-06.tgz)
 
-[CCRMA ChuGins for Windows](https://github.com/downloads/ccrma/chugins/chugins-windows-2012-11-29.zip)
+[CCRMA ChuGins for Windows](http://chuck.stanford.edu/chugins/chugins-windows-2013-02-06.zip)
 
 Installation instructions are included in the binary packages. 
 
@@ -27,11 +27,28 @@ List of Current Chugins
 - **MagicSine**
   - Efficient means of computing a sine wave with 2 adds and 2 multiples per sample, at the expense of being able to dynamically adjust phase.
 - **KasFilter**
-  - Undersampling-based resonant lowpass filter by Kassen
+  - by [@Kassen](http://github.com/Kassen)
+  - Undersampling-based resonant lowpass filter
 - **FIR**
-  - Arbitrary order FIR filter by Perry Cook
+  - by [Perry Cook](http://www.cs.princeton.edu/~prc/)
+  - Arbitrary order FIR filter
 - **Pan4 / Pan8 / Pan16**
   - Basic equal-power panners for 4, 8, and 16 channels
+- **PitchTrack**
+  - by [@jwmatthys](https://github.com/jwmatthys)
+  - Monophonic autocorrelation pitch tracker, based on [helmholtz~] by Katja, http://www.katjaas.nl/helmholtz/helmholtz.html
+- **GVerb**
+  - by [@jwmatthys](https://github.com/jwmatthys)
+  - Good quality stereo reverb with adjustable parameters
+- **Mesh2D**
+  - by [@jwmatthys](https://github.com/jwmatthys)
+  - STK instrument that simulates a rectilinear, 2-dimensional digital waveguide mesh structure. Basically sounds like striking a metal plate.
+- **Spectacle**
+  - by [@jwmatthys](https://github.com/jwmatthys)
+  - FFT-based spectral delay and EQ
+- **Elliptic**
+  - by [@jwmatthys](https://github.com/jwmatthys)
+  - Elliptic filter, capable of very steep slopes or interesting harmonic ripples
 
 Chugins That We Are Working On
 --
