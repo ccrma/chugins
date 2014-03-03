@@ -257,6 +257,8 @@ public:
 		spectdelay->set_delay_freqrange(minfreq, maxfreq);
 		spectdelay->set_freqrange(minfreq, maxfreq);
 	  }
+      
+    return min;
   }
 
   float getMinFreq () { return minfreq; }
@@ -272,6 +274,8 @@ public:
 		spectdelay->set_delay_freqrange(minfreq, maxfreq);
 		spectdelay->set_freqrange(minfreq, maxfreq);
 	  }
+    
+    return max;
   }
 
   float getMaxFreq () { return maxfreq; }
@@ -846,7 +850,9 @@ CK_DLL_MFUN(spectacle_setFreqRange)
   // get our c++ class pointer
   Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
   // set the return value
-  bcdata->setFreqRange(GET_NEXT_FLOAT(ARGS),GET_NEXT_FLOAT(ARGS));
+  t_CKFLOAT rangeMin = GET_NEXT_FLOAT(ARGS);
+  t_CKFLOAT rangeMax = GET_NEXT_FLOAT(ARGS);
+  bcdata->setFreqRange(rangeMin,rangeMax);
 }
 
 // example implementation for setter

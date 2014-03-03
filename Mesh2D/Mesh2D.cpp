@@ -51,8 +51,8 @@ public:
     m_mesh = new Mesh2D_stk(5,4);
     _x = 5;
     _y = 4;
-    _xpos = 0.5;
-    _ypos = 0.5;
+    _xpos = 0;
+    _ypos = 0;
     _decay = 0.999;
 	m_mesh->setInputPosition(_xpos,_ypos);
 	m_mesh->setDecay(_decay);
