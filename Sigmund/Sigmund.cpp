@@ -40,23 +40,6 @@ CK_DLL_TICK(sigmund_tick);
 // this is a special offset reserved for Chugin internal data
 t_CKINT sigmund_data_offset = 0;
 
-extern "C"
-{
-  extern void mayer_fft(int n, t_sample *real, t_sample *imag);
-  extern void mayer_realfft(int n, t_sample *real);
-  void sigmund_getrawpeaks(int npts, t_float *insamps,
-			   int npeak, t_peak *peakv, int *nfound, t_float *power, t_float srate, int loud,
-			   t_float hifreq);
-  void sigmund_getpitch(int npeak, t_peak *peakv, t_float *freqp,
-			t_float npts, t_float srate, t_float nharmonics, t_float amppower, int loud);
-  void notefinder_doit(t_notefinder *x, t_float freq, t_float power,
-		       t_float *note, t_float vibrato, int stableperiod, t_float powerthresh,
-		       t_float growththresh, int loud);
-  void sigmund_peaktrack(int ninpeak, t_peak *inpeakv, 
-			 int noutpeak, t_peak *outpeakv, int loud);
-  int sigmund_ilog2(int n);
-} 
-
 // class definition for internal Chugin data
 // (note: this isn't strictly necessary, but serves as example
 // of one recommended approach)
@@ -136,10 +119,12 @@ public:
 	return 0;
       }
     if (x < nfound)
+    {
 	  if (dotracks)
 		return trackv[x].p_freq;
 	  else
 		return peakv[x].p_freq;
+    }
 	return 0;
   }
 
@@ -151,10 +136,12 @@ public:
 	return 0;
       }
     if (x < nfound)
+    {
 	  if (dotracks)
 		return trackv[x].p_amp;
 	  else
 		return peakv[x].p_amp;
+    }
 	return 0;
   }
 

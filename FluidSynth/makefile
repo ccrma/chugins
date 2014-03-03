@@ -4,8 +4,8 @@ CHUGIN_NAME=FluidSynth
 
 # all of the c/cpp files that compose this chugin
 C_MODULES=
-CXX_MODULES=fluidsynth.cpp
-LIBS=-lfluidsynth
+CXX_MODULES=FluidSynth.cpp
+LIBS=fluidsynth
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/
 
@@ -59,6 +59,8 @@ ifneq (,$(strip $(filter win32,$(MAKECMDGOALS))))
 include makefile.win32
 endif
 
+LDFLAGS+=$(addprefix -l,$(LIBS))
+
 ifneq ($(CHUCK_DEBUG),)
 FLAGS+= -g
 else
@@ -90,17 +92,17 @@ all: $(CHUG)
 
 $(CHUG): $(C_OBJECTS) $(CXX_OBJECTS)
 ifeq ($(CK_CHUGIN_STATIC),0)
-	g++ $(LDFLAGS) -o $@ $^ $(LIBS)
+	g++ $(LDFLAGS) -o $@ $^
 else
 	ar rv $@ $^
 	ranlib $@
 endif
 
 $(C_OBJECTS): %.o: %.c
-	$(CC) $(FLAGS) -c -o $@ $< $(LIBS)
+	$(CC) $(FLAGS) -c -o $@ $<
 
 $(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chuck_dl.h
-	$(CXX) $(FLAGS) -c -o $@ $< $(LIBS)
+	$(CXX) $(FLAGS) -c -o $@ $<
 
 install: $(CHUG)
 	mkdir -p $(CHUGIN_PATH)

@@ -160,6 +160,7 @@ public:
 		if (_comb[i]->frequency() == 0.0)
 		  printf("Multicomb error: comb delay allocation delay failed.\n");
       }
+    return _num;
   }	
   
   int getNum() { return _num; }

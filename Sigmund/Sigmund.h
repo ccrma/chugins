@@ -56,3 +56,25 @@ typedef struct _notefinder
   t_histpoint n_hist[NHISTPOINT];
   int n_histphase;
 } t_notefinder;
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif // __cplusplus
+  extern void mayer_fft(int n, t_sample *real, t_sample *imag);
+  extern void mayer_realfft(int n, t_sample *real);
+  void sigmund_getrawpeaks(int npts, t_float *insamps,
+			   int npeak, t_peak *peakv, int *nfound, t_float *power, t_float srate, int loud,
+			   t_float hifreq);
+  void sigmund_getpitch(int npeak, t_peak *peakv, t_float *freqp,
+			t_float npts, t_float srate, t_float nharmonics, t_float amppower, int loud);
+  void notefinder_doit(t_notefinder *x, t_float freq, t_float power,
+		       t_float *note, t_float vibrato, int stableperiod, t_float powerthresh,
+		       t_float growththresh, int loud);
+  void sigmund_peaktrack(int ninpeak, t_peak *inpeakv, 
+			 int noutpeak, t_peak *outpeakv, int loud);
+  int sigmund_ilog2(int n);
+#ifdef __cplusplus
+} 
+#endif // __cplusplus
+
