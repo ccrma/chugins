@@ -20,6 +20,8 @@
 //#define CHECK_BINGROUPS
 
 #include "SpectacleBase.h"
+#define _USE_MATH_DEFINES // for Visual Studio
+#include <math.h>
 #include <float.h>
 #include <cstddef>
 
@@ -522,7 +524,7 @@ void SpectacleBase::update_bin_groups(
       const int extrabins = (highshelfbin - lowshelfbin) - cntltablen;
       //if (extrabins <= 0)
       //error("%s: program error - contact johgibso@gmail.com", instname());
-      const int nsums = int(sqrt(2 * extrabins) + 2);
+      const int nsums = int(sqrtf(2 * extrabins) + 2);
       
       // Compute the sum of integers for n in [nsums-2, nsums);
       // formula is the closed-form equation: x = n * (n + 1) / 2.

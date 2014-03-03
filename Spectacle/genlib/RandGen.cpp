@@ -4,6 +4,8 @@
 */
 
 #include "RandGen.h"
+
+#define _USE_MATH_DEFINES // for Visual Studio
 #include <math.h>
 #include <assert.h>
 

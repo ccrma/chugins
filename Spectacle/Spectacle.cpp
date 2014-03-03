@@ -27,6 +27,10 @@
 #include <stdio.h>
 #include <limits.h>
 
+#ifdef WIN32
+#define random rand
+#endif
+
 // declaration of chugin constructor
 CK_DLL_CTOR(spectacle_ctor);
 // declaration of chugin desctructor

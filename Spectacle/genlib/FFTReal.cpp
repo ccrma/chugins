@@ -42,10 +42,10 @@
 
 FFTReal::FFTReal (const long length)
 :	_length (length)
-,	_nbr_bits (int (floor (log (length) / log (2) + 0.5)))
-,	_bit_rev_lut (int (floor (log (length) / log (2) + 0.5)))
-,	_trigo_lut (int (floor (log (length) / log (2) + 0.5)))
-,	_sqrt2_2 (flt_t (sqrt (2) * 0.5))
+,	_nbr_bits (int (floor (logf (length) / logf (2) + 0.5)))
+,	_bit_rev_lut (int (floor (logf (length) / logf (2) + 0.5)))
+,	_trigo_lut (int (floor (logf (length) / logf (2) + 0.5)))
+,	_sqrt2_2 (flt_t (sqrtf (2) * 0.5))
 {
 	assert ((1L << _nbr_bits) == length);
 
@@ -554,7 +554,7 @@ FFTReal::TrigoLUT::TrigoLUT (const int nbr_bits)
 		total_len = (1L << (nbr_bits - 1)) - 4;
 		_ptr = new flt_t [total_len];
 
-		const double	PI = atan (1) * 4;
+		const double	PI = atanf (1) * 4;
 		for (int level = 3; level < nbr_bits; ++level)
 		{
 			const long		level_len = 1L << (level - 1);
