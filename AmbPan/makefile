@@ -68,8 +68,10 @@ FLAGS+= -O3
 endif
 
 ifneq ($(CHUCK_STRICT),)
-FLAGS+= -Wall
+FLAGS+= -Werror
 endif
+
+
 
 # default: build a dynamic chugin
 CK_CHUGIN_STATIC?=0

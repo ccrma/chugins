@@ -11,6 +11,8 @@ MAKECMDGOALS:=$(.DEFAULT_GOAL)
 endif
 endif
 
+CHUCK_STRICT=1
+
 osx: $(CHUGS)
 linux: $(CHUGS)
 linux-alsa: $(CHUGS)
@@ -18,10 +20,10 @@ linux-jack: $(CHUGS)
 win32: $(CHUGS)
 
 $(CHUGS): 
-	make -C $(dir $@) $(MAKECMDGOALS)
+	CHUCK_STRICT=1 make -C $(dir $@) $(MAKECMDGOALS)
 
 clean:
-	rm -rf $(addsuffix /*.o,$(CHUGINS)) $(CHUGS)
+	for chug in $(CHUGINS); do make -C $$chug clean; done
 
 install: $(CHUGS)
 	mkdir -p $(INSTALL_DIR)
