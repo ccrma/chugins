@@ -1,6 +1,10 @@
 
 CHUGINS=ABSaturator Bitcrusher KasFilter MagicSine FIR PanN PitchTrack GVerb Mesh2D Spectacle FluidSynth Elliptic Sigmund ExpDelay Overdrive Multicomb
 CHUGS=$(foreach CHUG,$(CHUGINS),$(CHUG)/$(CHUG).chug)
+CHUGS_CLEAN=$(addsuffix .clean,$(CHUGINS))
+
+# CHUGS_NOT_ON_WIN32=FluidSynth Elliptic Sigmund ExpDelay Overdrive Multicomb
+# CHUGS_WIN32=$(addsuffix .win32,$(filter-out $(CHUGS_NOT_ON_WIN32),$(CHUGINS)))
 
 INSTALL_DIR=/usr/lib/chuck
 
@@ -17,13 +21,21 @@ osx: $(CHUGS)
 linux: $(CHUGS)
 linux-alsa: $(CHUGS)
 linux-jack: $(CHUGS)
-win32: $(CHUGS)
+
+win32: 
+	msbuild.exe /p:Configuration=Release chugins.sln
 
 $(CHUGS): 
 	CHUCK_STRICT=1 make -C $(dir $@) $(MAKECMDGOALS)
 
-clean:
-	for chug in $(CHUGINS); do make -C $$chug clean; done
+clean: $(CHUGS_CLEAN)
+.PHONY: $(CHUGS_CLEAN)
+$(CHUGS_CLEAN):
+	make -C $(basename $@) clean
+
+#.PHONY: $(CHUGS_WIN32)
+#$(CHUGS_WIN32): 
+#	cd $(basename $@); msbuild.exe /p:Configuration=Release 
 
 install: $(CHUGS)
 	mkdir -p $(INSTALL_DIR)
