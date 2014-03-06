@@ -58,9 +58,6 @@ ifneq (,$(strip $(filter linux-alsa,$(MAKECMDGOALS))))
 include makefile.linux
 endif
 
-ifneq (,$(strip $(filter win32,$(MAKECMDGOALS))))
-include makefile.win32
-endif
 
 ifneq ($(CHUCK_DEBUG),)
 FLAGS+= -g
