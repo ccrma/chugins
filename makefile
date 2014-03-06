@@ -1,10 +1,13 @@
 
 CHUGINS=ABSaturator AmbPan Bitcrusher KasFilter MagicSine FIR PanN PitchTrack GVerb Mesh2D Spectacle FluidSynth Elliptic Sigmund ExpDelay Overdrive Multicomb
+
+CHUGS_NOT_ON_WIN32=FluidSynth Elliptic Sigmund ExpDelay Overdrive Multicomb
+CHUGINS_WIN32=$(filter-out $(CHUGS_NOT_ON_WIN32),$(CHUGINS))
+
 CHUGS=$(foreach CHUG,$(CHUGINS),$(CHUG)/$(CHUG).chug)
+CHUGS_WIN32=$(foreach CHUG,$(CHUGINS_WIN32),$(CHUG)/$(CHUG).chug)
 CHUGS_CLEAN=$(addsuffix .clean,$(CHUGINS))
 
-# CHUGS_NOT_ON_WIN32=FluidSynth Elliptic Sigmund ExpDelay Overdrive Multicomb
-# CHUGS_WIN32=$(addsuffix .win32,$(filter-out $(CHUGS_NOT_ON_WIN32),$(CHUGINS)))
 
 INSTALL_DIR=/usr/lib/chuck
 
@@ -21,9 +24,7 @@ osx: $(CHUGS)
 linux: $(CHUGS)
 linux-alsa: $(CHUGS)
 linux-jack: $(CHUGS)
-
-win32: 
-	msbuild.exe /p:Configuration=Release chugins.sln
+win32: $(CHUGS_WIN32)
 
 $(CHUGS): 
 	CHUCK_STRICT=1 make -C $(dir $@) $(MAKECMDGOALS)
