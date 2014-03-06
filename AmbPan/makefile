@@ -27,7 +27,10 @@ endif
 endif
 
 .PHONY: osx linux linux-oss linux-jack linux-alsa win32
-osx linux linux-oss linux-jack linux-alsa win32: all
+osx linux linux-oss linux-jack linux-alsa: all
+
+win32:
+	make -f makefile.win32
 
 CC=gcc
 CXX=gcc
@@ -110,5 +113,5 @@ install: $(CHUG)
 	chmod 755 $(CHUGIN_PATH)/$(CHUG)
 
 clean: 
-	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG)
+	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) Release Debug
 
