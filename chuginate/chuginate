@@ -237,7 +237,10 @@ endif
 endif
 
 .PHONY: osx linux linux-oss linux-jack linux-alsa win32
-osx linux linux-oss linux-jack linux-alsa win32: all
+osx linux linux-oss linux-jack linux-alsa: all
+
+win32:
+	make -f makefile.win32
 
 CC=gcc
 CXX=gcc
@@ -276,8 +279,10 @@ FLAGS+= -O3
 endif
 
 ifneq ($(CHUCK_STRICT),)
-FLAGS+= -Wall
+FLAGS+= -Werror
 endif
+
+
 
 # default: build a dynamic chugin
 CK_CHUGIN_STATIC?=0
@@ -316,7 +321,7 @@ install: $(CHUG)
 	chmod 755 $(CHUGIN_PATH)/$(CHUG)
 
 clean: 
-	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG)
+	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) Release Debug
 
 '''
 code['makefile.osx'] = u'''
@@ -338,12 +343,24 @@ LDFLAGS=-shared -lstdc++
 LD=gcc
 CXX=g++
 '''
-code['makefile.win32'] = u'''
-FLAGS=-D__WINDOWS_DS_ -D__WINDOWS_PTHREAD__ -I$(CK_SRC_PATH)
-LDFLAGS=-shared -lstdc++
+code['makefile.win32'] = u'''MSBUILD=msbuild.exe
 
-CXX=g++
-LD=g++
+ifneq (,$(CHUCK_DEBUG))
+CONFIG=Debug
+CHUG_BIN=Debug/%(CHUGIN_NAME)%.chug
+else
+CONFIG=Release
+CHUG_BIN=Release/%(CHUGIN_NAME)%.chug
+endif
+
+default: $(CHUG_BIN)
+
+$(CHUG_BIN): 
+	$(MSBUILD) /p:Configuration=$(CONFIG) 
+
+clean:
+	$(MSBUILD) /p:Configuration=$(CONFIG) /t:Clean
+
 '''
 code['.dsw'] = u'''Microsoft Developer Studio Workspace File, Format Version 6.00
 # WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
@@ -493,6 +510,79 @@ SOURCE=.\%(CHUGIN_NAME)%.cpp
 # End Target
 # End Project
 '''
+code['.vcxproj'] = u'''<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)/Microsoft.Cpp.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <TargetExt>.chug</TargetExt>
+    <IncludePath>../chuck/include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <TargetExt>.chug</TargetExt>
+    <IncludePath>../chuck/include;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;__PLATFORM_WIN32__;__WINDOWS_DS__;_DEBUG;_WINDOWS;_USRDLL;%(CHUGIN_UCNAME)%_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;__PLATFORM_WIN32__;__WINDOWS_DS__;NDEBUG;_WINDOWS;_USRDLL;%(CHUGIN_UCNAME)%_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="%(CHUGIN_NAME)%.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="%(CHUGIN_NAME)%.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Targets" />
+</Project>
+'''
 
 filepath['cpp'] = "%s/%s.cpp" % (dest_dir, chugin_name)
 filepath['makefile'] = "%s/makefile" % (dest_dir)
@@ -501,14 +591,18 @@ filepath['makefile.linux'] = "%s/makefile.linux" % (dest_dir)
 filepath['makefile.win32'] = "%s/makefile.win32" % (dest_dir)
 filepath['.dsw'] = "%s/%s.dsw" % (dest_dir, chugin_name)
 filepath['.dsp'] = "%s/%s.dsp" % (dest_dir, chugin_name)
+filepath['.vcxproj'] = "%s/%s.vcxproj" % (dest_dir, chugin_name)
 
 newlines['.dsw'] = '\r\n'
 newlines['.dsp'] = '\r\n'
+newlines['.vcxproj'] = '\r\n'
 
 code['cpp'] = substitute(code['cpp'])
 code['makefile'] = substitute(code['makefile'])
+code['makefile.win32'] = substitute(code['makefile.win32'])
 code['.dsw'] = substitute(code['.dsw'])
 code['.dsp'] = substitute(code['.dsp'])
+code['.vcxproj'] = substitute(code['.vcxproj'])
 
 for key in code:
     if key in newlines:
@@ -520,5 +614,3 @@ for key in code:
     f.close()
 
 
-    
-    

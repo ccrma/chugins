@@ -1,6 +1,18 @@
+MSBUILD=msbuild.exe
 
-FLAGS=-D__WINDOWS_DS_ -D__WINDOWS_PTHREAD__ -I$(CK_SRC_PATH)
-LDFLAGS=-shared -lstdc++
+ifneq (,$(CHUCK_DEBUG))
+CONFIG=Debug
+CHUG_BIN=Debug/%(CHUGIN_NAME)%.chug
+else
+CONFIG=Release
+CHUG_BIN=Release/%(CHUGIN_NAME)%.chug
+endif
 
-CXX=g++
-LD=g++
+default: $(CHUG_BIN)
+
+$(CHUG_BIN): 
+	$(MSBUILD) /p:Configuration=$(CONFIG) 
+
+clean:
+	$(MSBUILD) /p:Configuration=$(CONFIG) /t:Clean
+
