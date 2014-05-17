@@ -1,34 +1,34 @@
 /*----------------------------------------------------------------------------
-    ChucK Concurrent, On-the-fly Audio Programming Language
-      Compiler and Virtual Machine
+  ChucK Concurrent, On-the-fly Audio Programming Language
+    Compiler and Virtual Machine
 
-    Copyright (c) 2004 Ge Wang and Perry R. Cook.  All rights reserved.
-      http://chuck.cs.princeton.edu/
-      http://soundlab.cs.princeton.edu/
+  Copyright (c) 2004 Ge Wang and Perry R. Cook.  All rights reserved.
+    http://chuck.stanford.edu/
+    http://chuck.cs.princeton.edu/
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-    U.S.A.
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+  U.S.A.
 -----------------------------------------------------------------------------*/
 
 //-----------------------------------------------------------------------------
 // name: chuck_dl.h
 // desc: chuck dynamic linking header
 //
-// authors: Ge Wang (gewang@cs.princeton.edu)
-//          Perry R. Cook (prc@cs.princeton.edu)
+// authors: Ge Wang (ge@ccrma.stanford.edu | gewang@cs.princeton.edu)
 //          Ari Lazier (alazier@cs.princeton.edu)
+//          Spencer Salazar (spencer@ccrma.stanford.edu)
 // mac os code based on apple's open source
 //
 // date: spring 2004 - 1.1
@@ -44,7 +44,7 @@
 #include <map>
 
 
-#define CK_DLL_VERSION_MAJOR (0x0004)
+#define CK_DLL_VERSION_MAJOR (0x0005)
 #define CK_DLL_VERSION_MINOR (0x0000)
 #define CK_DLL_VERSION_MAKE(maj,min) ((t_CKUINT)(((maj) << 16) | (min)))
 #define CK_DLL_VERSION_GETMAJOR(v) (((v) >> 16) & 0xFFFF)
@@ -70,6 +70,7 @@ struct Chuck_DLL;
 struct Chuck_UGen;
 struct Chuck_UAna;
 struct Chuck_UAnaBlobProxy;
+struct Chuck_DL_MainThreadHook;
 namespace Chuck_DL_Api { struct Api; }
 
 
@@ -161,6 +162,9 @@ typedef const Chuck_DL_Api::Api *CK_DL_API;
 #else 
 #define CK_DLL_QUERY(name) CK_DLL_DECLVERSION CK_DLL_EXPORT(t_CKBOOL) ck_##name_query( Chuck_DL_Query * QUERY )
 #endif // __CK_DLL_STATIC__
+// macro for defining ChucK DLL export allocator
+// example: CK_DLL_ALLOC(foo)
+#define CK_DLL_ALLOC(name) CK_DLL_EXPORT(Chuck_Object *) name( Chuck_VM_Shred * SHRED, CK_DL_API API )
 // macro for defining ChucK DLL export constructors
 // example: CK_DLL_CTOR(foo)
 #define CK_DLL_CTOR(name) CK_DLL_EXPORT(void) name( Chuck_Object * SELF, void * ARGS, Chuck_VM_Shred * SHRED, CK_DL_API API )
@@ -216,6 +220,7 @@ extern "C" {
 typedef t_CKUINT (CK_DLL_CALL * f_ck_declversion)();
 typedef t_CKBOOL (CK_DLL_CALL * f_ck_query)( Chuck_DL_Query * QUERY );
 // object
+typedef Chuck_Object * (CK_DLL_CALL * f_alloc)( Chuck_VM_Shred * SHRED, CK_DL_API API );
 typedef t_CKVOID (CK_DLL_CALL * f_ctor)( Chuck_Object * SELF, void * ARGS, Chuck_VM_Shred * SHRED, CK_DL_API API );
 typedef t_CKVOID (CK_DLL_CALL * f_dtor)( Chuck_Object * SELF, Chuck_VM_Shred * SHRED, CK_DL_API API );
 typedef t_CKVOID (CK_DLL_CALL * f_mfun)( Chuck_Object * SELF, void * ARGS, Chuck_DL_Return * RETURN, Chuck_VM_Shred * SHRED, CK_DL_API API );
@@ -228,6 +233,10 @@ typedef t_CKVOID (CK_DLL_CALL * f_cget)( Chuck_Object * SELF, void * ARGS, Chuck
 typedef t_CKBOOL (CK_DLL_CALL * f_pmsg)( Chuck_Object * SELF, const char * MSG, void * ARGS, Chuck_VM_Shred * SHRED, CK_DL_API API );
 // uana specific
 typedef t_CKBOOL (CK_DLL_CALL * f_tock)( Chuck_Object * SELF, Chuck_UAna * UANA, Chuck_UAnaBlobProxy * BLOB, Chuck_VM_Shred * SHRED, CK_DL_API API );
+// "main thread" hook
+typedef t_CKBOOL (CK_DLL_CALL * f_mainthreadhook)( void * bindle );
+// "main thread" quit (stop running hook)
+typedef t_CKBOOL (CK_DLL_CALL * f_mainthreadquit)( void * bindle );
 }
 
 
@@ -273,6 +282,16 @@ typedef void (CK_DLL_CALL * f_add_ugen_ctrl)( Chuck_DL_Query * query, f_ctrl ctr
                                               const char * type, const char * name );
 // end class/namespace - must correspondent with begin_class.  returns false on error
 typedef t_CKBOOL (CK_DLL_CALL * f_end_class)( Chuck_DL_Query * query );
+// register 
+typedef Chuck_DL_MainThreadHook * (CK_DLL_CALL * f_create_main_thread_hook)( Chuck_DL_Query * query, f_mainthreadhook hook, f_mainthreadquit quit, void * bindle );
+    
+// documentation
+// set current class documentation
+typedef t_CKBOOL (CK_DLL_CALL * f_doc_class)( Chuck_DL_Query * query, const char * doc );
+// set current function documentation
+typedef t_CKBOOL (CK_DLL_CALL * f_doc_func)( Chuck_DL_Query * query, const char * doc );
+// set last mvar documentation
+typedef t_CKBOOL (CK_DLL_CALL * f_doc_var)( Chuck_DL_Query * query, const char * doc );
 }
 
 
@@ -311,7 +330,7 @@ struct Chuck_DL_Query
     f_add_ugen_ctrl add_ugen_ctrl;
     // end class/namespace, compile it
     f_end_class end_class;
-
+    
     // name
     std::string name;
     // current class
@@ -335,6 +354,15 @@ struct Chuck_DL_Query
     t_CKUINT bufsize;
     // line pos
     int linepos;
+    
+    // added 1.3.2.0
+    f_create_main_thread_hook create_main_thread_hook;
+    
+    // added 1.3.5
+    Chuck_DL_Value * last_var;
+    f_doc_class doc_class;
+    f_doc_func doc_func;
+    f_doc_var doc_var;
     
     // constructor
     Chuck_DL_Query();
@@ -384,6 +412,8 @@ struct Chuck_DL_Class
     
     t_CKUINT ugen_num_in, ugen_num_out;
     
+    std::string doc;
+    
     // constructor
     Chuck_DL_Class() { dtor = NULL; ugen_tick = NULL; ugen_tickf = NULL; ugen_pmsg = NULL; uana_tock = NULL; ugen_pmsg = NULL; current_mvar_offset = 0; ugen_num_in = ugen_num_out = 0; }
     // destructor
@@ -405,6 +435,8 @@ struct Chuck_DL_Value
     t_CKBOOL is_const;
     // addr static
     void * static_addr;
+    
+    std::string doc;
 
     // constructor
     Chuck_DL_Value() { is_const = FALSE; static_addr = NULL; }
@@ -427,6 +459,8 @@ struct Chuck_DL_Func
     union { f_ctor ctor; f_dtor dtor; f_mfun mfun; f_sfun sfun; t_CKUINT addr; };
     // arguments
     std::vector<Chuck_DL_Value *> args;
+    
+    std::string doc;
     
     // constructor
     Chuck_DL_Func() { ctor = NULL; }
@@ -513,7 +547,7 @@ public:
     t_CKBOOL good() const;
     // name
     const char * name() const;
-
+    
 public:
     // constructor
     Chuck_DLL( const char * xid = NULL )
@@ -535,6 +569,21 @@ protected:
     f_ck_declversion m_version_func;
     f_ck_query m_query_func;
     Chuck_DL_Query m_query;
+};
+
+struct Chuck_DL_MainThreadHook
+{
+public:
+    Chuck_DL_MainThreadHook(f_mainthreadhook hook, f_mainthreadquit quit,
+                            void * bindle, Chuck_VM * vm);
+    t_CKBOOL (* const activate)(Chuck_DL_MainThreadHook *);
+    t_CKBOOL (* const deactivate)(Chuck_DL_MainThreadHook *);
+    
+    Chuck_VM * const m_vm;
+    f_mainthreadhook const m_hook;
+    f_mainthreadquit const m_quit;
+    void * const m_bindle;
+    t_CKBOOL m_active;
 };
 
 
@@ -569,6 +618,7 @@ public:
         Type (* const get_type)( std::string &name );
 
         Object (* const create)( Type type );
+        
         String (* const create_string)( std::string &value );
         
         t_CKBOOL (* const get_mvar_int)( Object object, std::string &name, t_CKINT &value );
@@ -608,59 +658,37 @@ private:
 // dlfcn interface, panther or below
 #if defined(__MACOSX_CORE__) && MAC_OS_X_VERSION_MAX_ALLOWED <= 1030
 
-  #ifdef __cplusplus
-  extern "C" {
-  #endif
+#error ChucK not support on Mac OS X 10.3 or lower
 
-  void * dlopen( const char * path, int mode );
-  void * dlsym( void * handle, const char * symbol );
-  const char * dlerror( void );
-  int dlclose( void * handle );
-
-  #define RTLD_LAZY         0x1
-  #define RTLD_NOW          0x2
-  #define RTLD_LOCAL        0x4
-  #define RTLD_GLOBAL       0x8
-  #define RTLD_NOLOAD       0x10
-  #define RTLD_SHARED       0x20    /* not used, the default */
-  #define RTLD_UNSHARED     0x40
-  #define RTLD_NODELETE     0x80
-  #define RTLD_LAZY_UNDEF   0x100
-
-  #ifdef __cplusplus
-  }
-  #endif
-
-#elif defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__)
-
-  #ifdef __cplusplus
-  extern "C" {
-  #endif
-
-  #define RTLD_LAZY         0x1
-  #define RTLD_NOW          0x2
-  #define RTLD_LOCAL        0x4
-  #define RTLD_GLOBAL       0x8
-  #define RTLD_NOLOAD       0x10
-  #define RTLD_SHARED       0x20    /* not used, the default */
-  #define RTLD_UNSHARED     0x40
-  #define RTLD_NODELETE     0x80
-  #define RTLD_LAZY_UNDEF   0x100
-
-  void * dlopen( const char * path, int mode );
-  void * dlsym( void * handle, const char * symbol );
-  const char * dlerror( void );
-  int dlclose( void * handle );
-  static char dlerror_buffer[128];
-
-  #ifdef __cplusplus
-  }
-  #endif
+#elif defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__) 
+	 	 	 	 
+          #ifdef __cplusplus 
+          extern "C" { 
+          #endif 
+         
+          #define RTLD_LAZY         0x1 
+          #define RTLD_NOW          0x2 
+          #define RTLD_LOCAL        0x4 
+      #define RTLD_GLOBAL       0x8 
+          #define RTLD_NOLOAD       0x10 
+          #define RTLD_SHARED       0x20    /* not used, the default */ 
+          #define RTLD_UNSHARED     0x40 
+          #define RTLD_NODELETE     0x80 
+          #define RTLD_LAZY_UNDEF   0x100 
+         
+          void * dlopen( const char * path, int mode ); 
+          void * dlsym( void * handle, const char * symbol ); 
+          const char * dlerror( void ); 
+          int dlclose( void * handle ); 
+          static char dlerror_buffer[128]; 
+         
+          #ifdef __cplusplus 
+          } 
+          #endif 
 
 #else
   #include "dlfcn.h"
 #endif
-
 
 
 

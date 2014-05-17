@@ -1,25 +1,25 @@
 /*----------------------------------------------------------------------------
-    ChucK Concurrent, On-the-fly Audio Programming Language
-      Compiler and Virtual Machine
+  ChucK Concurrent, On-the-fly Audio Programming Language
+    Compiler and Virtual Machine
 
-    Copyright (c) 2004 Ge Wang and Perry R. Cook.  All rights reserved.
-      http://chuck.cs.princeton.edu/
-      http://soundlab.cs.princeton.edu/
+  Copyright (c) 2004 Ge Wang and Perry R. Cook.  All rights reserved.
+    http://chuck.stanford.edu/
+    http://chuck.cs.princeton.edu/
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-    U.S.A.
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+  U.S.A.
 -----------------------------------------------------------------------------*/
 
 //-----------------------------------------------------------------------------
@@ -34,40 +34,19 @@
 #define __CHUCK_BBQ_H__
 
 // currently ChucK uses RtAudio | __CHUCK_NATIVE_AUDIO__ not in use
-#if defined(__CHUCK_NATIVE_AUDIO__)
-  #if defined(__LINUX_ALSA__)
-    #include "digiio_alsa.h"
-    #include "midiio_alsa.h"
-  #elif defined(__LINUX_JACK__)
-    #include "digiio_jack.h"
-    #include "midiio_alsa.h"
-  #elif defined(__LINUX_OSS__)
-    #include "digiio_oss.h"
-    #include "midiio_oss.h"
-  #elif defined(__MACOSX_CORE__)
-    #include "digiio_osx.h"
-    #include "midiio_osx.h"
-  #elif defined(__WINDOWS_DS__)
-    #include "digiio_win32.h"
-    #include "midiio_win32.h"
-  #else
-    #error "must define one:\
-    __LINUX_ALSA__ __LINUX_JACK__ __LINUX_OSS__ __MACOSX_CORE__ __WINDOWS_DS__"
-  #endif
-#else
-  #include "digiio_rtaudio.h"
-  #include "midiio_rtmidi.h"
+#include "digiio_rtaudio.h"
+#include "midiio_rtmidi.h"
 
-  #if defined(__LINUX_ALSA__)
-  #elif defined(__LINUX_JACK__)
-  #elif defined(__LINUX_OSS__)
-  #elif defined(__MACOSX_CORE__)
-  #elif defined(__WINDOWS_DS__)
-  #elif defined(__WINDOWS_ASIO__)
-  #else
-    #error "must define one:\
-    __LINUX_ALSA__ __LINUX_JACK__ __LINUX_OSS__ __MACOSX_CORE__ __WINDOWS_DS__"
-  #endif
+#if defined(__LINUX_ALSA__)
+#elif defined(__LINUX_JACK__)
+#elif defined(__UNIX_JACK__)
+#elif defined(__LINUX_PULSE__)
+#elif defined(__MACOSX_CORE__)
+#elif defined(__WINDOWS_DS__)
+#elif defined(__WINDOWS_ASIO__)
+#else
+#error "must define one:\
+__LINUX_ALSA__ __UNIX_JACK__ __LINUX_JACK__ __LINUX_PULSE__ __MACOSX_CORE__ __WINDOWS_DS__"
 #endif
 
 struct Chuck_VM;

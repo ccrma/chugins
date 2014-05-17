@@ -1,34 +1,34 @@
 /*----------------------------------------------------------------------------
-    ChucK Concurrent, On-the-fly Audio Programming Language
-      Compiler and Virtual Machine
+  ChucK Concurrent, On-the-fly Audio Programming Language
+    Compiler and Virtual Machine
 
-    Copyright (c) 2004 Ge Wang and Perry R. Cook.  All rights reserved.
-      http://chuck.cs.princeton.edu/
-      http://soundlab.cs.princeton.edu/
+  Copyright (c) 2004 Ge Wang and Perry R. Cook.  All rights reserved.
+    http://chuck.stanford.edu/
+    http://chuck.cs.princeton.edu/
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-    U.S.A.
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+  U.S.A.
 -----------------------------------------------------------------------------*/
 
 //-----------------------------------------------------------------------------
-// name: chuck_ugen.h
+// file: chuck_ugen.h
 // desc: chuck unit generator interface
 //
-// authors: Ge Wang (gewang@cs.princeton.edu)
-//          Perry R. Cook (prc@cs.princeton.edu)
+// authors: Ge Wang (ge@ccrma.stanford.edu | gewang@cs.princeton.edu)
 //          Rebecca Fiebrink (fiebrink@cs.princeton.edu)
+//          Spencer Salazar (spencer@ccrma.stanford.edu)
 // date: spring 2004 - 1.1
 //       spring 2005 - 1.2
 //       spring 2007 - UAna
@@ -77,6 +77,9 @@ public: // src
     t_CKUINT system_tick( t_CKTIME now );
     t_CKUINT system_tick_v( t_CKTIME now, t_CKUINT numFrames );
     t_CKBOOL alloc_v( t_CKUINT size );
+    
+    Chuck_UGen *src_chan( t_CKUINT chan );
+    Chuck_UGen *dst_for_src_chan( t_CKUINT chan );
 
 protected:
     t_CKVOID add_by( Chuck_UGen * dest, t_CKBOOL isUpChuck );
@@ -183,6 +186,11 @@ public: // data
     // Chuck_UAnaBlobProxy * m_blob_proxy;
 };
 
+
+
+t_CKINT ugen_generic_num_in( Chuck_Object * obj, t_CKBOOL isArray );
+Chuck_UGen *ugen_generic_get_src( Chuck_Object * obj, t_CKINT chan, t_CKBOOL isArray );
+Chuck_UGen *ugen_generic_get_dst( Chuck_Object * obj, t_CKINT chan, t_CKBOOL isArray );
 
 
 

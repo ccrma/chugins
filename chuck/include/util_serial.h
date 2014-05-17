@@ -23,29 +23,36 @@
 -----------------------------------------------------------------------------*/
 
 //-----------------------------------------------------------------------------
-// file: util_console.h
-// desc: utility for console I/O
+// file: util_serial.h
+// desc: utility for serial I/O
 //
 // author: Spencer Salazar (spencer@ccrma.stanford.edu)
-// date: Autumn 2005
+// date: Summer 2012
 //-----------------------------------------------------------------------------
-#ifndef __UTIL_CONSOLE_H__
-#define __UTIL_CONSOLE_H__
+#ifndef __UTIL_SERIAL_H__
+#define __UTIL_SERIAL_H__
 
-#include "chuck_def.h"
-
-// read a line
-char * io_readline( const char * );
-
-// add a line to the history
-void io_addhistory( const char * );
-
-// kb hit emulation
-t_CKBOOL kb_initscr();
-void kb_endwin();
-t_CKINT kb_hit();
-t_CKINT kb_getch();
-t_CKBOOL kb_ready();
+#include <vector>
+#include <string>
+using namespace std;
 
 
-#endif
+
+
+//-----------------------------------------------------------------------------
+// name: class SerialIOManager
+// desc: serial I/O manager
+//-----------------------------------------------------------------------------
+class SerialIOManager
+{
+public:
+    static vector<string> availableSerialDevices();
+    
+private:
+    static vector<string> s_availableSerialDevices;
+};
+
+
+
+
+#endif /* __UTIL_SERIAL_H__ */

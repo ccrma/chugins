@@ -1,33 +1,33 @@
 /*----------------------------------------------------------------------------
-    ChucK Concurrent, On-the-fly Audio Programming Language
-      Compiler and Virtual Machine
+  ChucK Concurrent, On-the-fly Audio Programming Language
+    Compiler and Virtual Machine
 
-    Copyright (c) 2004 Ge Wang and Perry R. Cook.  All rights reserved.
-      http://chuck.cs.princeton.edu/
-      http://soundlab.cs.princeton.edu/
+  Copyright (c) 2004 Ge Wang and Perry R. Cook.  All rights reserved.
+    http://chuck.stanford.edu/
+    http://chuck.cs.princeton.edu/
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-    U.S.A.
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+  U.S.A.
 -----------------------------------------------------------------------------*/
 
 //-----------------------------------------------------------------------------
 // name: chuck_lang.h
 // desc: chuck class library base
 //
-// authors: Ge Wang (gewang@cs.princeton.edu)
-//          Perry R. Cook (prc@cs.princeton.edu)
+// authors: Ge Wang (ge@ccrma.stanford.edu | gewang@cs.princeton.edu)
+//          Spencer Salazar (spencer@ccrma.stanford.edu)
 //          Ananya Misra (amisra@cs.princeton.edu)
 //          Andrew Schran (aschran@princeton.edu)
 //    date: spring 2005
@@ -164,6 +164,8 @@ CK_DLL_MFUN( shred_numArgs );
 CK_DLL_MFUN( shred_getArg );
 CK_DLL_MFUN( shred_sourcePath ); // added 1.3.0.0
 CK_DLL_MFUN( shred_sourceDir ); // added 1.3.0.0
+CK_DLL_MFUN( shred_sourceDir2 ); // added 1.3.2.0
+CK_DLL_SFUN( shred_fromId ); // added 1.3.2.0
 
 
 //-----------------------------------------------------------------------------
@@ -288,6 +290,27 @@ CK_DLL_MFUN( string_trim );
 CK_DLL_MFUN( string_toString );
 CK_DLL_MFUN( string_set_at );
 CK_DLL_MFUN( string_get_at );
+CK_DLL_MFUN(string_charAt);
+CK_DLL_MFUN(string_setCharAt);
+CK_DLL_MFUN(string_substring);
+CK_DLL_MFUN(string_substringN);
+CK_DLL_MFUN(string_insert);
+CK_DLL_MFUN(string_replace);
+CK_DLL_MFUN(string_replaceN);
+CK_DLL_MFUN(string_find);
+CK_DLL_MFUN(string_findStart);
+CK_DLL_MFUN(string_findStr);
+CK_DLL_MFUN(string_findStrStart);
+CK_DLL_MFUN(string_rfind);
+CK_DLL_MFUN(string_rfindStart);
+CK_DLL_MFUN(string_rfindStr);
+CK_DLL_MFUN(string_rfindStrStart);
+CK_DLL_MFUN(string_erase);
+CK_DLL_MFUN(string_toInt);
+CK_DLL_MFUN(string_toFloat);
+CK_DLL_MFUN(string_parent);
+
+
 
 
 //-----------------------------------------------------------------------------
@@ -312,6 +335,10 @@ public:
 //-----------------------------------------------------------------------------
 CK_DLL_CTOR( MidiMsg_ctor );
 
+extern t_CKUINT MidiMsg_offset_data1;
+extern t_CKUINT MidiMsg_offset_data2;
+extern t_CKUINT MidiMsg_offset_data3;
+extern t_CKUINT MidiMsg_offset_when;
 
 //-----------------------------------------------------------------------------
 // MidiRW API
