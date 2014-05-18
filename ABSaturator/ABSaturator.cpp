@@ -168,6 +168,7 @@ CK_DLL_QUERY(ABSaturator)
     QUERY->setname(QUERY, "ABSaturator");
     
     QUERY->begin_class(QUERY, "ABSaturator", "UGen");
+    QUERY->doc_class(QUERY, "Soft clip saturating distortion, based on examples from Abel/Berners' Music 424 course at Stanford.");
     
     QUERY->add_ctor(QUERY, absaturator_ctor);
     QUERY->add_dtor(QUERY, absaturator_dtor);
@@ -176,13 +177,17 @@ CK_DLL_QUERY(ABSaturator)
     
     QUERY->add_mfun(QUERY, absaturator_setDrive, "float", "drive");
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Input gain into the distortion section, in decibels. Controls overall amount of distortion. ");
     
     QUERY->add_mfun(QUERY, absaturator_getDrive, "float", "drive");
+    QUERY->doc_func(QUERY, "Input gain into the distortion section, in decibels. Controls overall amount of distortion. ");
     
     QUERY->add_mfun(QUERY, absaturator_setDCOffset, "float", "dcOffset");
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Constant linear offset applied to the signal. A small offset will introduce odd harmonics into the distoration spectrum, whereas a zero offset will have only even harmonics. ");
     
     QUERY->add_mfun(QUERY, absaturator_getDCOffset, "float", "dcOffset");
+    QUERY->doc_func(QUERY, "Constant linear offset applied to the signal. A small offset will introduce odd harmonics into the distoration spectrum, whereas a zero offset will have only even harmonics. ");
     
     absaturator_data_offset = QUERY->add_mvar(QUERY, "int", "@sat_data", false);
     
