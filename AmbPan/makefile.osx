@@ -2,8 +2,8 @@
 ARCHS?=i386 x86_64
 ARCHOPTS=$(addprefix -arch ,$(ARCHS))
 
-FLAGS=-D__MACOSX_CORE__ -I$(CK_SRC_PATH) $(ARCHOPTS)
-LDFLAGS=-bundle -lstdc++ $(ARCHOPTS)
+FLAGS+=-mmacosx-version-min=10.5 -D__MACOSX_CORE__ -I$(CK_SRC_PATH) $(ARCHOPTS)
+LDFLAGS+=-mmacosx-version-min=10.5 -shared -lstdc++ $(ARCHOPTS)
 
 LD=clang++
 CXX=clang++
