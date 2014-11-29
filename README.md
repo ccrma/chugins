@@ -1,4 +1,4 @@
-Repository for Officially Supported ChuGins
+Repository for Officially Supported ChuGins [![Build Status](https://travis-ci.org/ccrma/chugins.svg?branch=master)](https://travis-ci.org/ccrma/chugins)
 ==
 
 Prepackaged Binaries

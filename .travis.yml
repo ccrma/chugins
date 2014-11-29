@@ -1,0 +1,17 @@
+os:
+    - linux
+
+language: 
+    - cpp
+
+before_install:
+    - echo "before_install - linux"
+    
+script: 
+    - make linux
+    
+after_success:
+    - echo "Success!"
+
+after_failure:
+    - echo "Something went wrong..."
