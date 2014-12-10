@@ -134,7 +134,7 @@ public:
 private:
   // instance data
   int _x, _y;
-  int _xpos, _ypos;
+  float _xpos, _ypos;
   float _decay;
   Mesh2D_stk* m_mesh;
 };
