@@ -3,11 +3,7 @@ Repository for Officially Supported ChuGins [![Build Status](https://travis-ci.o
 
 Prepackaged Binaries
 --
-[CCRMA ChuGins for Mac OS X](http://chuck.stanford.edu/chugins/chugins-mac-2013-02-06.tgz)
-
-[CCRMA ChuGins for Windows](http://chuck.stanford.edu/chugins/chugins-windows-2013-02-06.zip)
-
-Installation instructions are included in the binary packages. 
+Binaries for most chugins in this repository are automatically included by the ChucK installers for Mac OS X and Windows. If you haven't installed ChucK already, these are available at [http://chuck.stanford.edu/release/](http://chuck.stanford.edu/release/). 
 
 ### Linux/Advanced Users
 To compile and install all chugins:
