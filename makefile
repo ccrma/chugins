@@ -9,7 +9,8 @@ CHUGS_WIN32=$(foreach CHUG,$(CHUGINS_WIN32),$(CHUG)/$(CHUG).chug)
 CHUGS_CLEAN=$(addsuffix .clean,$(CHUGINS))
 
 
-INSTALL_DIR=/usr/lib/chuck
+DESTDIR?=/usr
+INSTALL_DIR=$(DEST_DIR)/lib/chuck
 
 ifneq ($(CK_TARGET),)
 .DEFAULT_GOAL:=$(CK_TARGET)
@@ -79,6 +80,34 @@ bin-dist-win32:
 src-dist:
 	mkdir -p chugins-src-$(DATE)/src/
 	mkdir -p chugins-src-$(DATE)/examples/
-	cp -rf $(EXAMPLES) chugins-windows-$(DATE)/examples/
-	git checkout-index -a -f --prefix=
-	tar czf chugins-mac-$(DATE).tgz chugins-mac-$(DATE)
+	cp -rf $(EXAMPLES) chugins-src-$(DATE)/examples/
+	git archive HEAD . | tar -x -C chugins-src-$(DATE)/src
+	tar czf chugins-src-$(DATE).tgz chugins-src-$(DATE)
+
+
+PPA_CHUG_VERSION?=1.3.5.0a
+PPA_DEB_VERSION?=1.3.5.0a-ppa1
+
+PPA_CHUG_DIR=chugins_$(PPA_CHUG_VERSION)
+PPA_CHUG_TGZ=../chugins_$(PPA_CHUG_VERSION).orig.tar.gz
+
+
+ppa-orig: $(PPA_CHUG_TGZ)
+
+ppa-source: $(PPA_CHUG_TGZ)
+	debuild -S
+
+$(PPA_CHUG_TGZ):
+	rm -rf $(PPA_CHUG_DIR)
+	mkdir -p $(PPA_CHUG_DIR)
+	git archive HEAD . | tar -x -C $(PPA_CHUG_DIR)
+	find $(PPA_CHUG_DIR)/ -type f -exec chmod a-x {} +
+	tar czf $(PPA_CHUG_TGZ) $(PPA_CHUG_DIR)
+# rm -rf $(PPA_CHUG_DIR)
+
+ppa-binary: $(PPA_CHUG_TGZ)
+	debuild -uc -us
+
+ppa-upload:
+	dput ppa:t-spencer/chugins chugins_$(PPA_DEB_VERSION)_source.changes
+
