@@ -114,3 +114,4 @@ ppa-upload:
 
 ppa-clean: 
 	debian/rules clean
+	rm -rf debian/chuck
