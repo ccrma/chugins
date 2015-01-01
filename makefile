@@ -91,19 +91,20 @@ PPA_DEB_VERSION?=1.3.5.0a-ppa1
 PPA_CHUG_DIR=chugins_$(PPA_CHUG_VERSION)
 PPA_CHUG_TGZ=../chugins_$(PPA_CHUG_VERSION).orig.tar.gz
 
+FORCE:
 
-ppa-orig: $(PPA_CHUG_TGZ)
+ppa-tgz: $(PPA_CHUG_TGZ)
 
 ppa-source: $(PPA_CHUG_TGZ)
 	debuild -S
 
-$(PPA_CHUG_TGZ):
+$(PPA_CHUG_TGZ): FORCE
 	rm -rf $(PPA_CHUG_DIR)
 	mkdir -p $(PPA_CHUG_DIR)
 	git archive HEAD . | tar -x -C $(PPA_CHUG_DIR)
 	find $(PPA_CHUG_DIR)/ -type f -exec chmod a-x {} +
 	tar czf $(PPA_CHUG_TGZ) $(PPA_CHUG_DIR)
-# rm -rf $(PPA_CHUG_DIR)
+	rm -rf $(PPA_CHUG_DIR)
 
 ppa-binary: $(PPA_CHUG_TGZ)
 	debuild -uc -us
