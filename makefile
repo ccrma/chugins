@@ -102,6 +102,7 @@ $(PPA_CHUG_TGZ): FORCE
 	rm -rf $(PPA_CHUG_DIR)
 	mkdir -p $(PPA_CHUG_DIR)
 	git archive HEAD . | tar -x -C $(PPA_CHUG_DIR)
+	rm -rf $(PPA_CHUG_DIR)/debian
 	find $(PPA_CHUG_DIR)/ -type f -exec chmod a-x {} +
 	tar czf $(PPA_CHUG_TGZ) $(PPA_CHUG_DIR)
 	rm -rf $(PPA_CHUG_DIR)
@@ -112,3 +113,6 @@ ppa-binary: $(PPA_CHUG_TGZ)
 ppa-upload:
 	dput ppa:t-spencer/chugins chugins_$(PPA_DEB_VERSION)_source.changes
 
+ppa-clean: clean
+	debian/rules clean
+	rm -rf debian/chuck
