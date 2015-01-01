@@ -10,7 +10,7 @@ CHUGS_CLEAN=$(addsuffix .clean,$(CHUGINS))
 
 
 DESTDIR?=/usr
-INSTALL_DIR=$(DEST_DIR)/lib/chuck
+INSTALL_DIR=$(DESTDIR)/lib/chuck
 
 ifneq ($(CK_TARGET),)
 .DEFAULT_GOAL:=$(CK_TARGET)
