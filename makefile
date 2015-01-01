@@ -95,7 +95,7 @@ FORCE:
 
 ppa-tgz: $(PPA_CHUG_TGZ)
 
-ppa-source: $(PPA_CHUG_TGZ)
+ppa-source: $(PPA_CHUG_TGZ) ppa-clean
 	debuild -S
 
 $(PPA_CHUG_TGZ): FORCE
@@ -107,12 +107,12 @@ $(PPA_CHUG_TGZ): FORCE
 	tar czf $(PPA_CHUG_TGZ) $(PPA_CHUG_DIR)
 	rm -rf $(PPA_CHUG_DIR)
 
-ppa-binary: $(PPA_CHUG_TGZ)
+ppa-binary: $(PPA_CHUG_TGZ) ppa-clean
 	debuild -uc -us
 
 ppa-upload:
 	dput ppa:t-spencer/chugins chugins_$(PPA_DEB_VERSION)_source.changes
 
-ppa-clean: clean
+ppa-clean: 
 	debian/rules clean
 	rm -rf debian/chuck
