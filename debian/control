@@ -1,0 +1,27 @@
+Source: chugins
+Section: universe/sound
+Priority: optional
+Maintainer: Spencer Salazar <spencer@ccrma.stanford.edu>
+Build-Depends: debhelper (>= 8.0.0), chuck (>= 1.3.5.0)
+Standards-Version: 3.9.2
+Homepage: https://github.com/ccrma/chugins
+#Vcs-Git: git://git.debian.org/collab-maint/chuck.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/chuck.git;a=summary
+
+Package: chugins
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Plugins for the ChucK Music Programming Language
+ List of Current Chugins:
+ * ABSaturator - soft clip saturating distortion, based on examples from Abel/Berners' Music 424 course at Stanford.
+ * Bitcrusher - sample-width reducer + sample rate decimator, bringing to mind the sounds of your favorite low-fidelity vintage audio equipment.
+ * MagicSine - Efficient means of computing a sine wave with 2 adds and 2 multiples per sample, at the expense of being able to dynamically adjust phase.
+ * KasFilter - by @Kassen - Undersampling-based resonant lowpass filter
+ * FIR - by Perry Cook - Arbitrary order FIR filter
+ * Pan4 / Pan8 / Pan16 - Basic equal-power panners for 4, 8, and 16 channels
+ * PitchTrack - by @jwmatthys - Monophonic autocorrelation pitch tracker, based on [helmholtz~] by Katja, http://www.katjaas.nl/helmholtz/helmholtz.html
+ * GVerb - by @jwmatthys - Good quality stereo reverb with adjustable parameters
+ * Mesh2D - by @jwmatthys - STK instrument that simulates a rectilinear, 2-dimensional digital waveguide mesh structure. Basically sounds like striking a metal plate.
+ * Spectacle - by @jwmatthys - FFT-based spectral delay and EQ
+ * Elliptic - by @jwmatthys - Elliptic filter, capable of very steep slopes or interesting harmonic ripples
+
