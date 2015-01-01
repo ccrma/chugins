@@ -110,7 +110,7 @@ ppa-binary: $(PPA_CHUG_TGZ) ppa-clean
 	debuild -uc -us
 
 ppa-upload:
-	dput ppa:t-spencer/chugins chugins_$(PPA_DEB_VERSION)_source.changes
+	dput ppa:t-spencer/chuck ../chugins_$(PPA_DEB_VERSION)_source.changes
 
 ppa-clean: 
 	debian/rules clean
