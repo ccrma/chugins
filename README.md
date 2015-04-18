@@ -48,6 +48,9 @@ List of Current Chugins
 - **PowerADSR**
   - by [@ericheep](https://github.com/ericheep)
   - Power function ADSR envelope.
+- **WinFuncEnv**
+  - by [@ericheep](https://github.com/ericheep)
+  - Envelope built on window functions.
 
 Chugins That We Are Working On
 --
