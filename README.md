@@ -45,6 +45,12 @@ List of Current Chugins
 - **Elliptic**
   - by [@jwmatthys](https://github.com/jwmatthys)
   - Elliptic filter, capable of very steep slopes or interesting harmonic ripples
+- **PowerADSR**
+  - by [@ericheep](https://github.com/ericheep)
+  - Power function ADSR envelope.
+- **WinFuncEnv**
+  - by [@ericheep](https://github.com/ericheep)
+  - Envelope built on window functions.
 
 Chugins That We Are Working On
 --
