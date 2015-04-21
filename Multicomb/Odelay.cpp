@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <cstdlib>
 
 Odelay::Odelay(long defaultLength) : _dline(NULL), _len(0)
 {
@@ -121,5 +122,5 @@ long Odelay::resize(long thisLength)
 
 float Odelay::delay() const
 {
-	return (float) (_len > 0) ? abs((_outpoint - _inpoint) % _len) : 0;
+	return (float) (_len > 0) ? std::abs((_outpoint - _inpoint) % _len) : 0;
 }
