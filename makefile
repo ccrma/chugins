@@ -1,5 +1,7 @@
 
-CHUGINS=ABSaturator AmbPan Bitcrusher KasFilter MagicSine FIR PanN PitchTrack GVerb Mesh2D Spectacle Elliptic Sigmund ExpDelay Overdrive Multicomb
+CHUGINS=ABSaturator AmbPan Bitcrusher KasFilter MagicSine FIR PanN PitchTrack \
+    GVerb Mesh2D Spectacle Elliptic Sigmund ExpDelay Overdrive Multicomb \
+    PowerADSR WinFuncEnv
 
 CHUGS_NOT_ON_WIN32=FluidSynth Elliptic Sigmund ExpDelay Overdrive Multicomb
 CHUGINS_WIN32=$(filter-out $(CHUGS_NOT_ON_WIN32),$(CHUGINS))
