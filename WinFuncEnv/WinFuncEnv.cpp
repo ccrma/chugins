@@ -32,6 +32,9 @@
 
 #include <stdio.h>
 #include <limits.h>
+#ifdef WIN32
+#define _USE_MATH_DEFINES
+#endif
 #include <math.h>
 
 CK_DLL_CTOR(winfuncenv_ctor);
