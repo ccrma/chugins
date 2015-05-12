@@ -114,10 +114,10 @@ CK_DLL_CTOR(%(CHUGIN_LCNAME)%_ctor)
     OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    %(CHUGIN_NAME)% * bcdata = new %(CHUGIN_NAME)%(API->vm->get_srate());
+    %(CHUGIN_NAME)% * %(CHUGIN_INITIALS)%_obj = new %(CHUGIN_NAME)%(API->vm->get_srate());
     
     // store the pointer in the ChucK object member
-    OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset) = (t_CKINT) bcdata;
+    OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset) = (t_CKINT) %(CHUGIN_INITIALS)%_obj;
 }
 
 
@@ -125,14 +125,14 @@ CK_DLL_CTOR(%(CHUGIN_LCNAME)%_ctor)
 CK_DLL_DTOR(%(CHUGIN_LCNAME)%_dtor)
 {
     // get our c++ class pointer
-    %(CHUGIN_NAME)% * bcdata = (%(CHUGIN_NAME)% *) OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset);
+    %(CHUGIN_NAME)% * %(CHUGIN_INITIALS)%_obj = (%(CHUGIN_NAME)% *) OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset);
     // check it
-    if( bcdata )
+    if( %(CHUGIN_INITIALS)%_obj )
     {
         // clean up
-        delete bcdata;
+        delete %(CHUGIN_INITIALS)%_obj;
         OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset) = 0;
-        bcdata = NULL;
+        %(CHUGIN_INITIALS)%_obj = NULL;
     }
 }
 
@@ -141,10 +141,10 @@ CK_DLL_DTOR(%(CHUGIN_LCNAME)%_dtor)
 CK_DLL_TICK(%(CHUGIN_LCNAME)%_tick)
 {
     // get our c++ class pointer
-    %(CHUGIN_NAME)% * c = (%(CHUGIN_NAME)% *) OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset);
+    %(CHUGIN_NAME)% * %(CHUGIN_INITIALS)%_obj = (%(CHUGIN_NAME)% *) OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset);
  
     // invoke our tick function; store in the magical out variable
-    if(c) *out = c->tick(in);
+    if(%(CHUGIN_INITIALS)%_obj) *out = %(CHUGIN_INITIALS)%_obj->tick(in);
 
     // yes
     return TRUE;
@@ -155,9 +155,9 @@ CK_DLL_TICK(%(CHUGIN_LCNAME)%_tick)
 CK_DLL_MFUN(%(CHUGIN_LCNAME)%_setParam)
 {
     // get our c++ class pointer
-    %(CHUGIN_NAME)% * bcdata = (%(CHUGIN_NAME)% *) OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset);
+    %(CHUGIN_NAME)% * %(CHUGIN_INITIALS)%_obj = (%(CHUGIN_NAME)% *) OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset);
     // set the return value
-    RETURN->v_float = bcdata->setParam(GET_NEXT_FLOAT(ARGS));
+    RETURN->v_float = %(CHUGIN_INITIALS)%_obj->setParam(GET_NEXT_FLOAT(ARGS));
 }
 
 
@@ -165,7 +165,7 @@ CK_DLL_MFUN(%(CHUGIN_LCNAME)%_setParam)
 CK_DLL_MFUN(%(CHUGIN_LCNAME)%_getParam)
 {
     // get our c++ class pointer
-    %(CHUGIN_NAME)% * bcdata = (%(CHUGIN_NAME)% *) OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset);
+    %(CHUGIN_NAME)% * %(CHUGIN_INITIALS)%_obj = (%(CHUGIN_NAME)% *) OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset);
     // set the return value
-    RETURN->v_float = bcdata->getParam();
+    RETURN->v_float = %(CHUGIN_INITIALS)%_obj->getParam();
 }
