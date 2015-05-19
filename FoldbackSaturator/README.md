@@ -16,6 +16,7 @@ Methods
     threshold()
     
     The threshold (positive and negative) that the signal is inverted against as it is passed. Defaults to 0.6
+    
 
     index()
 
