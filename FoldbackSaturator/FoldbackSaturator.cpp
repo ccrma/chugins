@@ -34,6 +34,7 @@ CK_DLL_QUERY(FoldbackSaturator)
     QUERY->setname(QUERY, "FoldbackSaturator");
     
     QUERY->begin_class(QUERY, "FoldbackSaturator", "UGen");
+    QUERY->doc_class(QUERY, "Foldback saturator that inverts a signal and multiplies it by an index as it passes a threshold.");
     
     QUERY->add_ctor(QUERY, foldback_ctor);
     QUERY->add_dtor(QUERY, foldback_dtor);
@@ -42,18 +43,24 @@ CK_DLL_QUERY(FoldbackSaturator)
 
     QUERY->add_mfun(QUERY, foldback_setMakeupGain, "float", "makeupGain");
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "The amount of makeup gain applied to the signal after processing, multiplied against the reciprocal of the threshold. Defaults to 1.0");
 
     QUERY->add_mfun(QUERY, foldback_getMakeupGain, "float", "makeupGain");
+    QUERY->doc_func(QUERY, "The amount of makeup gain applied to the signal after processing, multiplied against the reciprocal of the threshold. Defaults to 1.0");
 
     QUERY->add_mfun(QUERY, foldback_setThreshold, "float", "threshold");
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "The threshold (positive and negative) that the signal is inverted against as it is passed. Defaults to 0.6");
 
     QUERY->add_mfun(QUERY, foldback_getThreshold, "float", "threshold");
+    QUERY->doc_func(QUERY, "The threshold (positive and negative) that the signal is inverted against as it is passed. Defaults to 0.6");
 
     QUERY->add_mfun(QUERY, foldback_setIndex, "float", "index");
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "The index that the signal is multiplied by after it is inverted against the threshold. Defaults to 2.0");
 
     QUERY->add_mfun(QUERY, foldback_getIndex, "float", "index");
+    QUERY->doc_func(QUERY, "The index that the signal is multiplied by after it is inverted against the threshold. Defaults to 2.0");
 
     foldback_data_offset = QUERY->add_mvar(QUERY, "int", "@fb_data", false);
     
