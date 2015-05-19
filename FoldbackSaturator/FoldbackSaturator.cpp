@@ -99,11 +99,12 @@ CK_DLL_TICK(foldback_tick)
     
     SAMPLE theSample = in;
 
-    while(theSample > fbdata->threshold){
-        theSample -= fbdata->index * (theSample - fbdata->threshold);
-    }
-    while(theSample > fbdata->threshold * -1.0){
-        theSample -= fbdata->index * (theSample + fbdata->threshold);
+    while((theSample > fbdata->threshold) || (theSample < fbdata->threshold * -1.0)){
+        if(theSample >= 0.0){
+            theSample -= fbdata->index * (theSample - fbdata->threshold);
+        }else{
+            theSample -= fbdata->index * (theSample + fbdata->threshold);
+        }
     }
 
     *out = theSample * (1.0/fbdata->threshold) * fbdata->makeupGain;
