@@ -127,7 +127,7 @@ CK_DLL_MFUN(foldback_setThreshold)
 {
     FoldbackData * fbdata = (FoldbackData *) OBJ_MEMBER_INT(SELF, foldback_data_offset);
     float arg = GET_NEXT_FLOAT(ARGS);
-    if(arg != 0){
+    if(arg >= 0){
         fbdata->threshold = arg;
     }
     RETURN->v_float = fbdata->threshold;
