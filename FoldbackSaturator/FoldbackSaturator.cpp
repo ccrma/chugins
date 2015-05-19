@@ -101,7 +101,7 @@ CK_DLL_TICK(foldback_tick)
     SAMPLE theSample = in;
 
     if((theSample > fbdata->threshold) || (theSample < fbdata->threshold * -1.0)){
-        theSample = fabs(fabs(fmod(theSample - fbdata->threshold, fbdata->threshold*4)) - fbdata->threshold * 2.0) - fbdata->threshold;
+        theSample = fabs(fabs(fmod(theSample - fbdata->threshold, fbdata->threshold * 4.0)) - fbdata->threshold * 2.0) - fbdata->threshold;
     }
 
     *out = theSample * (1.0/fbdata->threshold) * fbdata->makeupGain;
