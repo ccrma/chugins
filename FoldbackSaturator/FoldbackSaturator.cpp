@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <limits.h>
+#include <math.h>
 
 
 CK_DLL_CTOR(foldback_ctor);
@@ -99,12 +100,8 @@ CK_DLL_TICK(foldback_tick)
     
     SAMPLE theSample = in;
 
-    while((theSample > fbdata->threshold) || (theSample < fbdata->threshold * -1.0)){
-        if(theSample >= 0.0){
-            theSample -= fbdata->index * (theSample - fbdata->threshold);
-        }else{
-            theSample -= fbdata->index * (theSample + fbdata->threshold);
-        }
+    if((theSample > fbdata->threshold) || (theSample < fbdata->threshold * -1.0)){
+        theSample = fabs(fabs(fmod(theSample - fbdata->threshold, fbdata->threshold*4)) - fbdata->threshold * 2.0) - fbdata->threshold;
     }
 
     *out = theSample * (1.0/fbdata->threshold) * fbdata->makeupGain;
