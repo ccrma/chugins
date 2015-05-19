@@ -28,6 +28,9 @@ List of Current Chugins
 - **FIR**
   - by [Perry Cook](http://www.cs.princeton.edu/~prc/)
   - Arbitrary order FIR filter
+- **FoldbackSaturator**
+  - by [Ness Morris](https://github.com/biikatto)
+  - Foldback Saturator for nasty distortion
 - **Pan4 / Pan8 / Pan16**
   - Basic equal-power panners for 4, 8, and 16 channels
 - **PitchTrack**
