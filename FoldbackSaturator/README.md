@@ -10,14 +10,17 @@ Methods
 
     makeupGain()
 
-    The amount of makeup gain applied to the signal after processing, multiplied against the reciprocal of the threshold. Defaults to 1.0
+    The amount of makeup gain applied to the signal after processing,
+    multiplied against the reciprocal of the threshold. Defaults to 1.0
 
 
     threshold()
     
-    The threshold (positive and negative) that the signal is inverted against as it is passed. Defaults to 0.6
+    The threshold (positive and negative) that the signal is inverted
+    against as it is passed. Defaults to 0.6
     
 
     index()
 
-    The index that the signal is multiplied by after it is inverted against the threshold. Defaults to 2.0
+    The index that the signal is multiplied by after it is inverted
+    against the threshold. Defaults to 2.0
