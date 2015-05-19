@@ -1,0 +1,147 @@
+#include "chuck_dl.h"
+#include "chuck_def.h"
+
+#include <stdio.h>
+#include <limits.h>
+
+
+CK_DLL_CTOR(foldback_ctor);
+CK_DLL_DTOR(foldback_dtor);
+
+CK_DLL_MFUN(foldback_setMakeupGain);
+CK_DLL_MFUN(foldback_getMakeupGain);
+
+CK_DLL_MFUN(foldback_setThreshold);
+CK_DLL_MFUN(foldback_getThreshold);
+
+CK_DLL_MFUN(foldback_setIndex);
+CK_DLL_MFUN(foldback_getIndex);
+
+CK_DLL_TICK(foldback_tick);
+
+t_CKINT foldback_data_offset = 0;
+
+struct FoldbackData
+{
+    float makeupGain;
+    float threshold;
+    float index;
+};
+
+
+CK_DLL_QUERY(FoldbackSaturator)
+{
+    QUERY->setname(QUERY, "FoldbackSaturator");
+    
+    QUERY->begin_class(QUERY, "FoldbackSaturator", "UGen");
+    
+    QUERY->add_ctor(QUERY, foldback_ctor);
+    QUERY->add_dtor(QUERY, foldback_dtor);
+    
+    QUERY->add_ugen_func(QUERY, foldback_tick, NULL, 1, 1);
+
+    QUERY->add_mfun(QUERY, foldback_setMakeupGain, "float", "makeupGain");
+    QUERY->add_arg(QUERY, "float", "arg");
+
+    QUERY->add_mfun(QUERY, foldback_getMakeupGain, "float", "makeupGain");
+
+    QUERY->add_mfun(QUERY, foldback_setThreshold, "float", "threshold");
+    QUERY->add_arg(QUERY, "float", "arg");
+
+    QUERY->add_mfun(QUERY, foldback_getThreshold, "float", "threshold");
+
+    QUERY->add_mfun(QUERY, foldback_setIndex, "float", "index");
+    QUERY->add_arg(QUERY, "float", "arg");
+
+    QUERY->add_mfun(QUERY, foldback_getIndex, "float", "index");
+
+    foldback_data_offset = QUERY->add_mvar(QUERY, "int", "@fb_data", false);
+    
+    QUERY->end_class(QUERY);
+
+    return TRUE;
+}
+
+
+CK_DLL_CTOR(foldback_ctor)
+{
+    OBJ_MEMBER_INT(SELF, foldback_data_offset) = 0;
+
+    FoldbackData * fbdata = new FoldbackData;
+    fbdata->makeupGain = 1.0;
+    fbdata->threshold = 0.6;
+    fbdata->index = 2.0;
+    
+    OBJ_MEMBER_INT(SELF, foldback_data_offset) = (t_CKINT) fbdata;
+}
+
+CK_DLL_DTOR(foldback_dtor)
+{
+    FoldbackData * fbdata = (FoldbackData *) OBJ_MEMBER_INT(SELF, foldback_data_offset);
+    if(fbdata)
+    {
+        delete fbdata;
+        OBJ_MEMBER_INT(SELF, foldback_data_offset) = 0;
+        fbdata = NULL;
+    }
+}
+
+CK_DLL_TICK(foldback_tick)
+{
+    FoldbackData * fbdata = (FoldbackData *) OBJ_MEMBER_INT(SELF, foldback_data_offset);
+    
+    SAMPLE theSample = in;
+
+    while(theSample > fbdata->threshold){
+        theSample -= fbdata->index * (theSample - fbdata->threshold);
+    }
+    while(theSample > fbdata->threshold * -1.0){
+        theSample -= fbdata->index * (theSample + fbdata->threshold);
+    }
+
+    *out = theSample * (1.0/fbdata->threshold) * fbdata->makeupGain;
+
+    return TRUE;
+}
+
+CK_DLL_MFUN(foldback_setMakeupGain)
+{
+    FoldbackData * fbdata = (FoldbackData *) OBJ_MEMBER_INT(SELF, foldback_data_offset);
+    // TODO: sanity check
+    fbdata->makeupGain = GET_NEXT_FLOAT(ARGS);
+    RETURN->v_float = fbdata->makeupGain;
+}
+
+CK_DLL_MFUN(foldback_getMakeupGain)
+{
+    FoldbackData * fbdata = (FoldbackData *) OBJ_MEMBER_INT(SELF, foldback_data_offset);
+    RETURN->v_float = fbdata->makeupGain;
+}
+
+CK_DLL_MFUN(foldback_setThreshold)
+{
+    FoldbackData * fbdata = (FoldbackData *) OBJ_MEMBER_INT(SELF, foldback_data_offset);
+    // TODO: sanity check
+    fbdata->threshold = GET_NEXT_FLOAT(ARGS);
+    RETURN->v_float = fbdata->threshold;
+}
+
+CK_DLL_MFUN(foldback_getThreshold)
+{
+    FoldbackData * fbdata = (FoldbackData *) OBJ_MEMBER_INT(SELF, foldback_data_offset);
+    RETURN->v_float = fbdata->threshold;
+}
+
+CK_DLL_MFUN(foldback_setIndex)
+{
+    FoldbackData * fbdata = (FoldbackData *) OBJ_MEMBER_INT(SELF, foldback_data_offset);
+    // TODO: sanity check
+    fbdata->index = GET_NEXT_FLOAT(ARGS);
+    RETURN->v_float = fbdata->index;
+}
+
+CK_DLL_MFUN(foldback_getIndex)
+{
+    FoldbackData * fbdata = (FoldbackData *) OBJ_MEMBER_INT(SELF, foldback_data_offset);
+    RETURN->v_float = fbdata->index;
+}
