@@ -9,12 +9,6 @@
 #include <math.h>
 #define  pi 3.1415926535897932384626433832795
 
-/* constructor()
-	You can initialize variables here.
-	You can also allocate memory here as long is it does not
-	require the plugin to be fully instantiated. If so, allocate in init()
-
-*/
 CKorgThreeFiveLPF::CKorgThreeFiveLPF()
 {
 
@@ -23,36 +17,13 @@ CKorgThreeFiveLPF::CKorgThreeFiveLPF()
 
 }
 
-
-/* destructor()
-	Destroy variables allocated in the contructor()
-*/
 CKorgThreeFiveLPF::~CKorgThreeFiveLPF(void)
 {
 
-
 }
 
-
-/* prepareForPlay()
-	Called by the client after Play() is initiated but before audio streams
-
-	You can perform buffer flushes and per-run intializations.
-	You can check the following variables and use them if needed:
-
-	m_nNumWAVEChannels;
-	m_nSampleRate;
-	m_nBitDepth;
-
-	NOTE: the above values are only valid during prepareForPlay() and
-		  processAudioFrame() because the user might change to another wave file,
-		  or use the sound card, oscillators, or impulse response mechanisms
-
-    NOTE: if you allocte memory in this function, destroy it in ::destroy() above
-*/
 bool CKorgThreeFiveLPF::prepareForPlay(float fs)
 {
-	// Add your code here:
 	// set types
 	m_LPF1.m_uFilterType = LPF1;
 	m_LPF2.m_uFilterType = LPF1;

@@ -16,11 +16,11 @@ public:
 	enum{LPF1,HPF1}; /* one short string for each */
 
 	// Trapezoidal Integrator Components
-	float m_fAlpha;			// Feed Forward coeff
-	float m_fBeta;			// Feed Back coeff
+	double m_fAlpha;			// Feed Forward coeff
+	double m_fBeta;			// Feed Back coeff
 
 	// provide access to our feedback output
-	float getFeedbackOutput(){return m_fZ1*m_fBeta;}
+	double getFeedbackOutput(){return m_fZ1*m_fBeta;}
 
 	// -- CFilter Overrides --
 	virtual void reset(){m_fZ1 = 0;}
@@ -29,9 +29,9 @@ public:
 	virtual void updateFilter();
 	
 	// do the filter
-	virtual float doFilter(float xn);
+	virtual double doFilter(double xn);
 
 protected:
-	float m_fZ1;		// our z-1 storage location
+	double m_fZ1;		// our z-1 storage location
 };
 
