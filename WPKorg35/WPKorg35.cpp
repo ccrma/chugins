@@ -121,6 +121,7 @@ CK_DLL_QUERY( WPKorg35 )
     // begin the class definition
     // can change the second argument to extend a different ChucK class
     QUERY->begin_class(QUERY, "WPKorg35", "UGen");
+    QUERY->doc_class(QUERY, "Virtual analog low pass filter based on Will Pirkle's Korg35 application notes");
 
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, wpkorg35_ctor);
@@ -134,34 +135,28 @@ CK_DLL_QUERY( WPKorg35 )
     // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
     // and declare a tickf function using CK_DLL_TICKF
 
-    // example of adding setter method
     QUERY->add_mfun(QUERY, wpkorg35_setResonance, "float", "resonance");
-    // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Resonance goes between [0...2). ");
 
-    // example of adding getter method
     QUERY->add_mfun(QUERY, wpkorg35_getResonance, "float", "resonance");
-    // example of adding setter method
 
     QUERY->add_mfun(QUERY, wpkorg35_setCutoff, "float", "cutoff");
-    // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Cuttoff is in Hz [0..Nyquist). ");
 
-    // example of adding getter method
     QUERY->add_mfun(QUERY, wpkorg35_getCutoff, "float", "cutoff");
 
     QUERY->add_mfun(QUERY, wpkorg35_setSaturation, "float", "saturation");
-    // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Saturation is a scalar gain, and can be used to drive the non-linearity. ");
 
-    // example of adding getter method
     QUERY->add_mfun(QUERY, wpkorg35_getSaturation, "float", "saturation");
     
     QUERY->add_mfun(QUERY, wpkorg35_setNonLinearProcessing, "int", "nonlinear");
-    // example of adding argument to the above method
     QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->doc_func(QUERY, "Enable non linear saturator. ");
 
-    // example of adding getter method
     QUERY->add_mfun(QUERY, wpkorg35_getNonLinearProcessing, "int", "nonlinear");
     
     // this reserves a variable in the ChucK internal class to store 
