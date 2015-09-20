@@ -62,6 +62,7 @@ SAMPLE tick( SAMPLE in )
 
         table_pos += step;
         while (table_pos > table_size) table_pos -= table_size;
+
         int y0, y1, y2, y3;
         y0 = (int) table_pos;
         y1 = (y0 + 1) % table_size;
@@ -70,7 +71,7 @@ SAMPLE tick( SAMPLE in )
 
         if (interpolate)
         {
-                return HermiteInterpolate(current_table[y0],
+                return CubicInterpolate(current_table[y0],
                                           current_table[y1], current_table[y2], current_table[y3],
                                           table_pos + 1 - y0);
         }
