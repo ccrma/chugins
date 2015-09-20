@@ -10,6 +10,10 @@
 // general includes
 #include <stdio.h>
 #include <limits.h>
+#include <math.h>
+
+#define DEFAULT_TABLE_SIZE 1024
+#define DEFAULT_FREQ 220
 
 // declaration of chugin constructor
 CK_DLL_CTOR(wavetable_ctor);
@@ -17,15 +21,14 @@ CK_DLL_CTOR(wavetable_ctor);
 CK_DLL_DTOR(wavetable_dtor);
 
 // example of getter/setter
-CK_DLL_MFUN(wavetable_setParam);
-CK_DLL_MFUN(wavetable_getParam);
+CK_DLL_MFUN(wavetable_setFreq);
+CK_DLL_MFUN(wavetable_getFreq);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICK(wavetable_tick);
 
 // this is a special offset reserved for Chugin internal data
 t_CKINT wavetable_data_offset = 0;
-
 
 // class definition for internal Chugin data
 // (note: this isn't strictly necessary, but serves as example
@@ -36,29 +39,84 @@ public:
     // constructor
     Wavetable( t_CKFLOAT fs)
     {
-        m_param = 0;
+        srate = fs;
+        table_pos = 0;
+        internal_table = new double[DEFAULT_TABLE_SIZE];
+        user_table = new double[DEFAULT_TABLE_SIZE];
+        table_size = DEFAULT_TABLE_SIZE;
+        make_default_table();
+        freq = DEFAULT_FREQ;
+        step = table_size * freq / srate;
+        current_table = internal_table;
+        //printf("step: %f\n", step);
     }
 
     // for Chugins extending UGen
     SAMPLE tick( SAMPLE in )
     {
         // default: this passes whatever input is patched into Chugin
-        return in;
+        if (in > 0) freq = in;
+
+        table_pos += step;
+        while (table_pos > table_size) table_pos -= table_size;
+        int y0, y1, y2, y3;
+        y0 = (int) table_pos;
+        y1 = (y0 + 1) % table_size;
+        y2 = (y0 + 2) % table_size;
+        y3 = (y0 + 3) % table_size;
+
+        //float val = current_table[y0];
+        float val = CubicInterpolate(current_table[y0],
+          current_table[y1], current_table[y2], current_table[y3],
+          table_pos + 1 - y0);
+       //printf("table_pos: %f, val: %f\n", table_pos, val);
+       return val;
     }
 
     // set parameter example
-    float setParam( t_CKFLOAT p )
+    float setFreq( t_CKFLOAT p )
     {
-        m_param = p;
-        return p;
+        freq = p;
+        step = table_size * freq / srate;
+        return freq;
     }
 
-    // get parameter example
-    float getParam() { return m_param; }
-    
+    float getFreq()
+    {
+      return freq;
+    }
+
 private:
     // instance data
-    float m_param;
+    double table_pos;
+    double* internal_table;
+    double* user_table;
+    double* current_table;
+    float freq;
+    float step;
+    int table_size;
+    int srate;
+
+    void make_default_table()
+    {
+      for (int i=0; i<table_size; i++)
+      {
+        internal_table[i] = sin( TWO_PI * i / table_size );
+        user_table[i] = 0.0;
+      }
+    }
+
+    float CubicInterpolate(double y0, double y1, double y2, double y3, double mu)
+    {
+      double a0,a1,a2,a3,mu2;
+       mu2 = mu*mu;
+       a0 = y3 - y2 - y0 + y1;
+       a1 = y0 - y1 - a0;
+       a2 = y2 - y0;
+       a3 = y1;
+
+       return (float)(a0*mu*mu2+a1*mu2+a2*mu+a3);
+    }
 };
 
 
@@ -69,7 +127,7 @@ CK_DLL_QUERY( Wavetable )
 {
     // hmm, don't change this...
     QUERY->setname(QUERY, "Wavetable");
-    
+
     // begin the class definition
     // can change the second argument to extend a different ChucK class
     QUERY->begin_class(QUERY, "Wavetable", "UGen");
@@ -78,23 +136,23 @@ CK_DLL_QUERY( Wavetable )
     QUERY->add_ctor(QUERY, wavetable_ctor);
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, wavetable_dtor);
-    
+
     // for UGen's only: add tick function
     QUERY->add_ugen_func(QUERY, wavetable_tick, NULL, 1, 1);
-    
-    // NOTE: if this is to be a UGen with more than 1 channel, 
+
+    // NOTE: if this is to be a UGen with more than 1 channel,
     // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
     // and declare a tickf function using CK_DLL_TICKF
 
     // example of adding setter method
-    QUERY->add_mfun(QUERY, wavetable_setParam, "float", "param");
+    QUERY->add_mfun(QUERY, wavetable_setFreq, "float", "freq");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
 
     // example of adding getter method
-    QUERY->add_mfun(QUERY, wavetable_getParam, "float", "param");
-    
-    // this reserves a variable in the ChucK internal class to store 
+    QUERY->add_mfun(QUERY, wavetable_getFreq, "float", "freq");
+
+    // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
     wavetable_data_offset = QUERY->add_mvar(QUERY, "int", "@w_data", false);
 
@@ -112,10 +170,10 @@ CK_DLL_CTOR(wavetable_ctor)
 {
     // get the offset where we'll store our internal c++ class pointer
     OBJ_MEMBER_INT(SELF, wavetable_data_offset) = 0;
-    
+
     // instantiate our internal c++ class representation
     Wavetable * w_obj = new Wavetable(API->vm->get_srate());
-    
+
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, wavetable_data_offset) = (t_CKINT) w_obj;
 }
@@ -142,7 +200,7 @@ CK_DLL_TICK(wavetable_tick)
 {
     // get our c++ class pointer
     Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
- 
+
     // invoke our tick function; store in the magical out variable
     if(w_obj) *out = w_obj->tick(in);
 
@@ -152,20 +210,20 @@ CK_DLL_TICK(wavetable_tick)
 
 
 // example implementation for setter
-CK_DLL_MFUN(wavetable_setParam)
+CK_DLL_MFUN(wavetable_setFreq)
 {
     // get our c++ class pointer
     Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
     // set the return value
-    RETURN->v_float = w_obj->setParam(GET_NEXT_FLOAT(ARGS));
+    RETURN->v_float = w_obj->setFreq(GET_NEXT_FLOAT(ARGS));
 }
 
 
 // example implementation for getter
-CK_DLL_MFUN(wavetable_getParam)
+CK_DLL_MFUN(wavetable_getFreq)
 {
     // get our c++ class pointer
     Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
     // set the return value
-    RETURN->v_float = w_obj->getParam();
+    RETURN->v_float = w_obj->getFreq();
 }
