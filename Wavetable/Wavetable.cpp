@@ -12,7 +12,7 @@
 #include <limits.h>
 #include <math.h>
 
-#define DEFAULT_TABLE_SIZE 1024
+#define DEFAULT_TABLE_SIZE 4096
 #define DEFAULT_FREQ 220
 
 // declaration of chugin constructor
@@ -22,7 +22,9 @@ CK_DLL_DTOR(wavetable_dtor);
 
 // example of getter/setter
 CK_DLL_MFUN(wavetable_setFreq);
+CK_DLL_MFUN(wavetable_setInterpolate);
 CK_DLL_MFUN(wavetable_getFreq);
+CK_DLL_MFUN(wavetable_getInterpolate);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICK(wavetable_tick);
@@ -36,9 +38,9 @@ t_CKINT wavetable_data_offset = 0;
 class Wavetable
 {
 public:
-    // constructor
-    Wavetable( t_CKFLOAT fs)
-    {
+// constructor
+Wavetable( t_CKFLOAT fs)
+{
         srate = fs;
         table_pos = 0;
         internal_table = new double[DEFAULT_TABLE_SIZE];
@@ -48,12 +50,13 @@ public:
         freq = DEFAULT_FREQ;
         step = table_size * freq / srate;
         current_table = internal_table;
+        interpolate = true;
         //printf("step: %f\n", step);
-    }
+}
 
-    // for Chugins extending UGen
-    SAMPLE tick( SAMPLE in )
-    {
+// for Chugins extending UGen
+SAMPLE tick( SAMPLE in )
+{
         // default: this passes whatever input is patched into Chugin
         if (in > 0) freq = in;
 
@@ -65,58 +68,92 @@ public:
         y2 = (y0 + 2) % table_size;
         y3 = (y0 + 3) % table_size;
 
-        //float val = current_table[y0];
-        float val = CubicInterpolate(current_table[y0],
-          current_table[y1], current_table[y2], current_table[y3],
-          table_pos + 1 - y0);
-       //printf("table_pos: %f, val: %f\n", table_pos, val);
-       return val;
-    }
+        if (interpolate)
+        {
+                return HermiteInterpolate(current_table[y0],
+                                         current_table[y1], current_table[y2], current_table[y3],
+                                         table_pos + 1 - y0);
+        }
+        return current_table[y0];
+}
 
-    // set parameter example
-    float setFreq( t_CKFLOAT p )
-    {
+// set parameter example
+float setFreq( t_CKFLOAT p )
+{
         freq = p;
         step = table_size * freq / srate;
         return freq;
-    }
+}
 
-    float getFreq()
-    {
-      return freq;
-    }
+float getFreq()
+{
+        return freq;
+}
+
+int setInterpolate (t_CKINT p)
+{
+    interpolate = (p == 0) ? false : true;
+    return p;
+}
+
+int getInterpolate()
+{
+  return interpolate ? 1 : 0;
+}
 
 private:
-    // instance data
-    double table_pos;
-    double* internal_table;
-    double* user_table;
-    double* current_table;
-    float freq;
-    float step;
-    int table_size;
-    int srate;
+// instance data
+double table_pos;
+double* internal_table;
+double* user_table;
+double* current_table;
+float freq;
+float step;
+int table_size;
+int srate;
+bool interpolate;
 
-    void make_default_table()
-    {
-      for (int i=0; i<table_size; i++)
-      {
-        internal_table[i] = sin( TWO_PI * i / table_size );
-        user_table[i] = 0.0;
-      }
-    }
+void make_default_table()
+{
+        for (int i=0; i<table_size; i++)
+        {
+                internal_table[i] = sin( TWO_PI * i / table_size );
+                user_table[i] = 0.0;
+        }
+}
 
-    float CubicInterpolate(double y0, double y1, double y2, double y3, double mu)
-    {
-      double a0,a1,a2,a3,mu2;
-       mu2 = mu*mu;
-       a0 = y3 - y2 - y0 + y1;
-       a1 = y0 - y1 - a0;
-       a2 = y2 - y0;
-       a3 = y1;
+float CubicInterpolate(double y0, double y1, double y2, double y3, double mu)
+{
+        double a0,a1,a2,a3,mu2;
+        mu2 = mu*mu;
+        a0 = -0.5*y0 + 1.5*y1 - 1.5*y2 + 0.5*y3;
+        a1 = y0 - 2.5*y1 + 2*y2 - 0.5*y3;
+        a2 = -0.5*y0 + 0.5*y2;
+        a3 = y1;
 
-       return (float)(a0*mu*mu2+a1*mu2+a2*mu+a3);
-    }
+        return (float)(a0*mu*mu2+a1*mu2+a2*mu+a3);
+}
+
+float HermiteInterpolate(double y0,double y1,
+                         double y2,double y3,
+                         double mu)
+{
+        double m0,m1,mu2,mu3;
+        double a0,a1,a2,a3;
+
+        mu2 = mu * mu;
+        mu3 = mu2 * mu;
+        m0  = (y1-y0)/2;
+        m0 += (y2-y1)/2;
+        m1  = (y2-y1)/2;
+        m1 += (y3-y2)/2;
+        a0 =  2*mu3 - 3*mu2 + 1;
+        a1 =    mu3 - 2*mu2 + mu;
+        a2 =    mu3 -   mu2;
+        a3 = -2*mu3 + 3*mu2;
+
+        return(a0*y1+a1*m0+a2*m1+a3*y2);
+}
 };
 
 
@@ -125,105 +162,127 @@ private:
 // add additional functions to this Chugin
 CK_DLL_QUERY( Wavetable )
 {
-    // hmm, don't change this...
-    QUERY->setname(QUERY, "Wavetable");
+        // hmm, don't change this...
+        QUERY->setname(QUERY, "Wavetable");
 
-    // begin the class definition
-    // can change the second argument to extend a different ChucK class
-    QUERY->begin_class(QUERY, "Wavetable", "UGen");
+        // begin the class definition
+        // can change the second argument to extend a different ChucK class
+        QUERY->begin_class(QUERY, "Wavetable", "UGen");
 
-    // register the constructor (probably no need to change)
-    QUERY->add_ctor(QUERY, wavetable_ctor);
-    // register the destructor (probably no need to change)
-    QUERY->add_dtor(QUERY, wavetable_dtor);
+        // register the constructor (probably no need to change)
+        QUERY->add_ctor(QUERY, wavetable_ctor);
+        // register the destructor (probably no need to change)
+        QUERY->add_dtor(QUERY, wavetable_dtor);
 
-    // for UGen's only: add tick function
-    QUERY->add_ugen_func(QUERY, wavetable_tick, NULL, 1, 1);
+        // for UGen's only: add tick function
+        QUERY->add_ugen_func(QUERY, wavetable_tick, NULL, 1, 1);
 
-    // NOTE: if this is to be a UGen with more than 1 channel,
-    // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
-    // and declare a tickf function using CK_DLL_TICKF
+        // NOTE: if this is to be a UGen with more than 1 channel,
+        // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
+        // and declare a tickf function using CK_DLL_TICKF
 
-    // example of adding setter method
-    QUERY->add_mfun(QUERY, wavetable_setFreq, "float", "freq");
-    // example of adding argument to the above method
-    QUERY->add_arg(QUERY, "float", "arg");
+        // example of adding setter method
+        QUERY->add_mfun(QUERY, wavetable_setFreq, "float", "freq");
+        QUERY->add_arg(QUERY, "float", "arg");
 
-    // example of adding getter method
-    QUERY->add_mfun(QUERY, wavetable_getFreq, "float", "freq");
+        QUERY->add_mfun(QUERY, wavetable_setInterpolate, "int", "interpolate");
+        QUERY->add_arg(QUERY, "int", "arg");
 
-    // this reserves a variable in the ChucK internal class to store
-    // referene to the c++ class we defined above
-    wavetable_data_offset = QUERY->add_mvar(QUERY, "int", "@w_data", false);
+        // example of adding getter method
+        QUERY->add_mfun(QUERY, wavetable_getFreq, "float", "freq");
+        QUERY->add_mfun(QUERY, wavetable_getInterpolate, "int", "interpolate");
 
-    // end the class definition
-    // IMPORTANT: this MUST be called!
-    QUERY->end_class(QUERY);
+        // this reserves a variable in the ChucK internal class to store
+        // referene to the c++ class we defined above
+        wavetable_data_offset = QUERY->add_mvar(QUERY, "int", "@w_data", false);
 
-    // wasn't that a breeze?
-    return TRUE;
+        // end the class definition
+        // IMPORTANT: this MUST be called!
+        QUERY->end_class(QUERY);
+
+        // wasn't that a breeze?
+        return TRUE;
 }
 
 
 // implementation for the constructor
 CK_DLL_CTOR(wavetable_ctor)
 {
-    // get the offset where we'll store our internal c++ class pointer
-    OBJ_MEMBER_INT(SELF, wavetable_data_offset) = 0;
+        // get the offset where we'll store our internal c++ class pointer
+        OBJ_MEMBER_INT(SELF, wavetable_data_offset) = 0;
 
-    // instantiate our internal c++ class representation
-    Wavetable * w_obj = new Wavetable(API->vm->get_srate());
+        // instantiate our internal c++ class representation
+        Wavetable * w_obj = new Wavetable(API->vm->get_srate());
 
-    // store the pointer in the ChucK object member
-    OBJ_MEMBER_INT(SELF, wavetable_data_offset) = (t_CKINT) w_obj;
+        // store the pointer in the ChucK object member
+        OBJ_MEMBER_INT(SELF, wavetable_data_offset) = (t_CKINT) w_obj;
 }
 
 
 // implementation for the destructor
 CK_DLL_DTOR(wavetable_dtor)
 {
-    // get our c++ class pointer
-    Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
-    // check it
-    if( w_obj )
-    {
-        // clean up
-        delete w_obj;
-        OBJ_MEMBER_INT(SELF, wavetable_data_offset) = 0;
-        w_obj = NULL;
-    }
+        // get our c++ class pointer
+        Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
+        // check it
+        if( w_obj )
+        {
+                // clean up
+                delete w_obj;
+                OBJ_MEMBER_INT(SELF, wavetable_data_offset) = 0;
+                w_obj = NULL;
+        }
 }
 
 
 // implementation for tick function
 CK_DLL_TICK(wavetable_tick)
 {
-    // get our c++ class pointer
-    Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
+        // get our c++ class pointer
+        Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
 
-    // invoke our tick function; store in the magical out variable
-    if(w_obj) *out = w_obj->tick(in);
+        // invoke our tick function; store in the magical out variable
+        if(w_obj) *out = w_obj->tick(in);
 
-    // yes
-    return TRUE;
+        // yes
+        return TRUE;
 }
 
 
 // example implementation for setter
 CK_DLL_MFUN(wavetable_setFreq)
 {
-    // get our c++ class pointer
-    Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
-    // set the return value
-    RETURN->v_float = w_obj->setFreq(GET_NEXT_FLOAT(ARGS));
+        // get our c++ class pointer
+        Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
+        // set the return value
+        RETURN->v_float = w_obj->setFreq(GET_NEXT_FLOAT(ARGS));
 }
 
 
 // example implementation for getter
 CK_DLL_MFUN(wavetable_getFreq)
 {
-    // get our c++ class pointer
-    Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
-    // set the return value
-    RETURN->v_float = w_obj->getFreq();
+        // get our c++ class pointer
+        Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
+        // set the return value
+        RETURN->v_float = w_obj->getFreq();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(wavetable_setInterpolate)
+{
+        // get our c++ class pointer
+        Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
+        // set the return value
+        RETURN->v_int = w_obj->setInterpolate(GET_NEXT_INT(ARGS));
+}
+
+
+// example implementation for getter
+CK_DLL_MFUN(wavetable_getInterpolate)
+{
+        // get our c++ class pointer
+        Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
+        // set the return value
+        RETURN->v_int = w_obj->getInterpolate();
 }
