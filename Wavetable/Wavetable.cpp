@@ -71,8 +71,8 @@ SAMPLE tick( SAMPLE in )
         if (interpolate)
         {
                 return HermiteInterpolate(current_table[y0],
-                                         current_table[y1], current_table[y2], current_table[y3],
-                                         table_pos + 1 - y0);
+                                          current_table[y1], current_table[y2], current_table[y3],
+                                          table_pos + 1 - y0);
         }
         return current_table[y0];
 }
@@ -92,13 +92,13 @@ float getFreq()
 
 int setInterpolate (t_CKINT p)
 {
-    interpolate = (p == 0) ? false : true;
-    return p;
+        interpolate = (p == 0) ? false : true;
+        return p;
 }
 
 int getInterpolate()
 {
-  return interpolate ? 1 : 0;
+        return interpolate ? 1 : 0;
 }
 
 private:
