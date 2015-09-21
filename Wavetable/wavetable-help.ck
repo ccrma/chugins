@@ -21,3 +21,10 @@ for (int i; i<numWavetables; i++)
 }
 <<< "interpolating" >>>;
 5::second => now;
+
+[-1.0, -0.5, 0, 0.5, 1, 0.5, 0, -0.5] @=> float table[];
+for (int i; i<numWavetables; i++)
+{
+  w[i].set_table (table);
+}
+5::second => now;
