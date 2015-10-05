@@ -11,7 +11,7 @@ CHUGS_WIN32=$(foreach CHUG,$(CHUGINS_WIN32),$(CHUG)/$(CHUG).chug)
 CHUGS_CLEAN=$(addsuffix .clean,$(CHUGINS))
 
 
-DESTDIR?=/usr
+DESTDIR?=/usr/local
 INSTALL_DIR=$(DESTDIR)/lib/chuck
 
 ifneq ($(CK_TARGET),)
