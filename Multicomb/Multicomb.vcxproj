@@ -66,6 +66,12 @@
     <ClCompile Include="Multicomb.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Ocomb.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Odelay.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="Multicomb.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Targets" />

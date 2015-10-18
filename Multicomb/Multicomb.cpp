@@ -18,6 +18,11 @@
 #include <stdio.h>
 #include <limits.h>
 
+#ifdef _MSC_VER
+static long random() { return rand(); }
+static void srandom( unsigned s ) { srand( s ); }
+#endif // _MSC_VER
+
 CK_DLL_CTOR(multicomb_ctor);
 CK_DLL_DTOR(multicomb_dtor);
 CK_DLL_TICKF(multicomb_tickf);
