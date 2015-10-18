@@ -1,18 +1,20 @@
 
 CHUGINS=ABSaturator AmbPan Bitcrusher KasFilter MagicSine FIR FoldbackSaturator \
 	PanN PitchTrack GVerb Mesh2D Spectacle Elliptic Sigmund ExpDelay Overdrive \
-	Multicomb PowerADSR WinFuncEnv
+	Multicomb PowerADSR WinFuncEnv WPDiodeLadder WPKorg35
 
-CHUGS_NOT_ON_WIN32=FluidSynth Elliptic Sigmund ExpDelay Overdrive Multicomb
+CHUGS_NOT_ON_WIN32=FluidSynth
 CHUGINS_WIN32=$(filter-out $(CHUGS_NOT_ON_WIN32),$(CHUGINS))
 
 CHUGS=$(foreach CHUG,$(CHUGINS),$(CHUG)/$(CHUG).chug)
 CHUGS_WIN32=$(foreach CHUG,$(CHUGINS_WIN32),$(CHUG)/$(CHUG).chug)
+CHUGS_RELEASE=$(foreach CHUG,$(CHUGINS_WIN32),$(CHUG)/Release/$(CHUG).chug)
 CHUGS_CLEAN=$(addsuffix .clean,$(CHUGINS))
 
 
 DESTDIR?=/usr/local
 INSTALL_DIR=$(DESTDIR)/lib/chuck
+INSTALL_DIR_WIN32="C:/Program Files/ChucK/chugins"
 
 ifneq ($(CK_TARGET),)
 .DEFAULT_GOAL:=$(CK_TARGET)
@@ -44,6 +46,10 @@ $(CHUGS_CLEAN):
 install: $(CHUGS)
 	mkdir -p $(INSTALL_DIR)
 	cp -rf $(CHUGS) $(INSTALL_DIR)
+
+install-win32: $(CHUGS_RELEASE)
+	mkdir -p $(INSTALL_DIR_WIN32)
+	cp -rf $(CHUGS_RELEASE) $(INSTALL_DIR_WIN32)
 
 DATE=$(shell date +"%Y-%m-%d")
 
