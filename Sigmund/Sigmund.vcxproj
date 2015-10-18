@@ -66,6 +66,15 @@
     <ClCompile Include="Sigmund.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="d_fft_mayer.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="sigmund-dsp.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="sigmund.c" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="Sigmund.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Targets" />

@@ -7,7 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _MSC_VER
+#include <malloc.h>
+#define alloca _alloca
+#else
 #include <alloca.h>
+#endif
 
 int sigmund_ilog2(int n)
 {
