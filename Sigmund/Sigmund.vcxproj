@@ -72,9 +72,6 @@
     <ClCompile Include="sigmund-dsp.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="sigmund.c" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="Sigmund.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Targets" />
