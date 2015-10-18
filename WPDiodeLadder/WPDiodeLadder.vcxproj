@@ -66,6 +66,12 @@
     <ClCompile Include="WPDiodeLadder.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="VADiodeLadderFilter.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="VAOnePoleFilterEx.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="WPDiodeLadder.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Targets" />
