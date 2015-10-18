@@ -66,6 +66,12 @@
     <ClCompile Include="WPKorg35.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="KorgThreeFiveLPF.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="VAOnePoleFilter.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="WPKorg35.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Targets" />
