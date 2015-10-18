@@ -77,7 +77,7 @@ CK_DLL_CTOR(foldback_ctor)
 
     FoldbackData * fbdata = new FoldbackData;
     fbdata->makeupGain = 1.0;
-    fbdata->threshold = 0.6;
+    fbdata->threshold = 0.6f;
     fbdata->index = 2.0;
     
     OBJ_MEMBER_INT(SELF, foldback_data_offset) = (t_CKINT) fbdata;
@@ -101,7 +101,7 @@ CK_DLL_TICK(foldback_tick)
     SAMPLE theSample = in;
 
     if((theSample > fbdata->threshold) || (theSample < fbdata->threshold * -1.0)){
-        theSample = fabs(fabs(fmod(theSample - fbdata->threshold, fbdata->threshold * 4.0)) - fbdata->threshold * 2.0) - fbdata->threshold;
+        theSample = fabs(fabs(fmod((float)(theSample - fbdata->threshold), (float)(fbdata->threshold * 4.0))) - fbdata->threshold * 2.0) - fbdata->threshold;
     }
 
     *out = theSample * (1.0/fbdata->threshold) * fbdata->makeupGain;

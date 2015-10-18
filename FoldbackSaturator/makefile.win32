@@ -2,10 +2,10 @@ MSBUILD=msbuild.exe
 
 ifneq (,$(CHUCK_DEBUG))
 CONFIG=Debug
-CHUG_BIN=Debug/Bitcrusher.chug
+CHUG_BIN=Debug/FoldbackSaturator.chug
 else
 CONFIG=Release
-CHUG_BIN=Release/Bitcrusher.chug
+CHUG_BIN=Release/FoldbackSaturator.chug
 endif
 
 default: $(CHUG_BIN)
