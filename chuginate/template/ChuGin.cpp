@@ -47,18 +47,18 @@ public:
     }
 
     // set parameter example
-    float setParam( t_CKFLOAT p )
+    t_CKFLOAT setParam( t_CKFLOAT p )
     {
         m_param = p;
         return p;
     }
 
     // get parameter example
-    float getParam() { return m_param; }
+    t_CKFLOAT getParam() { return m_param; }
     
 private:
     // instance data
-    float m_param;
+    t_CKFLOAT m_param;
 };
 
 
