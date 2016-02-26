@@ -11,66 +11,84 @@
 #include <stdio.h>
 #include <limits.h>
 
+// STL includes
+#include <iostream>
+#include <string>
+using namespace std;
+
+
+
+
 // declaration of chugin constructor
 CK_DLL_CTOR(binaural_ctor);
 // declaration of chugin desctructor
 CK_DLL_DTOR(binaural_dtor);
 
-// example of getter/setter
-CK_DLL_MFUN(binaural_setParam);
-CK_DLL_MFUN(binaural_getParam);
-
-// function
+// functions
 CK_DLL_MFUN(binaural_loadDefault);
+CK_DLL_MFUN(binaural_loadSet);
 CK_DLL_MFUN(binaural_load);
-CK_DLL_MFUN(binaural_loadDSet);
 
-
-// for Chugins extending UGen, this is mono synthesis function for 1 sample
-CK_DLL_TICK(binaural_tick);
+// multi-channel audio synthesis tick function
+CK_DLL_TICKF(binaural_tickf);
 
 // this is a special offset reserved for Chugin internal data
 t_CKINT binaural_data_offset = 0;
 
 
-// class definition for internal Chugin data
-// (note: this isn't strictly necessary, but serves as example
-// of one recommended approach)
+
+
+//-----------------------------------------------------------------------------
+// name: class Binaural
+// desc: binaural implementation
+//-----------------------------------------------------------------------------
 class Binaural
 {
 public:
     // constructor
-    Binaural( t_CKFLOAT fs)
+    Binaural()
     {
-        m_param = 0;
+        // output is stereo
+        m_chans = 2;
     }
 
     // for Chugins extending UGen
-    SAMPLE tick( SAMPLE in )
+    void tick( SAMPLE * in, SAMPLE * out, int nframes )
     {
-        // default: this passes whatever input is patched into Chugin
-        return in;
+        // for now pass though
+        for( int i = 0; i < nframes; i++ )
+        {
+            out[i*2] = in[0];
+            out[i*2+1] = in[0];
+        }
     }
-
-    // set parameter example
-    t_CKFLOAT setParam( t_CKFLOAT p )
-    {
-        m_param = p;
-        return p;
-    }
-
-    // get parameter example
-    t_CKFLOAT getParam() { return m_param; }
+    
+    // load
+    bool load( t_CKFLOAT elevation, t_CKFLOAT azimuth, const string & filename );
 
 private:
-    // instance data
-    t_CKFLOAT m_param;
+    // data
+    t_CKINT m_chans;
 };
 
 
+
+
+//-----------------------------------------------------------------------------
+// name: load()
+// desc: load HRIR associated with elevation and azimuth; returns success/fail
+//-----------------------------------------------------------------------------
+bool Binaural::load( t_CKFLOAT elevation, t_CKFLOAT azimuth, const string & filename )
+{
+    return true;
+}
+
+
+
+
+//-----------------------------------------------------------------------------
 // query function: chuck calls this when loading the Chugin
-// NOTE: developer will need to modify this function to
-// add additional functions to this Chugin
+//-----------------------------------------------------------------------------
 CK_DLL_QUERY( Binaural )
 {
     // hmm, don't change this...
@@ -85,20 +103,15 @@ CK_DLL_QUERY( Binaural )
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, binaural_dtor);
 
-    // for UGen's only: add tick function
-    QUERY->add_ugen_func(QUERY, binaural_tick, NULL, 1, 1);
+    // add tick function for mono(in) / stereo(out)
+    QUERY->add_ugen_funcf(QUERY, binaural_tickf, NULL, 1, 2);
 
-    // NOTE: if this is to be a UGen with more than 1 channel,
-    // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
-    // and declare a tickf function using CK_DLL_TICKF
-
-    // example of adding setter method
-    QUERY->add_mfun(QUERY, binaural_setParam, "float", "param");
-    // example of adding argument to the above method
-    QUERY->add_arg(QUERY, "float", "arg");
-
-    // example of adding getter method
-    QUERY->add_mfun(QUERY, binaural_getParam, "float", "param");
+    // load( float, float, string )
+    QUERY->add_mfun(QUERY, binaural_load, "int", "param");
+    // add arguments
+    QUERY->add_arg(QUERY, "float", "elevation");
+    QUERY->add_arg(QUERY, "float", "azimuth");
+    QUERY->add_arg(QUERY, "string", "filename");
 
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
@@ -113,6 +126,8 @@ CK_DLL_QUERY( Binaural )
 }
 
 
+
+
 // implementation for the constructor
 CK_DLL_CTOR(binaural_ctor)
 {
@@ -120,11 +135,13 @@ CK_DLL_CTOR(binaural_ctor)
     OBJ_MEMBER_INT(SELF, binaural_data_offset) = 0;
 
     // instantiate our internal c++ class representation
-    Binaural * b_obj = new Binaural(API->vm->get_srate());
+    Binaural * b_obj = new Binaural();
 
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, binaural_data_offset) = (t_CKINT) b_obj;
 }
+
+
 
 
 // implementation for the destructor
@@ -143,35 +160,35 @@ CK_DLL_DTOR(binaural_dtor)
 }
 
 
+
+
 // implementation for tick function
-CK_DLL_TICK(binaural_tick)
+CK_DLL_TICKF(binaural_tickf)
 {
     // get our c++ class pointer
-    Binaural * b_obj = (Binaural *) OBJ_MEMBER_INT(SELF, binaural_data_offset);
+    Binaural * b = (Binaural *)OBJ_MEMBER_INT(SELF, binaural_data_offset);
 
     // invoke our tick function; store in the magical out variable
-    if(b_obj) *out = b_obj->tick(in);
+    if(b) b->tick(in, out, nframes);
 
     // yes
     return TRUE;
 }
 
 
-// example implementation for setter
-CK_DLL_MFUN(binaural_setParam)
-{
-    // get our c++ class pointer
-    Binaural * b_obj = (Binaural *) OBJ_MEMBER_INT(SELF, binaural_data_offset);
-    // set the return value
-    RETURN->v_float = b_obj->setParam(GET_NEXT_FLOAT(ARGS));
-}
 
 
-// example implementation for getter
-CK_DLL_MFUN(binaural_getParam)
+// load HRIR for elevation/azimuth
+CK_DLL_MFUN(binaural_load)
 {
+    // get argument values
+    t_CKFLOAT elevation = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT azimuth = GET_NEXT_FLOAT(ARGS);
+    string filename = GET_NEXT_STRING(ARGS)->str;
+    
     // get our c++ class pointer
-    Binaural * b_obj = (Binaural *) OBJ_MEMBER_INT(SELF, binaural_data_offset);
-    // set the return value
-    RETURN->v_float = b_obj->getParam();
+    Binaural * b = (Binaural *)OBJ_MEMBER_INT(SELF, binaural_data_offset);
+    
+    // call it
+    b->load( elevation, azimuth, filename );
 }
