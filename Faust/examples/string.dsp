@@ -23,7 +23,7 @@ with {
   pickposfilter = ffcombfilter(4096,ppdel,-1); // defined in filter.lib
 };
 
-process = noiseburst(trig,(SR/frequency)) : lowpass(2,frequency) : myString(frequency,feedback) : cubicnl_demo;
+process = noiseburst(trig,(SR/frequency)) : lowpass(2,frequency) : myString(frequency,feedback);
 
 
 
