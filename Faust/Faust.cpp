@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <fstream>
 using namespace std;
 
 // faust include
@@ -138,6 +139,12 @@ public:
     void setValue( const std::string& path, FAUSTFLOAT value )
     {
         // TODO: should check if path valid?
+        if( fZoneMap.find(path) == fZoneMap.end() )
+        {
+            // error
+            cerr << "[Faust]: cannot set parameter named: " << path << endl;
+            return;
+        }
         
         // set it!
         *fZoneMap[path] = value;
@@ -145,6 +152,14 @@ public:
     
     float getValue(const std::string& path)
     {
+        // TODO: should check if path valid?
+        if( fZoneMap.find(path) == fZoneMap.end() )
+        {
+            // error
+            cerr << "[Faust]: cannot get parameter named: " << path << endl;
+            return 0;
+        }
+        
         return *fZoneMap[path];
     }
     
@@ -183,6 +198,9 @@ public:
         // zero
         m_input = NULL;
         m_output = NULL;
+        // default
+        m_numInputChannels = 0;
+        m_numOutputChannels = 0;
     }
     
     // destructor
@@ -190,16 +208,12 @@ public:
     {
         // clear
         clear();
+        clearBufs();
     }
     
     // clear
     void clear()
     {
-        if( m_input != NULL ) SAFE_DELETE_ARRAY(m_input[0]);
-        if( m_output != NULL ) SAFE_DELETE_ARRAY(m_output[0]);
-        SAFE_DELETE_ARRAY(m_input);
-        SAFE_DELETE_ARRAY(m_output);
-        
         // clean up, possibly
         if( m_factory != NULL )
         {
@@ -208,6 +222,49 @@ public:
         }
         SAFE_DELETE(m_dsp);
         SAFE_DELETE(m_ui);
+    }
+    
+    // clear
+    void clearBufs()
+    {
+        if( m_input != NULL )
+        {
+            for( int i = 0; i < m_numInputChannels; i++ )
+                SAFE_DELETE_ARRAY(m_input[i]);
+        }
+        if( m_output != NULL )
+        {
+            for( int i = 0; i < m_numOutputChannels; i++ )
+                SAFE_DELETE_ARRAY(m_output[i]);
+        }
+        SAFE_DELETE_ARRAY(m_input);
+        SAFE_DELETE_ARRAY(m_output);
+    }
+    
+    // allocate
+    void allocate( int inputChannels, int outputChannels )
+    {
+        // clear
+        clearBufs();
+        
+        // set
+        m_numInputChannels = inputChannels;
+        m_numOutputChannels = outputChannels;
+
+        // allocate channels
+        m_input = new FAUSTFLOAT *[m_numInputChannels];
+        m_output = new FAUSTFLOAT *[m_numOutputChannels];
+        // allocate buffers for each channel
+        for( int i = 0; i < m_numInputChannels; i++ )
+        {
+            // single sample for each
+            m_input[i] = new FAUSTFLOAT[1];
+        }
+        for( int i = 0; i < m_numOutputChannels; i++ )
+        {
+            // single sample for each
+            m_output[i] = new FAUSTFLOAT[1];
+        }
     }
     
     // eval
@@ -222,9 +279,22 @@ public:
         // optimization level
         const int optimize = -1;
         
+        // save
+        m_code = code;
+        
         // create new factory
         m_factory = createDSPFactoryFromString( "chuck", code,
             argc, argv, "", m_errorString, optimize );
+        
+        // check for error
+        if( m_errorString != "" )
+        {
+            // output error
+            cerr << "[Faust]: " << m_errorString << endl;
+            // done
+            return false;
+        }
+        
         // create DSP instance
         m_dsp = createDSPInstance( m_factory );
         
@@ -233,11 +303,16 @@ public:
         // build ui
         m_dsp->buildUserInterface( m_ui );
         
-        // allocate
-        m_input = new FAUSTFLOAT *[1];
-        m_output = new FAUSTFLOAT *[1];
-        m_input[0] = new FAUSTFLOAT[1];
-        m_output[0] = new FAUSTFLOAT[1];
+        // get channels
+        int inputs = m_dsp->getNumInputs();
+        int outputs = m_dsp->getNumOutputs();
+        
+        // see if we need to alloc
+        if( inputs > m_numInputChannels || outputs > m_numOutputChannels )
+        {
+            // clear and allocate
+            allocate( inputs, outputs );
+        }
         
         // init
         m_dsp->init( (int)(m_srate + .5) );
@@ -245,20 +320,46 @@ public:
         return true;
     }
 
+    // compile
+    bool compile( const string & path )
+    {
+        // open file
+        ifstream fin( path );
+        // check
+        if( !fin.good() )
+        {
+            // error
+            cerr << "[Faust]: ERROR opening file: '" << path << "'" << endl;
+            return false;
+        }
+        
+        // clear code string
+        m_code = "";
+        // get it
+        for( string line; std::getline( fin, line ); )
+            m_code += line;
+        
+        // eval it
+        return eval( m_code );
+    }
+    
     // for Chugins extending UGen
     SAMPLE tick( SAMPLE in )
     {
         // sanity check
         if( m_dsp == NULL ) return 0;
-
+        
         // set input
-        m_input[0][0] = in;
+        for( int i = 0; i < m_numInputChannels; i++ ) m_input[i][0] = in;
         // zero output
-        m_output[0][0] = 0;
+        for( int i = 0; i < m_numOutputChannels; i++ ) m_output[i][0] = 0;
         // compute samples
         m_dsp->compute( 1, m_input, m_output );
+        // average output
+        t_CKFLOAT avg = 0;
+        for( int i = 0; i < m_numOutputChannels; i++ ) avg += m_output[i][0];
         // return sample
-        return m_output[0][0];
+        return avg / m_numOutputChannels;
     }
 
     // set parameter example
@@ -278,9 +379,14 @@ public:
     t_CKFLOAT getParam()
     { return 0; }
     
+    // get code
+    string code() { return m_code; }
+    
 private:
     // sample rate
     t_CKFLOAT m_srate;
+    // code text (pre any modifications)
+    string m_code;
     // llvm factory
     llvm_dsp_factory * m_factory;
     // faust DSP object
@@ -291,6 +397,10 @@ private:
     // faust input buffer
     FAUSTFLOAT ** m_input;
     FAUSTFLOAT ** m_output;
+    
+    // input and output
+    int m_numInputChannels;
+    int m_numOutputChannels;
     
     // UI
     FauckUI * m_ui;
@@ -329,6 +439,11 @@ CK_DLL_QUERY( Faust )
     QUERY->add_mfun(QUERY, faust_eval, "int", "eval");
     // add argument
     QUERY->add_arg(QUERY, "string", "code");
+    
+    // add .compile()
+    QUERY->add_mfun(QUERY, faust_compile, "int", "compile");
+    // add argument
+    QUERY->add_arg(QUERY, "string", "path");
 
     // add .test()
     QUERY->add_mfun(QUERY, faust_test, "int", "test");
@@ -352,7 +467,7 @@ CK_DLL_QUERY( Faust )
     // add .error()
     QUERY->add_mfun(QUERY, faust_error, "string", "error");
 
-    // add .current()
+    // add .code()
     QUERY->add_mfun(QUERY, faust_code, "string", "code");
     
     // this reserves a variable in the ChucK internal class to store 
@@ -437,6 +552,12 @@ CK_DLL_MFUN(faust_test)
 
 CK_DLL_MFUN(faust_compile)
 {
+    // get our c++ class pointer
+    Faust * f = (Faust *) OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // get argument
+    std::string code = GET_NEXT_STRING(ARGS)->str;
+    // eval it
+    RETURN->v_int = f->compile( code );
 }
 
 CK_DLL_MFUN(faust_v_set)
@@ -467,4 +588,12 @@ CK_DLL_MFUN(faust_error)
 
 CK_DLL_MFUN(faust_code)
 {
+//    // get our c++ class pointer
+//    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+//    // chuck string TODO: verify memory
+//    Chuck_String * str = (Chuck_String *)instantiate_and_initialize_object( &t_string, NULL );
+//    // set
+//    str->str = f->code();
+//    // return
+//    RETURN->v_string = str;
 }
