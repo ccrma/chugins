@@ -5,6 +5,8 @@
 adc => Faust reverb => dac;
 // compile faust code
 reverb.eval("import(\"effect.lib\"); process = zita_rev_fdn_demo ;");
+// parameter dump
+reverb.dump();
 
 // time loop
 while( true )

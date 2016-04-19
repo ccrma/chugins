@@ -6,6 +6,9 @@ Faust fck => dac;
 // evaluate faust code
 fck.eval( "import(\"music.lib\"); import(\"oscillator.lib\"); freq=button(\"freq\"); process=sawtooth(freq);" );
 
+// print snapshot
+fck.dump();
+
 // time loop
 while( true )
 {
