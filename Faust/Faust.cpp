@@ -43,6 +43,7 @@ CK_DLL_MFUN(faust_eval);
 CK_DLL_MFUN(faust_compile);
 CK_DLL_MFUN(faust_v_set);
 CK_DLL_MFUN(faust_v_get);
+CK_DLL_MFUN(faust_dump);
 CK_DLL_MFUN(faust_ok);
 CK_DLL_MFUN(faust_error);
 CK_DLL_MFUN(faust_code);
@@ -171,6 +172,22 @@ public:
         }
         
         return *fZoneMap[path];
+    }
+    
+    void dumpParams()
+    {
+        // iterator
+        std::map<std::string, FAUSTFLOAT*>::iterator iter = fZoneMap.begin();
+        // print
+        cerr << "---------------- DUMPING [Faust] PARAMETERS ---------------" << endl;
+        // go
+        for( ; iter != fZoneMap.end(); iter++ )
+        {
+            // print
+            cerr << iter->first << " : " << *(iter->second) << endl;
+        }
+        // done
+        cerr << "-----------------------------------------------------------" << endl;
     }
     
     // map access
@@ -353,6 +370,12 @@ public:
         return eval( m_code );
     }
     
+    // dump (snapshot)
+    void dump()
+    {
+        m_ui->dumpParams();
+    }
+    
     // for Chugins extending UGen
     SAMPLE tick( SAMPLE in )
     {
@@ -386,8 +409,8 @@ public:
     }
 
     // get parameter example
-    t_CKFLOAT getParam()
-    { return 0; }
+    t_CKFLOAT getParam( const string & n )
+    { return m_ui->getValue(n); }
     
     // get code
     string code() { return m_code; }
@@ -471,6 +494,9 @@ CK_DLL_QUERY( Faust )
     // add argument
     QUERY->add_arg(QUERY, "string", "key");
 
+    // add .dump()
+    QUERY->add_mfun(QUERY, faust_dump, "void", "dump");
+    
     // add .ok()
     QUERY->add_mfun(QUERY, faust_ok, "int", "ok");
 
@@ -580,12 +606,26 @@ CK_DLL_MFUN(faust_v_set)
     t_CKFLOAT v = GET_NEXT_FLOAT(ARGS);
     // call it
     f->setParam( name, v );
-    // eval it
-    RETURN->v_int = v;
+    // return it
+    RETURN->v_float = v;
 }
 
 CK_DLL_MFUN(faust_v_get)
 {
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // get name
+    std::string name = GET_NEXT_STRING(ARGS)->str;
+    // call it
+    RETURN->v_float = f->getParam( name );
+}
+
+CK_DLL_MFUN(faust_dump)
+{
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // call it
+    f->dump();
 }
 
 CK_DLL_MFUN(faust_ok)
