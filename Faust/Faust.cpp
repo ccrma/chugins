@@ -138,25 +138,35 @@ public:
     // set/get
     void setValue( const std::string& path, FAUSTFLOAT value )
     {
+        // append "/0x00/" if necessary
+        string p = path.length() > 0 && path[0] == '/' ? path : string("/0x00/")+path;
+
         // TODO: should check if path valid?
-        if( fZoneMap.find(path) == fZoneMap.end() )
+        if( fZoneMap.find(p) == fZoneMap.end() )
         {
             // error
-            cerr << "[Faust]: cannot set parameter named: " << path << endl;
+            cerr << "[Faust]: cannot set parameter named: " << path;
+            if( path != p ) cerr << " OR " << p << endl;
+            else cerr << endl;
             return;
         }
         
         // set it!
-        *fZoneMap[path] = value;
+        *fZoneMap[p] = value;
     }
     
     float getValue(const std::string& path)
     {
+        // append "/0x00/" if necessary
+        string p = path.length() > 0 && path[0] == '/' ? path : string("/0x00/")+path;
+
         // TODO: should check if path valid?
-        if( fZoneMap.find(path) == fZoneMap.end() )
+        if( fZoneMap.find(p) == fZoneMap.end() )
         {
             // error
-            cerr << "[Faust]: cannot get parameter named: " << path << endl;
+            cerr << "[Faust]: cannot get parameter named: " << path;
+            if( path != p ) cerr << " OR " << p << endl;
+            else cerr << endl;
             return 0;
         }
         
@@ -337,7 +347,7 @@ public:
         m_code = "";
         // get it
         for( string line; std::getline( fin, line ); )
-            m_code += line;
+            m_code += line + '\n';
         
         // eval it
         return eval( m_code );
