@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <fstream>
 using namespace std;
 
 // faust include
@@ -278,6 +279,9 @@ public:
         // optimization level
         const int optimize = -1;
         
+        // save
+        m_code = code;
+        
         // create new factory
         m_factory = createDSPFactoryFromString( "chuck", code,
             argc, argv, "", m_errorString, optimize );
@@ -316,6 +320,29 @@ public:
         return true;
     }
 
+    // compile
+    bool compile( const string & path )
+    {
+        // open file
+        ifstream fin( path );
+        // check
+        if( !fin.good() )
+        {
+            // error
+            cerr << "[Faust]: ERROR opening file: '" << path << "'" << endl;
+            return false;
+        }
+        
+        // clear code string
+        m_code = "";
+        // get it
+        for( string line; std::getline( fin, line ); )
+            m_code += line;
+        
+        // eval it
+        return eval( m_code );
+    }
+    
     // for Chugins extending UGen
     SAMPLE tick( SAMPLE in )
     {
@@ -352,9 +379,14 @@ public:
     t_CKFLOAT getParam()
     { return 0; }
     
+    // get code
+    string code() { return m_code; }
+    
 private:
     // sample rate
     t_CKFLOAT m_srate;
+    // code text (pre any modifications)
+    string m_code;
     // llvm factory
     llvm_dsp_factory * m_factory;
     // faust DSP object
@@ -407,6 +439,11 @@ CK_DLL_QUERY( Faust )
     QUERY->add_mfun(QUERY, faust_eval, "int", "eval");
     // add argument
     QUERY->add_arg(QUERY, "string", "code");
+    
+    // add .compile()
+    QUERY->add_mfun(QUERY, faust_compile, "int", "compile");
+    // add argument
+    QUERY->add_arg(QUERY, "string", "path");
 
     // add .test()
     QUERY->add_mfun(QUERY, faust_test, "int", "test");
@@ -430,7 +467,7 @@ CK_DLL_QUERY( Faust )
     // add .error()
     QUERY->add_mfun(QUERY, faust_error, "string", "error");
 
-    // add .current()
+    // add .code()
     QUERY->add_mfun(QUERY, faust_code, "string", "code");
     
     // this reserves a variable in the ChucK internal class to store 
@@ -515,6 +552,12 @@ CK_DLL_MFUN(faust_test)
 
 CK_DLL_MFUN(faust_compile)
 {
+    // get our c++ class pointer
+    Faust * f = (Faust *) OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // get argument
+    std::string code = GET_NEXT_STRING(ARGS)->str;
+    // eval it
+    RETURN->v_int = f->compile( code );
 }
 
 CK_DLL_MFUN(faust_v_set)
@@ -545,4 +588,12 @@ CK_DLL_MFUN(faust_error)
 
 CK_DLL_MFUN(faust_code)
 {
+//    // get our c++ class pointer
+//    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+//    // chuck string TODO: verify memory
+//    Chuck_String * str = (Chuck_String *)instantiate_and_initialize_object( &t_string, NULL );
+//    // set
+//    str->str = f->code();
+//    // return
+//    RETURN->v_string = str;
 }
