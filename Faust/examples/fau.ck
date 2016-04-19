@@ -9,8 +9,8 @@ fck.eval( "import(\"music.lib\"); import(\"oscillator.lib\"); freq=button(\"freq
 // time loop
 while( true )
 {
-    // set
-    fck.v("/0x00/freq", Math.random2f(400,800) );
+    // set (will auto append /0x00/)
+    fck.v( "freq", Math.random2f(400,800) );
     // advance time
     100::ms => now;
 }
