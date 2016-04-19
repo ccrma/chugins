@@ -3,13 +3,13 @@
 
 // instantiate and connect faust => ck
 Faust fck => dac;
-// evaluate faust code
-fck.eval( "
-  import(\"music.lib\");
-  import(\"oscillator.lib\");
-  freq=button(\"freq\");
+// evaluate FAUST code (use ` to avoid escaping " and ')
+fck.eval(`
+  import("music.lib");
+  import("oscillator.lib");
+  freq=button("freq");
   process=sawtooth(freq);
-" );
+`);
 
 // time loop
 while( true )
