@@ -138,6 +138,12 @@ public:
     void setValue( const std::string& path, FAUSTFLOAT value )
     {
         // TODO: should check if path valid?
+        if( fZoneMap.find(path) == fZoneMap.end() )
+        {
+            // error
+            cerr << "[Faust]: cannot set parameter named: " << path << endl;
+            return;
+        }
         
         // set it!
         *fZoneMap[path] = value;
@@ -145,6 +151,14 @@ public:
     
     float getValue(const std::string& path)
     {
+        // TODO: should check if path valid?
+        if( fZoneMap.find(path) == fZoneMap.end() )
+        {
+            // error
+            cerr << "[Faust]: cannot get parameter named: " << path << endl;
+            return 0;
+        }
+        
         return *fZoneMap[path];
     }
     
@@ -183,6 +197,9 @@ public:
         // zero
         m_input = NULL;
         m_output = NULL;
+        // default
+        m_numInputChannels = 0;
+        m_numOutputChannels = 0;
     }
     
     // destructor
@@ -190,16 +207,12 @@ public:
     {
         // clear
         clear();
+        clearBufs();
     }
     
     // clear
     void clear()
     {
-        if( m_input != NULL ) SAFE_DELETE_ARRAY(m_input[0]);
-        if( m_output != NULL ) SAFE_DELETE_ARRAY(m_output[0]);
-        SAFE_DELETE_ARRAY(m_input);
-        SAFE_DELETE_ARRAY(m_output);
-        
         // clean up, possibly
         if( m_factory != NULL )
         {
@@ -208,6 +221,49 @@ public:
         }
         SAFE_DELETE(m_dsp);
         SAFE_DELETE(m_ui);
+    }
+    
+    // clear
+    void clearBufs()
+    {
+        if( m_input != NULL )
+        {
+            for( int i = 0; i < m_numInputChannels; i++ )
+                SAFE_DELETE_ARRAY(m_input[i]);
+        }
+        if( m_output != NULL )
+        {
+            for( int i = 0; i < m_numOutputChannels; i++ )
+                SAFE_DELETE_ARRAY(m_output[i]);
+        }
+        SAFE_DELETE_ARRAY(m_input);
+        SAFE_DELETE_ARRAY(m_output);
+    }
+    
+    // allocate
+    void allocate( int inputChannels, int outputChannels )
+    {
+        // clear
+        clearBufs();
+        
+        // set
+        m_numInputChannels = inputChannels;
+        m_numOutputChannels = outputChannels;
+
+        // allocate channels
+        m_input = new FAUSTFLOAT *[m_numInputChannels];
+        m_output = new FAUSTFLOAT *[m_numOutputChannels];
+        // allocate buffers for each channel
+        for( int i = 0; i < m_numInputChannels; i++ )
+        {
+            // single sample for each
+            m_input[i] = new FAUSTFLOAT[1];
+        }
+        for( int i = 0; i < m_numOutputChannels; i++ )
+        {
+            // single sample for each
+            m_output[i] = new FAUSTFLOAT[1];
+        }
     }
     
     // eval
@@ -225,6 +281,16 @@ public:
         // create new factory
         m_factory = createDSPFactoryFromString( "chuck", code,
             argc, argv, "", m_errorString, optimize );
+        
+        // check for error
+        if( m_errorString != "" )
+        {
+            // output error
+            cerr << "[Faust]: " << m_errorString << endl;
+            // done
+            return false;
+        }
+        
         // create DSP instance
         m_dsp = createDSPInstance( m_factory );
         
@@ -233,11 +299,16 @@ public:
         // build ui
         m_dsp->buildUserInterface( m_ui );
         
-        // allocate
-        m_input = new FAUSTFLOAT *[1];
-        m_output = new FAUSTFLOAT *[1];
-        m_input[0] = new FAUSTFLOAT[1];
-        m_output[0] = new FAUSTFLOAT[1];
+        // get channels
+        int inputs = m_dsp->getNumInputs();
+        int outputs = m_dsp->getNumOutputs();
+        
+        // see if we need to alloc
+        if( inputs > m_numInputChannels || outputs > m_numOutputChannels )
+        {
+            // clear and allocate
+            allocate( inputs, outputs );
+        }
         
         // init
         m_dsp->init( (int)(m_srate + .5) );
@@ -250,15 +321,18 @@ public:
     {
         // sanity check
         if( m_dsp == NULL ) return 0;
-
+        
         // set input
-        m_input[0][0] = in;
+        for( int i = 0; i < m_numInputChannels; i++ ) m_input[i][0] = in;
         // zero output
-        m_output[0][0] = 0;
+        for( int i = 0; i < m_numOutputChannels; i++ ) m_output[i][0] = 0;
         // compute samples
         m_dsp->compute( 1, m_input, m_output );
+        // average output
+        t_CKFLOAT avg = 0;
+        for( int i = 0; i < m_numOutputChannels; i++ ) avg += m_output[i][0];
         // return sample
-        return m_output[0][0];
+        return avg / m_numOutputChannels;
     }
 
     // set parameter example
@@ -291,6 +365,10 @@ private:
     // faust input buffer
     FAUSTFLOAT ** m_input;
     FAUSTFLOAT ** m_output;
+    
+    // input and output
+    int m_numInputChannels;
+    int m_numOutputChannels;
     
     // UI
     FauckUI * m_ui;
