@@ -228,6 +228,11 @@ public:
         // default
         m_numInputChannels = 0;
         m_numOutputChannels = 0;
+        // auto import
+        m_autoImport = "// Faust Chugin auto import:\n \
+        import(\"music.lib\"); import(\"math.lib\"); \
+        import(\"filter.lib\"); import(\"oscillator.lib\"); \
+        import(\"effect.lib\");\n";
     }
     
     // destructor
@@ -309,8 +314,11 @@ public:
         // save
         m_code = code;
         
+        // auto import
+        string theCode = m_autoImport + "\n" + code;
+        
         // create new factory
-        m_factory = createDSPFactoryFromString( "chuck", code,
+        m_factory = createDSPFactoryFromString( "chuck", theCode,
             argc, argv, "", m_errorString, optimize );
         
         // check for error
@@ -426,6 +434,8 @@ private:
     dsp * m_dsp;
     // faust compiler error string
     string m_errorString;
+    // auto import
+    string m_autoImport;
     
     // faust input buffer
     FAUSTFLOAT ** m_input;

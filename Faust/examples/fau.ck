@@ -3,10 +3,10 @@
 
 // instantiate and connect faust => ck
 Faust fck => dac;
-// evaluate FAUST code (use ` to avoid escaping " and ')
+// evaluate FAUST code
+// -- (use ` to avoid escaping " and ')
+// -- (auto import libs: music, math, filter, oscillator, effect)
 fck.eval(`
-  import("music.lib");
-  import("oscillator.lib");
   freq=button("freq");
   process=sawtooth(freq);
 `);
