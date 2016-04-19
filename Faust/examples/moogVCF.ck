@@ -2,14 +2,14 @@
 // desc: demo of Faust chugin in action!
 
 // instantiate and connect faust => ck
-adc => Faust distortion => dac;
+adc => Faust moogVCF => dac;
 // compile faust code
-distortion.eval(`
+moogVCF.eval(`
 import("effect.lib"); 
-process = cubicnl_demo;
+process = moog_vcf_demo ;
 `);
 // parameter dump
-distortion.dump();
+moogVCF.dump();
 
 // time loop
 while( true )

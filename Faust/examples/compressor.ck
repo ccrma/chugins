@@ -2,14 +2,14 @@
 // desc: demo of Faust chugin in action!
 
 // instantiate and connect faust => ck
-adc => Faust distortion => dac;
+adc => Faust compressor => dac;
 // compile faust code
-distortion.eval(`
+compressor.eval(`
 import("effect.lib"); 
-process = cubicnl_demo;
+process = compressor_demo;
 `);
 // parameter dump
-distortion.dump();
+compressor.dump();
 
 // time loop
 while( true )

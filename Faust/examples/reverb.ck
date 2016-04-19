@@ -4,7 +4,9 @@
 // instantiate and connect faust => ck
 adc => Faust reverb => dac;
 // compile faust code
-reverb.eval("import(\"effect.lib\"); process = zita_rev_fdn_demo ;");
+reverb.eval(`
+import("effect.lib"); 
+process = zita_rev_fdn_demo ;`);
 // parameter dump
 reverb.dump();
 
