@@ -17,7 +17,7 @@ while( true )
     flute.v("/0x00/Basic_Parameters/gate",1);
     flute.v( "/0x00/Basic_Parameters/freq", Math.random2f(300,1000) );
     // advance time
-    300::ms => now;
+    200::ms => now;
     flute.v("/0x00/Basic_Parameters/gate",0);
-    100::ms => now;
+    50::ms => now;
 }
