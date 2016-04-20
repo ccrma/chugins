@@ -14,10 +14,10 @@ clarinet.dump();
 while( true )
 {
     // set (will auto append /0x00/)
-    clarinet.v("/0x00/Basic_Parameters/gate",1);
-    clarinet.v( "/0x00/Basic_Parameters/freq", Math.random2f(100,800) );
+    clarinet.v("Basic_Parameters/gate",1);
+    clarinet.v( "Basic_Parameters/freq", Math.random2f(100,800) );
     // advance time
     300::ms => now;
-    clarinet.v("/0x00/Basic_Parameters/gate",0);
+    clarinet.v("Basic_Parameters/gate",0);
     100::ms => now;
 }

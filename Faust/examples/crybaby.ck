@@ -1,19 +1,19 @@
-// name: fin.ck
-// desc: demo of Faust chugin in action!
-
 // instantiate and connect faust => ck
 adc => Faust cryBaby => dac;
 // compile faust code
-cryBaby.eval(`
-import("effect.lib"); 
-process = crybaby_demo ;
-`);
+cryBaby.eval(`process = crybaby_demo ;`);
 // parameter dump
 cryBaby.dump();
+
+// lfo
+SinOsc LFO => blackhole;
+1 => LFO.freq;
 
 // time loop
 while( true )
 {
+    // oscillate
+    cryBaby.v( "/CRYBABY/Wah_parameter", LFO.last() );
     // advance time
-    100::ms => now;
+    5::ms => now;
 }
