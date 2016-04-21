@@ -32,8 +32,6 @@ struct BitcrusherData
 
 CK_DLL_QUERY(Bitcrusher)
 {
-    fprintf(stderr, "srate: %i\n", (int) QUERY->srate);
-    
     QUERY->setname(QUERY, "Bitcrusher");
     
     QUERY->begin_class(QUERY, "Bitcrusher", "UGen");
