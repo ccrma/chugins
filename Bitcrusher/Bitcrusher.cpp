@@ -32,9 +32,12 @@ struct BitcrusherData
 
 CK_DLL_QUERY(Bitcrusher)
 {
+    fprintf(stderr, "srate: %i\n", (int) QUERY->srate);
+    
     QUERY->setname(QUERY, "Bitcrusher");
     
     QUERY->begin_class(QUERY, "Bitcrusher", "UGen");
+    QUERY->doc_class(QUERY, "Applies aliased downsampling and sample-width reduction to create a variety of distortion effects. ");
     
     QUERY->add_ctor(QUERY, bitcrusher_ctor);
     QUERY->add_dtor(QUERY, bitcrusher_dtor);
@@ -43,13 +46,24 @@ CK_DLL_QUERY(Bitcrusher)
     
     QUERY->add_mfun(QUERY, bitcrusher_setBits, "int", "bits");
     QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->doc_func(QUERY, "Number of bits to reduce signal to [1-32].");
     
     QUERY->add_mfun(QUERY, bitcrusher_getBits, "int", "bits");
+    QUERY->doc_func(QUERY, "Number of bits to reduce signal to [1-32].");
     
     QUERY->add_mfun(QUERY, bitcrusher_setDownsampleFactor, "int", "downsampleFactor");
     QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->doc_func(QUERY, "Factor by which to downsample signal by decimation [&ge;1].");
     
     QUERY->add_mfun(QUERY, bitcrusher_getDownsampleFactor, "int", "downsampleFactor");
+    QUERY->doc_func(QUERY, "Factor by which to downsample signal by decimation [&ge;1].");
+    
+    QUERY->add_mfun(QUERY, bitcrusher_setDownsampleFactor, "int", "downsample");
+    QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->doc_func(QUERY, "Factor by which to downsample signal by decimation [&ge;1].");
+    
+    QUERY->add_mfun(QUERY, bitcrusher_getDownsampleFactor, "int", "downsample");
+    QUERY->doc_func(QUERY, "Factor by which to downsample signal by decimation [&ge;1].");
     
     bitcrusher_data_offset = QUERY->add_mvar(QUERY, "int", "@bc_data", false);
     
