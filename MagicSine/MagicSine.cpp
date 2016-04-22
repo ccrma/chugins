@@ -101,10 +101,10 @@ CK_DLL_QUERY(MagicSine)
     
     QUERY->add_mfun(QUERY, magicsine_setFreq, "float", "freq");
     QUERY->add_arg(QUERY, "float", "arg");
-    QUERY->doc_fun(QUERY, "Oscillator frequency [Hz]. ");
+    QUERY->doc_func(QUERY, "Oscillator frequency [Hz]. ");
     
     QUERY->add_mfun(QUERY, magicsine_getFreq, "float", "freq");
-    QUERY->doc_fun(QUERY, "Oscillator frequency [Hz]. ");
+    QUERY->doc_func(QUERY, "Oscillator frequency [Hz]. ");
     
     magicsine_data_offset = QUERY->add_mvar(QUERY, "int", "@magicsine_data", false);
     
