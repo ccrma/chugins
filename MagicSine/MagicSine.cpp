@@ -90,6 +90,9 @@ CK_DLL_QUERY(MagicSine)
     QUERY->setname(QUERY, "MagicSine");
     
     QUERY->begin_class(QUERY, "MagicSine", "UGen");
+    QUERY->doc_class(QUERY, "Fast, recursive sine wave generator using the so-called &quot;magic circle&quot; algorithm (see <a href=\"https://ccrma.stanford.edu/~jos/pasp/Digital_Sinusoid_Generators.html\">https://ccrma.stanford.edu/~jos/pasp/Digital_Sinusoid_Generators.html</a>). "
+        "Can be 30-40% faster than regular SinOsc. "
+        "Frequency modulation will negate this performance benefit; most useful when pure sine tones are desired or for additive synthesis. ");
     
     QUERY->add_ctor(QUERY, magicsine_ctor);
     QUERY->add_dtor(QUERY, magicsine_dtor);
@@ -98,8 +101,10 @@ CK_DLL_QUERY(MagicSine)
     
     QUERY->add_mfun(QUERY, magicsine_setFreq, "float", "freq");
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_fun(QUERY, "Oscillator frequency [Hz]. ");
     
     QUERY->add_mfun(QUERY, magicsine_getFreq, "float", "freq");
+    QUERY->doc_fun(QUERY, "Oscillator frequency [Hz]. ");
     
     magicsine_data_offset = QUERY->add_mvar(QUERY, "int", "@magicsine_data", false);
     
