@@ -326,6 +326,8 @@ public:
         {
             // output error
             cerr << "[Faust]: " << m_errorString << endl;
+            // clear
+            clear();
             // done
             return false;
         }
