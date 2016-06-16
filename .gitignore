@@ -37,3 +37,5 @@
 */*.vcxproj.user
 */*.vcxproj.filters
 ipch
+
+*/*.xcodeproj/xcuserdata
