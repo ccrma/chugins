@@ -25,10 +25,15 @@ const int kMaxFFTLen = 16384;
 #endif
 
 #ifdef DEBUG
-#define DPRINT(msg) post((msg))
-#define DPRINT1(msg, arg) post((msg), (arg))
-#define DPRINT2(msg, arg1, arg2) post((msg), (arg1), (arg2))
-#define DPRINT3(msg, arg1, arg2, arg3) post((msg), (arg1), (arg2), (arg3))
+// disable debug printing entirely -spencer
+//#define DPRINT(msg) post((msg))
+//#define DPRINT1(msg, arg) post((msg), (arg))
+//#define DPRINT2(msg, arg1, arg2) post((msg), (arg1), (arg2))
+//#define DPRINT3(msg, arg1, arg2, arg3) post((msg), (arg1), (arg2), (arg3))
+#define DPRINT(msg)
+#define DPRINT1(msg, arg)
+#define DPRINT2(msg, arg1, arg2)
+#define DPRINT3(msg, arg1, arg2, arg3)
 #else
 #define DPRINT(msg)
 #define DPRINT1(msg, arg)
