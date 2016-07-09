@@ -333,7 +333,7 @@ public:
         }
         
         // create DSP instance
-        m_dsp = createDSPInstance( m_factory );
+        m_dsp = m_factory ->createDSPInstance();
         
         // make new UI
         m_ui = new FauckUI();
