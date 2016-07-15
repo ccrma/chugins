@@ -94,13 +94,13 @@ public:
       {
 	inbufIndex = 0;
 	// THE MAGIC HAPPENS!!
-	sigmund_getrawpeaks(npts, inbuf, npeak, peakv,
+	sigmund_getrawpeaks((int)npts, inbuf, (int)npeak, peakv,
 						&nfound, &power, srate, loud, maxfreq);
 	if (dopitch)
 	  sigmund_getpitch(nfound, peakv, &freq, npts, srate, 
 					   param1, param2, loud);
 	if (dotracks)
-	  sigmund_peaktrack(nfound, peakv, npeak, trackv, loud);
+	  sigmund_peaktrack(nfound, peakv, (int)npeak, trackv, loud);
       }
 	return in;
   }
@@ -115,7 +115,7 @@ public:
   {
     if (x >= npeak)
       {
-	printf("Sigmund error: peak number must be between 0 and %d.\n", npeak-1);
+	printf("Sigmund error: peak number must be between 0 and %ld.\n", npeak-1);
 	return 0;
       }
     if (x < nfound)
@@ -132,7 +132,7 @@ public:
   {
     if (x >= npeak)
       {
-	printf("Sigmund error: amp number must be between 0 and %d.\n", npeak-1);
+	printf("Sigmund error: amp number must be between 0 and %ld.\n", npeak-1);
 	return 0;
       }
     if (x < nfound)
@@ -145,7 +145,7 @@ public:
 	return 0;
   }
 
-  int setTracks ( t_CKINT x)
+  t_CKINT setTracks ( t_CKINT x)
   {
 	if (x) dotracks = true;
 	else dotracks = false;
@@ -184,8 +184,8 @@ public:
 	npts = x;
 	if (npts < NPOINTS_MIN)
 	  npts = NPOINTS_MIN;
-	if (npts != (1 << sigmund_ilog2(npts)))
-	  printf("Sigmund: adjusting analysis size to %d points\n", (npts = (1 << sigmund_ilog2(npts))));
+	if (npts != (1 << sigmund_ilog2((int)npts)))
+	  printf("Sigmund: adjusting analysis size to %ld points\n", (npts = (1 << sigmund_ilog2((int)npts))));
 	if (npts != nwas)
 	  inbufIndex = 0;
 	if (mode==MODE_STREAM)
@@ -245,14 +245,14 @@ public:
 	return x;
   }
 
-  int doPitch (t_CKINT x)
+  t_CKINT doPitch (t_CKINT x)
   {
 	if (x>0) dopitch = true;
 	else dopitch = false;
 	return x;
   }
 
-  int doTracks (t_CKINT x)
+  t_CKINT doTracks (t_CKINT x)
   {
 	if (x>0) dotracks = true;
 	else dotracks = false;
@@ -274,8 +274,8 @@ private:
   // instance data
   t_float srate;       // sample rate 
   int mode;         // MODE_STREAM, etc. 
-  int npts;         // number of points in analysis window 
-  int npeak;        // number of peaks to find 
+  t_CKINT npts;         // number of points in analysis window
+  t_CKINT npeak;        // number of peaks to find
   int loud;         // debug level 
   int infill;       // number of points filled 
   int countdown;    // countdown to start filling buffer 

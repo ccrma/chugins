@@ -25,7 +25,7 @@ public:
     }
     
     // for Chugins extending UGen
-    void tick( SAMPLE * in, SAMPLE * out, int nframes )
+    void tick( SAMPLE * in, SAMPLE * out, t_CKUINT nframes )
     {
         int c_l = ((int)floorf(m_pan))%m_chans;
         int c_r = ((int)ceilf(m_pan))%m_chans;

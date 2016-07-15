@@ -80,7 +80,7 @@ public:
   }
   
   // for Chugins extending UGen
-  void tick( SAMPLE* in, SAMPLE* out, int nframes)
+  void tick( SAMPLE* in, SAMPLE* out, t_CKUINT nframes)
   {
     // default: this passes whatever input is patched into Chugin
 	memset (out, 0, sizeof(SAMPLE)*2*nframes);
@@ -117,7 +117,7 @@ public:
     return p;
   }
 
-  int setBypass ( t_CKINT p)
+  t_CKINT setBypass ( t_CKINT p)
   {
 	int val = (int)p;
 	if (val > 0)

@@ -1,0 +1,332 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0929B9281D1338F000B8DE4D /* Spectacle-dsp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0929B9211D1338F000B8DE4D /* Spectacle-dsp.cpp */; };
+		0929B9291D1338F000B8DE4D /* Spectacle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0929B9231D1338F000B8DE4D /* Spectacle.cpp */; };
+		0929B92A1D1338F000B8DE4D /* SpectacleBase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0929B9241D1338F000B8DE4D /* SpectacleBase.cpp */; };
+		0929B92B1D1338F000B8DE4D /* SpectEQ.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0929B9261D1338F000B8DE4D /* SpectEQ.cpp */; };
+		0929B93B1D1338F800B8DE4D /* FFTReal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0929B92E1D1338F800B8DE4D /* FFTReal.cpp */; };
+		0929B93C1D1338F800B8DE4D /* Obucket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0929B9301D1338F800B8DE4D /* Obucket.cpp */; };
+		0929B93D1D1338F800B8DE4D /* Odelay.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0929B9321D1338F800B8DE4D /* Odelay.cpp */; };
+		0929B93E1D1338F800B8DE4D /* Offt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0929B9341D1338F800B8DE4D /* Offt.cpp */; };
+		0929B93F1D1338F800B8DE4D /* Ooscil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0929B9361D1338F800B8DE4D /* Ooscil.cpp */; };
+		0929B9401D1338F800B8DE4D /* RandGen.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0929B9391D1338F800B8DE4D /* RandGen.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0929B8851D12A85B00B8DE4D /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0929B8871D12A85B00B8DE4D /* Spectacle.schug */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = Spectacle.schug; sourceTree = BUILT_PRODUCTS_DIR; };
+		0929B9211D1338F000B8DE4D /* Spectacle-dsp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "Spectacle-dsp.cpp"; sourceTree = SOURCE_ROOT; };
+		0929B9221D1338F000B8DE4D /* Spectacle-dsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Spectacle-dsp.h"; sourceTree = SOURCE_ROOT; };
+		0929B9231D1338F000B8DE4D /* Spectacle.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Spectacle.cpp; sourceTree = SOURCE_ROOT; };
+		0929B9241D1338F000B8DE4D /* SpectacleBase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SpectacleBase.cpp; sourceTree = SOURCE_ROOT; };
+		0929B9251D1338F000B8DE4D /* SpectacleBase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SpectacleBase.h; sourceTree = SOURCE_ROOT; };
+		0929B9261D1338F000B8DE4D /* SpectEQ.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SpectEQ.cpp; sourceTree = SOURCE_ROOT; };
+		0929B9271D1338F000B8DE4D /* SpectEQ.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SpectEQ.h; sourceTree = SOURCE_ROOT; };
+		0929B92D1D1338F800B8DE4D /* ampdb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ampdb.h; sourceTree = "<group>"; };
+		0929B92E1D1338F800B8DE4D /* FFTReal.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FFTReal.cpp; sourceTree = "<group>"; };
+		0929B92F1D1338F800B8DE4D /* FFTReal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FFTReal.h; sourceTree = "<group>"; };
+		0929B9301D1338F800B8DE4D /* Obucket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Obucket.cpp; sourceTree = "<group>"; };
+		0929B9311D1338F800B8DE4D /* Obucket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Obucket.h; sourceTree = "<group>"; };
+		0929B9321D1338F800B8DE4D /* Odelay.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Odelay.cpp; sourceTree = "<group>"; };
+		0929B9331D1338F800B8DE4D /* Odelay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Odelay.h; sourceTree = "<group>"; };
+		0929B9341D1338F800B8DE4D /* Offt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Offt.cpp; sourceTree = "<group>"; };
+		0929B9351D1338F800B8DE4D /* Offt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Offt.h; sourceTree = "<group>"; };
+		0929B9361D1338F800B8DE4D /* Ooscil.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Ooscil.cpp; sourceTree = "<group>"; };
+		0929B9371D1338F800B8DE4D /* Ooscil.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Ooscil.h; sourceTree = "<group>"; };
+		0929B9381D1338F800B8DE4D /* Ougens.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Ougens.h; sourceTree = "<group>"; };
+		0929B9391D1338F800B8DE4D /* RandGen.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RandGen.cpp; sourceTree = "<group>"; };
+		0929B93A1D1338F800B8DE4D /* RandGen.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RandGen.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0929B8841D12A85B00B8DE4D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0929B87E1D12A85B00B8DE4D = {
+			isa = PBXGroup;
+			children = (
+				0929B8891D12A85B00B8DE4D /* Spectacle */,
+				0929B8881D12A85B00B8DE4D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		0929B8881D12A85B00B8DE4D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0929B8871D12A85B00B8DE4D /* Spectacle.schug */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0929B8891D12A85B00B8DE4D /* Spectacle */ = {
+			isa = PBXGroup;
+			children = (
+				0929B92C1D1338F800B8DE4D /* genlib */,
+				0929B9211D1338F000B8DE4D /* Spectacle-dsp.cpp */,
+				0929B9221D1338F000B8DE4D /* Spectacle-dsp.h */,
+				0929B9231D1338F000B8DE4D /* Spectacle.cpp */,
+				0929B9241D1338F000B8DE4D /* SpectacleBase.cpp */,
+				0929B9251D1338F000B8DE4D /* SpectacleBase.h */,
+				0929B9261D1338F000B8DE4D /* SpectEQ.cpp */,
+				0929B9271D1338F000B8DE4D /* SpectEQ.h */,
+			);
+			path = Spectacle;
+			sourceTree = "<group>";
+		};
+		0929B92C1D1338F800B8DE4D /* genlib */ = {
+			isa = PBXGroup;
+			children = (
+				0929B92D1D1338F800B8DE4D /* ampdb.h */,
+				0929B92E1D1338F800B8DE4D /* FFTReal.cpp */,
+				0929B92F1D1338F800B8DE4D /* FFTReal.h */,
+				0929B9301D1338F800B8DE4D /* Obucket.cpp */,
+				0929B9311D1338F800B8DE4D /* Obucket.h */,
+				0929B9321D1338F800B8DE4D /* Odelay.cpp */,
+				0929B9331D1338F800B8DE4D /* Odelay.h */,
+				0929B9341D1338F800B8DE4D /* Offt.cpp */,
+				0929B9351D1338F800B8DE4D /* Offt.h */,
+				0929B9361D1338F800B8DE4D /* Ooscil.cpp */,
+				0929B9371D1338F800B8DE4D /* Ooscil.h */,
+				0929B9381D1338F800B8DE4D /* Ougens.h */,
+				0929B9391D1338F800B8DE4D /* RandGen.cpp */,
+				0929B93A1D1338F800B8DE4D /* RandGen.h */,
+			);
+			path = genlib;
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0929B8861D12A85B00B8DE4D /* Spectacle */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0929B8901D12A85B00B8DE4D /* Build configuration list for PBXNativeTarget "Spectacle" */;
+			buildPhases = (
+				0929B8831D12A85B00B8DE4D /* Sources */,
+				0929B8841D12A85B00B8DE4D /* Frameworks */,
+				0929B8851D12A85B00B8DE4D /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Spectacle;
+			productName = Spectacle;
+			productReference = 0929B8871D12A85B00B8DE4D /* Spectacle.schug */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0929B87F1D12A85B00B8DE4D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0730;
+				ORGANIZATIONNAME = "Spencer Salazar";
+				TargetAttributes = {
+					0929B8861D12A85B00B8DE4D = {
+						CreatedOnToolsVersion = 7.3.1;
+					};
+				};
+			};
+			buildConfigurationList = 0929B8821D12A85B00B8DE4D /* Build configuration list for PBXProject "Spectacle" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 0929B87E1D12A85B00B8DE4D;
+			productRefGroup = 0929B8881D12A85B00B8DE4D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0929B8861D12A85B00B8DE4D /* Spectacle */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0929B8831D12A85B00B8DE4D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0929B93E1D1338F800B8DE4D /* Offt.cpp in Sources */,
+				0929B92A1D1338F000B8DE4D /* SpectacleBase.cpp in Sources */,
+				0929B93D1D1338F800B8DE4D /* Odelay.cpp in Sources */,
+				0929B92B1D1338F000B8DE4D /* SpectEQ.cpp in Sources */,
+				0929B9291D1338F000B8DE4D /* Spectacle.cpp in Sources */,
+				0929B93C1D1338F800B8DE4D /* Obucket.cpp in Sources */,
+				0929B93F1D1338F800B8DE4D /* Ooscil.cpp in Sources */,
+				0929B9401D1338F800B8DE4D /* RandGen.cpp in Sources */,
+				0929B93B1D1338F800B8DE4D /* FFTReal.cpp in Sources */,
+				0929B9281D1338F000B8DE4D /* Spectacle-dsp.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0929B88E1D12A85B00B8DE4D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		0929B88F1D12A85B00B8DE4D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		0929B8911D12A85B00B8DE4D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_EXTENSION = schug;
+				EXECUTABLE_PREFIX = "";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					__CK_DLL_STATIC__,
+					__MACOSX_CORE__,
+				);
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../chuck/include/";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		0929B8921D12A85B00B8DE4D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				EXECUTABLE_EXTENSION = schug;
+				EXECUTABLE_PREFIX = "";
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					__MACOSX_CORE__,
+					__CK_DLL_STATIC__,
+				);
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/../chuck/include/";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0929B8821D12A85B00B8DE4D /* Build configuration list for PBXProject "Spectacle" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0929B88E1D12A85B00B8DE4D /* Debug */,
+				0929B88F1D12A85B00B8DE4D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0929B8901D12A85B00B8DE4D /* Build configuration list for PBXNativeTarget "Spectacle" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0929B8911D12A85B00B8DE4D /* Debug */,
+				0929B8921D12A85B00B8DE4D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0929B87F1D12A85B00B8DE4D /* Project object */;
+}

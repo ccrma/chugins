@@ -22,8 +22,8 @@ t_CKINT bitcrusher_data_offset = 0;
 
 struct BitcrusherData
 {
-    int bits;
-    int downsampleFactor;
+    t_CKINT bits;
+    t_CKINT downsampleFactor;
     
     int currentSampleCount;
     SAMPLE currentSample;
@@ -119,7 +119,7 @@ CK_DLL_TICK(bitcrusher_tick)
     bcdata->currentSampleCount = (bcdata->currentSampleCount+1) % bcdata->downsampleFactor;
     
     // convert to 32-bit int
-    int shift = 32-bcdata->bits;
+    t_CKINT shift = 32-bcdata->bits;
     int q32 = theSample * INT_MAX;
     q32 = (q32 >> shift) << shift;
     
