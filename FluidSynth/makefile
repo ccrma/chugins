@@ -58,9 +58,6 @@ ifneq (,$(strip $(filter linux-alsa,$(MAKECMDGOALS))))
 include makefile.linux
 endif
 
-
-LDFLAGS+=$(addprefix -l,$(LIBS))
-
 ifneq ($(CHUCK_DEBUG),)
 FLAGS+= -g
 else
@@ -92,7 +89,7 @@ all: $(CHUG)
 
 $(CHUG): $(C_OBJECTS) $(CXX_OBJECTS)
 ifeq ($(CK_CHUGIN_STATIC),0)
-	$(LD) $(LDFLAGS) -o $@ $^
+	$(LD) $(LDFLAGS) -o $@ $^ $(addprefix -l,$(LIBS))
 else
 	ar rv $@ $^
 	ranlib $@
