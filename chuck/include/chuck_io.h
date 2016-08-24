@@ -57,6 +57,8 @@ public:
     virtual t_CKBOOL open( const t_CKUINT i, t_CKINT flags, t_CKUINT baud = CK_BAUD_9600 );
     virtual t_CKBOOL open( const std::string & path, t_CKINT flags, t_CKUINT baud = CK_BAUD_9600 );
     
+    virtual t_CKBOOL can_wait();
+    
     virtual t_CKBOOL good();
     virtual void close();
     virtual void flush();
@@ -139,6 +141,9 @@ protected:
     static void *shell_read_cb(void *);
     void read_cb();
 
+    XThread * m_write_thread;
+    static void *shell_write_cb(void *);
+    void write_cb();
     
     void close_int();
 
@@ -156,24 +161,27 @@ protected:
     t_CKBOOL handle_int_binary(Request &);
     
     bool m_do_read_thread;
+    bool m_do_write_thread;
     
     CircularBuffer<Request> m_asyncRequests;
     CircularBuffer<Request> m_asyncResponses;
-    CircularBuffer<char> m_writeBuffer;
     CBufferSimple * m_event_buffer;
-    
+
     int m_fd;
     FILE * m_cfd;
     
     std::string m_path;
     
-    char * m_io_buf;
+    unsigned char * m_io_buf;
     t_CKUINT m_io_buf_max;
     t_CKUINT m_io_buf_available;
     t_CKUINT m_io_buf_pos;
     
-    char * m_tmp_buf;
+    unsigned char * m_tmp_buf;
     t_CKUINT m_tmp_buf_max;
+    
+    CircularBuffer<Request> m_asyncWriteRequests;
+    CircularBuffer<char> m_writeBuffer;
     
     t_CKINT m_flags;
     t_CKINT m_iomode; // SYNC or ASYNC

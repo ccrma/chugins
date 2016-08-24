@@ -1,0 +1,9 @@
+
+ARCHS?=x86_64
+ARCHOPTS=$(addprefix -arch ,$(ARCHS))
+
+FLAGS+=-mmacosx-version-min=10.10 -D__MACOSX_CORE__ -I$(CK_SRC_PATH) $(ARCHOPTS) -fPIC
+LDFLAGS+=-mmacosx-version-min=10.10 -shared -lstdc++ $(ARCHOPTS) -lfaust `llvm-config-mp-3.7 --ldflags --libs all` -lcrypto -lz -lcurses -lstdc++
+
+LD=clang++
+CXX=clang++

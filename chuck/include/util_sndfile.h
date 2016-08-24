@@ -1149,6 +1149,13 @@ int psf_ferror (SF_PRIVATE *psf) ;
 */
 
 int     aiff_open   (SF_PRIVATE *psf) ;
+#if defined(TARGET_OS_IPHONE) || defined(TARGET_IPHONE_SIMULATOR)
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+// fix for au_open/au_close namespace conflict on iOS
+#define au_open sf_au_open
+#define au_close sf_au_close
+#endif // TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#endif // defined(TARGET_OS_IPHONE) || defined(TARGET_IPHONE_SIMULATOR)
 int     au_open     (SF_PRIVATE *psf) ;
 int     au_nh_open  (SF_PRIVATE *psf) ; /* Headerless version of AU. */
 int     avr_open    (SF_PRIVATE *psf) ;
@@ -2480,6 +2487,8 @@ extern word gsm_FAC [8] ;
     **  Therefore implement inline versions of these functions here.
     */
 
+// ge: some versions of windows have them
+#ifndef __WINDOWS_MODERN__
     __inline long int
     lrint (double flt)
     {   int intgr ;
@@ -2503,6 +2512,7 @@ extern word gsm_FAC [8] ;
 
         return intgr ;
     }
+#endif
 
 #elif (defined (__MWERKS__) && defined (macintosh))
 

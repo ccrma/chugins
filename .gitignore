@@ -1,3 +1,8 @@
+# Common temporary files
+*.swp
+*.orig
+*.bak
+
 # Compiled Object files
 *.slo
 *.lo
@@ -20,6 +25,11 @@
 /chugins-windows-*
 /chugins-mac-*
 
+# Visual Studio artifacts
+*.VC.opendb
+*.sdf
+.vs/
+
 /Release/
 /Debug/
 */Release/
@@ -27,3 +37,5 @@
 */*.vcxproj.user
 */*.vcxproj.filters
 ipch
+
+*/*.xcodeproj/xcuserdata
