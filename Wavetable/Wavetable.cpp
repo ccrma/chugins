@@ -46,7 +46,7 @@ Wavetable( t_CKFLOAT fs)
 {
         srate = fs;
         table_pos = 0;
-        internal_table = new float[DEFAULT_TABLE_SIZE];
+        internal_table = new double[DEFAULT_TABLE_SIZE];
         table_size = DEFAULT_TABLE_SIZE;
         make_default_table();
         freq = DEFAULT_FREQ;
@@ -106,19 +106,23 @@ int getInterpolate()
 
 void setTable(Chuck_Object *p)
 {
-  current_table = (float*)p;
-  table_size = 8;
+  Chuck_Array8 *userArray = (Chuck_Array8*)p;
+  
+  current_table = &userArray->m_vector[0];
+  table_size = (int)userArray->capacity();
   step = table_size * freq / srate;
+  printf("size of userArray: %d\n", table_size);
   for (int i=0; i<table_size; i++)
-  printf("i: %d, val: %f\n", i, current_table[i]);
-  //printf("size of p: %d", (long unsigned int)sizeof(p));
+  {
+    printf("i: %d, val: %f\n", i, current_table[i]);
+  }
 }
 
 private:
 // instance data
 double table_pos;
-float* internal_table;
-float* current_table;
+double* internal_table;
+double* current_table;
 float freq;
 float step;
 int table_size;
