@@ -57,7 +57,7 @@ Wavetable( t_CKFLOAT fs)
 }
 
 // for Chugins extending UGen
-SAMPLE tick( SAMPLE in )
+SAMPLE tick ( SAMPLE in )
 {
         // default: this passes whatever input is patched into Chugin
         if (in > 0) freq = in;
@@ -73,7 +73,7 @@ SAMPLE tick( SAMPLE in )
 
         if (interpolate)
         {
-                return CubicInterpolate(current_table[y0],
+                return HermiteInterpolate(current_table[y0],
                                           current_table[y1], current_table[y2], current_table[y3],
                                           table_pos + 1 - y0);
         }
