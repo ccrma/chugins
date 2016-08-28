@@ -49,7 +49,15 @@ w =< dac;
 ms => now;
 w => dac;
 
-2 => w.interpolate; // Cubic interpolation
+2 => w.interpolate; // Lagrange interpolation
+<<< "Lagrange interpolation", "" >>>;
+2::second => now;
+
+w =< dac;
+ms => now;
+w => dac;
+
+3 => w.interpolate; // Cubic interpolation
 <<< "Cubic interpolation", "" >>>;
 2::second => now;
 
@@ -57,7 +65,7 @@ w =< dac;
 ms => now;
 w => dac;
 
-3 => w.interpolate; // Hermite interpolation
+4 => w.interpolate; // Hermite interpolation
 <<< "Hermite interpolation", "" >>>;
 2::second => now;
 

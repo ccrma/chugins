@@ -7,7 +7,7 @@ Wavetable w => dac => WvOut rec => blackhole;
 [-1.0,1] @=> float myTable[];
 w.setTable(myTable);
 
-for (int i; i<4; i++)
+for (int i; i<5; i++)
 {
   i => w.interpolate;
   2::second => now;

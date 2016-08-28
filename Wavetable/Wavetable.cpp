@@ -76,13 +76,19 @@ SAMPLE tick ( SAMPLE in )
                 return LinearInterpolate(current_table[y0], current_table[y1],
                                           table_pos - y0);
         }
-        if (interpolate==2)
+        else if (interpolate==2)
+        {
+                return LagrangeInterpolate(current_table[y0],
+                                          current_table[y1], current_table[y2], current_table[y3],
+                                          table_pos - y0);
+        }
+        if (interpolate==3)
         {
                 return CubicInterpolate(current_table[y0],
                                           current_table[y1], current_table[y2], current_table[y3],
                                           table_pos - y0);
         }
-        else if (interpolate==3)
+        else if (interpolate==4)
         {
                 return HermiteInterpolate(current_table[y0],
                                           current_table[y1], current_table[y2], current_table[y3],
@@ -106,7 +112,7 @@ float getFreq()
 
 int setInterpolate (t_CKINT p)
 {
-        if (p > 3 || p < 0) p = 0;
+        if (p > 4 || p < 0) p = 0;
         interpolate = p;
         return p;
 }
@@ -170,6 +176,13 @@ double CubicInterpolate(double y0, double y1, double y2, double y3, double mu)
         a3 = y1;
 
         return (a0*mu*mu2+a1*mu2+a2*mu+a3);
+}
+
+double LagrangeInterpolate(double y0, double y1, double y2, double y3, double mu)
+{
+        return (y1 + mu * (
+            (y2 - y1) - 0.1666667f * (1.-mu) * (
+                (y3 - y0 - 3.0f * (y2 - y1)) * mu + (y3 + 2.0f*y0 - 3.0f*y1))));
 }
 
 double HermiteInterpolate(double y0,double y1,
