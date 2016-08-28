@@ -150,9 +150,14 @@ void make_default_table()
         }
 }
 
-double LinearInterpolate(double y0, double y1, double mu)
+/*double LinearInterpolate(double y0, double y1, double mu)
 {
 	return y1 + mu*(y1-y0);
+}*/
+
+double LinearInterpolate(double y1, double y2, double mu)
+{
+   return(y1*(1-mu)+y2*mu);
 }
 
 double CubicInterpolate(double y0, double y1, double y2, double y3, double mu)
