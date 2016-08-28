@@ -12,7 +12,7 @@
 #include <limits.h>
 #include <math.h>
 
-#define DEFAULT_TABLE_SIZE 4096
+#define DEFAULT_TABLE_SIZE 2048
 #define DEFAULT_FREQ 220
 
 // declaration of chugin constructor
@@ -52,7 +52,7 @@ Wavetable( t_CKFLOAT fs)
         freq = DEFAULT_FREQ;
         step = table_size * freq / srate;
         current_table = internal_table;
-        interpolate = true;
+        interpolate = 0;
         //printf("step: %f\n", step);
 }
 
@@ -71,11 +71,22 @@ SAMPLE tick ( SAMPLE in )
         y2 = (y0 + 2) % table_size;
         y3 = (y0 + 3) % table_size;
 
-        if (interpolate)
+        if (interpolate==1)
+        {
+                return LinearInterpolate(current_table[y0], current_table[y1],
+                                          table_pos - y0);
+        }
+        if (interpolate==2)
+        {
+                return CubicInterpolate(current_table[y0],
+                                          current_table[y1], current_table[y2], current_table[y3],
+                                          table_pos - y0);
+        }
+        else if (interpolate==3)
         {
                 return HermiteInterpolate(current_table[y0],
                                           current_table[y1], current_table[y2], current_table[y3],
-                                          table_pos + 1 - y0);
+                                          table_pos - y0);
         }
         return current_table[y0];
 }
@@ -95,13 +106,14 @@ float getFreq()
 
 int setInterpolate (t_CKINT p)
 {
-        interpolate = (p == 0) ? false : true;
+        if (p > 3 || p < 0) p = 0;
+        interpolate = p;
         return p;
 }
 
 int getInterpolate()
 {
-        return interpolate ? 1 : 0;
+        return interpolate;
 }
 
 void setTable(Chuck_Object *p)
@@ -111,11 +123,12 @@ void setTable(Chuck_Object *p)
   current_table = &userArray->m_vector[0];
   table_size = (int)userArray->capacity();
   step = table_size * freq / srate;
+  /*
   printf("size of userArray: %d\n", table_size);
   for (int i=0; i<table_size; i++)
   {
     printf("i: %d, val: %f\n", i, current_table[i]);
-  }
+  }*/
 }
 
 private:
@@ -124,10 +137,10 @@ double table_pos;
 double* internal_table;
 double* current_table;
 float freq;
-float step;
-int table_size;
+double step;
+unsigned int table_size;
 int srate;
-bool interpolate;
+unsigned int interpolate;
 
 void make_default_table()
 {
@@ -137,7 +150,12 @@ void make_default_table()
         }
 }
 
-float CubicInterpolate(double y0, double y1, double y2, double y3, double mu)
+double LinearInterpolate(double y0, double y1, double mu)
+{
+	return y1 + mu*(y1-y0);
+}
+
+double CubicInterpolate(double y0, double y1, double y2, double y3, double mu)
 {
         double a0,a1,a2,a3,mu2;
         mu2 = mu*mu;
@@ -146,10 +164,10 @@ float CubicInterpolate(double y0, double y1, double y2, double y3, double mu)
         a2 = -0.5*y0 + 0.5*y2;
         a3 = y1;
 
-        return (float)(a0*mu*mu2+a1*mu2+a2*mu+a3);
+        return (a0*mu*mu2+a1*mu2+a2*mu+a3);
 }
 
-float HermiteInterpolate(double y0,double y1,
+double HermiteInterpolate(double y0,double y1,
                          double y2,double y3,
                          double mu)
 {
@@ -193,7 +211,7 @@ CK_DLL_QUERY( Wavetable )
         QUERY->add_mfun(QUERY, wavetable_setInterpolate, "int", "interpolate");
         QUERY->add_arg(QUERY, "int", "arg");
 
-        QUERY->add_mfun(QUERY, wavetable_setTable, "void", "set_table");
+        QUERY->add_mfun(QUERY, wavetable_setTable, "void", "setTable");
         QUERY->add_arg(QUERY, "float[]", "table");
 
         // get methods

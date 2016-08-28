@@ -6,7 +6,7 @@ T - (now % T) => now;
 // connect patch
 FluidSynth f => NRev reverb => dac;
 f.open("/usr/share/sounds/sf2/FluidR3_GM.sf2");
-.25 => f.gain;
+.75 => f.gain;
 0.02 => reverb.mix;
 
 // scale (in semitones)
