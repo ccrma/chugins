@@ -60,8 +60,11 @@ Wavetable( t_CKFLOAT fs)
 SAMPLE tick ( SAMPLE in )
 {
         // default: this passes whatever input is patched into Chugin
-        if (in > 0) freq = in;
-
+        if (in > 0)
+        {
+          freq = in;
+          step = table_size * freq / srate;
+			}
         table_pos += step;
         while (table_pos > table_size) table_pos -= table_size;
 
