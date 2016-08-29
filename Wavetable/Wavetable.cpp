@@ -74,7 +74,7 @@ SAMPLE tick ( SAMPLE in )
         table_pos += step;
 			}
 			else if (sync == 1)
-			table_pos = (int) (table_size * in);
+			table_pos = table_size * in;
         while (table_pos > table_size) table_pos -= table_size;
 
         int y0, y1, y2, y3;

@@ -1,4 +1,8 @@
+[-1.0,1] @=> float myTable[];
+
 Step s => Envelope e => Wavetable w => dac;
+w.setTable(myTable);
+1 => w.interpolate; // linear interpolation - let's get some aliasing!
 1 => s.next;
 440 => e.value;
 4400 => e.target;
