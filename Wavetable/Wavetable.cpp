@@ -23,11 +23,14 @@ CK_DLL_DTOR(wavetable_dtor);
 // example of getter/setter
 CK_DLL_MFUN(wavetable_setFreq);
 CK_DLL_MFUN(wavetable_setInterpolate);
+CK_DLL_MFUN(wavetable_setSync);
 
 CK_DLL_MFUN(wavetable_getFreq);
 CK_DLL_MFUN(wavetable_getInterpolate);
+CK_DLL_MFUN(wavetable_getSync);
 
 CK_DLL_MFUN(wavetable_setTable);
+
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICK(wavetable_tick);
@@ -53,6 +56,7 @@ Wavetable( t_CKFLOAT fs)
         step = table_size * freq / srate;
         current_table = internal_table;
         interpolate = 0;
+        sync = 0;
         //printf("step: %f\n", step);
 }
 
@@ -60,12 +64,17 @@ Wavetable( t_CKFLOAT fs)
 SAMPLE tick ( SAMPLE in )
 {
         // default: this passes whatever input is patched into Chugin
+        if (sync == 0)
+        {
         if (in > 0)
         {
           freq = in;
           step = table_size * freq / srate;
 			}
         table_pos += step;
+			}
+			else if (sync == 1)
+			table_pos = (int) (table_size * in);
         while (table_pos > table_size) table_pos -= table_size;
 
         int y0, y1, y2, y3;
@@ -125,6 +134,19 @@ int getInterpolate()
         return interpolate;
 }
 
+int setSync ( t_CKINT p)
+{
+  sync = p;
+  if (sync < 0) sync = 0;
+  if (sync > 1) sync = 0;
+  return sync;
+}
+
+int getSync ()
+{
+  return sync;
+}
+
 void setTable(Chuck_Object *p)
 {
   Chuck_Array8 *userArray = (Chuck_Array8*)p;
@@ -147,7 +169,7 @@ double* internal_table;
 double* current_table;
 float freq;
 double step;
-unsigned int table_size;
+unsigned int table_size, sync;
 int srate;
 unsigned int interpolate;
 
@@ -226,8 +248,8 @@ CK_DLL_QUERY( Wavetable )
         QUERY->add_mfun(QUERY, wavetable_setFreq, "float", "freq");
         QUERY->add_arg(QUERY, "float", "arg");
 
-        QUERY->add_mfun(QUERY, wavetable_setFreq, "float", "freq");
-        QUERY->add_arg(QUERY, "float", "arg");
+        QUERY->add_mfun(QUERY, wavetable_setSync, "int", "sync");
+        QUERY->add_arg(QUERY, "int", "arg");
 
         QUERY->add_mfun(QUERY, wavetable_setInterpolate, "int", "interpolate");
         QUERY->add_arg(QUERY, "int", "arg");
@@ -237,6 +259,7 @@ CK_DLL_QUERY( Wavetable )
 
         // get methods
         QUERY->add_mfun(QUERY, wavetable_getFreq, "float", "freq");
+        QUERY->add_mfun(QUERY, wavetable_getSync, "int", "sync");
         QUERY->add_mfun(QUERY, wavetable_getInterpolate, "int", "interpolate");
 
         wavetable_data_offset = QUERY->add_mvar(QUERY, "int", "@w_data", false);
@@ -291,6 +314,18 @@ CK_DLL_MFUN(wavetable_getInterpolate)
 {
         Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
         RETURN->v_int = w_obj->getInterpolate();
+}
+
+CK_DLL_MFUN(wavetable_setSync)
+{
+        Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
+        RETURN->v_int = w_obj->setSync(GET_NEXT_INT(ARGS));
+}
+
+CK_DLL_MFUN(wavetable_getSync)
+{
+        Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
+        RETURN->v_int = w_obj->getSync();
 }
 
 CK_DLL_MFUN(wavetable_setTable)
