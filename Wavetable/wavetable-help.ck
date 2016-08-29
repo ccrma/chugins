@@ -14,8 +14,12 @@
 //                    2 = cubic interpolation
 //                    3 = Hermite interpolation
 // setTable (float[]): associate a ChucK array with the Wavetable instrument
-
+// sync (int): 0 = connected input UGen controls frequency
+//             1 = connected input UGen (usually Phasor) controls phase
+//             * see input-test.ck for examples
+//
 // By default the Wavetable instrument uses a 2048-point non-interpolating sine table.
+
 Wavetable w => dac => WvOut rec => blackhole;
 "test" => rec.wavFilename;
 0.8 => w.gain;
@@ -24,12 +28,12 @@ Wavetable w => dac => WvOut rec => blackhole;
 <<< "built-in sine table, non-interpolating", "" >>>;
 2::second => now;
 
-// Using a ChucK array as a wavetable
-[-1.0, -0.5, 0, 0.5, 1, 0.5, 0, -0.5] @=> float myTable[];
-
 w =< dac;
 ms => now;
 w => dac;
+
+// Using a ChucK array as a wavetable
+[-1.0, -0.5, 0, 0.5, 1, 0.5, 0, -0.5] @=> float myTable[];
 
 w.setTable (myTable);
 // ChucK array "myTable" is now associated with the w Wavetable instrument.
