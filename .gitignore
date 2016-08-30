@@ -3,6 +3,9 @@
 *.orig
 *.bak
 
+# Audio files
+*.wav
+
 # Compiled Object files
 *.slo
 *.lo

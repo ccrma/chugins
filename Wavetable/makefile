@@ -1,11 +1,11 @@
 
 # chugin name
-CHUGIN_NAME=FluidSynth
+CHUGIN_NAME=Wavetable
 
 # all of the c/cpp files that compose this chugin
 C_MODULES=
-CXX_MODULES=FluidSynth.cpp
-LIBS=fluidsynth
+CXX_MODULES=Wavetable.cpp
+
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/
 
@@ -89,7 +89,7 @@ all: $(CHUG)
 
 $(CHUG): $(C_OBJECTS) $(CXX_OBJECTS)
 ifeq ($(CK_CHUGIN_STATIC),0)
-	$(LD) $(LDFLAGS) -o $@ $^ $(addprefix -l,$(LIBS))
+	$(LD) $(LDFLAGS) -o $@ $^
 else
 	ar rv $@ $^
 	ranlib $@
