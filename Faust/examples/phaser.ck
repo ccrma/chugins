@@ -5,8 +5,7 @@
 adc => Faust phaser => dac;
 // compile faust code
 phaser.eval(`
-import("effect.lib"); 
-process = phaser2_demo ;
+process = dm.phaser2_demo ;
 `);
 // parameter dump
 phaser.dump();

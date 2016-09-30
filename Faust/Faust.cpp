@@ -230,9 +230,7 @@ public:
         m_numOutputChannels = 0;
         // auto import
         m_autoImport = "// Faust Chugin auto import:\n \
-        import(\"music.lib\"); import(\"math.lib\"); \
-        import(\"filter.lib\"); import(\"oscillator.lib\"); \
-        import(\"effect.lib\");\n";
+        import(\"stdfaust.lib\");\n";
     }
     
     // destructor
@@ -361,7 +359,7 @@ public:
     bool compile( const string & path )
     {
         // open file
-        ifstream fin( path );
+        ifstream fin( path.c_str() );
         // check
         if( !fin.good() )
         {

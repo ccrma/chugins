@@ -6,11 +6,11 @@ Faust string => Faust distortion => Faust autoWah => dac;
 string.compile("string.dsp");
 
 distortion.eval(`
-process = cubicnl_demo;
+process = dm.cubicnl_demo;
 `);
 
 autoWah.eval("
-process = autowah(1);
+process = ve.autowah(1);
 ");
 
 distortion.v("/CUBIC_NONLINEARITY_cubicnl/Drive",1);

@@ -5,8 +5,7 @@
 adc => Faust moogVCF => dac;
 // compile faust code
 moogVCF.eval(`
-import("effect.lib"); 
-process = moog_vcf_demo ;
+process = dm.moog_vcf_demo ;
 `);
 // parameter dump
 moogVCF.dump();

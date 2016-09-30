@@ -11,11 +11,11 @@ SinOsc LFO => blackhole;
 string.compile("string.dsp");
 
 cryBaby.eval(` 
-process = crybaby_demo ;
+process = dm.crybaby_demo ;
 `);
 
 distortion.eval("
-process = cubicnl_demo;
+process = dm.cubicnl_demo;
 ");
 
 //cryBaby.dump();

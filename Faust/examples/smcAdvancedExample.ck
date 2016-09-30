@@ -13,7 +13,7 @@ string.compile("string.dsp");
 
 // crybaby_demo is part of the effect.lib Faust library
 cryBaby.eval(` 
-process = crybaby_demo ;
+process = dm.crybaby_demo ;
 `);
 
 // generates random notes

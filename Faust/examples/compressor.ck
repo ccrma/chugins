@@ -4,9 +4,8 @@
 // instantiate and connect faust => ck
 adc => Faust compressor => dac;
 // compile faust code
-compressor.eval(`
-import("effect.lib"); 
-process = compressor_demo;
+compressor.eval(` 
+process = dm.compressor_demo;
 `);
 // parameter dump
 compressor.dump();

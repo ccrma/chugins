@@ -1,8 +1,8 @@
 
-CHUGIN_PATH=/usr/local/lib/chuck
+LLVM_LDFLAGS = $(shell llvm-config --ldflags --libs all)
 
-FLAGS=-D__LINUX_ALSA__ -D__PLATFORM_LINUX__ -I$(CK_SRC_PATH) -fPIC
-LDFLAGS=-shared -lstdc++
+FLAGS=-pthread -Wall -D__LINUX_ALSA__ -D__PLATFORM_LINUX__ -I$(CK_SRC_PATH) -fPIC
+LDFLAGS=-shared -lstdc++ -lfaust $(LLVM_LDFLAGS) -lz -ldl -ltinfo -lssl -lcrypto
 
 LD=gcc
 CXX=g++

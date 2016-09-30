@@ -5,8 +5,7 @@
 adc => Faust vocoder => dac;
 // compile faust code
 vocoder.eval(`
-import("effect.lib"); 
-process = vocoder_demo ;
+process = dm.vocoder_demo ;
 `);
 // parameter dump
 vocoder.dump();

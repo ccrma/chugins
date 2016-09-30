@@ -5,8 +5,7 @@
 adc => Faust distortion => dac;
 // compile faust code
 distortion.eval(`
-import("effect.lib"); 
-process = cubicnl_demo;
+process = dm.cubicnl_demo;
 `);
 // parameter dump
 distortion.dump();

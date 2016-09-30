@@ -1,7 +1,7 @@
 // instantiate and connect faust => ck
 adc => Faust cryBaby => dac;
 // compile faust code
-cryBaby.eval(`process = crybaby_demo ;`);
+cryBaby.eval(`process = dm.crybaby_demo ;`);
 // parameter dump
 cryBaby.dump();
 

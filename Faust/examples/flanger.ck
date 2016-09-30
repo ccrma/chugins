@@ -5,8 +5,7 @@
 adc => Faust flanger => dac;
 // compile faust code
 flanger.eval(`
-import("effect.lib"); 
-process = flanger_demo ;
+process = dm.flanger_demo ;
 `);
 // parameter dump
 flanger.dump();

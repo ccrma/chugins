@@ -5,8 +5,7 @@
 adc => Faust wah => dac;
 // compile faust code
 wah.eval(`
-import("effect.lib"); 
-process = wah4_demo ;
+process = dm.wah4_demo ;
 `);
 // parameter dump
 wah.dump();

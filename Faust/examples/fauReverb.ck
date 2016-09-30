@@ -4,9 +4,14 @@
 // instantiate and connect faust => ck
 Faust fck => Faust reverb => dac;
 // evaluate faust code
-fck.eval( "import(\"music.lib\"); import(\"oscillator.lib\"); freq=button(\"freq\"); process=sawtooth(freq);" );
+fck.eval(`
+	freq = button("freq");
+	process = os.sawtooth(freq);
+`);
 // _<: and :> turn zita_rev_fdn_demo into a mono object
-reverb.eval("import(\"effect.lib\"); process = zita_rev_fdn_demo;");
+reverb.eval(`
+	process = dm.zita_rev_fdn_demo;
+`);
 
 // time loop
 while( true )

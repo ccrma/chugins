@@ -5,10 +5,10 @@
 Faust fck => dac;
 // evaluate FAUST code
 // -- (use ` to avoid escaping " and ')
-// -- (auto import libs: music, math, filter, oscillator, effect)
+// -- (auto import libs: stdfaust)
 fck.eval(`
   freq=button("freq");
-  process=sawtooth(freq);
+  process=os.sawtooth(freq);
 `);
 
 // time loop

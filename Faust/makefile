@@ -89,17 +89,17 @@ all: $(CHUG)
 
 $(CHUG): $(C_OBJECTS) $(CXX_OBJECTS)
 ifeq ($(CK_CHUGIN_STATIC),0)
-	$(LD) $(LDFLAGS) -o $@ $^
+	$(LD) -o $@ $^ $(LDFLAGS)
 else
 	ar rv $@ $^
 	ranlib $@
 endif
 
 $(C_OBJECTS): %.o: %.c
-	$(CC) $(FLAGS) -c -o $@ $<
+	$(CC) -c -o $@ $< $(FLAGS) 
 
 $(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chuck_dl.h
-	$(CXX) $(FLAGS) -c -o $@ $<
+	$(CXX) -c -o $@ $< $(FLAGS) 
 
 install: $(CHUG)
 	mkdir -p $(CHUGIN_PATH)
