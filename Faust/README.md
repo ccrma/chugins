@@ -12,6 +12,8 @@ FaucK should work both in the terminal and MiniAudicle (at least on Linux for th
 
 FaucK uses the "on-the-fly" LLVM based version of the Faust compiler (<http://faust.grame.fr>) also known as `libfaust`. Thus, in order to compile FaucK, you need to make sure that `faust2` is installed on your system. `faust2` is an experimental branch of the Faust compiler, so it is very unlikely that you will find a pre-compiled package for it. The latest stable release of the source code of `faust2` can be downloaded [here](https://sourceforge.net/projects/faudiostream/files/). If you're even crazier than that, you can get a snapshot of the `faust2` git repository: <https://sourceforge.net/p/faudiostream/code/ci/faust2/tree/>. `faust2` has a couple of dependencies so you might have to fix them before you can do anything. For instance, the `LLVM` developement files (we recommend version 3.8 or <) as well as `openssl` will be needed.
 
+NOTE: On Mac OS X, faust2 should be compiled with compatibility for Mac OS X 10.9 and above. You can do this by running `export MACOSX_DEPLOYMENT_TARGET=10.9` before running `make` in the faust2 directory. 
+
 Once you compiled and installed `faust2`, you should be able to build FaucK. On Linux, just type:
 
 ```
