@@ -1,5 +1,5 @@
 
-CHUGINS=ABSaturator AmbPan Bitcrusher KasFilter MagicSine FIR FoldbackSaturator \
+CHUGINS=ABSaturator AmbPan Bitcrusher KasFilter MagicSine Faust FIR FoldbackSaturator \
 	PanN PitchTrack GVerb Mesh2D Spectacle Elliptic Sigmund ExpDelay Overdrive \
 	Multicomb PowerADSR WinFuncEnv WPDiodeLadder WPKorg35
 
