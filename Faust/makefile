@@ -7,7 +7,7 @@ C_MODULES=
 CXX_MODULES=Faust.cpp
 
 # where the chuck headers are
-CK_SRC_PATH?=../chuck/include
+CK_SRC_PATH?=chuck/include
 
 
 # ---------------------------------------------------------------------------- #
@@ -15,14 +15,9 @@ CK_SRC_PATH?=../chuck/include
 # ---------------------------------------------------------------------------- #
 
 # default target: print usage message and quit
-help current: 
+current: 
 	@echo "[chuck build]: please use one of the following configurations:"
 	@echo "   make linux, make osx, or make win32"
-	@echo "Options:" 
-	@echo "   MAX_INPUTS: the maximum number of inputs of the chugin"
-	@echo "   MAX_OUTPUTS: the maximum number of outputs of the chugin"
-	@echo "Example:"
-	@echo "   make linux MAX_INPUTS=1 MAX_OUTPUTS=4"
 
 ifneq ($(CK_TARGET),)
 .DEFAULT_GOAL:=$(CK_TARGET)
@@ -73,13 +68,7 @@ ifneq ($(CHUCK_STRICT),)
 FLAGS+= -Werror
 endif
 
-ifneq ($(MAX_INPUTS),)
-INS=-DMAX_INPUTS=$(MAX_INPUTS)
-endif
 
-ifneq ($(MAX_OUTPUTS),)
-OUTS=-DMAX_OUTPUTS=$(MAX_OUTPUTS)
-endif
 
 # default: build a dynamic chugin
 CK_CHUGIN_STATIC?=0
@@ -110,7 +99,7 @@ $(C_OBJECTS): %.o: %.c
 	$(CC) -c -o $@ $< $(FLAGS) 
 
 $(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chuck_dl.h
-	$(CXX) $(INS) $(OUTS) -c -o $@ $< $(FLAGS) 
+	$(CXX) -c -o $@ $< $(FLAGS) 
 
 install: $(CHUG)
 	mkdir -p $(CHUGIN_PATH)

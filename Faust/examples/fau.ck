@@ -8,7 +8,7 @@ Faust fck => dac;
 // -- (auto import libs: stdfaust)
 fck.eval(`
   freq=button("freq");
-  process=os.sawtooth(freq)<:_,_;
+  process=os.sawtooth(freq);
 `);
 
 // time loop

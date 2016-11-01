@@ -9,14 +9,6 @@
 // NOTE: be mindful of chuck/chugin compilation, particularly on OSX
 //       compiled for 10.5 chuck may not work well with 10.10 chugin!
 //-----------------------------------------------------------------------------
-
-#ifndef MAX_INPUTS
-	#define MAX_INPUTS 2
-#endif
-#ifndef MAX_OUTPUTS
-	#define MAX_OUTPUTS 2
-#endif
-
 // this should align with the correct versions of these ChucK files
 #include "chuck_dl.h"
 #include "chuck_def.h"
@@ -36,12 +28,15 @@ using namespace std;
 #include "faust/gui/UI.h"
 #include "faust/gui/PathBuilder.h"
 
+
+
+
 // declaration of chugin constructor
 CK_DLL_CTOR(faust_ctor);
 // declaration of chugin desctructor
 CK_DLL_DTOR(faust_dtor);
-// multi-channel audio synthesis tick function
-CK_DLL_TICKF(faust_tickf);
+// for Chugins extending UGen, this is mono synthesis function for 1 sample
+CK_DLL_TICK(faust_tick);
 
 // example of getter/setter
 CK_DLL_MFUN(faust_eval);
@@ -283,8 +278,8 @@ public:
         clearBufs();
         
         // set
-        m_numInputChannels = min(inputChannels, MAX_INPUTS);
-        m_numOutputChannels = min(outputChannels, MAX_OUTPUTS);
+        m_numInputChannels = inputChannels;
+        m_numOutputChannels = outputChannels;
 
         // allocate channels
         m_input = new FAUSTFLOAT *[m_numInputChannels];
@@ -386,25 +381,27 @@ public:
     // dump (snapshot)
     void dump()
     {
-        if( m_ui != NULL && m_dsp != NULL ) m_ui->dumpParams();
+        m_ui->dumpParams();
     }
-
-	void tick( SAMPLE * in, SAMPLE * out, int nframes ){
-		if( m_dsp != NULL ){		
-			for(int f = 0; f < nframes; f++)
-        	{			
-				for(int c = 0; c < m_numInputChannels; c++)
-            	{
-					m_input[c][0] = in[f*m_numInputChannels+c];				
-				}
-				m_dsp->compute( 1, m_input, m_output );
-				for(int c = 0; c < m_numOutputChannels; c++)
-            	{
-					out[f*m_numOutputChannels+c] = m_output[c][0];				
-				}
-			}
-		}
-	}
+    
+    // for Chugins extending UGen
+    SAMPLE tick( SAMPLE in )
+    {
+        // sanity check
+        if( m_dsp == NULL ) return 0;
+        
+        // set input
+        for( int i = 0; i < m_numInputChannels; i++ ) m_input[i][0] = in;
+        // zero output
+        for( int i = 0; i < m_numOutputChannels; i++ ) m_output[i][0] = 0;
+        // compute samples
+        m_dsp->compute( 1, m_input, m_output );
+        // average output
+        t_CKFLOAT avg = 0;
+        for( int i = 0; i < m_numOutputChannels; i++ ) avg += m_output[i][0];
+        // return sample
+        return avg / m_numOutputChannels;
+    }
 
     // set parameter example
     t_CKFLOAT setParam( const string & n, t_CKFLOAT p )
@@ -475,7 +472,11 @@ CK_DLL_QUERY( Faust )
     QUERY->add_dtor(QUERY, faust_dtor);
     
     // for UGen's only: add tick function
-	QUERY->add_ugen_funcf(QUERY, faust_tickf, NULL, MAX_INPUTS, MAX_OUTPUTS);
+    QUERY->add_ugen_func(QUERY, faust_tick, NULL, 1, 1);
+    
+    // NOTE: if this is to be a UGen with more than 1 channel, 
+    // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
+    // and declare a tickf function using CK_DLL_TICKF
 
     // add .eval()
     QUERY->add_mfun(QUERY, faust_eval, "int", "eval");
@@ -559,14 +560,15 @@ CK_DLL_DTOR(faust_dtor)
     }
 }
 
+
 // implementation for tick function
-CK_DLL_TICKF(faust_tickf)
+CK_DLL_TICK(faust_tick)
 {
     // get our c++ class pointer
     Faust * f_obj = (Faust *) OBJ_MEMBER_INT(SELF, faust_data_offset);
-
+ 
     // invoke our tick function; store in the magical out variable
-    if(f_obj) f_obj->tick(in, out, nframes);
+    if(f_obj) *out = f_obj->tick(in);
 
     // yes
     return TRUE;
@@ -584,6 +586,8 @@ CK_DLL_MFUN(faust_eval)
 
 CK_DLL_MFUN(faust_test)
 {
+    // get our c++ class pointer
+    Faust * f = (Faust *) OBJ_MEMBER_INT(SELF, faust_data_offset);
     // get argument
     t_CKINT x = GET_NEXT_INT(ARGS);
     // print
