@@ -11,10 +11,10 @@
 //-----------------------------------------------------------------------------
 
 #ifndef MAX_INPUTS
-	#define MAX_INPUTS 2
+	#define MAX_INPUTS 12
 #endif
 #ifndef MAX_OUTPUTS
-	#define MAX_OUTPUTS 2
+	#define MAX_OUTPUTS 12
 #endif
 
 // this should align with the correct versions of these ChucK files
