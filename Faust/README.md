@@ -8,7 +8,7 @@ FaucK should work both in the terminal and MiniAudicle.
 
 **Warning:** FaucK is still being developed and things are moving quickly. Use it a your own risks!
 
-## Known Issues/Bugs (Better Start with That ;) )
+## Known Issues/Bugs (better start with that ;) )
 
 * Currently, FaucK has to be built with a predefined maximum number of inputs and outputs. This is a limitation of the Chugin architecture. By default, Fauck is built to have a maximum of 8 inputs and 8 outputs. Of course, only channels that are being used are actually computed. To build FaucK with a custom version of inputs and outputs, please refer to the build section below.
 * If MiniAudicle crashes when you start its virtual machine, try to edit its preferences, restart the software and start the virtual machine again. This sounds very hacky, but this bug has been reported by some beta testers and we were not able to reproduce it on our own computer. This workaround seems to work though :).
