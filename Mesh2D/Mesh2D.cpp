@@ -151,6 +151,16 @@ private:
     // begin the class definition
     // can change the second argument to extend a different ChucK class
     QUERY->begin_class(QUERY, "Mesh2D", "UGen");
+    QUERY->doc_class(QUERY, "This class implements a rectilinear, "
+        "two-dimensional digital waveguide mesh "
+        "structure.  For details, see Van Duyne and "
+        "Smith, &quot;Physical Modeling with the 2-D Digital "
+        "Waveguide Mesh,&quot; <i>Proceedings of the 1993 "
+        "International Computer Music Conference</i>. "
+        "<br/><br/>"
+        "This is a digital waveguide model, making its "
+        "use possibly subject to patents held by Stanford "
+        "University, Yamaha, and others. ");
     
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, mesh2d_ctor);
@@ -168,46 +178,58 @@ private:
     QUERY->add_mfun(QUERY, mesh2d_noteOn, "float", "noteOn");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Trigger the mesh with given amplitude.");
     
     // example of adding setter method
     QUERY->add_mfun(QUERY, mesh2d_noteOff, "float", "noteOff");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Release the model.");
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, mesh2d_getNX, "int", "x");
+    QUERY->doc_func(QUERY, "X dimension of &quot;plate&quot; (max 12).");
     // example of adding setter method
     QUERY->add_mfun(QUERY, mesh2d_setNX, "int", "x");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->doc_func(QUERY, "X dimension of &quot;plate&quot; (max 12).");
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, mesh2d_getNY, "int", "y");
+    QUERY->doc_func(QUERY, "Y dimension of &quot;plate&quot; (max 12).");
     // example of adding setter method
     QUERY->add_mfun(QUERY, mesh2d_setNY, "int", "y");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->doc_func(QUERY, "Y dimension of &quot;plate&quot; (max 12).");
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, mesh2d_getXpos, "float", "xpos");
+    QUERY->doc_func(QUERY, "Strike x position (appears to be on range (0.0, 2.0)).");
     // example of adding setter method
     QUERY->add_mfun(QUERY, mesh2d_setXpos, "float", "xpos");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Strike x position (appears to be on range (0.0, 2.0)).");
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, mesh2d_getYpos, "float", "ypos");
+    QUERY->doc_func(QUERY, "Strike y position (appears to be on range (0.0, 2.0)).");
     // example of adding setter method
     QUERY->add_mfun(QUERY, mesh2d_setYpos, "float", "ypos");
-  // example of adding argument to the above method
+    // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Strike y position (appears to be on range (0.0, 2.0)).");
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, mesh2d_getDecay, "float", "decay");
+    QUERY->doc_func(QUERY, "Decay constant (0 = instant decay, 1.0 = long decay time).");
     // example of adding setter method
     QUERY->add_mfun(QUERY, mesh2d_setDecay, "float", "decay");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Decay constant (0 = instant decay, 1.0 = long decay time).");
     
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above
