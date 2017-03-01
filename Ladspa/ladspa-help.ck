@@ -17,7 +17,7 @@
 //            input or output
 // verbose (int): turn on/off notifications about plugin (default: 1)
 
-"/usr/local/lib/ladspa/filter.so" => string plugname;
+"/usr/lib/ladspa/filter.so" => string plugname;
 "lpf" => string labelname;
 if (me.args()>0) me.arg(0) => plugname;
 if (me.args()>1) me.arg(1) => labelname;
