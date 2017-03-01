@@ -18,9 +18,16 @@ CK_DLL_CTOR(abletonlink_ctor);
 CK_DLL_DTOR(abletonlink_dtor);
 
 // example of getter/setter
-CK_DLL_MFUN(abletonlink_setParam);
-CK_DLL_MFUN(abletonlink_getParam);
 CK_DLL_MFUN(abletonlink_setEnabled);
+CK_DLL_MFUN(abletonlink_setTempo);
+CK_DLL_MFUN(abletonlink_setQuantum);
+CK_DLL_MFUN(abletonlink_setResolution);
+CK_DLL_MFUN(abletonlink_setOffset);
+CK_DLL_MFUN(abletonlink_setReset);
+
+CK_DLL_MFUN(abletonlink_getTempo);
+CK_DLL_MFUN(abletonlink_getQuantum);
+CK_DLL_MFUN(abletonlink_getResolution);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICK(abletonlink_tick);
@@ -38,32 +45,51 @@ public:
     // constructor
     AbletonLink( t_CKFLOAT fs)
     {
-        m_param = 0;
         steps_per_beat = 1;
         prev_beat_time = 0;
         quantum = 4;
         tempo = 0;
-        reset_flag = 1;
+        outval = 0;
         double initial_tempo = 120.0;
         link = abl_link::AblLinkWrapper::getSharedInstance(initial_tempo);
+        link->enable(TRUE);
         }
 
     // for Chugins extending UGen
     SAMPLE tick( SAMPLE in )
     {
-        // default: this passes whatever input is patched into Chugin
-        return in;
+      std::chrono::microseconds curr_time;
+      auto& timeline = link->acquireAudioTimeline(&curr_time);
+      if (tempo < 0) {
+        timeline.setTempo(-tempo, curr_time);
+      }
+      const double prev_tempo = tempo;
+      tempo = timeline.tempo();
+      if (prev_tempo != tempo) {
+        printf("Setting tempo to %f\n",tempo);
+      }
+      double curr_beat_time;
+      curr_beat_time = timeline.beatAtTime(curr_time, quantum);
+      //outlet_float(beat_out, curr_beat_time);
+      const double curr_phase = fmod(curr_beat_time, quantum);
+      //outlet_float(phase_out, curr_phase);
+      if (curr_beat_time > prev_beat_time) {
+        const double prev_phase = fmod(prev_beat_time, quantum);
+        const double prev_step = floor(prev_phase * steps_per_beat);
+        const double curr_step = floor(curr_phase * steps_per_beat);
+        if (prev_phase - curr_phase > quantum / 2 || prev_step != curr_step) {
+          outval = curr_step;
+        }
+      }
+      prev_beat_time = curr_beat_time;
+      link->releaseAudioTimeline();
+
+      return outval;
     }
 
-    // set parameter example
-    float setParam( t_CKFLOAT p )
-    {
-        m_param = p;
-        return p;
-    }
-
-    // get parameter example
-    float getParam() { return m_param; }
+    float getTempo() {return tempo;}
+    float getQuantum() {return quantum;}
+    float getResolution() {return steps_per_beat;}
 
     int setEnabled (t_CKINT p)
     {
@@ -71,14 +97,56 @@ public:
       return p;
     }
 
+    float setTempo (t_CKFLOAT p)
+    {
+      tempo = -p;
+      return p;
+    }
+
+    int setQuantum (t_CKINT p)
+    {
+      quantum = p;
+      return p;
+    }
+
+    int setResolution (t_CKINT p)
+    {
+      steps_per_beat = p;
+      return p;
+    }
+
+    float setOffset (t_CKFLOAT offset_ms)
+    {
+      link->set_offset(offset_ms);
+      return offset_ms;
+    }
+
+    int setReset (t_CKINT p)
+    {
+      std::chrono::microseconds curr_time;
+      auto& timeline = link->acquireAudioTimeline(&curr_time);
+      if (tempo < 0) {
+        timeline.setTempo(tempo, curr_time);
+      }
+      const double prev_tempo = tempo;
+      tempo = timeline.tempo();
+      if (prev_tempo != tempo) {
+        printf("Setting tempo to %f\n",tempo);
+      }
+      double curr_beat_time;
+      timeline.requestBeatAtTime(prev_beat_time, curr_time, quantum);
+      curr_beat_time = timeline.beatAtTime(curr_time, quantum);
+      prev_beat_time = curr_beat_time - 1e-6;
+      return p;
+    }
+
 private:
     // instance data
-    float m_param;
-    double steps_per_beat;
+    int steps_per_beat;
     double prev_beat_time;
-    double quantum;
+    int quantum;
     double tempo;
-    int reset_flag;
+    double outval;
     std::shared_ptr<abl_link::AblLinkWrapper> link;
 };
 
@@ -108,16 +176,26 @@ CK_DLL_QUERY( AbletonLink )
     // and declare a tickf function using CK_DLL_TICKF
 
     // example of adding setter method
-    QUERY->add_mfun(QUERY, abletonlink_setParam, "float", "param");
-    QUERY->add_arg(QUERY, "float", "arg");
-
-    // example of adding getter method
-    QUERY->add_mfun(QUERY, abletonlink_getParam, "float", "param");
-
     QUERY->add_mfun(QUERY, abletonlink_setEnabled, "int", "enable");
     QUERY->add_arg(QUERY, "int", "arg");
 
+    QUERY->add_mfun(QUERY, abletonlink_setTempo, "float", "tempo");
+    QUERY->add_arg(QUERY, "float", "arg");
 
+    QUERY->add_mfun(QUERY, abletonlink_setQuantum, "int", "quantum");
+    QUERY->add_arg(QUERY, "int", "arg");
+
+    QUERY->add_mfun(QUERY, abletonlink_setResolution, "int", "resolution");
+    QUERY->add_arg(QUERY, "int", "arg");
+
+    QUERY->add_mfun(QUERY, abletonlink_setOffset, "float", "offset");
+    QUERY->add_arg(QUERY, "float", "arg");
+
+    QUERY->add_mfun(QUERY, abletonlink_setReset, "int", "reset");
+    QUERY->add_arg(QUERY, "int", "arg");
+
+    QUERY->add_mfun(QUERY, abletonlink_getTempo, "float", "tempo");
+    QUERY->add_mfun(QUERY, abletonlink_getQuantum, "int", "quantum");
 
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
@@ -176,23 +254,30 @@ CK_DLL_TICK(abletonlink_tick)
 }
 
 
-// example implementation for setter
-CK_DLL_MFUN(abletonlink_setParam)
-{
-    // get our c++ class pointer
-    AbletonLink * al_obj = (AbletonLink *) OBJ_MEMBER_INT(SELF, abletonlink_data_offset);
-    // set the return value
-    RETURN->v_float = al_obj->setParam(GET_NEXT_FLOAT(ARGS));
-}
-
 
 // example implementation for getter
-CK_DLL_MFUN(abletonlink_getParam)
+CK_DLL_MFUN(abletonlink_getTempo)
 {
     // get our c++ class pointer
     AbletonLink * al_obj = (AbletonLink *) OBJ_MEMBER_INT(SELF, abletonlink_data_offset);
     // set the return value
-    RETURN->v_float = al_obj->getParam();
+    RETURN->v_float = al_obj->getTempo();
+}
+
+CK_DLL_MFUN(abletonlink_getQuantum)
+{
+    // get our c++ class pointer
+    AbletonLink * al_obj = (AbletonLink *) OBJ_MEMBER_INT(SELF, abletonlink_data_offset);
+    // set the return value
+    RETURN->v_int = al_obj->getQuantum();
+}
+
+CK_DLL_MFUN(abletonlink_getResolution)
+{
+    // get our c++ class pointer
+    AbletonLink * al_obj = (AbletonLink *) OBJ_MEMBER_INT(SELF, abletonlink_data_offset);
+    // set the return value
+    RETURN->v_int = al_obj->getResolution();
 }
 
 // example implementation for setter
@@ -202,4 +287,44 @@ CK_DLL_MFUN(abletonlink_setEnabled)
     AbletonLink * al_obj = (AbletonLink *) OBJ_MEMBER_INT(SELF, abletonlink_data_offset);
     // set the return value
     RETURN->v_int = al_obj->setEnabled(GET_NEXT_INT(ARGS));
+}
+
+CK_DLL_MFUN(abletonlink_setTempo)
+{
+    // get our c++ class pointer
+    AbletonLink * al_obj = (AbletonLink *) OBJ_MEMBER_INT(SELF, abletonlink_data_offset);
+    // set the return value
+    RETURN->v_float = al_obj->setTempo(GET_NEXT_FLOAT(ARGS));
+}
+
+CK_DLL_MFUN(abletonlink_setQuantum)
+{
+    // get our c++ class pointer
+    AbletonLink * al_obj = (AbletonLink *) OBJ_MEMBER_INT(SELF, abletonlink_data_offset);
+    // set the return value
+    RETURN->v_int = al_obj->setQuantum(GET_NEXT_INT(ARGS));
+}
+
+CK_DLL_MFUN(abletonlink_setResolution)
+{
+    // get our c++ class pointer
+    AbletonLink * al_obj = (AbletonLink *) OBJ_MEMBER_INT(SELF, abletonlink_data_offset);
+    // set the return value
+    RETURN->v_int = al_obj->setResolution(GET_NEXT_INT(ARGS));
+}
+
+CK_DLL_MFUN(abletonlink_setOffset)
+{
+    // get our c++ class pointer
+    AbletonLink * al_obj = (AbletonLink *) OBJ_MEMBER_INT(SELF, abletonlink_data_offset);
+    // set the return value
+    RETURN->v_float = al_obj->setOffset(GET_NEXT_FLOAT(ARGS));
+}
+
+CK_DLL_MFUN(abletonlink_setReset)
+{
+    // get our c++ class pointer
+    AbletonLink * al_obj = (AbletonLink *) OBJ_MEMBER_INT(SELF, abletonlink_data_offset);
+    // set the return value
+    RETURN->v_int = al_obj->setReset(GET_NEXT_INT(ARGS));
 }
