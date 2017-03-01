@@ -6,6 +6,7 @@
 // this should align with the correct versions of these ChucK files
 #include "chuck_dl.h"
 #include "chuck_def.h"
+#include "abl_link_instance.hpp"
 
 // general includes
 #include <stdio.h>
@@ -19,6 +20,7 @@ CK_DLL_DTOR(abletonlink_dtor);
 // example of getter/setter
 CK_DLL_MFUN(abletonlink_setParam);
 CK_DLL_MFUN(abletonlink_getParam);
+CK_DLL_MFUN(abletonlink_setEnabled);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICK(abletonlink_tick);
@@ -37,7 +39,14 @@ public:
     AbletonLink( t_CKFLOAT fs)
     {
         m_param = 0;
-    }
+        steps_per_beat = 1;
+        prev_beat_time = 0;
+        quantum = 4;
+        tempo = 0;
+        reset_flag = 1;
+        double initial_tempo = 120.0;
+        link = abl_link::AblLinkWrapper::getSharedInstance(initial_tempo);
+        }
 
     // for Chugins extending UGen
     SAMPLE tick( SAMPLE in )
@@ -55,10 +64,22 @@ public:
 
     // get parameter example
     float getParam() { return m_param; }
-    
+
+    int setEnabled (t_CKINT p)
+    {
+      link->enable(p);
+      return p;
+    }
+
 private:
     // instance data
     float m_param;
+    double steps_per_beat;
+    double prev_beat_time;
+    double quantum;
+    double tempo;
+    int reset_flag;
+    std::shared_ptr<abl_link::AblLinkWrapper> link;
 };
 
 
@@ -69,7 +90,7 @@ CK_DLL_QUERY( AbletonLink )
 {
     // hmm, don't change this...
     QUERY->setname(QUERY, "AbletonLink");
-    
+
     // begin the class definition
     // can change the second argument to extend a different ChucK class
     QUERY->begin_class(QUERY, "AbletonLink", "UGen");
@@ -78,23 +99,27 @@ CK_DLL_QUERY( AbletonLink )
     QUERY->add_ctor(QUERY, abletonlink_ctor);
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, abletonlink_dtor);
-    
+
     // for UGen's only: add tick function
     QUERY->add_ugen_func(QUERY, abletonlink_tick, NULL, 1, 1);
-    
-    // NOTE: if this is to be a UGen with more than 1 channel, 
+
+    // NOTE: if this is to be a UGen with more than 1 channel,
     // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
     // and declare a tickf function using CK_DLL_TICKF
 
     // example of adding setter method
     QUERY->add_mfun(QUERY, abletonlink_setParam, "float", "param");
-    // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, abletonlink_getParam, "float", "param");
-    
-    // this reserves a variable in the ChucK internal class to store 
+
+    QUERY->add_mfun(QUERY, abletonlink_setEnabled, "int", "enable");
+    QUERY->add_arg(QUERY, "int", "arg");
+
+
+
+    // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
     abletonlink_data_offset = QUERY->add_mvar(QUERY, "int", "@al_data", false);
 
@@ -112,10 +137,10 @@ CK_DLL_CTOR(abletonlink_ctor)
 {
     // get the offset where we'll store our internal c++ class pointer
     OBJ_MEMBER_INT(SELF, abletonlink_data_offset) = 0;
-    
+
     // instantiate our internal c++ class representation
     AbletonLink * al_obj = new AbletonLink(API->vm->get_srate());
-    
+
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, abletonlink_data_offset) = (t_CKINT) al_obj;
 }
@@ -142,7 +167,7 @@ CK_DLL_TICK(abletonlink_tick)
 {
     // get our c++ class pointer
     AbletonLink * al_obj = (AbletonLink *) OBJ_MEMBER_INT(SELF, abletonlink_data_offset);
- 
+
     // invoke our tick function; store in the magical out variable
     if(al_obj) *out = al_obj->tick(in);
 
@@ -168,4 +193,13 @@ CK_DLL_MFUN(abletonlink_getParam)
     AbletonLink * al_obj = (AbletonLink *) OBJ_MEMBER_INT(SELF, abletonlink_data_offset);
     // set the return value
     RETURN->v_float = al_obj->getParam();
+}
+
+// example implementation for setter
+CK_DLL_MFUN(abletonlink_setEnabled)
+{
+    // get our c++ class pointer
+    AbletonLink * al_obj = (AbletonLink *) OBJ_MEMBER_INT(SELF, abletonlink_data_offset);
+    // set the return value
+    RETURN->v_int = al_obj->setEnabled(GET_NEXT_INT(ARGS));
 }

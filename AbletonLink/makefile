@@ -4,18 +4,19 @@ CHUGIN_NAME=AbletonLink
 
 # all of the c/cpp files that compose this chugin
 C_MODULES=
-CXX_MODULES=AbletonLink.cpp
+CXX_MODULES=abl_link_instance.cpp AbletonLink.cpp
 
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/
-
+LINK_INCLUDES?=./link/include/
+ASIO_INCLUDES?=./link/modules/asio-standalone/asio/include/
 
 # ---------------------------------------------------------------------------- #
 # you won't generally need to change anything below this line for a new chugin #
 # ---------------------------------------------------------------------------- #
 
 # default target: print usage message and quit
-current: 
+current:
 	@echo "[chuck build]: please use one of the following configurations:"
 	@echo "   make linux, make osx, or make win32"
 
@@ -106,6 +107,5 @@ install: $(CHUG)
 	cp $^ $(CHUGIN_PATH)
 	chmod 755 $(CHUGIN_PATH)/$(CHUG)
 
-clean: 
+clean:
 	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) Release Debug
-
