@@ -35,10 +35,10 @@ CK_DLL_TICK(abletonlink_tick);
 // this is a special offset reserved for Chugin internal data
 t_CKINT abletonlink_data_offset = 0;
 
+// TODO: create mode switch to output different values: beat, sub-beat, phase, time
+// TODO: set offset with a duration instead of float
+// TODO: trigger events directly from UGen?
 
-// class definition for internal Chugin data
-// (note: this isn't strictly necessary, but serves as example
-// of one recommended approach)
 class AbletonLink
 {
 public:
@@ -171,11 +171,6 @@ CK_DLL_QUERY( AbletonLink )
     // for UGen's only: add tick function
     QUERY->add_ugen_func(QUERY, abletonlink_tick, NULL, 1, 1);
 
-    // NOTE: if this is to be a UGen with more than 1 channel,
-    // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
-    // and declare a tickf function using CK_DLL_TICKF
-
-    // example of adding setter method
     QUERY->add_mfun(QUERY, abletonlink_setEnabled, "int", "enable");
     QUERY->add_arg(QUERY, "int", "arg");
 
@@ -196,6 +191,7 @@ CK_DLL_QUERY( AbletonLink )
 
     QUERY->add_mfun(QUERY, abletonlink_getTempo, "float", "tempo");
     QUERY->add_mfun(QUERY, abletonlink_getQuantum, "int", "quantum");
+    QUERY->add_mfun(QUERY, abletonlink_getResolution, "int", "resolution");
 
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
