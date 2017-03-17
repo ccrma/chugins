@@ -87,14 +87,14 @@ struct Node
 class Triset
 {
 
-Node m_n1;
-Node m_n2;
-Node m_n3;
+Node * m_n1;
+Node * m_n2;
+Node * m_n3;
 
 public:
 
     Triset( Node &n1, Node &n2, Node &n3, int idx)
-    : m_n1(n1), m_n2(n2), m_n3(n3), index(idx)
+    : m_n1(&n1), m_n2(&n2), m_n3(&n3), index(idx)
     {
         dot02 = 0.0;
         dot12 = 0.0;
@@ -112,25 +112,22 @@ public:
 
         active = false;
 
-        ab = distance(m_n1.x, m_n1.y, m_n2.x, m_n2.y);
-        bc = distance(m_n2.x, m_n2.y, m_n3.x, m_n3.y);
-        ca = distance(m_n3.x, m_n3.y, m_n1.x, m_n1.y);
+        ab = distance(m_n1->x, m_n1->y, m_n2->x, m_n2->y);
+        bc = distance(m_n2->x, m_n2->y, m_n3->x, m_n3->y);
+        ca = distance(m_n3->x, m_n3->y, m_n1->x, m_n1->y);
 
         area = heronArea(ab, bc, ca);
         areaScalar = 1.0/area;
 
         // a few pointInTriset operations that never change
-        computeVector(m_n3.x, m_n3.y, m_n1.x, m_n1.y, v0);
-        computeVector(m_n2.x, m_n2.y, m_n1.x, m_n1.y, v1);
+        computeVector(m_n3->x, m_n3->y, m_n1->x, m_n1->y, v0);
+        computeVector(m_n2->x, m_n2->y, m_n1->x, m_n1->y, v1);
 
         dot00 = dotProduct(v0, v0, 2);
         dot01 = dotProduct(v0, v1, 2);
         dot11 = dotProduct(v1, v1, 2);
 
         invDenom = 1.0/(dot00 * dot11 - dot01 * dot01);
-
-        // set index and add to array
-        index = idx;
     }
 
     int index;
@@ -140,7 +137,7 @@ public:
     // many values were precalculated in the constructor to save on processing
     bool pointInTriset(float x, float y)
     {
-        computeVector(x, y, m_n1.x, m_n1.y, v2);
+        computeVector(x, y, m_n1->x, m_n1->y, v2);
 
         // vector calculation
         dot02 = dotProduct(v0, v2, 2);
@@ -158,17 +155,17 @@ public:
     // the gain for that node
     void setNodes(float x, float y)
     {
-        ap = distance(m_n1.x, m_n1.y, x, y);
-        bp = distance(m_n2.x, m_n2.y, x, y);
-        cp = distance(m_n3.x, m_n3.y, x, y);
+        ap = distance(m_n1->x, m_n1->y, x, y);
+        bp = distance(m_n2->x, m_n2->y, x, y);
+        cp = distance(m_n3->x, m_n3->y, x, y);
 
         n3Area = heronArea(ab, bp, ap);
         n2Area = heronArea(ca, ap, cp);
         n1Area = area - n3Area - n2Area;
 
-        m_n1.gain = cosinePower(n1Area * areaScalar);
-        m_n2.gain = cosinePower(n2Area * areaScalar);
-        m_n3.gain = cosinePower(n3Area * areaScalar);
+        m_n1->gain = cosinePower(n1Area * areaScalar);
+        m_n2->gain = cosinePower(n2Area * areaScalar);
+        m_n3->gain = cosinePower(n3Area * areaScalar);
     }
 
 private:
@@ -451,7 +448,7 @@ CK_DLL_MFUN(miap_setPosition)
 CK_DLL_MFUN(miap_getNodeGain)
 {
     MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
-    t_CKINT idx = GET_NEXT_FLOAT(ARGS);
+    t_CKINT idx = GET_NEXT_INT(ARGS);
     RETURN->v_float = miap_obj->getNodeGain(idx);
 }
 

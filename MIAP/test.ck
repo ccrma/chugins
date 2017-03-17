@@ -1,20 +1,25 @@
-MIAP m;
+10 => int NUM_MIAPS;
 
-// m.addTriset(0, 1, 2);
-// m.addTriset(0, 1, 2);
-// m.addTriset(0, 1, 2);
-m.addNode(0.0, 0.0);
-m.addNode(1.0, 0.0);
-m.addNode(0.0, 1.0);
+MIAP m[NUM_MIAPS];
 
-<<< m.getNodeX(0), m.getNodeY(0) >>>;
-<<< m.getNodeX(1), m.getNodeY(1) >>>;
-<<< m.getNodeX(2), m.getNodeY(2) >>>;
+for (0 => int i; i < NUM_MIAPS; i++) {
+    m[i].addNode(0.0, 0.0);
+    m[i].addNode(5.0, 0.0);
+    m[i].addNode(0.0, 5.0);
+    m[i].addNode(5.0, 5.0);
+    m[i].addTriset(0, 1, 2);
+    m[i].addTriset(1, 2, 3);
+}
 
-m.addTriset(0, 1, 2);
+float piInc;
 
 while (true) {
-    m.setPosition(Math.random2f(0.0, 0.5), Math.random2f(0.0, 0.5));
-    <<< m.getNodeGain(0) >>>;
-    10::ms => now;
+    (piInc + 0.005) % (2 * pi) => piInc;
+    (Math.sin(piInc) + 1.0) * 0.5 => float x;
+    (Math.cos(piInc) + 1.0) * 0.5 => float y;
+    for (0 => int i; i < NUM_MIAPS; i++) {
+        m[i].setPosition(x, y);
+    }
+    // <<< m.getNodeGain(0), m.getNodeGain(1), m.getNodeGain(2), m.getNodeGain(3), x, y >>>;
+    1::samp => now;
 }
