@@ -33,6 +33,9 @@ CK_DLL_MFUN(miap_setPosition);
 CK_DLL_MFUN(miap_getNodeGain);
 CK_DLL_MFUN(miap_getNodeX);
 CK_DLL_MFUN(miap_getNodeY);
+CK_DLL_MFUN(miap_generateGrid);
+CK_DLL_MFUN(miap_getActiveTriset);
+CK_DLL_MFUN(miap_getActiveNode);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICK(miap_tick);
@@ -106,6 +109,10 @@ public:
         bp = 0.0;
         cp = 0.0;
 
+        n1Index = m_n1->index;
+        n2Index = m_n2->index;
+        n3Index = m_n3->index;
+
         n1Area = 0.0;
         n2Area = 0.0;
         n3Area = 0.0;
@@ -132,6 +139,10 @@ public:
 
     int index;
     int active;
+
+    int n1Index;
+    int n2Index;
+    int n3Index;
 
     // http://blackpawn.com/texts/pointinpoly/
     // many values were precalculated in the constructor to save on processing
@@ -231,13 +242,28 @@ public:
 
     void addTriset( t_CKINT n1, t_CKINT n2, t_CKINT n3 )
     {
-       Triset triset( m_nodes[n1], m_nodes[n2], m_nodes[n3], m_numTrisets );
+        if (m_numNodes < 3)
+        {
+            // add error condition here eventually, you can't
+            // add a triset without at least three nodes
+            return;
+        }
 
-       triset.index = m_numTrisets;
+        if (n1 >= m_numNodes || n2 >= m_numNodes || n3 >= m_numNodes)
+        {
+            // add error condition here eventually, you can't
+            // associate a node to a triset unless it's one of the
+            // created nodes
+            return;
+        }
 
-       m_trisets.push_back( triset );
+        Triset triset( m_nodes[n1], m_nodes[n2], m_nodes[n3], m_numTrisets );
 
-       m_numTrisets++;
+        triset.index = m_numTrisets;
+
+        m_trisets.push_back( triset );
+
+        m_numTrisets++;
     }
 
     // main user function for panning, sets the position of the
@@ -271,15 +297,113 @@ public:
         }
     }
 
-    float getNodeGain(int idx) {
+    // generates a MIAP grid that is rows by cols grid of Nodes
+    // the nodes are creating sequentially from left to right per row
+    void generateGrid(int rows, int cols)
+    {
+        float horzLen = 1.0;
+        float vertLen = pow(pow(horzLen, 2) - pow(horzLen/2.0, 2), 0.5);
+
+        float inverseMax = 0.0;
+        float xCenterNudge = 0.0;
+        float yCenterNudge = 0.0;
+
+        if (cols >= rows) {
+            inverseMax = 1.0/((cols- 1) * horzLen + horzLen * 0.5);
+            yCenterNudge = (1.0 - (((rows - 1) * vertLen) * inverseMax)) * 0.5;
+        } else {
+            inverseMax = 1.0/((rows - 1) * vertLen);
+            xCenterNudge = (1.0 - (((cols - 1) * horzLen + horzLen * 0.5) * inverseMax)) * 0.5;
+        }
+
+        // add our nodes
+        for (int i = 0; i < rows; i++) {
+            float offset = 0.0;
+            if (i % 2 != 0) {
+                offset = horzLen * 0.5;
+            }
+            for (int j = 0; j < cols; j++) {
+                float x = (j * horzLen + offset) * inverseMax + xCenterNudge;
+                float y = i * vertLen * inverseMax + yCenterNudge;
+                addNode(x, y);
+            }
+        }
+
+        // add our trisets
+        for (int i = 0; i < rows - 1; i++) {
+            for (int j = 0; j < cols - 1; j++) {
+                // trisets pointing down
+                {
+                    int n1 = j + (cols * i);
+                    int n2 = n1 + 1;
+                    int n3 = j + cols * (i + 1);
+
+                    if (i % 2 == 1) {
+                        n3++;
+                    }
+
+                    addTriset(n1, n2, n3);
+                }
+                // trisets pointing up
+                {
+                    int n1 = j + (cols * i) + 1;
+                    int n2 = j + cols * (i + 1);
+                    int n3 = n2+ 1;
+
+
+                    if (i % 2 == 1) {
+                        n1--;
+                    }
+
+                    addTriset(n1, n2, n3);
+                }
+
+            }
+        }
+    }
+
+    int getActiveTriset()
+    {
+        for (int i = 0; i < m_numNodes; i++) {
+            if (m_trisets[i].active == true) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    int getActiveNode(int which)
+    {
+        int idx = getActiveTriset();
+
+        if (which == 0)
+        {
+            return m_trisets[idx].n1Index;
+        }
+        else if (which == 1)
+        {
+             return m_trisets[idx].n2Index;
+        }
+        else if (which == 2)
+        {
+             return m_trisets[idx].n3Index;
+        }
+
+        return -1;
+    }
+
+    float getNodeGain(int idx)
+    {
         return m_nodes[idx].gain;
     }
 
-    float getNodeX(int idx) {
+    float getNodeX(int idx)
+    {
         return m_nodes[idx].x;
     }
 
-    float getNodeY(int idx) {
+    float getNodeY(int idx)
+    {
         return m_nodes[idx].y;
     }
 
@@ -359,6 +483,15 @@ CK_DLL_QUERY( MIAP )
 
     QUERY->add_mfun(QUERY, miap_getNodeY, "float", "getNodeY");
     QUERY->add_arg(QUERY, "int", "idx");
+
+    QUERY->add_mfun(QUERY, miap_generateGrid, "void", "generateGrid");
+    QUERY->add_arg(QUERY, "int", "rows");
+    QUERY->add_arg(QUERY, "int", "cols");
+
+    QUERY->add_mfun(QUERY, miap_getActiveTriset, "int", "getActiveTriset");
+
+    QUERY->add_mfun(QUERY, miap_getActiveTriset, "int", "getActiveNode");
+    QUERY->add_arg(QUERY, "int", "index");
 
     QUERY->add_mfun(QUERY, miap_numNodes, "int", "numNodes");
 
@@ -464,6 +597,27 @@ CK_DLL_MFUN(miap_getNodeY)
     MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
     t_CKINT idx = GET_NEXT_INT(ARGS);
     RETURN->v_float = miap_obj->getNodeY(idx);
+}
+
+CK_DLL_MFUN(miap_generateGrid)
+{
+    MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
+    t_CKINT rows = GET_NEXT_INT(ARGS);
+    t_CKINT cols = GET_NEXT_INT(ARGS);
+    miap_obj->generateGrid(rows, cols);
+}
+
+CK_DLL_MFUN(miap_getActiveTriset)
+{
+    MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
+    RETURN->v_int = miap_obj->getActiveTriset();
+}
+
+CK_DLL_MFUN(miap_getActiveNode)
+{
+    MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
+    t_CKINT idx = GET_NEXT_INT(ARGS);
+    RETURN->v_int = miap_obj->getActiveNode(idx);
 }
 
 CK_DLL_MFUN(miap_numNodes)
