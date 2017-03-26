@@ -1,25 +1,29 @@
-10 => int NUM_MIAPS;
+MIAP m;
+MIAPOSCVis v;
 
-MIAP m[NUM_MIAPS];
+4 => int ROWS;
+4 => int COLS;
 
-for (0 => int i; i < NUM_MIAPS; i++) {
-    m[i].addNode(0.0, 0.0);
-    m[i].addNode(5.0, 0.0);
-    m[i].addNode(0.0, 5.0);
-    m[i].addNode(5.0, 5.0);
-    m[i].addTriset(0, 1, 2);
-    m[i].addTriset(1, 2, 3);
-}
+m.generateGrid(ROWS, COLS);
 
-float piInc;
+v.addAllNodes(m);
+spork ~ v.oscSend(m, 0);
+
+9.9 => float piInc;
 
 while (true) {
     (piInc + 0.005) % (2 * pi) => piInc;
     (Math.sin(piInc) + 1.0) * 0.5 => float x;
     (Math.cos(piInc) + 1.0) * 0.5 => float y;
-    for (0 => int i; i < NUM_MIAPS; i++) {
-        m[i].setPosition(x, y);
+
+    x * 0.5 + .25 => x;
+    y * 0.5 + .25 => y;
+
+    m.setPosition(x, y);
+    v.updatePos(x, y);
+    /*for (0 => int i; i < ROWS * COLS; i++) {
+        chout <= m.getNodeGain(i) <= "\t";
     }
-    // <<< m.getNodeGain(0), m.getNodeGain(1), m.getNodeGain(2), m.getNodeGain(3), x, y >>>;
-    1::samp => now;
+    chout <= IO.newline();*/
+    10::ms => now;
 }

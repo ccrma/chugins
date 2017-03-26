@@ -297,6 +297,10 @@ public:
         }
     }
 
+    void generateHexagon() {
+
+    }
+
     // generates a MIAP grid that is rows by cols grid of Nodes
     // the nodes are creating sequentially from left to right per row
     void generateGrid(int rows, int cols)
