@@ -632,7 +632,7 @@ public:
         }
         if (m_keyOff) {
             if (m_n < m_release) {
-                m_windowValue = m_func->releaseWindow(m_n, m_attack);
+                m_windowValue = m_func->releaseWindow(m_n, m_release);
                 m_currentLevel = m_windowValue * m_keyOffLevel;
                 m_n++;
                 return in * m_currentLevel;
