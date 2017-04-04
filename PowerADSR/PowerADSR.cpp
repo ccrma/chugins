@@ -73,17 +73,17 @@ public:
     // constructor
     PowerADSR( t_CKFLOAT fs)
     {
-        // stage durations
-        m_attackDuration = 0.0;
-        m_decayDuration = 0.0;
-        m_releaseDuration = 0.0;
+        // stage durations, set to 1::second
+        m_attackDuration = fs;
+        m_decayDuration = fs;
+        m_releaseDuration = fs;
 
         m_sustainLevel = 0.5;
 
         // for one less calculation per tick
-        m_inverseAttackDuration = 0.0;
-        m_inverseDecayDuration = 0.0;
-        m_inverseReleaseDuration = 0.0;
+        m_inverseAttackDuration = 1.0/fs;
+        m_inverseDecayDuration = 1.0/fs;
+        m_inverseReleaseDuration = 1.0/fs;
 
         // values
         m_linearValue = 0.0;
