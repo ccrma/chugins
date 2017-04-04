@@ -1,79 +1,86 @@
-// PowerADSR is a power based ADSR envelope that 
-// allows separate power curves for each envelope phase 
+// PowerADSR is a power based ADSR envelope that
+// allows separate power curves for each envelope phase
 
 // ~options
 //
-// set (duration, duration, float, duration), default (0.0, 0.0, 1.0, 0.0)
+// set (duration a, duration d, float s, duration r), default (0.0, 0.0, 1.0, 0.0)
 //   sets duration for attack, decay, and release phase; sets sustain level
 //
-// attack (duration), default 0.0
+// attack or attackTime (duration a), default 1.0::second
 //   sets length for the attack phase
 //
-// decay (duration), default 0.0
+// decay or decayTime (duration d), default 1.0::second
 //   sets length for the decay phase
 //
-// sustain (float), default 1.0
+// release or releasetTime (duration r), default 1:0::second
+//
+// sustainLevel (float s), default 0.5
 //   sets level for the sustain phase
 //
-// setCurves (float, float, float), default (1.0, 1.0, 1.0) (all linear)
+// setCurves (float ac, float dc, float rc), default (1.0, 1.0, 1.0) (all linear)
 //   sets power curve for attack, decay, and release phase
 //
-// release (duration), default 0.0
-//   sets length for the release phase
-//
-// attackCurve (float), default 1.0 (linear)
+// attackCurve (float ac), default 1.0 (linear)
 //   sets power curve for the attack phase
 //
-// decayCurve (float), default 1.0 (linear)
+// decayCurve (float dc), default 1.0 (linear)
 //   sets power curve for the decay phase
 //
-// releaseCurve(float), default 1.0 (linear)
+// releaseCurve(float rc), default 1.0 (linear)
 //   sets power curve for the release phase
 
-// set number of sines and power envs
-5 => int num;
-SinOsc sin[num];
-PowerADSR env[num];
+Noise nois;
+PowerADSR env;
 
 // sound chain
-for (int i; i < num; i++) {
-    sin[i] => env[i] => dac;
-    sin[i].gain(1.0/num);
-}
+nois => env => dac;
 
-fun void loopSin(int idx) {
-    dur env_time;
-    float curve;
-    while (true) {
-        Math.random2(5, 30)::second => env_time;
+// you can set the envelope on paramter at a time
+env.attackTime(1::second);
+env.releaseTime(1::second);
 
-        // curves below 1.0 will be "hill" shaped, 
-        // curves above 1.0 will resemble an exponential curve
-        Math.random2f(0.0, 4.0) => curve;
-        sin[idx].freq(Math.random2f(400, 440));
+// defaults to a 1.0 curve, you have to set
+// the curves for the power functionality
 
-        // set all envelope durations
-        env[idx].set(env_time, 1::second, 1.0, env_time);
-        // set all envelope power curves 
-        env[idx].setCurves(curve, 1.0, 1.0/curve);
+// curves under 1.0 are sharper
+env.attackCurve(0.5);
 
-        // begins attack phase 
-        env[idx].keyOn(); 
-        env_time => now;
+// curves over 1.0 are softer
+env.releaseCurve(2.0);
 
-        // begins decay phase
-        1::second => now;
+env.keyOn();
+1::second => now;
+env.keyOff();
+1::second => now;
 
-        // begins release phase
-        env[idx].keyOff(); 
-        env_time => now;
-    }
-}
+// you can also set all the durations and sustain at once
+env.set(2::second, 1::second, 0.8, 0.5::second);
 
-for (int i; i < num; i++) {
-    spork ~ loopSin(i);
-}
+// and all the curves can be set at once, without the sustain
+env.setCurves(1.75, 1.25, 1.5);
 
-while (true) {
-    1::second => now;
-}
+env.keyOn();
+3::second => now;
+env.keyOff();
+1.0::second => now;
+
+env.set(1::second, 1::second, 0.5, 1::second);
+
+// and you can retrieve the state and value of the envelope
+<<< "Done\t", env.state(), env.value(), "" >>>;
+
+env.keyOn();
+<<< "Attack\t", env.state(), env.value(), "" >>>;
+1::second => now;
+
+<<< "Decay\t", env.state(), env.value(), "" >>>;
+1::second => now;
+
+<<< "Sustain\t", env.state(), env.value(), "" >>>;
+1::second => now;
+
+env.keyOff();
+<<< "Release\t", env.state(), env.value(), "" >>>;
+1::second => now;
+
+<<< "Done\t", env.state(), env.value(), "" >>>;
