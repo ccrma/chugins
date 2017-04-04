@@ -1,5 +1,8 @@
 // PowerADSR is a power based ADSR envelope that
-// allows separate power curves for each envelope phase
+// allows separate power curves for each envelope phase.
+// In general, curves under 1.0 are sharp, while curves over 1.0 are soft.
+
+// ~ linearEnvelope^curveValue ~
 
 // ~options
 //
