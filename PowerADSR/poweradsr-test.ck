@@ -29,7 +29,7 @@ class PowerADSRTest {
         _rc => rc;
     }
 
-    fun void testAll() {
+    fun void testEnvelopes() {
         // tests accuracy of state changes
         testAttackState();
         testDecayState();
@@ -51,6 +51,21 @@ class PowerADSRTest {
         testPartialADValue();
         testPartialDRValue();
         testPartialRAValue();
+    }
+
+    fun void testGetters() {
+        // sets and gets durations
+        testGetAttackTime();
+        testGetDecayTime();
+        testGetReleaseTime();
+
+        // sets and gets sustain
+        testGetSustainLevel();
+
+        // sets and gets curves
+        testGetAttackCurve();
+        testGetDecayCurve();
+        testGetReleaseCurve();
     }
 
     fun void testAttackState() {
@@ -218,6 +233,62 @@ class PowerADSRTest {
         assertLess(Math.fabs(lastReleaseValue - firstAttackValue), 0.015, "testPartialRAValue");
     }
 
+    fun void testGetAttackTime() {
+        PowerADSR p => blackhole;
+        Math.random2(2, 9)::second => dur attack;
+        p.attackTime(attack);
+        assert(p.attackTime() == attack, "testGetAttackTime");
+        p =< blackhole;
+    }
+
+    fun void testGetDecayTime() {
+        PowerADSR p => blackhole;
+        Math.random2(2, 9)::second => dur decay;
+        p.decayTime(decay);
+        assert(p.decayTime() == decay, "testGetDecayTime");
+        p =< blackhole;
+    }
+
+    fun void testGetSustainLevel() {
+        PowerADSR p => blackhole;
+        Math.random2f(0.1, 1.0) => float sustain;
+        p.sustainLevel(sustain);
+        assertLess(Math.fabs(p.sustainLevel() - sustain), 0.001, "testGetSustainLevel");
+        p =< blackhole;
+    }
+
+    fun void testGetReleaseTime() {
+        PowerADSR p => blackhole;
+        Math.random2(2, 9)::second => dur release;
+        p.releaseTime(release);
+        assert(p.releaseTime() == release, "testGetReleaseTime");
+        p =< blackhole;
+    }
+
+    fun void testGetAttackCurve() {
+        PowerADSR p => blackhole;
+        Math.random2f(0.5, 2.5) => float attackCurve;
+        p.attackCurve(attackCurve);
+        assertLess(Math.fabs(p.attackCurve() - attackCurve), 0.001, "testGetAttackCurve");
+        p =< blackhole;
+    }
+
+    fun void testGetDecayCurve() {
+        PowerADSR p => blackhole;
+        Math.random2f(0.5, 2.5) => float decayCurve;
+        p.decayCurve(decayCurve);
+        assertLess(Math.fabs(p.decayCurve() - decayCurve), 0.001, "testGetDecayCurve");
+        p =< blackhole;
+    }
+
+    fun void testGetReleaseCurve() {
+        PowerADSR p => blackhole;
+        Math.random2f(0.5, 2.5) => float releaseCurve;
+        p.releaseCurve(releaseCurve);
+        assertLess(Math.fabs(p.releaseCurve() - releaseCurve), 0.001, "testGetReleaseCurve");
+        p =< blackhole;
+    }
+
     fun string results() {
         chout <= IO.newline();
         <<< passedTests + "/" + totalTests + " PASSED", "" >>>;
@@ -271,18 +342,20 @@ PowerADSRTest p;
 
 p.setTimes(attack, decay, 0.5, release);
 p.setCurves(1.0, 1.0, 1.0);
-p.testAll();
+p.testEnvelopes();
 
 p.setTimes(attack, decay, 0.5, release);
 p.setCurves(0.5, 0.5, 0.5);
-p.testAll();
+p.testEnvelopes();
 
 p.setTimes(attack, decay, 0.5, release);
 p.setCurves(2.0, 2.0, 2.0);
-p.testAll();
+p.testEnvelopes();
 
 p.setTimes(attack, decay, 0.5, release);
 p.setCurves(0.5, 2.0, 1.0);
-p.testAll();
+p.testEnvelopes();
+
+p.testGetters();
 
 p.results();

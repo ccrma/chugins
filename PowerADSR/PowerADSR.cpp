@@ -78,7 +78,9 @@ public:
         m_decayDuration = 0.0;
         m_releaseDuration = 0.0;
 
-        // for less calculations
+        m_sustainLevel = 0.5;
+
+        // for one less calculation per tick
         m_inverseAttackDuration = 0.0;
         m_inverseDecayDuration = 0.0;
         m_inverseReleaseDuration = 0.0;
@@ -87,19 +89,19 @@ public:
         m_linearValue = 0.0;
         m_powerValue = 0.0;
         m_offsetValue = 0.0;
+        m_scalarValue = 1.0;
 
         // sample multipler
         m_value = 0.0;
-
         m_target = 1.0;
-        m_sustainLevel = 0.5;
+
+        // time tracking
+        m_sampleCount = 0.0;
 
         // initializes to linear envelopes
         m_attackCurve = 1.0;
         m_decayCurve = 1.0;
         m_releaseCurve = 1.0;
-
-        m_scalarValue = 1.0;
 
         m_curve = 1.0;
         m_inverseDuration = 0.0;
@@ -229,6 +231,11 @@ public:
     float setAttackTime( t_CKDUR a )
     {
         m_attackDuration = (float)a;
+
+        if (m_attackDuration < 0.0) {
+            m_attackDuration = -m_attackDuration;
+        }
+
         m_inverseAttackDuration = 1.0 / m_attackDuration;
         return a;
     }
@@ -236,6 +243,11 @@ public:
     float setDecayTime( t_CKDUR d )
     {
         m_decayDuration = (float)d;
+
+        if (m_decayDuration < 0.0) {
+            m_decayDuration = -m_decayDuration;
+        }
+
         m_inverseDecayDuration = 1.0 / m_decayDuration;
         return d;
     }
@@ -243,18 +255,29 @@ public:
     float setSustainLevel( t_CKFLOAT s )
     {
         m_sustainLevel = s;
+
+        if (m_sustainLevel < 0.0) {
+            m_sustainLevel = -m_sustainLevel;
+        }
+
         return s;
     }
 
     float setReleaseTime( t_CKDUR r )
     {
         m_releaseDuration = (float)r;
+
+        if (m_releaseDuration < 0.0) {
+            m_releaseDuration = -m_releaseDuration;
+        }
+
         m_inverseReleaseDuration = 1.0 / m_releaseDuration;
-        return r;
+        return m_releaseDuration;
     }
 
     // set all power curves
-    void setAllCurves( t_CKFLOAT a, t_CKFLOAT d, t_CKFLOAT r ) {
+    void setAllCurves( t_CKFLOAT a, t_CKFLOAT d, t_CKFLOAT r )
+    {
         setAttackCurve(a);
         setDecayCurve(d);
         setReleaseCurve(r);
@@ -276,18 +299,6 @@ public:
     {
         m_releaseCurve = r;
         return r;
-    }
-
-    void setTarget( t_CKFLOAT t)
-    {
-      m_target = t;
-
-      if (m_powerValue < m_target) {
-        setSustainLevel(m_target);
-      }
-      if (m_powerValue > m_target) {
-        setSustainLevel(m_target);
-      }
     }
 
     float getAttackTime()
@@ -337,36 +348,38 @@ public:
 
 
 private:
-
-    // durations
+    // stage durations
     float m_attackDuration;
     float m_decayDuration;
     float m_releaseDuration;
 
+    float m_sustainLevel;
+
+    // for one less calculation per tick
     float m_inverseAttackDuration;
     float m_inverseDecayDuration;
     float m_inverseReleaseDuration;
 
-    float m_inverseDuration;
-
-    // levels
+    // values
     float m_linearValue;
     float m_powerValue;
     float m_offsetValue;
+    float m_scalarValue;
+
+    // sample multiplier
     float m_value;
+    float m_target;
 
     // time tracking
     float m_sampleCount;
-    float m_scalarValue;
-
-    float m_target;
-    float m_sustainLevel;
 
     // curves
-    float m_curve;
     float m_attackCurve;
     float m_decayCurve;
     float m_releaseCurve;
+
+    float m_curve;
+    float m_inverseDuration;
 
     enum States {
         DONE = 0,
@@ -385,7 +398,7 @@ CK_DLL_QUERY( PowerADSR)
     QUERY->setname(QUERY, "PowerADSR");
 
     QUERY->begin_class(QUERY, "PowerADSR", "Envelope");
-    QUERY->doc_class(QUERY, "ADSR envelope that uses a power function to create curved envelope phases, extends Envelope.");
+    QUERY->doc_class(QUERY, "ADSR envelope that uses a power function to create curved envelope phases.");
 
     QUERY->add_ctor(QUERY, poweradsr_ctor);
     QUERY->add_dtor(QUERY, poweradsr_dtor);
@@ -393,71 +406,71 @@ CK_DLL_QUERY( PowerADSR)
     QUERY->add_ugen_func(QUERY, poweradsr_tick, NULL, 1, 1);
 
     QUERY->add_mfun(QUERY, poweradsr_setKeyOn, "int", "keyOn");
-    QUERY->doc_func(QUERY, "Begins the attack phase of the envelope. ");
+    QUERY->doc_func(QUERY, "Begins the attack phase of the envelope.");
 
     QUERY->add_mfun(QUERY, poweradsr_setKeyOn, "int", "keyOn");
     QUERY->add_arg(QUERY, "int", "keyOn");
-    QUERY->doc_func(QUERY, "Begins the attack phase of the envelope. ");
+    QUERY->doc_func(QUERY, "Begins the attack phase of the envelope.");
 
     QUERY->add_mfun(QUERY, poweradsr_setKeyOff, "int", "keyOff");
-    QUERY->doc_func(QUERY, "Begins the release phase of the envelope. ");
+    QUERY->doc_func(QUERY, "Begins the release phase of the envelope.");
 
     QUERY->add_mfun(QUERY, poweradsr_setKeyOff, "int", "keyOff");
     QUERY->add_arg(QUERY, "int", "keyOff");
-    QUERY->doc_func(QUERY, "Begins the release phase of the envelope. ");
+    QUERY->doc_func(QUERY, "Begins the release phase of the envelope.");
 
     QUERY->add_mfun(QUERY, poweradsr_setAllTimes, "void", "set");
     QUERY->add_arg(QUERY, "dur", "attackDuration");
     QUERY->add_arg(QUERY, "dur", "decayDuration");
     QUERY->add_arg(QUERY, "float", "sustainLevel");
     QUERY->add_arg(QUERY, "dur", "releaseDuration");
-    QUERY->doc_func(QUERY, "Sets duration of the attack, decay, and release phases; as well as the sustain level (ADSR order). ");
+    QUERY->doc_func(QUERY, "Sets duration of the attack, decay, and release phases; as well as the sustain level (ADSR order).");
 
     QUERY->add_mfun(QUERY, poweradsr_setAttackTime, "dur", "attack");
     QUERY->add_arg(QUERY, "dur", "attackDuration");
-    QUERY->doc_func(QUERY, "Sets duration of the attack phase. ");
+    QUERY->doc_func(QUERY, "Sets duration of the attack phase.");
 
     QUERY->add_mfun(QUERY, poweradsr_setAttackTime, "dur", "attackTime");
     QUERY->add_arg(QUERY, "dur", "attackDuration");
-    QUERY->doc_func(QUERY, "Sets duration of the attack phase. ");
+    QUERY->doc_func(QUERY, "Sets duration of the attack phase.");
 
     QUERY->add_mfun(QUERY, poweradsr_setDecayTime, "dur", "decay");
     QUERY->add_arg(QUERY, "dur", "decayDuration");
-    QUERY->doc_func(QUERY, "Sets duration of the decay phase. ");
+    QUERY->doc_func(QUERY, "Sets duration of the decay phase.");
 
     QUERY->add_mfun(QUERY, poweradsr_setDecayTime, "dur", "decayTime");
     QUERY->add_arg(QUERY, "dur", "decayDuration");
-    QUERY->doc_func(QUERY, "Sets duration of the decay phase. ");
+    QUERY->doc_func(QUERY, "Sets duration of the decay phase.");
 
     QUERY->add_mfun(QUERY, poweradsr_setSustainLevel, "float", "sustainLevel");
     QUERY->add_arg(QUERY, "float", "sustainLevel");
-    QUERY->doc_func(QUERY, "Sets sustain level. ");
+    QUERY->doc_func(QUERY, "Sets sustain level.");
 
     QUERY->add_mfun(QUERY, poweradsr_setReleaseTime, "dur", "release");
     QUERY->add_arg(QUERY, "dur", "releaseDuration");
-    QUERY->doc_func(QUERY, "Sets duration of the release phase. ");
+    QUERY->doc_func(QUERY, "Sets duration of the release phase.");
 
     QUERY->add_mfun(QUERY, poweradsr_setReleaseTime, "dur", "releaseTime");
     QUERY->add_arg(QUERY, "dur", "releaseDuration");
-    QUERY->doc_func(QUERY, "Sets duration of the release phase. ");
+    QUERY->doc_func(QUERY, "Sets duration of the release phase.");
 
     QUERY->add_mfun(QUERY, poweradsr_setAllCurves, "void", "setCurves");
     QUERY->add_arg(QUERY, "float", "attackCurve");
     QUERY->add_arg(QUERY, "float", "decayCurve");
     QUERY->add_arg(QUERY, "float", "releaseCurve");
-    QUERY->doc_func(QUERY, "Sets envelope curves of the attack, decay, and release phases. ");
+    QUERY->doc_func(QUERY, "Sets envelope curves of the attack, decay, and release phases.");
 
     QUERY->add_mfun(QUERY, poweradsr_setAttackCurve, "float", "attackCurve");
     QUERY->add_arg(QUERY, "float", "attackCurve");
-    QUERY->doc_func(QUERY, "Sets envelope curve of the attack phase. ");
+    QUERY->doc_func(QUERY, "Sets envelope curve of the attack phase.");
 
     QUERY->add_mfun(QUERY, poweradsr_setDecayCurve, "float", "decayCurve");
     QUERY->add_arg(QUERY, "float", "decayCurve");
-    QUERY->doc_func(QUERY, "Sets envelope curve of the decay phase. ");
+    QUERY->doc_func(QUERY, "Sets envelope curve of the decay phase.");
 
     QUERY->add_mfun(QUERY, poweradsr_setReleaseCurve, "float", "releaseCurve");
     QUERY->add_arg(QUERY, "float", "releaseCurve");
-    QUERY->doc_func(QUERY, "Sets envelope curve of the release phase. ");
+    QUERY->doc_func(QUERY, "Sets envelope curve of the release phase.");
 
     QUERY->add_mfun(QUERY, poweradsr_getSustainLevel, "float", "sustainLevel");
     QUERY->doc_func(QUERY, "Gets sustain level.");
@@ -469,22 +482,22 @@ CK_DLL_QUERY( PowerADSR)
     QUERY->doc_func(QUERY, "Gets the decay duration.");
 
     QUERY->add_mfun(QUERY, poweradsr_getReleaseTime, "dur", "releaseTime");
-    QUERY->doc_func(QUERY, "Gets the release duration. ");
+    QUERY->doc_func(QUERY, "Gets the release duration.");
 
-    QUERY->add_mfun(QUERY, poweradsr_getAttackTime, "float", "attackCurve");
+    QUERY->add_mfun(QUERY, poweradsr_getAttackCurve, "float", "attackCurve");
     QUERY->doc_func(QUERY, "Gets the attack curve.");
 
-    QUERY->add_mfun(QUERY, poweradsr_getDecayTime, "float", "decayCurve");
+    QUERY->add_mfun(QUERY, poweradsr_getDecayCurve, "float", "decayCurve");
     QUERY->doc_func(QUERY, "Gets the decay curve.");
 
-    QUERY->add_mfun(QUERY, poweradsr_getReleaseTime, "float", "releaseCurve");
+    QUERY->add_mfun(QUERY, poweradsr_getReleaseCurve, "float", "releaseCurve");
     QUERY->doc_func(QUERY, "Gets the release curve.");
 
     QUERY->add_mfun(QUERY, poweradsr_getValue, "float", "value");
     QUERY->doc_func(QUERY, "Gets current envelope value.");
 
     QUERY->add_mfun(QUERY, poweradsr_getState, "int", "state");
-    QUERY->doc_func(QUERY, "Gets current state. ");
+    QUERY->doc_func(QUERY, "Gets current state.");
 
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
@@ -644,19 +657,19 @@ CK_DLL_MFUN(poweradsr_getReleaseTime)
 CK_DLL_MFUN(poweradsr_getAttackCurve)
 {
     PowerADSR * padsr_obj = (PowerADSR *) OBJ_MEMBER_INT(SELF, poweradsr_data_offset);
-    RETURN->v_dur = padsr_obj->getAttackCurve();
+    RETURN->v_float = padsr_obj->getAttackCurve();
 }
 
 CK_DLL_MFUN(poweradsr_getDecayCurve)
 {
     PowerADSR * padsr_obj = (PowerADSR *) OBJ_MEMBER_INT(SELF, poweradsr_data_offset);
-    RETURN->v_dur = padsr_obj->getDecayCurve();
+    RETURN->v_float = padsr_obj->getDecayCurve();
 }
 
 CK_DLL_MFUN(poweradsr_getReleaseCurve)
 {
     PowerADSR * padsr_obj = (PowerADSR *) OBJ_MEMBER_INT(SELF, poweradsr_data_offset);
-    RETURN->v_dur = padsr_obj->getReleaseCurve();
+    RETURN->v_float = padsr_obj->getReleaseCurve();
 }
 
 CK_DLL_MFUN(poweradsr_getValue)
