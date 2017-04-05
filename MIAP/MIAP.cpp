@@ -17,6 +17,7 @@
 #include <limits.h>
 #include <vector>
 #include <cmath>
+#include <algorithm>
 
 using namespace std;
 
@@ -27,6 +28,7 @@ CK_DLL_DTOR(miap_dtor);
 
 CK_DLL_MFUN(miap_addNode);
 CK_DLL_MFUN(miap_addTriset);
+CK_DLL_MFUN(miap_linkNodes);
 CK_DLL_MFUN(miap_generateGrid);
 
 // setters
@@ -90,16 +92,12 @@ struct Node
     bool active;
 
     vector<int> linkID;
-    vector<int> linkPercentage;
+    vector<float> linkPercentage;
 };
 
 
 class Triset
 {
-
-Node * m_n1;
-Node * m_n2;
-Node * m_n3;
 
 public:
 
@@ -143,6 +141,10 @@ public:
 
         invDenom = 1.0/(dot00 * dot11 - dot01 * dot01);
     }
+
+    Node * m_n1;
+    Node * m_n2;
+    Node * m_n3;
 
     int index;
     int active;
@@ -280,16 +282,30 @@ public:
 
     // links two nodes, wherein node `a` will send
     // its value to node `b' and the percentage is how
-    // much of that value will be sent
-    void linkNode( t_CKINT a, t_CKINT b, float percentage)
+    // much of that value will be added to it
+    void linkNodes( t_CKINT a, t_CKINT b, t_CKFLOAT percentage)
     {
-        m_nodes.at(a).linkID.push_back(b);
-        m_nodes.at(a).linkPercentage.push_back(percentage);
+        // copy by reference
+        vector<int> &linkID = m_nodes[a].linkID;
+        vector<float> &linkPercentage = m_nodes[a].linkPercentage;
+
+        // find item position in vector
+        int pos = find(linkID.begin(), linkID.end(), b) - linkID.begin();
+
+        // if value is not already in linkID or linkPercentage vectors
+        // then we append it to the vector, else we update the percentage
+        if (pos == linkID.size()) {
+            linkID.push_back(b);
+            linkPercentage.push_back(percentage);
+        } else {
+            linkPercentage[pos] = percentage;
+        }
     }
 
     // main user function for panning, sets the position of the
     // object to be "panned" in xy space
     void setPosition(float x, float y) {
+        // clears all node values and active statuses
         clearAll();
 
         // search for the triset the point falls in
@@ -297,9 +313,7 @@ public:
             if (m_trisets[i].pointInTriset(x, y)) {
                 m_trisets[i].active = true;
                 m_trisets[i].setNodes(x, y);
-                sendValuesToLinkedNodes(m_trisets[i].n1Index,
-                                        m_trisets[i].n2Index,
-                                        m_trisets[i].n3Index);
+                updateTrisetLinks(m_trisets[i]);
                 break;
             }
         }
@@ -370,7 +384,6 @@ public:
 
                     addTriset(n1, n2, n3);
                 }
-
             }
         }
     }
@@ -391,7 +404,7 @@ public:
 
         if (which == 0)
         {
-            return m_trisets[idx].n1Index;
+             return m_trisets[idx].n1Index;
         }
         else if (which == 1)
         {
@@ -448,32 +461,24 @@ private:
         }
     }
 
-    void sendValuesToLinkedNodes(int n1, int n2, int n3)
+    void updateTrisetLinks(Triset t)
     {
+        updateNodeLink(t.m_n1);
+        updateNodeLink(t.m_n2);
+        updateNodeLink(t.m_n3);
+    }
+
+    void updateNodeLink(Node * n) {
         int id = 0;
         float percentage = 0.0;
-        float value  = 0.0;
+        float value = 0.0;
 
-        for (int i = 0; i < m_nodes.at(n1).linkID.size(); i++) {
-            id = m_nodes.at(n1).linkID.at(i);
-            percentage = m_nodes.at(n1).linkPercentage.at(i);
-            value = cosinePower(percentage);
-            m_nodes.at(id).value += value;
-        }
+        for (int i = 0; i < n->linkID.size(); i++) {
+            id = n->linkID.at(i);
+            percentage = n->linkPercentage.at(i);
 
-        for (int i = 0; i < m_nodes.at(n2).linkID.size(); i++) {
-            id = m_nodes.at(n1).linkID.at(i);
-            percentage = m_nodes.at(n1).linkPercentage.at(i);
-            value = cosinePower(percentage);
-            m_nodes.at(id).value += value;
-        }
-
-        for (int i = 0; i < m_nodes.at(n3).linkID.size(); i++) {
-            id = m_nodes.at(n1).linkID.at(i);
-            percentage = m_nodes.at(n1).linkPercentage.at(i);
-            value = cosinePower(percentage);
-            m_nodes.at(id).value += value;
-
+            value = n->value * percentage;
+            m_nodes[id].value += value;
         }
     }
 };
@@ -508,6 +513,11 @@ CK_DLL_QUERY( MIAP )
     QUERY->add_arg(QUERY, "float", "x");
     QUERY->add_arg(QUERY, "float", "y");
 
+    QUERY->add_mfun(QUERY, miap_linkNodes, "void", "linkNodes");
+    QUERY->add_arg(QUERY, "int", "a");
+    QUERY->add_arg(QUERY, "int", "b");
+    QUERY->add_arg(QUERY, "float", "percentage");
+
     QUERY->add_mfun(QUERY, miap_addTriset, "void", "addTriset");
     QUERY->add_arg(QUERY, "int", "n1");
     QUERY->add_arg(QUERY, "int", "n2");
@@ -532,7 +542,7 @@ CK_DLL_QUERY( MIAP )
 
     QUERY->add_mfun(QUERY, miap_getActiveTriset, "int", "getActiveTriset");
 
-    QUERY->add_mfun(QUERY, miap_getActiveTriset, "int", "getActiveNode");
+    QUERY->add_mfun(QUERY, miap_getActiveNode, "int", "getActiveNode");
     QUERY->add_arg(QUERY, "int", "index");
 
     QUERY->add_mfun(QUERY, miap_getNumNodes, "int", "numNodes");
@@ -601,6 +611,15 @@ CK_DLL_MFUN(miap_addNode)
     t_CKFLOAT x = GET_NEXT_FLOAT(ARGS);
     t_CKFLOAT y = GET_NEXT_FLOAT(ARGS);
     miap_obj->addNode(x, y);
+}
+
+CK_DLL_MFUN(miap_linkNodes)
+{
+    MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
+    t_CKINT a = GET_NEXT_INT(ARGS);
+    t_CKINT b = GET_NEXT_INT(ARGS);
+    t_CKFLOAT perc = GET_NEXT_FLOAT(ARGS);
+    miap_obj->linkNodes(a, b, perc);
 }
 
 CK_DLL_MFUN(miap_addTriset)
