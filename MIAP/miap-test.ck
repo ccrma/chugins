@@ -18,10 +18,10 @@ class MIAPTest {
         // get sides of the triangle
         (0.0 + 1.0 + 0.0)/3.0 => float posX;
         (0.0 + 0.0 + 1.0)/3.0 => float posY;
-        m.setPosition(posX, posY);
-        m.getNodeValue(0) => float n1;
-        m.getNodeValue(1) => float n2;
-        m.getNodeValue(2) => float n3;
+        m.position(posX, posY);
+        m.nodeValue(0) => float n1;
+        m.nodeValue(1) => float n2;
+        m.nodeValue(2) => float n3;
         assertAlmostEqual(n1, n2, n3, "testHeron");
     }
 
@@ -52,10 +52,10 @@ class MIAPTest {
         m.addNode(1.0, 1.0);
         m.addTriset(0, 1, 2);
         m.addTriset(1, 2, 3);
-        m.setPosition(0.50, 0.25);
-        assert(m.getActiveTriset() == 0, "testActiveTriset");
-        m.setPosition(0.55, 0.75);
-        assert(m.getActiveTriset() == 1, "testActiveTriset");
+        m.position(0.50, 0.25);
+        assert(m.activeTriset() == 0, "testActiveTriset");
+        m.position(0.55, 0.75);
+        assert(m.activeTriset() == 1, "testActiveTriset");
     }
 
     fun void testGetActiveNodes() {
@@ -66,10 +66,10 @@ class MIAPTest {
         m.addNode(1.0, 1.0);
         m.addTriset(0, 1, 2);
         m.addTriset(1, 2, 3);
-        m.setPosition(0.50, 0.75);
-        assert(m.getActiveNode(0) == 1, "testGetActiveNode");
-        assert(m.getActiveNode(1) == 2, "testGetActiveNode");
-        assert(m.getActiveNode(2) == 3, "testGetActiveNode");
+        m.position(0.50, 0.75);
+        assert(m.activeNode(0) == 1, "testGetActiveNode");
+        assert(m.activeNode(1) == 2, "testGetActiveNode");
+        assert(m.activeNode(2) == 3, "testGetActiveNode");
     }
 
     fun void testGridSize() {
@@ -82,13 +82,13 @@ class MIAPTest {
     fun void testGetNodeX() {
         MIAP m;
         m.addNode(0.25, 0.75);
-        assert(m.getNodeX(0) == 0.25, "testGetNodeX");
+        assert(m.nodeX(0) == 0.25, "testGetNodeX");
     }
 
     fun void testGetNodeY() {
         MIAP m;
         m.addNode(0.25, 0.75);
-        assert(m.getNodeY(0) == 0.75, "testGetNodeY");
+        assert(m.nodeY(0) == 0.75, "testGetNodeY");
     }
 
     fun void testLinkNodes() {
@@ -99,8 +99,8 @@ class MIAPTest {
         m.addTriset(0, 1, 2);
 
         m.linkNodes(0, 1, 1.0);
-        m.setPosition(0.0, 0.0);
-        assert(m.getNodeValue(0) == m.getNodeValue(1), "testLinkNodes");
+        m.position(0.0, 0.0);
+        assert(m.nodeValue(0) == m.nodeValue(1), "testLinkNodes");
     }
 
     fun void testLinkNodesPercentage() {
@@ -111,8 +111,8 @@ class MIAPTest {
         m.addTriset(0, 1, 2);
         Math.random2f(0.2, 0.8) => float perc;
         m.linkNodes(0, 1, perc);
-        m.setPosition(0.0, 0.0);
-        assertAlmostEqual(m.getNodeValue(0) * perc, m.getNodeValue(1), "testLinkNodes");
+        m.position(0.0, 0.0);
+        assertAlmostEqual(m.nodeValue(0) * perc, m.nodeValue(1), "testLinkNodes");
     }
 
     fun string results() {

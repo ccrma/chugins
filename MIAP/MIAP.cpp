@@ -523,26 +523,26 @@ CK_DLL_QUERY( MIAP )
     QUERY->add_arg(QUERY, "int", "n2");
     QUERY->add_arg(QUERY, "int", "n3");
 
-    QUERY->add_mfun(QUERY, miap_setPosition, "void", "setPosition");
+    QUERY->add_mfun(QUERY, miap_setPosition, "void", "position");
     QUERY->add_arg(QUERY, "float", "x");
     QUERY->add_arg(QUERY, "float", "y");
 
-    QUERY->add_mfun(QUERY, miap_getNodeValue, "float", "getNodeValue");
+    QUERY->add_mfun(QUERY, miap_getNodeValue, "float", "nodeValue");
     QUERY->add_arg(QUERY, "int", "idx");
 
-    QUERY->add_mfun(QUERY, miap_getNodeX, "float", "getNodeX");
+    QUERY->add_mfun(QUERY, miap_getNodeX, "float", "nodeX");
     QUERY->add_arg(QUERY, "int", "idx");
 
-    QUERY->add_mfun(QUERY, miap_getNodeY, "float", "getNodeY");
+    QUERY->add_mfun(QUERY, miap_getNodeY, "float", "nodeY");
     QUERY->add_arg(QUERY, "int", "idx");
 
     QUERY->add_mfun(QUERY, miap_generateGrid, "void", "generateGrid");
     QUERY->add_arg(QUERY, "int", "rows");
     QUERY->add_arg(QUERY, "int", "cols");
 
-    QUERY->add_mfun(QUERY, miap_getActiveTriset, "int", "getActiveTriset");
+    QUERY->add_mfun(QUERY, miap_getActiveTriset, "int", "activeTriset");
 
-    QUERY->add_mfun(QUERY, miap_getActiveNode, "int", "getActiveNode");
+    QUERY->add_mfun(QUERY, miap_getActiveNode, "int", "activeNode");
     QUERY->add_arg(QUERY, "int", "index");
 
     QUERY->add_mfun(QUERY, miap_getNumNodes, "int", "numNodes");
