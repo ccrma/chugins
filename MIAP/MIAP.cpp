@@ -1,7 +1,8 @@
 // Eric Heep
 // March 15th, 2017
+// MIAP v1.0
 
-// Manifold-Something Amplitude Panning
+// Manifold-Interface Amplitude Panning
 // Meyer Sounds's SpaceMap abstract spatialization.
 
 // Seldess, Zachary. 2014. "MIAP: Manifold-Interface Amplitude Panning
@@ -24,18 +25,21 @@ CK_DLL_CTOR(miap_ctor);
 // declaration of chugin desctructor
 CK_DLL_DTOR(miap_dtor);
 
-// example of getter/setter
 CK_DLL_MFUN(miap_addNode);
 CK_DLL_MFUN(miap_addTriset);
-CK_DLL_MFUN(miap_numNodes);
-CK_DLL_MFUN(miap_numTrisets);
+CK_DLL_MFUN(miap_generateGrid);
+
+// setters
 CK_DLL_MFUN(miap_setPosition);
-CK_DLL_MFUN(miap_getNodeGain);
+
+// setters
+CK_DLL_MFUN(miap_getNodeValue);
 CK_DLL_MFUN(miap_getNodeX);
 CK_DLL_MFUN(miap_getNodeY);
-CK_DLL_MFUN(miap_generateGrid);
 CK_DLL_MFUN(miap_getActiveTriset);
 CK_DLL_MFUN(miap_getActiveNode);
+CK_DLL_MFUN(miap_getNumNodes);
+CK_DLL_MFUN(miap_getNumTrisets);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICK(miap_tick);
@@ -80,10 +84,13 @@ struct Node
 {
     float x;
     float y;
-    float gain;
+    float value;
 
     int index;
     bool active;
+
+    vector<int> linkID;
+    vector<int> linkPercentage;
 };
 
 
@@ -145,7 +152,8 @@ public:
     int n3Index;
 
     // http://blackpawn.com/texts/pointinpoly/
-    // many values were precalculated in the constructor to save on processing
+    // many parameters were precalculated in the constructor to save on processing
+    // might make the code a bit more obscure
     bool pointInTriset(float x, float y)
     {
         computeVector(x, y, m_n1->x, m_n1->y, v2);
@@ -163,7 +171,7 @@ public:
 
     // finds the areas of the three triangles that make up the a triset
     // those areas sum to 1.0, and the square root of each is set to be
-    // the gain for that node
+    // the value for that node
     void setNodes(float x, float y)
     {
         ap = distance(m_n1->x, m_n1->y, x, y);
@@ -174,10 +182,12 @@ public:
         n2Area = heronArea(ca, ap, cp);
         n1Area = area - n3Area - n2Area;
 
-        m_n1->gain = cosinePower(n1Area * areaScalar);
-        m_n2->gain = cosinePower(n2Area * areaScalar);
-        m_n3->gain = cosinePower(n3Area * areaScalar);
+        m_n1->value = cosinePower(n1Area * areaScalar);
+        m_n2->value = cosinePower(n2Area * areaScalar);
+        m_n3->value = cosinePower(n3Area * areaScalar);
     }
+
+
 
 private:
 
@@ -231,7 +241,7 @@ public:
 
         node.x = x;
         node.y = y;
-        node.gain = 0.0;
+        node.value = 0.0;
         node.active = false;
         node.index = m_numNodes;
 
@@ -246,6 +256,7 @@ public:
         {
             // add error condition here eventually, you can't
             // add a triset without at least three nodes
+            printf("You cannot add a triset without at least three nodes to connect to.");
             return;
         }
 
@@ -254,6 +265,7 @@ public:
             // add error condition here eventually, you can't
             // associate a node to a triset unless it's one of the
             // created nodes
+            printf("You cannot add a triset to a node that has not been created");
             return;
         }
 
@@ -266,32 +278,28 @@ public:
         m_numTrisets++;
     }
 
+    // links two nodes, wherein node `a` will send
+    // its value to node `b' and the percentage is how
+    // much of that value will be sent
+    void linkNode( t_CKINT a, t_CKINT b, float percentage)
+    {
+        m_nodes.at(a).linkID.push_back(b);
+        m_nodes.at(a).linkPercentage.push_back(percentage);
+    }
+
     // main user function for panning, sets the position of the
     // object to be "panned" in xy space
     void setPosition(float x, float y) {
-        // getActiveTriset() => int possiblePrevTriset;;
-
-        // checks to see if the active triset is the current
-        // triset, cuts down on processing in the common case
-        // that the position is still inside a triset
-        // if (possiblePrevTriset >= 0) {
-        //     if (pointInTriset(pos, trisets[possiblePrevTriset])) {
-        //         setTrisetNodes(pos, trisets[possiblePrevTriset]);
-        //         return;
-        //     }
-        // }
-
-        // if it is a new triset, we clear the active trisets,
-        // and then scan all the trisets to find where the position
         clearAll();
 
-        // if the position (derived node) does not fall in the
-        // previous triset, then we scan to see if it falls
-        // inside of a new triset
+        // search for the triset the point falls in
         for (int i = 0; i < m_numTrisets; i++) {
             if (m_trisets[i].pointInTriset(x, y)) {
                 m_trisets[i].active = true;
                 m_trisets[i].setNodes(x, y);
+                sendValuesToLinkedNodes(m_trisets[i].n1Index,
+                                        m_trisets[i].n2Index,
+                                        m_trisets[i].n3Index);
                 break;
             }
         }
@@ -301,8 +309,9 @@ public:
 
     }
 
-    // generates a MIAP grid that is rows by cols grid of Nodes
-    // the nodes are creating sequentially from left to right per row
+    // generates a MIAP grid that is rows by cols grid of Nodes,
+    // the nodes are created sequentially from left to right per row,
+    // this is a quick way to make a grid of equilateral triangles
     void generateGrid(int rows, int cols)
     {
         float horzLen = 1.0;
@@ -396,9 +405,9 @@ public:
         return -1;
     }
 
-    float getNodeGain(int idx)
+    float getNodeValue(int idx)
     {
-        return m_nodes[idx].gain;
+        return m_nodes[idx].value;
     }
 
     float getNodeX(int idx)
@@ -411,12 +420,12 @@ public:
         return m_nodes[idx].y;
     }
 
-    int numNodes()
+    int getNumNodes()
     {
         return m_numNodes;
     }
 
-    int numTrisets()
+    int getNumTrisets()
     {
         return m_numTrisets;
     }
@@ -431,11 +440,40 @@ private:
 
     void clearAll() {
         for (int i = 0; i < m_numNodes; i++) {
-            m_nodes[i].gain = 0.0;
+            m_nodes[i].value = 0.0;
         }
 
         for (int i = 0; i < m_numTrisets; i++) {
             m_trisets[i].active = false;
+        }
+    }
+
+    void sendValuesToLinkedNodes(int n1, int n2, int n3)
+    {
+        int id = 0;
+        float percentage = 0.0;
+        float value  = 0.0;
+
+        for (int i = 0; i < m_nodes.at(n1).linkID.size(); i++) {
+            id = m_nodes.at(n1).linkID.at(i);
+            percentage = m_nodes.at(n1).linkPercentage.at(i);
+            value = cosinePower(percentage);
+            m_nodes.at(id).value += value;
+        }
+
+        for (int i = 0; i < m_nodes.at(n2).linkID.size(); i++) {
+            id = m_nodes.at(n1).linkID.at(i);
+            percentage = m_nodes.at(n1).linkPercentage.at(i);
+            value = cosinePower(percentage);
+            m_nodes.at(id).value += value;
+        }
+
+        for (int i = 0; i < m_nodes.at(n3).linkID.size(); i++) {
+            id = m_nodes.at(n1).linkID.at(i);
+            percentage = m_nodes.at(n1).linkPercentage.at(i);
+            value = cosinePower(percentage);
+            m_nodes.at(id).value += value;
+
         }
     }
 };
@@ -479,7 +517,7 @@ CK_DLL_QUERY( MIAP )
     QUERY->add_arg(QUERY, "float", "x");
     QUERY->add_arg(QUERY, "float", "y");
 
-    QUERY->add_mfun(QUERY, miap_getNodeGain, "float", "getNodeGain");
+    QUERY->add_mfun(QUERY, miap_getNodeValue, "float", "getNodeValue");
     QUERY->add_arg(QUERY, "int", "idx");
 
     QUERY->add_mfun(QUERY, miap_getNodeX, "float", "getNodeX");
@@ -497,9 +535,9 @@ CK_DLL_QUERY( MIAP )
     QUERY->add_mfun(QUERY, miap_getActiveTriset, "int", "getActiveNode");
     QUERY->add_arg(QUERY, "int", "index");
 
-    QUERY->add_mfun(QUERY, miap_numNodes, "int", "numNodes");
+    QUERY->add_mfun(QUERY, miap_getNumNodes, "int", "numNodes");
 
-    QUERY->add_mfun(QUERY, miap_numTrisets, "int", "numTrisets");
+    QUERY->add_mfun(QUERY, miap_getNumTrisets, "int", "numTrisets");
 
     // this reserves a variable in the ChucK internal class to store
     // reference to the c++ class we defined above
@@ -582,11 +620,11 @@ CK_DLL_MFUN(miap_setPosition)
     miap_obj->setPosition(x, y);
 }
 
-CK_DLL_MFUN(miap_getNodeGain)
+CK_DLL_MFUN(miap_getNodeValue)
 {
     MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
     t_CKINT idx = GET_NEXT_INT(ARGS);
-    RETURN->v_float = miap_obj->getNodeGain(idx);
+    RETURN->v_float = miap_obj->getNodeValue(idx);
 }
 
 CK_DLL_MFUN(miap_getNodeX)
@@ -624,14 +662,14 @@ CK_DLL_MFUN(miap_getActiveNode)
     RETURN->v_int = miap_obj->getActiveNode(idx);
 }
 
-CK_DLL_MFUN(miap_numNodes)
+CK_DLL_MFUN(miap_getNumNodes)
 {
     MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
-    RETURN->v_int = miap_obj->numNodes();
+    RETURN->v_int = miap_obj->getNumNodes();
 }
 
-CK_DLL_MFUN(miap_numTrisets)
+CK_DLL_MFUN(miap_getNumTrisets)
 {
     MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
-    RETURN->v_int = miap_obj->numTrisets();
+    RETURN->v_int = miap_obj->getNumTrisets();
 }
