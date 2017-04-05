@@ -28,9 +28,9 @@ class MIAPTest {
     fun void testNumNodes() {
         MIAP m;
         m.addNode(0.0, 0.0);
-        assert(m.numNodes() == 1, "testNumNodes");
+        assertEqual(m.numNodes(), 1, "testNumNodes");
         m.addNode(1.0, 0.0);
-        assert(m.numNodes() == 2, "testNumNodes");
+        assertEqual(m.numNodes(), 2, "testNumNodes");
     }
 
     fun void testNumTrisets() {
@@ -41,7 +41,7 @@ class MIAPTest {
         m.addNode(1.0, 1.0);
         m.addTriset(0, 1, 2);
         m.addTriset(1, 2, 3);
-        assert(m.numTrisets() == 2, "testNumTrisets");
+        assertEqual(m.numTrisets(), 2, "testNumTrisets");
     }
 
     fun void testGetActiveTriset() {
@@ -53,9 +53,9 @@ class MIAPTest {
         m.addTriset(0, 1, 2);
         m.addTriset(1, 2, 3);
         m.position(0.50, 0.25);
-        assert(m.activeTriset() == 0, "testActiveTriset");
+        assertEqual(m.activeTriset(), 0, "testActiveTriset");
         m.position(0.55, 0.75);
-        assert(m.activeTriset() == 1, "testActiveTriset");
+        assertEqual(m.activeTriset(), 1, "testActiveTriset");
     }
 
     fun void testGetActiveNodes() {
@@ -67,28 +67,28 @@ class MIAPTest {
         m.addTriset(0, 1, 2);
         m.addTriset(1, 2, 3);
         m.position(0.50, 0.75);
-        assert(m.activeNode(0) == 1, "testGetActiveNode");
-        assert(m.activeNode(1) == 2, "testGetActiveNode");
-        assert(m.activeNode(2) == 3, "testGetActiveNode");
+        assertEqual(m.activeNode(0), 1, "testGetActiveNode");
+        assertEqual(m.activeNode(1), 2, "testGetActiveNode");
+        assertEqual(m.activeNode(2), 3, "testGetActiveNode");
     }
 
     fun void testGridSize() {
         MIAP m;
         m.generateGrid(2, 2);
-        assert(m.numNodes() == 4, "testGridSize");
-        assert(m.numTrisets() == 2, "testGridSize");
+        assertEqual(m.numNodes(), 4, "testGridSize");
+        assertEqual(m.numTrisets(), 2, "testGridSize");
     }
 
     fun void testGetNodeX() {
         MIAP m;
         m.addNode(0.25, 0.75);
-        assert(m.nodeX(0) == 0.25, "testGetNodeX");
+        assertEqual(m.nodeX(0), 0.25, "testGetNodeX");
     }
 
     fun void testGetNodeY() {
         MIAP m;
         m.addNode(0.25, 0.75);
-        assert(m.nodeY(0) == 0.75, "testGetNodeY");
+        assertEqual(m.nodeY(0), 0.75, "testGetNodeY");
     }
 
     fun void testLinkNodes() {
@@ -100,7 +100,7 @@ class MIAPTest {
 
         m.linkNodes(0, 1, 1.0);
         m.position(0.0, 0.0);
-        assert(m.nodeValue(0) == m.nodeValue(1), "testLinkNodes");
+        assertEqual(m.nodeValue(0), m.nodeValue(1), "testLinkNodes");
     }
 
     fun void testLinkNodesPercentage() {
@@ -109,10 +109,103 @@ class MIAPTest {
         m.addNode(1.0, 0.0);
         m.addNode(0.0, 1.0);
         m.addTriset(0, 1, 2);
+
         Math.random2f(0.2, 0.8) => float perc;
         m.linkNodes(0, 1, perc);
+
         m.position(0.0, 0.0);
-        assertAlmostEqual(m.nodeValue(0) * perc, m.nodeValue(1), "testLinkNodes");
+        assertAlmostEqual(m.nodeValue(0) * perc, m.nodeValue(1), "testLinkNodesPercentage");
+    }
+
+    fun void testLinkNodesUpdatePercentage() {
+        MIAP m;
+        m.addNode(0.0, 0.0);
+        m.addNode(1.0, 0.0);
+        m.addNode(0.0, 1.0);
+        m.addTriset(0, 1, 2);
+        m.linkNodes(0, 1, 0.5);
+
+        Math.random2f(0.2, 0.8) => float perc;
+        m.linkNodes(0, 1, perc);
+
+        m.position(0.0, 0.0);
+        assertAlmostEqual(m.nodeValue(0) * perc, m.nodeValue(1), "testLinkNodesUpdatePercentage");
+    }
+
+    fun void testClearNodes() {
+        MIAP m;
+        m.addNode(0.0, 0.0);
+        m.addNode(1.0, 0.0);
+        m.addNode(0.0, 1.0);
+        m.clearAll();
+
+        assertEqual(m.numNodes(), 0, "testClearNodes");
+    }
+
+    fun void testAddNodeAfterClear() {
+        MIAP m;
+        m.addNode(0.0, 0.0);
+        m.addNode(1.0, 0.0);
+        m.clearAll();
+
+        m.addNode(1.0, 0.0);
+        assertEqual(m.numNodes(), 1, "testAddNodeAfterClear");
+    }
+
+    fun void testClearTrisets() {
+        MIAP m;
+        m.addNode(0.0, 0.0);
+        m.addNode(1.0, 0.0);
+        m.addNode(0.0, 1.0);
+        m.addNode(1.0, 1.0);
+        m.addTriset(0, 1, 2);
+        m.addTriset(1, 2, 3);
+
+        m.clearTrisets();
+        assertEqual(m.numTrisets(), 0, "testClearTrisets");
+    }
+
+    fun void testAddTrisetAfterClear() {
+        MIAP m;
+        m.addNode(0.0, 0.0);
+        m.addNode(1.0, 0.0);
+        m.addNode(0.0, 1.0);
+        m.addNode(1.0, 1.0);
+        m.addTriset(0, 1, 2);
+        m.clearTrisets();
+
+        m.addTriset(1, 2, 3);
+        assertEqual(m.numTrisets(), 1, "testAddTrisetAfterClear");
+    }
+
+    fun void testUseTrisetAfterClear() {
+        MIAP m;
+        m.addNode(0.0, 0.0);
+        m.addNode(1.0, 0.0);
+        m.addNode(0.0, 1.0);
+        m.addNode(1.0, 1.0);
+
+        m.addTriset(3, 1, 2);
+        m.clearTrisets();
+
+        m.addTriset(0, 1, 2);
+        m.addTriset(1, 2, 3);
+        m.position(0.0, 0.0);
+        assertEqual(m.nodeValue(0), 1.0, "testUseTrisetAfterClear");
+    }
+
+    fun void testClearNodesAndTrisets() {
+        MIAP m;
+        m.addNode(0.0, 0.0);
+        m.addNode(1.0, 0.0);
+        m.addNode(0.0, 1.0);
+        m.addNode(1.0, 1.0);
+        m.addTriset(0, 1, 2);
+        m.addTriset(1, 2, 3);
+
+        m.clearAll();
+        assertEqual(m.numNodes(), 0, "testClearNodesAndTrisets");
+        assertEqual(m.numTrisets(), 0, "testClearNodesAndTrisets");
     }
 
     fun string results() {
@@ -143,6 +236,7 @@ class MIAPTest {
         } else {
             chout <= "E";
             logError(a + " " + b + "not almost equal", fn);
+            update(false);
         }
         chout.flush();
     }
@@ -154,6 +248,7 @@ class MIAPTest {
         } else {
             chout <= "E";
             logError(a + " " + b + " " + c + "not almost equal", fn);
+            update(false);
         }
         chout.flush();
     }
@@ -165,6 +260,31 @@ class MIAPTest {
         } else {
             chout <= "E";
             logError(a + " !< " + b, fn);
+            update(false);
+        }
+        chout.flush();
+    }
+
+    fun void assertEqual(float a, float b, string fn) {
+        if (a == b) {
+            chout <= ".";
+            update(true);
+        } else {
+            cherr <= "E";
+            logError(a + " does not equal " + b, fn);
+            update(false);
+        }
+        chout.flush();
+    }
+
+    fun void assertEqual(int a, int b, string fn) {
+        if (a == b) {
+            chout <= ".";
+            update(true);
+        } else {
+            cherr <= "E";
+            logError(a + " does not equal " + b, fn);
+            update(false);
         }
         chout.flush();
     }
@@ -176,6 +296,7 @@ class MIAPTest {
         } else {
             cherr <= "E";
             logError("Does not assert true.", fn);
+            update(false);
         }
         chout.flush();
     }
@@ -193,5 +314,12 @@ m.testGetNodeX();
 m.testGetNodeY();
 m.testLinkNodes();
 m.testLinkNodesPercentage();
+m.testLinkNodesUpdatePercentage();
+m.testClearNodes();
+m.testAddNodeAfterClear();
+m.testClearTrisets();
+m.testAddTrisetAfterClear();
+m.testUseTrisetAfterClear();
+m.testClearNodesAndTrisets();
 
 m.results();

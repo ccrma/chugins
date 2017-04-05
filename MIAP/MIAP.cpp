@@ -27,8 +27,10 @@ CK_DLL_CTOR(miap_ctor);
 CK_DLL_DTOR(miap_dtor);
 
 CK_DLL_MFUN(miap_addNode);
-CK_DLL_MFUN(miap_addTriset);
 CK_DLL_MFUN(miap_linkNodes);
+CK_DLL_MFUN(miap_addTriset);
+CK_DLL_MFUN(miap_clearTrisets);
+CK_DLL_MFUN(miap_clearAll);
 CK_DLL_MFUN(miap_generateGrid);
 
 // setters
@@ -280,6 +282,23 @@ public:
         m_numTrisets++;
     }
 
+    void clearNodes() {
+        m_nodes.erase(m_nodes.begin(), m_nodes.begin() + m_nodes.size());
+        m_nodes.clear();
+        m_numNodes = 0;
+    }
+
+    void clearTrisets() {
+        m_trisets.erase(m_trisets.begin(), m_trisets.begin() + m_trisets.size());
+        m_trisets.clear();
+        m_numTrisets = 0;
+    }
+
+    void clearAll() {
+        clearTrisets();
+        clearNodes();
+    }
+
     // links two nodes, wherein node `a` will send
     // its value to node `b' and the percentage is how
     // much of that value will be added to it
@@ -306,7 +325,7 @@ public:
     // object to be "panned" in xy space
     void setPosition(float x, float y) {
         // clears all node values and active statuses
-        clearAll();
+        clearAllNodeValues();
 
         // search for the triset the point falls in
         for (int i = 0; i < m_numTrisets; i++) {
@@ -451,7 +470,7 @@ private:
     int m_numNodes;
     int m_numTrisets;
 
-    void clearAll() {
+    void clearAllNodeValues() {
         for (int i = 0; i < m_numNodes; i++) {
             m_nodes[i].value = 0.0;
         }
@@ -522,6 +541,10 @@ CK_DLL_QUERY( MIAP )
     QUERY->add_arg(QUERY, "int", "n1");
     QUERY->add_arg(QUERY, "int", "n2");
     QUERY->add_arg(QUERY, "int", "n3");
+
+    QUERY->add_mfun(QUERY, miap_clearTrisets, "void", "clearTrisets");
+
+    QUERY->add_mfun(QUERY, miap_clearAll, "void", "clearAll");
 
     QUERY->add_mfun(QUERY, miap_setPosition, "void", "position");
     QUERY->add_arg(QUERY, "float", "x");
@@ -629,6 +652,18 @@ CK_DLL_MFUN(miap_addTriset)
     t_CKINT n2 = GET_NEXT_INT(ARGS);
     t_CKINT n3 = GET_NEXT_INT(ARGS);
     miap_obj->addTriset(n1, n2, n3);
+}
+
+CK_DLL_MFUN(miap_clearTrisets)
+{
+    MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
+    miap_obj->clearTrisets();
+}
+
+CK_DLL_MFUN(miap_clearAll)
+{
+    MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
+    miap_obj->clearAll();
 }
 
 CK_DLL_MFUN(miap_setPosition)
