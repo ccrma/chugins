@@ -26,17 +26,17 @@ public class MIAPOSCVis {
 
             out.start("/gain");
             out.add(i);
-            out.add(m.getNodeGain(i));
+            out.add(m.getNodeValue(i));
             out.send();
         }
     }
 
     public void updateNonZeroNodes(MIAP m) {
         for (0 => int i; i < m.numNodes(); i++) {
-            if (m.getNodeGain(i) > 0) {
+            if (m.getNodeValue(i) > 0) {
                 out.start("/gain");
                 out.add(i);
-                out.add(m.getNodeGain(i));
+                out.add(m.getNodeValue(i));
                 out.send();
             }
         }
