@@ -15,9 +15,11 @@ class MIAPTest {
         m.addNode(1.0, 0.0);
         m.addNode(0.0, 1.0);
         m.addTriset(0, 1, 2);
+
         // get sides of the triangle
         (0.0 + 1.0 + 0.0)/3.0 => float posX;
         (0.0 + 0.0 + 1.0)/3.0 => float posY;
+
         m.position(posX, posY);
         m.nodeValue(0) => float n1;
         m.nodeValue(1) => float n2;
@@ -31,6 +33,29 @@ class MIAPTest {
         assertEqual(m.numNodes(), 1, "testNumNodes");
         m.addNode(1.0, 0.0);
         assertEqual(m.numNodes(), 2, "testNumNodes");
+    }
+
+    fun void testUpdateNode() {
+        MIAP m;
+        m.addNode(0.0, 0.0);
+        m.updateNode(0, 0.0, 1.0);
+        assertEqual(m.numNodes(), 1, "testUpdateNodes");
+        assertEqual(m.nodeY(0), 1.0, "testUpdateNodes");
+    }
+
+    fun void testUseUpdateNode() {
+        MIAP m;
+        m.addNode(0.0, 0.0);
+        m.addNode(1.0, 0.0);
+        m.addNode(0.0, 1.0);
+        m.addTriset(0, 1, 2);
+
+        m.position(0.25, 0.25);
+        m.nodeValue(0) => float val1;
+        m.updateNode(0, 0.1, 0.1);
+        m.nodeValue(0) => float val2;
+
+        assertNotEqual(val1, val2, "testUseUpdateNode");
     }
 
     fun void testNumTrisets() {
@@ -289,6 +314,18 @@ class MIAPTest {
         chout.flush();
     }
 
+    fun void assertNotEqual(float a, float b, string fn) {
+        if (a != b) {
+            chout <= ".";
+            update(true);
+        } else {
+            cherr <= "E";
+            logError(a + " should not equal " + b, fn);
+            update(false);
+        }
+        chout.flush();
+    }
+
     fun void assert(int bool, string fn) {
         if (bool) {
             chout <= ".";
@@ -306,6 +343,8 @@ MIAPTest m;
 
 m.testHeron();
 m.testNumNodes();
+m.testUpdateNode();
+m.testUseUpdateNode();
 m.testNumTrisets();
 m.testGridSize();
 m.testGetActiveTriset();

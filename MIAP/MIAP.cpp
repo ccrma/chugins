@@ -27,6 +27,7 @@ CK_DLL_CTOR(miap_ctor);
 CK_DLL_DTOR(miap_dtor);
 
 CK_DLL_MFUN(miap_addNode);
+CK_DLL_MFUN(miap_updateNode);
 CK_DLL_MFUN(miap_linkNodes);
 CK_DLL_MFUN(miap_addTriset);
 CK_DLL_MFUN(miap_clearTrisets);
@@ -126,6 +127,23 @@ public:
 
         active = false;
 
+        precalculate();
+    }
+
+    Node * m_n1;
+    Node * m_n2;
+    Node * m_n3;
+
+    int index;
+    int active;
+
+    int n1Index;
+    int n2Index;
+    int n3Index;
+
+    // calculated upon initialization or if the user
+    // changes the coordinates of a node
+    void precalculate() {
         ab = distance(m_n1->x, m_n1->y, m_n2->x, m_n2->y);
         bc = distance(m_n2->x, m_n2->y, m_n3->x, m_n3->y);
         ca = distance(m_n3->x, m_n3->y, m_n1->x, m_n1->y);
@@ -143,17 +161,6 @@ public:
 
         invDenom = 1.0/(dot00 * dot11 - dot01 * dot01);
     }
-
-    Node * m_n1;
-    Node * m_n2;
-    Node * m_n3;
-
-    int index;
-    int active;
-
-    int n1Index;
-    int n2Index;
-    int n3Index;
 
     // http://blackpawn.com/texts/pointinpoly/
     // many parameters were precalculated in the constructor to save on processing
@@ -256,27 +263,23 @@ public:
 
     void addTriset( t_CKINT n1, t_CKINT n2, t_CKINT n3 )
     {
+        // you can't add a triset without at least three nodes
         if (m_numNodes < 3)
         {
-            // add error condition here eventually, you can't
-            // add a triset without at least three nodes
             printf("You cannot add a triset without at least three nodes to connect to.");
             return;
         }
 
+        // you can't associate a node to a triset
+        // unless it's one of the created nodes
         if (n1 >= m_numNodes || n2 >= m_numNodes || n3 >= m_numNodes)
         {
-            // add error condition here eventually, you can't
-            // associate a node to a triset unless it's one of the
-            // created nodes
             printf("You cannot add a triset to a node that has not been created");
             return;
         }
 
         Triset triset( m_nodes[n1], m_nodes[n2], m_nodes[n3], m_numTrisets );
-
         triset.index = m_numTrisets;
-
         m_trisets.push_back( triset );
 
         m_numTrisets++;
@@ -323,10 +326,22 @@ public:
 
     // main user function for panning, sets the position of the
     // object to be "panned" in xy space
-    void setPosition(float x, float y) {
+    void setPosition( t_CKFLOAT x, t_CKFLOAT y )
+    {
         // clears all node values and active statuses
         clearAllNodeValues();
+        updateTrisetNodeValues(x, y);
 
+        // storing our coordinates in case a triset
+        // needs to be updated when changing one of
+        // its node coordinates
+        m_x = x;
+        m_y = y;
+    }
+
+    // main function that does all the stuff
+    void updateTrisetNodeValues(float x, float y)
+    {
         // search for the triset the point falls in
         for (int i = 0; i < m_numTrisets; i++) {
             if (m_trisets[i].pointInTriset(x, y)) {
@@ -336,6 +351,28 @@ public:
                 break;
             }
         }
+    }
+
+    void updateNode( t_CKINT id, t_CKFLOAT x, t_CKFLOAT y )
+    {
+        // skips if no changes
+        if (m_nodes[id].x == x && m_nodes[id].y == y) {
+            return;
+        }
+
+        m_nodes[id].x = x;
+        m_nodes[id].y = y;
+
+        // updates any affected trisets
+        for (int i = 0; i < m_numTrisets; i++) {
+            if (m_trisets[i].n1Index == id || m_trisets[i].n2Index == id || m_trisets[i].n3Index == id) {
+                m_trisets[i].precalculate();
+            }
+        }
+
+        // update our trisets using our stored coordinates
+        clearAllNodeValues();
+        updateTrisetNodeValues(m_x, m_y);
     }
 
     void generateHexagon() {
@@ -469,6 +506,8 @@ private:
 
     int m_numNodes;
     int m_numTrisets;
+    float m_x;
+    float m_y;
 
     void clearAllNodeValues() {
         for (int i = 0; i < m_numNodes; i++) {
@@ -529,6 +568,11 @@ CK_DLL_QUERY( MIAP )
 
     // example of adding setter method
     QUERY->add_mfun(QUERY, miap_addNode, "void", "addNode");
+    QUERY->add_arg(QUERY, "float", "x");
+    QUERY->add_arg(QUERY, "float", "y");
+
+    QUERY->add_mfun(QUERY, miap_updateNode, "void", "updateNode");
+    QUERY->add_arg(QUERY, "int", "id");
     QUERY->add_arg(QUERY, "float", "x");
     QUERY->add_arg(QUERY, "float", "y");
 
@@ -634,6 +678,15 @@ CK_DLL_MFUN(miap_addNode)
     t_CKFLOAT x = GET_NEXT_FLOAT(ARGS);
     t_CKFLOAT y = GET_NEXT_FLOAT(ARGS);
     miap_obj->addNode(x, y);
+}
+
+CK_DLL_MFUN(miap_updateNode)
+{
+    MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
+    t_CKINT id = GET_NEXT_INT(ARGS);
+    t_CKFLOAT x = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT y = GET_NEXT_FLOAT(ARGS);
+    miap_obj->updateNode(id, x, y);
 }
 
 CK_DLL_MFUN(miap_linkNodes)
