@@ -2,6 +2,11 @@
 // April 5th, 2017
 // miap-help.ck
 
+// Attribution:
+// This Chugin is based off the work of Zachary Seldess' MaxMSP and Pure Date externsl,
+// and also based on Meyer Sound’s SpaceMap(R) multi-channel panning feature of CueStation.
+// SpaceMap and CueStation are trademarks of Meyer Sound Laboratories, Incorporated.
+
 // ~ primary functions
 
 // The following functions are all you really need to know to use MIAP. Essentially, you first
