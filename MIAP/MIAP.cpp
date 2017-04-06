@@ -23,6 +23,11 @@
  This Chugin is very much open to contributions, and the author would like to see
  it evolve (of course, only if interest is generated, I find the subject
  somewhat fascinating).
+
+ Attribution:
+ This Chugin is based off the work of Zachary Seldess' MaxMSP and Pure Date externsl,
+ and also based on Meyer Sound’s SpaceMap(R) multi-channel panning feature of CueStation.
+ SpaceMap and CueStation are trademarks of Meyer Sound Laboratories, Incorporated.
 -----------------------------------------------------------------------------*/
 
 // this should align with the correct versions of these ChucK files
