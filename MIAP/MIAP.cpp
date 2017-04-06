@@ -3,11 +3,12 @@
 
  ChucK Manifold-Interface Amplitude Panning (MIAP).
 
- Based on the ideas and work of Zachary Seldess, as presented in his AES paper
+ Based on the research of Zachary Seldess, as presented in his AES paper
  and conference talk, "MIAP: Manifold-Interface Amplitude Panning in Max/MSP
- and Pure Data".
+ and Pure Data", which in turn is based off the work of Steven Ellison and his
+ first implementation of "Barycentric Panning."
 
- YouTube link:
+ YouTube links:
  Part 1: https://www.youtube.com/watch?v=LUHVwQSkv9s
  Part 2: https://www.youtube.com/watch?v=RKvCAvHo7ZI
 
@@ -15,6 +16,13 @@
  Seldess, Zachary. 2014. "MIAP: Manifold-Interface Amplitude Panning
       in Max/MSP and Pure Data." Presentation at the annual conference
 
+ This implementation is pared down from the Max/MSP object (as one would expect
+ from a ChucK Chugin). The functionality of the various nodes Seldess describes
+ in his paper can be replicated by linking various nodes to another nodes.
+
+ This Chugin is very much open to contributions, and the author would like to see
+ it evolve (of course, only if interest is generated, I find the subject
+ somewhat fascinating).
 -----------------------------------------------------------------------------*/
 
 // this should align with the correct versions of these ChucK files
@@ -45,6 +53,9 @@ CK_DLL_MFUN(miap_generateGrid);
 
 // setters
 CK_DLL_MFUN(miap_setPosition);
+CK_DLL_MFUN(miap_setConstantPower);
+CK_DLL_MFUN(miap_setSquareRoot);
+CK_DLL_MFUN(miap_setLinear);
 
 // setters
 CK_DLL_MFUN(miap_getNodeValue);
@@ -202,12 +213,10 @@ public:
         n2Area = heronArea(ca, ap, cp);
         n1Area = area - n3Area - n2Area;
 
-        m_n1->value = cosinePower(n1Area * areaScalar);
-        m_n2->value = cosinePower(n2Area * areaScalar);
-        m_n3->value = cosinePower(n3Area * areaScalar);
+        m_n1->value = n1Area * areaScalar;
+        m_n2->value = n2Area * areaScalar;
+        m_n3->value = n3Area * areaScalar;
     }
-
-
 
 private:
 
@@ -246,6 +255,7 @@ public:
     {
         m_numNodes = 0;
         m_numTrisets = 0;
+        m_panningType = CONSTANT_POWER;
     }
 
     // for Chugins extending UGen
@@ -331,6 +341,21 @@ public:
         } else {
             linkPercentage[pos] = percentage;
         }
+    }
+
+    void setConstantPower()
+    {
+        m_panningType = CONSTANT_POWER;
+    }
+
+    void setSquareRoot()
+    {
+        m_panningType = SQUARE_ROOT;
+    }
+
+    void setLinear()
+    {
+        m_panningType = LINEAR;
     }
 
     // main user function for panning, sets the position of the
@@ -481,7 +506,17 @@ public:
 
     float getNodeValue(int idx)
     {
-        return m_nodes[idx].value;
+        switch(m_panningType) {
+
+        case CONSTANT_POWER:
+            return cosinePower(m_nodes[idx].value);
+
+        case SQUARE_ROOT:
+            return sqrt(m_nodes[idx].value);
+
+        case LINEAR:
+            return m_nodes[idx].value;
+        }
     }
 
     float getNodeX(int idx)
@@ -513,6 +548,14 @@ private:
     int m_numTrisets;
     float m_x;
     float m_y;
+
+    enum PanningTypes {
+        LINEAR = 0,
+        CONSTANT_POWER,
+        SQUARE_ROOT
+    };
+
+    PanningTypes m_panningType;
 
     void clearAllNodeValues() {
         for (int i = 0; i < m_numNodes; i++) {
@@ -598,6 +641,12 @@ CK_DLL_QUERY( MIAP )
     QUERY->add_mfun(QUERY, miap_setPosition, "void", "position");
     QUERY->add_arg(QUERY, "float", "x");
     QUERY->add_arg(QUERY, "float", "y");
+
+    QUERY->add_mfun(QUERY, miap_setConstantPower, "void", "setConstantPower");
+
+    QUERY->add_mfun(QUERY, miap_setSquareRoot, "void", "setSquareRoot");
+
+    QUERY->add_mfun(QUERY, miap_setLinear, "void", "setLinear");
 
     QUERY->add_mfun(QUERY, miap_getNodeValue, "float", "nodeValue");
     QUERY->add_arg(QUERY, "int", "idx");
@@ -722,6 +771,24 @@ CK_DLL_MFUN(miap_clearAll)
 {
     MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
     miap_obj->clearAll();
+}
+
+CK_DLL_MFUN(miap_setConstantPower)
+{
+    MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
+    miap_obj->setConstantPower();
+}
+
+CK_DLL_MFUN(miap_setSquareRoot)
+{
+    MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
+    miap_obj->setSquareRoot();
+}
+
+CK_DLL_MFUN(miap_setLinear)
+{
+    MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
+    miap_obj->setLinear();
 }
 
 CK_DLL_MFUN(miap_setPosition)
