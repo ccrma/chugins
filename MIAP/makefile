@@ -15,7 +15,7 @@ CK_SRC_PATH?=../chuck/include/
 # ---------------------------------------------------------------------------- #
 
 # default target: print usage message and quit
-current: 
+current:
 	@echo "[chuck build]: please use one of the following configurations:"
 	@echo "   make linux, make osx, or make win32"
 
@@ -36,7 +36,7 @@ CC=gcc
 CXX=gcc
 LD=g++
 
-CHUGIN_PATH=/usr/lib/chuck
+CHUGIN_PATH=/usr/local/lib/chuck
 
 ifneq (,$(strip $(filter osx bin-dist-osx,$(MAKECMDGOALS))))
 include makefile.osx
@@ -106,6 +106,6 @@ install: $(CHUG)
 	cp $^ $(CHUGIN_PATH)
 	chmod 755 $(CHUGIN_PATH)/$(CHUG)
 
-clean: 
+clean:
 	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) Release Debug
 
