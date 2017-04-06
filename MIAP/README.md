@@ -15,7 +15,7 @@ Steve Ellison article: ["SpaceMap: 20 Years of Audio Origami"](http://www.lighti
 
 ![miap-processing-visualization](miap-image.png)
 
-This implementation is pared down from the Max/MSP object (as one would expect from a ChucK Chugin). The functionality of the various nodes Seldess describes in his paper can be replicated by linking various nodes to another nodes.
+This implementation is pared down from the Max/MSP object (as one would expect from a ChucK Chugin). The functionality of the various node types (Virtual, Derived) that Seldess describes in his paper can be replicated by linking various nodes to another nodes.
 
 This Chugin is very much open to contributions, and I would like to see it evolve (of course, only if interest is generated, I find this spatial approach very interesting).
 
