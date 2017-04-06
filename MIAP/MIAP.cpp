@@ -1,12 +1,21 @@
-// Eric Heep
-// March 15th, 2017
-// MIAP v1.0
+/*-----------------------------------------------------------------------------
+ Entaro Adun!
 
-// Manifold-Interface Amplitude Panning
-// Meyer Sounds's SpaceMap abstract spatialization.
+ ChucK Manifold-Interface Amplitude Panning (MIAP).
 
-// Seldess, Zachary. 2014. "MIAP: Manifold-Interface Amplitude Panning
-//      in Max/MSP and Pure Data." Presentation at the annual conference
+ Based on the ideas and work of Zachary Seldess, as presented in his AES paper
+ and conference talk, "MIAP: Manifold-Interface Amplitude Panning in Max/MSP
+ and Pure Data".
+
+ YouTube link:
+ Part 1: https://www.youtube.com/watch?v=LUHVwQSkv9s
+ Part 2: https://www.youtube.com/watch?v=RKvCAvHo7ZI
+
+ Paper:
+ Seldess, Zachary. 2014. "MIAP: Manifold-Interface Amplitude Panning
+      in Max/MSP and Pure Data." Presentation at the annual conference
+
+-----------------------------------------------------------------------------*/
 
 // this should align with the correct versions of these ChucK files
 #include "chuck_dl.h"
@@ -373,10 +382,6 @@ public:
         // update our trisets using our stored coordinates
         clearAllNodeValues();
         updateTrisetNodeValues(m_x, m_y);
-    }
-
-    void generateHexagon() {
-
     }
 
     // generates a MIAP grid that is rows by cols grid of Nodes,
