@@ -3,7 +3,7 @@ Repository for Officially Supported ChuGins [![Build Status](https://travis-ci.o
 
 Prepackaged Binaries
 --
-Binaries for most chugins in this repository are automatically included by the ChucK installers for Mac OS X and Windows. If you haven't installed ChucK already, these are available at [http://chuck.stanford.edu/release/](http://chuck.stanford.edu/release/). 
+Binaries for most chugins in this repository are automatically included by the ChucK installers for Mac OS X and Windows. If you haven't installed ChucK already, these are available at [http://chuck.stanford.edu/release/](http://chuck.stanford.edu/release/).
 
 ### Linux/Advanced Users
 To compile and install all chugins:
@@ -48,6 +48,9 @@ List of Current Chugins
 - **Elliptic**
   - by [@jwmatthys](https://github.com/jwmatthys)
   - Elliptic filter, capable of very steep slopes or interesting harmonic ripples
+- **MIAP**
+  - by [@ericheep](https://github.com/ericheep)
+  - Manifold-Interface Amplitude Panner inspired by the research of [Zachary Seldess](http://www.zacharyseldess.com/miap/) and [Steve Ellison](http://www.lightingandsoundamerica.com/reprint/MeyerSpaceMap.pdf).
 - **PowerADSR**
   - by [@ericheep](https://github.com/ericheep)
   - Power function ADSR envelope.
