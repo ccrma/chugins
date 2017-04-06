@@ -192,6 +192,35 @@ class MIAPTest {
         assertAlmostEqual(linearValue, constantPowerValue, "testConstantPower");
     }
 
+    fun void testSquare() {
+        MIAP m;
+        m.addNode(0.0, 0.0); // 0
+        m.addNode(0.0, 1.0); // 1
+        m.addNode(1.0, 1.0); // 2
+        m.addNode(1.0, 0.0); // 3
+        m.addNode(0.5, 0.5); // 4
+
+        m.addTriset(0, 1, 4);
+        m.addTriset(1, 2, 4);
+        m.addTriset(2, 3, 4);
+        m.addTriset(3, 0, 4);
+
+        m.setLinear();
+        m.linkNodes(4, 0, 0.25);
+        m.linkNodes(4, 1, 0.25);
+        m.linkNodes(4, 2, 0.25);
+        m.linkNodes(4, 3, 0.25);
+
+        m.position(0.5, 0.5);
+
+        m.nodeValue(0) => float v1;
+        m.nodeValue(1) => float v2;
+        m.nodeValue(2) => float v3;
+        m.nodeValue(3) => float v4;
+
+        assertEqual(v1 + v2 + v3 + v4, 1.0, "testSquare");
+    }
+
     fun void testClearNodes() {
         MIAP m;
         m.addNode(0.0, 0.0);
@@ -391,6 +420,7 @@ m.testLinkNodesPercentage();
 m.testLinkNodesUpdatePercentage();
 m.testSquareRoot();
 m.testConstantPower();
+m.testSquare();
 
 m.testClearNodes();
 m.testAddNodeAfterClear();
