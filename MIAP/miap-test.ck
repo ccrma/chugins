@@ -134,6 +134,7 @@ class MIAPTest {
         m.addNode(1.0, 0.0);
         m.addNode(0.0, 1.0);
         m.addTriset(0, 1, 2);
+        m.setLinear();
 
         Math.random2f(0.2, 0.8) => float perc;
         m.linkNodes(0, 1, perc);
@@ -149,12 +150,46 @@ class MIAPTest {
         m.addNode(0.0, 1.0);
         m.addTriset(0, 1, 2);
         m.linkNodes(0, 1, 0.5);
+        m.setLinear();
 
         Math.random2f(0.2, 0.8) => float perc;
         m.linkNodes(0, 1, perc);
 
         m.position(0.0, 0.0);
         assertAlmostEqual(m.nodeValue(0) * perc, m.nodeValue(1), "testLinkNodesUpdatePercentage");
+    }
+
+    fun void testSquareRoot() {
+        MIAP m;
+        m.addNode(0.0, 0.0);
+        m.addNode(1.0, 0.0);
+        m.addNode(0.0, 1.0);
+        m.addTriset(0, 1, 2);
+        m.setLinear();
+        m.position(0.25, 0.25);
+        m.nodeValue(0) => float linearValue;
+        m.setSquareRoot();
+        m.nodeValue(0) => float squareRootValue;
+
+        assertAlmostEqual(Math.sqrt(linearValue), squareRootValue, "testSquareRoot");
+    }
+
+    fun void testConstantPower() {
+        MIAP m;
+        m.addNode(0.0, 0.0);
+        m.addNode(1.0, 0.0);
+        m.addNode(0.0, 1.0);
+        m.addTriset(0, 1, 2);
+        m.setLinear();
+        m.position(0.25, 0.25);
+        m.nodeValue(0) => float linearValue;
+        m.setConstantPower();
+        m.nodeValue(0) => float constantPowerValue;
+
+        // cosine power transform
+        Math.cos((0.5 * linearValue * pi) + 1.5 * pi) => linearValue;
+
+        assertAlmostEqual(linearValue, constantPowerValue, "testConstantPower");
     }
 
     fun void testClearNodes() {
@@ -260,7 +295,7 @@ class MIAPTest {
             update(true);
         } else {
             chout <= "E";
-            logError(a + " " + b + "not almost equal", fn);
+            logError(a + " " + b + " not almost equal", fn);
             update(false);
         }
         chout.flush();
@@ -272,7 +307,7 @@ class MIAPTest {
             update(true);
         } else {
             chout <= "E";
-            logError(a + " " + b + " " + c + "not almost equal", fn);
+            logError(a + " " + b + " " + c + " not almost equal", fn);
             update(false);
         }
         chout.flush();
@@ -354,6 +389,9 @@ m.testGetNodeY();
 m.testLinkNodes();
 m.testLinkNodesPercentage();
 m.testLinkNodesUpdatePercentage();
+m.testSquareRoot();
+m.testConstantPower();
+
 m.testClearNodes();
 m.testAddNodeAfterClear();
 m.testClearTrisets();
