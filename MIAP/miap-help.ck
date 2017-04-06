@@ -15,7 +15,7 @@
 //   Creates a Triset, which is to be associated to the ID of three Nodes given.
 //
 // position(float x, float y)
-//   Sets a position inside of the MIAP "grid", that is placed at the given (x, y) coordinate.
+//   Sets a position inside of the MIAP space, which is placed at the given (x, y) coordinate.
 //
 // nodeValue(int id)
 //   Gets the value of the specified Node.
