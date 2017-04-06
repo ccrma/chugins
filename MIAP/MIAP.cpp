@@ -376,13 +376,22 @@ public:
     // main function that does all the stuff
     void updateTrisetNodeValues(float x, float y)
     {
+        // first check if the coordinate is a already a node
+        for (int i = 0; i < m_numNodes; i++) {
+            if (m_nodes[i].x == x && m_nodes[i].y == y) {
+                m_nodes[i].value = 1.0;
+                updateNodeLink(&m_nodes[i]);
+                return;
+            }
+        }
+
         // search for the triset the point falls in
         for (int i = 0; i < m_numTrisets; i++) {
             if (m_trisets[i].pointInTriset(x, y)) {
                 m_trisets[i].active = true;
                 m_trisets[i].setNodes(x, y);
                 updateTrisetLinks(m_trisets[i]);
-                break;
+                return;
             }
         }
     }
@@ -601,6 +610,10 @@ CK_DLL_QUERY( MIAP )
     // begin the class definition
     // can change the second argument to extend a different ChucK class
     QUERY->begin_class(QUERY, "MIAP", "UGen");
+    QUERY->doc_class(QUERY, "ChucK Manifold-Interface Amplitude Panning (MIAP). Based on the research \
+            of Zachary Seldess, as presented in his AES paper and conference talk, \
+            'MIAP: Manifold-Interface Amplitude Panning in Max/MSP and Pure Data', which in turn \
+            is based off the work of Steven Ellison and his first implementation of 'Barycentric Panning.'");
 
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, miap_ctor);
@@ -618,57 +631,80 @@ CK_DLL_QUERY( MIAP )
     QUERY->add_mfun(QUERY, miap_addNode, "void", "addNode");
     QUERY->add_arg(QUERY, "float", "x");
     QUERY->add_arg(QUERY, "float", "y");
+    QUERY->doc_func(QUERY, "Creates a Node at the (x, y) coordinate.");
 
     QUERY->add_mfun(QUERY, miap_updateNode, "void", "updateNode");
     QUERY->add_arg(QUERY, "int", "id");
     QUERY->add_arg(QUERY, "float", "x");
     QUERY->add_arg(QUERY, "float", "y");
+    QUERY->doc_func(QUERY, "");
 
     QUERY->add_mfun(QUERY, miap_linkNodes, "void", "linkNodes");
     QUERY->add_arg(QUERY, "int", "a");
     QUERY->add_arg(QUERY, "int", "b");
     QUERY->add_arg(QUERY, "float", "percentage");
+    QUERY->doc_func(QUERY, "Connects the output of Node `a` to Node `b`. This is a one-way connection, \
+            and allows for the creation of Derived Nodes and Virtual Nodes, as described by Seldess");
 
     QUERY->add_mfun(QUERY, miap_addTriset, "void", "addTriset");
     QUERY->add_arg(QUERY, "int", "n1");
     QUERY->add_arg(QUERY, "int", "n2");
     QUERY->add_arg(QUERY, "int", "n3");
+    QUERY->doc_func(QUERY, "Creates a Triset, which is to be associated to the ID of three Nodes given.");
 
     QUERY->add_mfun(QUERY, miap_clearTrisets, "void", "clearTrisets");
+    QUERY->doc_func(QUERY, "");
 
     QUERY->add_mfun(QUERY, miap_clearAll, "void", "clearAll");
+    QUERY->doc_func(QUERY, "");
 
     QUERY->add_mfun(QUERY, miap_setPosition, "void", "position");
     QUERY->add_arg(QUERY, "float", "x");
     QUERY->add_arg(QUERY, "float", "y");
+    QUERY->doc_func(QUERY, "Sets a position inside of the MIAP space, which is placed at the \
+            given (x, y) coordinate.");
 
     QUERY->add_mfun(QUERY, miap_setConstantPower, "void", "setConstantPower");
+    QUERY->doc_func(QUERY, "Applies a cosine curve to the output. Recommended for panning.");
 
     QUERY->add_mfun(QUERY, miap_setSquareRoot, "void", "setSquareRoot");
+    QUERY->doc_func(QUERY, "Applies a square root curve to the output.");
 
     QUERY->add_mfun(QUERY, miap_setLinear, "void", "setLinear");
+    QUERY->doc_func(QUERY, "No transformation is applied to the output.");
 
     QUERY->add_mfun(QUERY, miap_getNodeValue, "float", "nodeValue");
     QUERY->add_arg(QUERY, "int", "idx");
+    QUERY->doc_func(QUERY, "Gets the value of the specified Node.");
 
     QUERY->add_mfun(QUERY, miap_getNodeX, "float", "nodeX");
     QUERY->add_arg(QUERY, "int", "idx");
+    QUERY->doc_func(QUERY, "");
 
     QUERY->add_mfun(QUERY, miap_getNodeY, "float", "nodeY");
     QUERY->add_arg(QUERY, "int", "idx");
+    QUERY->doc_func(QUERY, "");
 
     QUERY->add_mfun(QUERY, miap_generateGrid, "void", "generateGrid");
     QUERY->add_arg(QUERY, "int", "rows");
     QUERY->add_arg(QUERY, "int", "cols");
+    QUERY->doc_func(QUERY, "Creates a grid of equilateral triangles that has the provided number \
+            of rows and columns. The coordinates of the Nodes are normalized between [0.0-1.0, 0.0-1.0]");
 
     QUERY->add_mfun(QUERY, miap_getActiveTriset, "int", "activeTriset");
+    QUERY->doc_func(QUERY, "Gets the Triset that is currently active, returns -1 if one is not found.");
 
     QUERY->add_mfun(QUERY, miap_getActiveNode, "int", "activeNode");
     QUERY->add_arg(QUERY, "int", "index");
+    QUERY->doc_func(QUERY, "Gets the ID of one of the Nodes associated with a currently active Triset,\
+            the ID given is relative to the Triset, thus the values are restrict to 0, 1, and 2. \
+            Returns -1 if one is not found.");
 
     QUERY->add_mfun(QUERY, miap_getNumNodes, "int", "numNodes");
+    QUERY->doc_func(QUERY, "Gets the number of Nodes.");
 
     QUERY->add_mfun(QUERY, miap_getNumTrisets, "int", "numTrisets");
+    QUERY->doc_func(QUERY, "Gets the number of Trisets.");
 
     // this reserves a variable in the ChucK internal class to store
     // reference to the c++ class we defined above
