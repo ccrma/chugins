@@ -8,10 +8,10 @@ Based on the research of [Zachary Seldess](http://www.zacharyseldess.com/miap/),
 YouTube links: [Part 1](https://www.youtube.com/watch?v=LUHVwQSkv9s), [Part 2](https://www.youtube.com/watch?v=RKvCAvHo7ZI)
 
 Audio Engineering Socity White Paper (locked behind AES paywall):
-    Seldess, Zachary. 2014. "MIAP: Manifold-Interface Amplitude Panning
-        in Max/MSP and Pure Data." Presentation at the annual conference
+> Seldess, Zachary. 2014. "MIAP: Manifold-Interface Amplitude Panning
+>   in Max/MSP and Pure Data." Presentation at the annual conference
 
-["SpaceMap: 20 Years of Audio Origami"](http://www.lightingandsoundamerica.com/reprint/MeyerSpaceMap.pdf)
+Steve Ellison article: ["SpaceMap: 20 Years of Audio Origami"](http://www.lightingandsoundamerica.com/reprint/MeyerSpaceMap.pdf)
 
 ![miap-processing-visualization](miap-image.png)
 
