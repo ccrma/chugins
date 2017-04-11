@@ -632,7 +632,7 @@ public:
         }
         if (m_keyOff) {
             if (m_n < m_release) {
-                m_windowValue = m_func->releaseWindow(m_n, m_attack);
+                m_windowValue = m_func->releaseWindow(m_n, m_release);
                 m_currentLevel = m_windowValue * m_keyOffLevel;
                 m_n++;
                 return in * m_currentLevel;
@@ -699,11 +699,11 @@ CK_DLL_QUERY( WinFuncEnv )
     QUERY->add_arg(QUERY, "int", "keyOff");
     QUERY->doc_func(QUERY, "Start release phase. ");
 
-    QUERY->add_mfun(QUERY, winfuncenv_setAttack, "dur", "attack");
+    QUERY->add_mfun(QUERY, winfuncenv_setAttack, "dur", "attackTime");
     QUERY->add_arg(QUERY, "dur", "attackDuration");
     QUERY->doc_func(QUERY, "Set duration of the attack phase. ");
 
-    QUERY->add_mfun(QUERY, winfuncenv_setRelease, "dur", "release");
+    QUERY->add_mfun(QUERY, winfuncenv_setRelease, "dur", "releaseTime");
     QUERY->add_arg(QUERY, "dur", "releaseDuration");
     QUERY->doc_func(QUERY, "Set duration of the release phase. ");
 
