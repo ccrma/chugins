@@ -63,6 +63,8 @@ CK_DLL_MFUN(miap_setSquareRoot);
 CK_DLL_MFUN(miap_setLinear);
 
 // setters
+CK_DLL_MFUN(miap_getPositionX);
+CK_DLL_MFUN(miap_getPositionY);
 CK_DLL_MFUN(miap_getNodeValue);
 CK_DLL_MFUN(miap_getNodeX);
 CK_DLL_MFUN(miap_getNodeY);
@@ -475,7 +477,7 @@ public:
                 {
                     int n1 = j + (cols * i) + 1;
                     int n2 = j + cols * (i + 1);
-                    int n3 = n2+ 1;
+                    int n3 = n2 + 1;
 
 
                     if (i % 2 == 1) {
@@ -490,7 +492,7 @@ public:
 
     int getActiveTriset()
     {
-        for (int i = 0; i < m_numNodes; i++) {
+        for (int i = 0; i < m_numTrisets; i++) {
             if (m_trisets[i].active == true) {
                 return i;
             }
@@ -531,6 +533,16 @@ public:
         case LINEAR:
             return m_nodes[idx].value;
         }
+    }
+
+    float getPositionX()
+    {
+        return m_x;
+    }
+
+    float getPositionY()
+    {
+        return m_y;
     }
 
     float getNodeX(int idx)
@@ -658,10 +670,10 @@ CK_DLL_QUERY( MIAP )
     QUERY->doc_func(QUERY, "Creates a Triset, which is to be associated to the ID of three Nodes given.");
 
     QUERY->add_mfun(QUERY, miap_clearTrisets, "void", "clearTrisets");
-    QUERY->doc_func(QUERY, "");
+    QUERY->doc_func(QUERY, "Clears all Trisets and leaves the remaining Nodes.");
 
     QUERY->add_mfun(QUERY, miap_clearAll, "void", "clearAll");
-    QUERY->doc_func(QUERY, "");
+    QUERY->doc_func(QUERY, "Clears all Trisets and Nodes.");
 
     QUERY->add_mfun(QUERY, miap_setPosition, "void", "position");
     QUERY->add_arg(QUERY, "float", "x");
@@ -681,6 +693,12 @@ CK_DLL_QUERY( MIAP )
     QUERY->add_mfun(QUERY, miap_getNodeValue, "float", "nodeValue");
     QUERY->add_arg(QUERY, "int", "idx");
     QUERY->doc_func(QUERY, "Gets the value of the specified Node.");
+
+    QUERY->add_mfun(QUERY, miap_getPositionX, "float", "positionX");
+    QUERY->doc_func(QUERY, "Gets the current X position of the MIAP object.");
+
+    QUERY->add_mfun(QUERY, miap_getPositionY, "float", "positionY");
+    QUERY->doc_func(QUERY, "Gets the current Y position of the MIAP object.");
 
     QUERY->add_mfun(QUERY, miap_getNodeX, "float", "nodeX");
     QUERY->add_arg(QUERY, "int", "idx");
@@ -845,6 +863,18 @@ CK_DLL_MFUN(miap_getNodeValue)
     MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
     t_CKINT idx = GET_NEXT_INT(ARGS);
     RETURN->v_float = miap_obj->getNodeValue(idx);
+}
+
+CK_DLL_MFUN(miap_getPositionX)
+{
+    MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
+    RETURN->v_float = miap_obj->getPositionX();
+}
+
+CK_DLL_MFUN(miap_getPositionY)
+{
+    MIAP * miap_obj = (MIAP *) OBJ_MEMBER_INT(SELF, miap_data_offset);
+    RETURN->v_float = miap_obj->getPositionY();
 }
 
 CK_DLL_MFUN(miap_getNodeX)
