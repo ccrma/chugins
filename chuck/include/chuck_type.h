@@ -501,6 +501,10 @@ public:
     { assert( nspc_stack.size() > 0 ); return nspc_stack.back(); }
     Chuck_Type * class_top( )
     { assert( class_stack.size() > 0 ); return class_stack.back(); }
+    
+    // check whether the context is the global context
+    t_CKBOOL is_global()
+    { return class_def == NULL && func == NULL && class_scope == 0; }
 };
 
 
@@ -604,7 +608,7 @@ public:
     // reset
     void reset()
     {
-        // fprintf( stderr, "type: %s %i\n", c_name(), (t_CKUINT)this );
+        // CK_FPRINTF_STDERR( "type: %s %i\n", c_name(), (t_CKUINT)this );
         xid = te_void; 
         size = array_depth = obj_size = 0;
         is_copy = FALSE;
@@ -781,7 +785,7 @@ struct Chuck_Func : public Chuck_VM_Object
 // initialize the type engine
 Chuck_Env * type_engine_init( Chuck_VM * vm );
 // shutdown the type engine
-void type_engine_shutdown( Chuck_Env * env );
+void type_engine_shutdown();
 // load a context to be type-checked or emitted
 t_CKBOOL type_engine_load_context( Chuck_Env * env, Chuck_Context * context );
 // unload a context after being emitted

@@ -42,6 +42,10 @@
 #include <fstream>
 #include "util_thread.h" // added 1.3.0.0
 
+#ifdef EXTERNAL_DEBUG_CALLBACK
+#include <sstream>
+#endif
+
 
 #ifndef __PLATFORM_WIN32__
   #include <dirent.h>
@@ -452,10 +456,15 @@ protected:
 struct Chuck_String : Chuck_Object
 {
 public:
-    Chuck_String( const std::string & s = "" ) { str = s; }
+    Chuck_String( const std::string & s = "" ) { set( s ); }
     ~Chuck_String() { }
 
-public:
+    void set( std::string s ) { str = s; charptr = str.c_str(); }
+    std::string get() { return str; }
+    const char * getChar() { return charptr; }
+
+private:
+    const char * charptr;
     std::string str;
 };
 
@@ -630,6 +639,18 @@ public:
     virtual void write( t_CKINT val );
     virtual void write( t_CKINT val, t_CKINT flags );
     virtual void write( t_CKFLOAT val );
+
+#ifdef EXTERNAL_DEBUG_CALLBACK
+public:
+    // set callback
+    void set_output_callback( void (* fp)(const char *) );
+    
+private:
+    // callback
+    void (* m_callback)(const char *);
+    // intermediate line storage
+    std::stringstream m_buffer;
+#endif
 };
 
 
@@ -668,6 +689,18 @@ public:
     virtual void write( t_CKINT val );
     virtual void write( t_CKINT val, t_CKINT flags );
     virtual void write( t_CKFLOAT val );
+
+#ifdef EXTERNAL_DEBUG_CALLBACK
+public:
+    // set callback
+    void set_output_callback( void (* fp)(const char *) );
+    
+private:
+    // callback
+    void (* m_callback)(const char *);
+    // intermediate line storage
+    std::stringstream m_buffer;
+#endif
 };
 
 

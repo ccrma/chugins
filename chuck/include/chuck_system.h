@@ -49,6 +49,14 @@
 
 
 
+//-----------------------------------------------------------------------------
+// name: unity_exit()
+// desc: ...
+//-----------------------------------------------------------------------------
+extern "C" void unity_exit();
+
+
+
 
 //-----------------------------------------------------------------------------
 // name: class ChuckSystem
@@ -74,6 +82,8 @@ public:
                            int channelsOut, int argc, const char ** argv );
     // shutdown in client mode
     bool clientShutdown();
+    // only shutdown vm in multivm mode
+    bool clientVMShutdown();
     
 public:
     // additional native chuck bindings/types (use with extra caution)
@@ -89,7 +99,7 @@ public:
     // compile a file
     bool compileFile( const std::string & path, const std::string & args, int count = 1 );
     // compile code directly
-    bool compileCode( const std::string & code, const std::string & args, int count = 1 );
+    bool compileCode( const char * code, const std::string & args, int count = 1 );
     
 public:
     // run engine
@@ -100,6 +110,10 @@ protected:
     Chuck_VM * m_vmRef;
     // compiler reference
     Chuck_Compiler * m_compilerRef;
+    // whether was fully run or only initted
+    bool m_initOnly;
+    // another dir to look for chugins and me.dir() for compiled code
+    std::string m_dataDir;
 };
 
 
