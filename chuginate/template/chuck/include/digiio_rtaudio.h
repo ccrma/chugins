@@ -62,7 +62,7 @@ typedef unsigned int RtAudioStreamStatus;
   #endif
 #define NUM_BUFFERS_DEFAULT          8
 #define NUM_CHANNELS_DEFAULT         2       // number of channels
-  #if defined(__PLATFORM__LINUX__)
+  #if defined(__PLATFORM_LINUX__)
 #define SAMPLING_RATE_DEFAULT        48000   // sampling rate
 #define USE_CB_DEFAULT               TRUE    // callback
   #else
@@ -185,6 +185,13 @@ public: // data
 
     static DWORD__ m_dac_n;
     static DWORD__ m_adc_n;
+    
+    // TODO: storing an m_vmRef statically means that m_vmRef just points
+    // to the latest VM to be initialized, and still acts exactly like a
+    // global VM!
+    // However, this value is only used in "chip mode" where it is unlikely
+    // there will be multiple VMs at once.
+    static Chuck_VM * m_vmRef;
 };
 
 

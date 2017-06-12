@@ -120,11 +120,11 @@ private:
 };
 
 
-Ck_Stdstream& get_global_ck_stdoutstream();
-Ck_Stdstream& get_global_ck_stderrstream();
+extern Ck_Stdstream g_ck_stdoutstream;
+extern Ck_Stdstream g_ck_stderrstream;
 
-#define CK_STDCOUT get_global_ck_stdoutstream()
-#define CK_STDCERR get_global_ck_stderrstream()
+#define CK_STDCOUT g_ck_stdoutstream
+#define CK_STDCERR g_ck_stderrstream
 #define CK_STDENDL std::string("\n")
 
 }
