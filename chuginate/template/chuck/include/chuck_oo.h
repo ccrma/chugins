@@ -42,6 +42,10 @@
 #include <fstream>
 #include "util_thread.h" // added 1.3.0.0
 
+#ifdef EXTERNAL_DEBUG_CALLBACK
+#include <sstream>
+#endif
+
 
 #ifndef __PLATFORM_WIN32__
   #include <dirent.h>
@@ -176,9 +180,13 @@ public:
 #define CHUCK_ARRAY4_DATASIZE sz_INT
 #define CHUCK_ARRAY8_DATASIZE sz_FLOAT
 #define CHUCK_ARRAY16_DATASIZE sz_COMPLEX
+#define CHUCK_ARRAY24_DATASIZE sz_VEC3 // 1.3.5.3
+#define CHUCK_ARRAY32_DATASIZE sz_VEC4 // 1.3.5.3
 #define CHUCK_ARRAY4_DATAKIND kindof_INT
 #define CHUCK_ARRAY8_DATAKIND kindof_FLOAT
 #define CHUCK_ARRAY16_DATAKIND kindof_COMPLEX
+#define CHUCK_ARRAY24_DATAKIND kindof_VEC3 // 1.3.5.3
+#define CHUCK_ARRAY32_DATAKIND kindof_VEC4 // 1.3.5.3
 //-----------------------------------------------------------------------------
 // name: struct Chuck_Array
 // desc: native ChucK arrays ( virtual base class )
@@ -307,9 +315,9 @@ public:
     t_CKUINT addr( const std::string & key );
     t_CKINT get( t_CKINT i, t_CKCOMPLEX * val );
     t_CKINT get( const std::string & key, t_CKCOMPLEX * val );
-    t_CKINT set( t_CKINT i, t_CKCOMPLEX val );
-    t_CKINT set( const std::string & key, t_CKCOMPLEX val );
-    t_CKINT push_back( t_CKCOMPLEX val );
+    t_CKINT set( t_CKINT i, const t_CKCOMPLEX & val );
+    t_CKINT set( const std::string & key, const t_CKCOMPLEX & val );
+    t_CKINT push_back( const t_CKCOMPLEX & val );
     t_CKINT pop_back( );
     t_CKINT back( t_CKCOMPLEX * val ) const;
     void    zero( t_CKUINT start, t_CKUINT end );
@@ -329,6 +337,86 @@ public:
     std::map<std::string, t_CKCOMPLEX> m_map;
     // t_CKINT m_size;
     // t_CKINT m_capacity;
+};
+
+
+
+
+//-----------------------------------------------------------------------------
+// name: struct Chuck_Array24
+// desc: native ChucK arrays (for vec3)
+//-----------------------------------------------------------------------------
+struct Chuck_Array24 : Chuck_Array
+{
+public:
+    Chuck_Array24( t_CKINT capacity = 8 );
+    virtual ~Chuck_Array24();
+    
+public:
+    t_CKUINT addr( t_CKINT i );
+    t_CKUINT addr( const std::string & key );
+    t_CKINT get( t_CKINT i, t_CKVEC3 * val );
+    t_CKINT get( const std::string & key, t_CKVEC3 * val );
+    t_CKINT set( t_CKINT i, const t_CKVEC3 & val );
+    t_CKINT set( const std::string & key, const t_CKVEC3 & val );
+    t_CKINT push_back( const t_CKVEC3 & val );
+    t_CKINT pop_back( );
+    t_CKINT back( t_CKVEC3 * val ) const;
+    void    zero( t_CKUINT start, t_CKUINT end );
+    
+    virtual void    clear( );
+    virtual t_CKINT size( ) { return m_vector.size(); }
+    virtual t_CKINT capacity( ) { return m_vector.capacity(); }
+    virtual t_CKINT set_size( t_CKINT size );
+    virtual t_CKINT set_capacity( t_CKINT capacity );
+    virtual t_CKINT find( const std::string & key );
+    virtual t_CKINT erase( const std::string & key );
+    virtual t_CKINT data_type_size( ) { return CHUCK_ARRAY24_DATASIZE; }
+    virtual t_CKINT data_type_kind( ) { return CHUCK_ARRAY24_DATAKIND; }
+    
+public:
+    std::vector<t_CKVEC3> m_vector;
+    std::map<std::string, t_CKVEC3> m_map;
+};
+
+
+
+
+//-----------------------------------------------------------------------------
+// name: struct Chuck_Array32
+// desc: native ChucK arrays (for vec4)
+//-----------------------------------------------------------------------------
+struct Chuck_Array32 : Chuck_Array
+{
+public:
+    Chuck_Array32( t_CKINT capacity = 8 );
+    virtual ~Chuck_Array32();
+    
+public:
+    t_CKUINT addr( t_CKINT i );
+    t_CKUINT addr( const std::string & key );
+    t_CKINT get( t_CKINT i, t_CKVEC4 * val );
+    t_CKINT get( const std::string & key, t_CKVEC4 * val );
+    t_CKINT set( t_CKINT i, const t_CKVEC4 & val );
+    t_CKINT set( const std::string & key, const t_CKVEC4 & val );
+    t_CKINT push_back( const t_CKVEC4 & val );
+    t_CKINT pop_back( );
+    t_CKINT back( t_CKVEC4 * val ) const;
+    void    zero( t_CKUINT start, t_CKUINT end );
+    
+    virtual void    clear( );
+    virtual t_CKINT size( ) { return m_vector.size(); }
+    virtual t_CKINT capacity( ) { return m_vector.capacity(); }
+    virtual t_CKINT set_size( t_CKINT size );
+    virtual t_CKINT set_capacity( t_CKINT capacity );
+    virtual t_CKINT find( const std::string & key );
+    virtual t_CKINT erase( const std::string & key );
+    virtual t_CKINT data_type_size( ) { return CHUCK_ARRAY32_DATASIZE; }
+    virtual t_CKINT data_type_kind( ) { return CHUCK_ARRAY32_DATAKIND; }
+    
+public:
+    std::vector<t_CKVEC4> m_vector;
+    std::map<std::string, t_CKVEC4> m_map;
 };
 
 
@@ -368,10 +456,15 @@ protected:
 struct Chuck_String : Chuck_Object
 {
 public:
-    Chuck_String( const std::string & s = "" ) { str = s; }
+    Chuck_String( const std::string & s = "" ) { set( s ); }
     ~Chuck_String() { }
 
-public:
+    void set( const std::string & s ) { str = s; charptr = str.c_str(); }
+    const std::string & get() { return str; }
+    const char * getChar() { return charptr; }
+
+private:
+    const char * charptr;
     std::string str;
 };
 
@@ -438,7 +531,7 @@ public:
 struct Chuck_IO_File : Chuck_IO
 {
 public:
-    Chuck_IO_File();
+    Chuck_IO_File( Chuck_VM * vm, Chuck_VM_Shred * shred );
     virtual ~Chuck_IO_File();
     
 public:
@@ -508,6 +601,9 @@ protected:
     long m_dir_start;
     // path
     std::string m_path;
+    // vm and shred
+    Chuck_VM * m_vmRef;
+    Chuck_VM_Shred * m_shredRef;
 };
 
 
@@ -546,6 +642,18 @@ public:
     virtual void write( t_CKINT val );
     virtual void write( t_CKINT val, t_CKINT flags );
     virtual void write( t_CKFLOAT val );
+
+#ifdef EXTERNAL_DEBUG_CALLBACK
+public:
+    // set callback
+    void set_output_callback( void (* fp)(const char *) );
+    
+private:
+    // callback
+    void (* m_callback)(const char *);
+    // intermediate line storage
+    std::stringstream m_buffer;
+#endif
 };
 
 
@@ -584,6 +692,18 @@ public:
     virtual void write( t_CKINT val );
     virtual void write( t_CKINT val, t_CKINT flags );
     virtual void write( t_CKFLOAT val );
+
+#ifdef EXTERNAL_DEBUG_CALLBACK
+public:
+    // set callback
+    void set_output_callback( void (* fp)(const char *) );
+    
+private:
+    // callback
+    void (* m_callback)(const char *);
+    // intermediate line storage
+    std::stringstream m_buffer;
+#endif
 };
 
 
