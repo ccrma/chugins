@@ -149,7 +149,7 @@ CK_DLL_CTOR(expenv_ctor)
 {
     OBJ_MEMBER_INT(SELF, expenv_data_offset) = 0;
     
-    ExpEnv * c = new ExpEnv(API->vm->get_srate());
+    ExpEnv * c = new ExpEnv(API->vm->get_srate( API ));
     
     OBJ_MEMBER_INT(SELF, expenv_data_offset) = (t_CKINT) c;
 }

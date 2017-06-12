@@ -114,7 +114,7 @@ CK_DLL_CTOR(%(CHUGIN_LCNAME)%_ctor)
     OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    %(CHUGIN_NAME)% * %(CHUGIN_INITIALS)%_obj = new %(CHUGIN_NAME)%(API->vm->get_srate());
+    %(CHUGIN_NAME)% * %(CHUGIN_INITIALS)%_obj = new %(CHUGIN_NAME)%(API->vm->get_srate( API ));
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, %(CHUGIN_LCNAME)%_data_offset) = (t_CKINT) %(CHUGIN_INITIALS)%_obj;

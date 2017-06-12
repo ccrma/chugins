@@ -537,7 +537,7 @@ CK_DLL_CTOR(faust_ctor)
     OBJ_MEMBER_INT(SELF, faust_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    Faust * f_obj = new Faust(API->vm->get_srate());
+    Faust * f_obj = new Faust(API->vm->get_srate( API ));
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, faust_data_offset) = (t_CKINT) f_obj;
