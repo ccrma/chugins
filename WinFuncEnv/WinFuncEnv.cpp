@@ -795,7 +795,7 @@ CK_DLL_CTOR(winfuncenv_ctor)
     OBJ_MEMBER_INT(SELF, winfuncenv_data_offset) = 0;
 
     // instantiate our internal c++ class representation
-    WinFuncEnv * bcdata = new WinFuncEnv(API->vm->get_srate());
+    WinFuncEnv * bcdata = new WinFuncEnv(API->vm->get_srate( API ));
 
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, winfuncenv_data_offset) = (t_CKINT) bcdata;

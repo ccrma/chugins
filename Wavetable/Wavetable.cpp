@@ -270,7 +270,7 @@ CK_DLL_QUERY( Wavetable )
 CK_DLL_CTOR(wavetable_ctor)
 {
         OBJ_MEMBER_INT(SELF, wavetable_data_offset) = 0;
-        Wavetable * w_obj = new Wavetable(API->vm->get_srate());
+        Wavetable * w_obj = new Wavetable(API->vm->get_srate( API ));
         OBJ_MEMBER_INT(SELF, wavetable_data_offset) = (t_CKINT) w_obj;
 }
 CK_DLL_DTOR(wavetable_dtor)

@@ -184,7 +184,7 @@ CK_DLL_MFUN(binaural_load)
     // get argument values
     t_CKFLOAT elevation = GET_NEXT_FLOAT(ARGS);
     t_CKFLOAT azimuth = GET_NEXT_FLOAT(ARGS);
-    string filename = GET_NEXT_STRING(ARGS)->str;
+    string filename = std::string(GET_NEXT_STRING(ARGS)->getChar());
     
     // get our c++ class pointer
     Binaural * b = (Binaural *)OBJ_MEMBER_INT(SELF, binaural_data_offset);

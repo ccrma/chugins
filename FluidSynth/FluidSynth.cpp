@@ -135,7 +135,7 @@ CK_DLL_CTOR(fluidsynth_ctor)
     OBJ_MEMBER_INT(SELF, fluidsynth_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    FluidSynth * bcdata = new FluidSynth(API->vm->get_srate());
+    FluidSynth * bcdata = new FluidSynth(API->vm->get_srate( API ));
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, fluidsynth_data_offset) = (t_CKINT) bcdata;
@@ -177,9 +177,9 @@ CK_DLL_MFUN(fluidsynth_open)
 {
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
     
-    Chuck_String * str = GET_NEXT_STRING(ARGS);
+    std::string str = std::string(GET_CK_STRING(ARGS)->getChar());
     
-    RETURN->v_int = f_data->open(str->str);
+    RETURN->v_int = f_data->open(str);
 }
 
 
