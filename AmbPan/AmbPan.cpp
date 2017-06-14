@@ -239,7 +239,7 @@ CK_DLL_CTOR(ambpan3_ctor)
     OBJ_MEMBER_INT(SELF, ambpan3_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    AmbPan3 * bcdata = new AmbPan3(API->vm->get_srate( API ));
+    AmbPan3 * bcdata = new AmbPan3(API->vm->get_srate( API, SHRED ));
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, ambpan3_data_offset) = (t_CKINT) bcdata;

@@ -386,7 +386,7 @@ CK_DLL_CTOR(sigmund_ctor)
   OBJ_MEMBER_INT(SELF, sigmund_data_offset) = 0;
   
   // instantiate our internal c++ class representation
-  Sigmund * bcdata = new Sigmund(API->vm->get_srate( API ));
+  Sigmund * bcdata = new Sigmund(API->vm->get_srate( API, SHRED ));
   
   // store the pointer in the ChucK object member
   OBJ_MEMBER_INT(SELF, sigmund_data_offset) = (t_CKINT) bcdata;

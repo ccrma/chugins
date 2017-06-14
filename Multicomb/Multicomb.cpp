@@ -255,7 +255,7 @@ CK_DLL_CTOR(multicomb_ctor)
   OBJ_MEMBER_INT(SELF, multicomb_data_offset) = 0;
   
   // instantiate our internal c++ class representation
-  Multicomb * bcdata = new Multicomb(API->vm->get_srate( API ));
+  Multicomb * bcdata = new Multicomb(API->vm->get_srate( API, SHRED ));
   
   // store the pointer in the ChucK object member
   OBJ_MEMBER_INT(SELF, multicomb_data_offset) = (t_CKINT) bcdata;

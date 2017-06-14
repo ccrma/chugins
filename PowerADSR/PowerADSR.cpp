@@ -519,7 +519,7 @@ CK_DLL_CTOR(poweradsr_ctor)
     OBJ_MEMBER_INT(SELF, poweradsr_data_offset) = 0;
 
     // instantiate our internal c++ class representation
-    PowerADSR * padsr_obj = new PowerADSR(API->vm->get_srate( API ));
+    PowerADSR * padsr_obj = new PowerADSR(API->vm->get_srate( API, SHRED ));
 
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, poweradsr_data_offset) = (t_CKINT) padsr_obj;
