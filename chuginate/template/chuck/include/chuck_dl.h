@@ -627,26 +627,14 @@ typedef void * String;
 struct Api
 {
 public:
-    static std::map< Chuck_VM *, Api > g_apis;
-    static inline const Api * instance( Chuck_VM * vm )
-    {
-        if( g_apis.count( vm ) == 0 )
-        {
-            g_apis[vm];
-            g_apis[vm].m_vmRef = vm;
-        }
-        return &( g_apis[vm] );
-    }
-    
-    // public vm ref: for use in library functions only, but
-    // public so that it can be easily accessed from DLLs
-    Chuck_VM * m_vmRef;
+    static Api g_api;
+    static inline const Api * instance() { return &g_api; }
     
     struct VMApi
     {
         VMApi();
         
-        t_CKUINT (* const get_srate)( CK_DL_API );
+        t_CKUINT (* const get_srate)(CK_DL_API, Chuck_VM_Shred *);
     } * const vm;
     
     struct ObjectApi
@@ -656,9 +644,9 @@ public:
     private:
         Type (* const get_type)( CK_DL_API, std::string &name );
 
-        Object (* const create)( CK_DL_API, Type type );
+        Object (* const create)( CK_DL_API, Chuck_VM_Shred *, Type type );
         
-        String (* const create_string)( CK_DL_API, std::string &value );
+        String (* const create_string)( CK_DL_API, Chuck_VM_Shred *, std::string &value );
         
         t_CKBOOL (* const get_mvar_int)( CK_DL_API, Object object, std::string &name, t_CKINT &value );
         t_CKBOOL (* const get_mvar_float)( CK_DL_API, Object object, std::string &name, t_CKFLOAT &value );
@@ -676,13 +664,12 @@ public:
     object(new ObjectApi)
     {}
     
-public:
-    Api(const Api &a) :
+private:
+    Api(Api &a) :
     vm(a.vm),
     object(a.object)
-    { m_vmRef = a.m_vmRef; };
+    { assert(0); };
     
-private:
     Api &operator=(Api &a) { assert(0); return a; }
 };
     
