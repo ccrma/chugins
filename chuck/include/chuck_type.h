@@ -361,7 +361,7 @@ struct Chuck_Context : public Chuck_VM_Object
     Chuck_VM_Code * code() { return nspc->pre_ctor; }
 
     // special alloc
-    Chuck_Type * new_Chuck_Type();
+    Chuck_Type * new_Chuck_Type( Chuck_Env * env );
     Chuck_Value * new_Chuck_Value( Chuck_Type * t, const std::string & name );
     Chuck_Func * new_Chuck_Func();
     Chuck_Namespace * new_Chuck_Namespace();
@@ -377,29 +377,11 @@ struct Chuck_Context : public Chuck_VM_Object
 struct Chuck_Env : public Chuck_VM_Object
 {
 public:
-    static t_CKBOOL startup();
-    static Chuck_Env * instance();
-    static t_CKBOOL shutdown();
+    static Chuck_Env * new_instance();
 
 private:
-    static Chuck_Env * our_instance;
     // constructor
-    Chuck_Env( )
-    { 
-        // lock from being deleted
-        global_context.lock();
-        // make reference
-        context = &global_context; SAFE_ADD_REF(context);
-        // make name
-        context->filename = "@[global]";
-        // remember
-        global_nspc = global_context.nspc; SAFE_ADD_REF(global_nspc);
-        // deprecated stuff
-        deprecated.clear(); deprecate_level = 1;
-        user_nspc = NULL;
-        // clear
-        this->reset();
-    }
+    Chuck_Env();
 
 protected:
     // global namespace
@@ -453,7 +435,7 @@ public:
     t_CKINT deprecate_level;
 
     // destructor
-    virtual ~Chuck_Env() { }
+    virtual ~Chuck_Env();
 
     // reset
     void reset( )
@@ -505,6 +487,34 @@ public:
     // check whether the context is the global context
     t_CKBOOL is_global()
     { return class_def == NULL && func == NULL && class_scope == 0; }
+    
+public:
+    // public types
+    Chuck_Type * t_void;
+    Chuck_Type * t_int;
+    Chuck_Type * t_float;
+    Chuck_Type * t_time;
+    Chuck_Type * t_dur;
+    Chuck_Type * t_complex;
+    Chuck_Type * t_polar;
+    Chuck_Type * t_vec3;
+    Chuck_Type * t_vec4;
+    Chuck_Type * t_null;
+    Chuck_Type * t_function;
+    Chuck_Type * t_object;
+    Chuck_Type * t_array;
+    Chuck_Type * t_string;
+    Chuck_Type * t_event;
+    Chuck_Type * t_ugen;
+    Chuck_Type * t_uana;
+    Chuck_Type * t_uanablob;
+    Chuck_Type * t_shred;
+    Chuck_Type * t_io;
+    Chuck_Type * t_fileio;
+    Chuck_Type * t_chout;
+    Chuck_Type * t_cherr;
+    Chuck_Type * t_thread;
+    Chuck_Type * t_class;
 };
 
 
@@ -591,10 +601,11 @@ struct Chuck_Type : public Chuck_VM_Object
 
 public:
     // constructor
-    Chuck_Type( te_Type _id = te_null, const std::string & _n = "", 
+    Chuck_Type( Chuck_Env * env, te_Type _id = te_null, const std::string & _n = "",
                 Chuck_Type * _p = NULL, t_CKUINT _s = 0 )
     {
-        xid = _id; name = _n; parent = _p; size = _s; owner = NULL; 
+        m_env = env;
+        xid = _id; name = _n; parent = _p; size = _s; owner = NULL;
         array_type = NULL; array_depth = 0; obj_size = 0;
         info = NULL; func = NULL; def = NULL; is_copy = FALSE; 
         ugen_info = NULL; is_complete = TRUE; has_constructor = FALSE;
@@ -656,7 +667,7 @@ public:
 
     // copy
     Chuck_Type * copy( Chuck_Env * env ) const
-    { Chuck_Type * n = env->context->new_Chuck_Type();
+    { Chuck_Type * n = env->context->new_Chuck_Type( env );
       *n = *this; return n; }
     
     // to string
@@ -668,6 +679,9 @@ public:
     // to c
     const char * c_name()
     { return str().c_str(); }
+    
+    //ref
+    Chuck_Env * m_env;
 };
 
 
@@ -785,7 +799,7 @@ struct Chuck_Func : public Chuck_VM_Object
 // initialize the type engine
 Chuck_Env * type_engine_init( Chuck_VM * vm );
 // shutdown the type engine
-void type_engine_shutdown();
+void type_engine_shutdown( Chuck_Env * env );
 // load a context to be type-checked or emitted
 t_CKBOOL type_engine_load_context( Chuck_Env * env, Chuck_Context * context );
 // unload a context after being emitted
@@ -817,11 +831,11 @@ t_CKBOOL operator !=( const Chuck_Type & lhs, const Chuck_Type & rhs );
 t_CKBOOL equals( Chuck_Type * lhs, Chuck_Type * rhs );
 t_CKBOOL operator <=( const Chuck_Type & lhs, const Chuck_Type & rhs );
 t_CKBOOL isa( Chuck_Type * lhs, Chuck_Type * rhs );
-t_CKBOOL isprim( Chuck_Type * type );
-t_CKBOOL isobj( Chuck_Type * type );
-t_CKBOOL isfunc( Chuck_Type * type );
-t_CKBOOL iskindofint( Chuck_Type * type ); // added 1.3.1.0: this includes int + pointers
-t_CKUINT getkindof( Chuck_Type * type ); // added 1.3.1.0: to get the kindof a type
+t_CKBOOL isprim( Chuck_Env * env, Chuck_Type * type );
+t_CKBOOL isobj( Chuck_Env * env, Chuck_Type * type );
+t_CKBOOL isfunc( Chuck_Env * env, Chuck_Type * type );
+t_CKBOOL iskindofint( Chuck_Env * env, Chuck_Type * type ); // added 1.3.1.0: this includes int + pointers
+t_CKUINT getkindof( Chuck_Env * env, Chuck_Type * type ); // added 1.3.1.0: to get the kindof a type
 
 // import
 Chuck_Type * type_engine_import_class_begin( Chuck_Env * env, Chuck_Type * type, 
@@ -867,7 +881,7 @@ t_CKBOOL type_engine_register_deprecate( Chuck_Env * env,
 // helpers
 t_CKBOOL type_engine_check_reserved( Chuck_Env * env, const std::string & xid, int pos );
 t_CKBOOL type_engine_check_reserved( Chuck_Env * env, S_Symbol xid, int pos );
-t_CKBOOL type_engine_check_primitive( Chuck_Type * type );
+t_CKBOOL type_engine_check_primitive( Chuck_Env * env, Chuck_Type * type );
 t_CKBOOL type_engine_compat_func( a_Func_Def lhs, a_Func_Def rhs, int pos, std::string & err, t_CKBOOL print = TRUE );
 t_CKBOOL type_engine_get_deprecate( Chuck_Env * env, const std::string & from, std::string & to );
 Chuck_Type  * type_engine_find_common_anc( Chuck_Type * lhs, Chuck_Type * rhs );
@@ -897,6 +911,7 @@ t_CKBOOL escape_str( char * str_lit, int linepos );
 t_CKINT str2char( const char * char_lit, int linepos );
 
 // default types
+/* exile! now stored in env
 extern Chuck_Type t_void;
 extern Chuck_Type t_int;
 extern Chuck_Type t_float;
@@ -922,7 +937,7 @@ extern Chuck_Type t_chout;
 extern Chuck_Type t_cherr;
 extern Chuck_Type t_ugen;
 extern Chuck_Type t_uana;
-extern Chuck_Type t_uanablob;
+extern Chuck_Type t_uanablob;*/
 
 
 
