@@ -475,7 +475,7 @@ CK_DLL_QUERY( Faust )
     QUERY->add_dtor(QUERY, faust_dtor);
     
     // for UGen's only: add tick function
-	QUERY->add_ugen_funcf(QUERY, faust_tickf, NULL, MAX_INPUTS, MAX_OUTPUTS);
+	QUERY->add_ugen_funcf_auto_num_channels(QUERY, faust_tickf, NULL);
 
     // add .eval()
     QUERY->add_mfun(QUERY, faust_eval, "int", "eval");
