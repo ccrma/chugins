@@ -636,7 +636,7 @@ CK_DLL_MFUN(ladspa_load)
   // get our c++ class pointer
   Ladspa * bcdata = (Ladspa *) OBJ_MEMBER_INT(SELF, ladspa_data_offset);
   // set the return value
-  std::string chuckstr = std::string(GET_CK_STRING(ARGS)->getChar());
+  std::string chuckstr = std::string(GET_CK_STRING(ARGS)->c_str());
   char * name = new char [chuckstr.length()];
   strcpy (name, chuckstr.data());
   RETURN->v_int = bcdata->LADSPA_load(name);
@@ -651,7 +651,7 @@ CK_DLL_MFUN(ladspa_label)
   Chuck_String * cs = GET_CK_STRING(ARGS);
   if (cs)
     {
-    const char * name = cs->getChar();
+    const char * name = cs->c_str();
   RETURN->v_int = bcdata->LadspaActivate(name);
     }
   else RETURN->v_int = 0;
