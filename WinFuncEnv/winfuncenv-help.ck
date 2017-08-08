@@ -1,16 +1,16 @@
-// WinFunEnv is a AR envelope built around window functions! 
+// WinFunEnv is an Attack/Release envelope built around window functions!
 
 // ~options
 //
-// set (duration, duration), default (0.0, 0.0)
+// .set (duration, duration), default (0.0, 0.0)
 //   sets duration for attack and release phase
 //
-// attack (duration), default 0.0
+// .attackTime (duration), default 0.0
 //   sets length for the attack phase
 //
-// release (duration), default 0.0
+// .releaseTime (duration), default 0.0
 //   sets length for the release phase
-// 
+//
 // ~ the following window functions are available to use as envelopes
 // ~ certain functions allow for custom coefficient values (ie setBlackman(0.64) )
 //
@@ -34,31 +34,37 @@
 //
 // ~ hopefully further updates will see more windows being added (Kaiser, etc)
 
-Noise nois  => WinFuncEnv win1 => dac;
+Noise nois => WinFuncEnv win1 => dac;
 
-fun void playWindow(WinFuncEnv @ win, dur env_time) {
-    win.attack(env_time);
-    win.release(env_time);
-    win.keyOn(); 
-    env_time => now;
-    win.keyOff(); 
-    env_time => now;
+fun void playWindow(WinFuncEnv @ win, dur attack, dur release) {
+    win.attackTime(attack);
+    win.releaseTime(release);
+    win.keyOn();
+    attack => now;
+    win.keyOff();
+    release => now;
 }
 
 // sets Blackman Envelope with a default value of 0.16
 win1.setBlackman();
 <<< "Blackman Envelope with default value of 0.16 on white noise", "" >>>;
-playWindow(win1, 2.5::second);
+playWindow(win1, 2.5::second, 2.5::second);
 
 // sets Blackman Envelope with a custom value
 win1.setBlackman(Math.random2f(0.05, 0.25));
 <<< "Blackman Envelope with a random custom value on white noise.", "" >>>;
-playWindow(win1, 2.5::second);
+playWindow(win1, 2.5::second, 2.5::second);
+
+<<< "Blackman Envelope with a short attack and a long release..", "" >>>;
+playWindow(win1, 100::ms, 3::second);
+
+<<< "Blackman Envelope with a long attack and a short release..", "" >>>;
+playWindow(win1, 3::second, 100::ms);
 
 // sets BlackmanHarris Envelope
 win1.setBlackmanHarris();
 <<< "BlackmanHarris Envelope on white noise.", "" >>>;
-playWindow(win1, 2.5::second);
+playWindow(win1, 2.5::second, 2.5::second);
 
 // replacing noise with a sine wave
 nois =< win1;
@@ -68,14 +74,14 @@ SinOsc sin => win1;
 win1.setParzen();
 <<< "Parzen Window used for amplitude modulation on a sine wave", "" >>>;
 for (int i; i < 25000; i++) {
-    playWindow(win1, 0.1::ms);
+    playWindow(win1, 0.1::ms, 0.1::ms);
 }
 
 // sets Hann Envelope
 win1.setHann();
 <<< "Hann Window used for amplitude modulation on a sine wave", "" >>>;
 for (int i; i < 25000; i++) {
-    playWindow(win1, 0.1::ms);
+    playWindow(win1, 0.1::ms, 0.1::ms);
 }
 
 // removing sine wave, adding noise and a second envelope to be in series with the first
@@ -87,9 +93,9 @@ win1 => WinFuncEnv win2 => dac;
 win1.setParzen();
 win2.setWelch();
 
-fun void loop(WinFuncEnv @ win, dur env_time) {
+fun void loop(WinFuncEnv @ win, dur envTime) {
     repeat(500) {
-        playWindow(win, env_time);
+        playWindow(win, envTime, envTime);
     }
 }
 
