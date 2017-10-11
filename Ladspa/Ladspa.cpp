@@ -594,7 +594,7 @@ CK_DLL_CTOR(ladspa_ctor)
   OBJ_MEMBER_INT(SELF, ladspa_data_offset) = 0;
   
   // instantiate our internal c++ class representation
-  Ladspa * bcdata = new Ladspa(API->vm->get_srate());
+  Ladspa * bcdata = new Ladspa(API->vm->get_srate(API, SHRED));
   
   // store the pointer in the ChucK object member
   OBJ_MEMBER_INT(SELF, ladspa_data_offset) = (t_CKINT) bcdata;
