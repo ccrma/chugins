@@ -579,7 +579,7 @@ CK_DLL_MFUN(faust_eval)
     // get our c++ class pointer
     Faust * f = (Faust *) OBJ_MEMBER_INT(SELF, faust_data_offset);
     // get argument
-    std::string code = GET_NEXT_STRING(ARGS)->str;
+    std::string code = GET_NEXT_STRING_SAFE(ARGS);
     // eval it
     RETURN->v_int = f->eval( code );
 }
@@ -601,7 +601,7 @@ CK_DLL_MFUN(faust_compile)
     // get our c++ class pointer
     Faust * f = (Faust *) OBJ_MEMBER_INT(SELF, faust_data_offset);
     // get argument
-    std::string code = GET_NEXT_STRING(ARGS)->str;
+    std::string code = GET_NEXT_STRING_SAFE(ARGS);
     // eval it
     RETURN->v_int = f->compile( code );
 }
@@ -611,7 +611,7 @@ CK_DLL_MFUN(faust_v_set)
     // get our c++ class pointer
     Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
     // get name
-    std::string name = GET_NEXT_STRING(ARGS)->str;
+    std::string name = GET_NEXT_STRING_SAFE(ARGS);
     // get value
     t_CKFLOAT v = GET_NEXT_FLOAT(ARGS);
     // call it
@@ -625,7 +625,7 @@ CK_DLL_MFUN(faust_v_get)
     // get our c++ class pointer
     Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
     // get name
-    std::string name = GET_NEXT_STRING(ARGS)->str;
+    std::string name = GET_NEXT_STRING_SAFE(ARGS);
     // call it
     RETURN->v_float = f->getParam( name );
 }

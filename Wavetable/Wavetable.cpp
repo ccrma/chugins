@@ -137,7 +137,8 @@ int getInterpolate()
 int setSync ( t_CKINT p)
 {
   sync = p;
-  if (sync < 0) sync = 0;
+  // unsigned int never < 0
+  // if (sync < 0) sync = 0;
   if (sync > 1) sync = 0;
   return sync;
 }

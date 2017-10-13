@@ -177,9 +177,9 @@ CK_DLL_MFUN(fluidsynth_open)
 {
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
     
-    Chuck_String * str = GET_NEXT_STRING(ARGS);
+    std::string str = GET_NEXT_STRING_SAFE(ARGS);
     
-    RETURN->v_int = f_data->open(str->str);
+    RETURN->v_int = f_data->open(str);
 }
 
 
