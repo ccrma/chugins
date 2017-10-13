@@ -6,7 +6,7 @@ CHUGIN_NAME=ExpEnv
 MODULES=ExpEnv.cpp
 
 # where the chuck source code is
-CK_SRC_PATH=../../../
+CK_SRC_PATH=../chuck/include
 
 # you won't generally need to change anything below this line for a new chugin
 
