@@ -44,7 +44,11 @@
 #define t_CKFLOAT                   double
 #define t_CKDOUBLE                  double
 #define t_CKSINGLE                  float
+#ifdef _WIN64                       // REFACTOR-2017
+#define t_CKINT                     long long // REFACTOR-2017
+#else
 #define t_CKINT                     long
+#endif
 #define t_CKUINT                    unsigned t_CKINT
 #define t_CKBOOL                    unsigned t_CKINT
 #define t_CKBYTE                    unsigned char
@@ -105,6 +109,9 @@ typedef const char *                c_constr;
 #define SILENCE                     0.0f
 #define CK_DDN                      CK_DDN_SINGLE
 #endif
+
+// for external use
+#define t_CKSAMPLE                  SAMPLE
 
 // sample complex
 typedef struct { SAMPLE re ; SAMPLE im ; } t_CKCOMPLEX_SAMPLE;

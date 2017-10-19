@@ -137,7 +137,8 @@ int getInterpolate()
 int setSync ( t_CKINT p)
 {
   sync = p;
-  if (sync < 0) sync = 0;
+  // unsigned int never < 0
+  // if (sync < 0) sync = 0;
   if (sync > 1) sync = 0;
   return sync;
 }
@@ -270,7 +271,7 @@ CK_DLL_QUERY( Wavetable )
 CK_DLL_CTOR(wavetable_ctor)
 {
         OBJ_MEMBER_INT(SELF, wavetable_data_offset) = 0;
-        Wavetable * w_obj = new Wavetable(API->vm->get_srate());
+        Wavetable * w_obj = new Wavetable(API->vm->get_srate(API, SHRED));
         OBJ_MEMBER_INT(SELF, wavetable_data_offset) = (t_CKINT) w_obj;
 }
 CK_DLL_DTOR(wavetable_dtor)

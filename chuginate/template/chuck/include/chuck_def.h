@@ -44,7 +44,11 @@
 #define t_CKFLOAT                   double
 #define t_CKDOUBLE                  double
 #define t_CKSINGLE                  float
+#ifdef _WIN64                       // REFACTOR-2017
+#define t_CKINT                     long long // REFACTOR-2017
+#else
 #define t_CKINT                     long
+#endif
 #define t_CKUINT                    unsigned t_CKINT
 #define t_CKBOOL                    unsigned t_CKINT
 #define t_CKBYTE                    unsigned char
@@ -55,6 +59,11 @@
 typedef struct { t_CKFLOAT re ; t_CKFLOAT im ; } t_CKCOMPLEX;
 // polar type
 typedef struct { t_CKFLOAT modulus ; t_CKFLOAT phase ; } t_CKPOLAR;
+
+// vector types
+typedef struct { t_CKFLOAT x ; t_CKFLOAT y ; t_CKFLOAT z ; } t_CKVEC3;
+typedef struct { t_CKFLOAT x ; t_CKFLOAT y ; t_CKFLOAT z ; t_CKFLOAT w ; } t_CKVEC4;
+typedef struct { t_CKUINT N ; t_CKFLOAT * values ; } t_CKVECTOR;
 
 // size
 #define sz_TIME                     sizeof(t_CKTIME)
@@ -69,6 +78,9 @@ typedef struct { t_CKFLOAT modulus ; t_CKFLOAT phase ; } t_CKPOLAR;
 #define sz_VOIDPTR                  sizeof(t_CKVOIDPTR)
 #define sz_COMPLEX                  sizeof(t_CKCOMPLEX)
 #define sz_POLAR                    sizeof(t_CKPOLAR)
+#define sz_VEC3                     sizeof(t_CKVEC3)
+#define sz_VEC4                     sizeof(t_CKVEC4)
+#define sz_VECTOR                   sizeof(t_CKVECTOR)
 #define sz_VOID                     0
 #define sz_WORD                     4
 
@@ -78,6 +90,8 @@ typedef struct { t_CKFLOAT modulus ; t_CKFLOAT phase ; } t_CKPOLAR;
 #define kindof_INT                 1
 #define kindof_FLOAT               2
 #define kindof_COMPLEX             3
+#define kindof_VEC3                4
+#define kindof_VEC4                5
 
 typedef char *                      c_str;
 typedef const char *                c_constr;
@@ -95,6 +109,9 @@ typedef const char *                c_constr;
 #define SILENCE                     0.0f
 #define CK_DDN                      CK_DDN_SINGLE
 #endif
+
+// for external use
+#define t_CKSAMPLE                  SAMPLE
 
 // sample complex
 typedef struct { SAMPLE re ; SAMPLE im ; } t_CKCOMPLEX_SAMPLE;
@@ -122,6 +139,7 @@ typedef struct { SAMPLE re ; SAMPLE im ; } t_CKCOMPLEX_SAMPLE;
 #define ck_max(x,y)                 ( (x) >= (y) ? (x) : (y) )
 #define ck_min(x,y)                 ( (x) <= (y) ? (x) : (y) )
 
+#ifndef __arm__
 // dedenormal
 #define CK_DDN_SINGLE(f)            f = ( f >= 0 ? \
         ( ( f > (t_CKSINGLE)1e-15 && f < (t_CKSINGLE)1e15 ) ? f : (t_CKSINGLE)0.0 ) : \
@@ -129,7 +147,10 @@ typedef struct { SAMPLE re ; SAMPLE im ; } t_CKCOMPLEX_SAMPLE;
 #define CK_DDN_DOUBLE(f)            f = ( f >= 0 ? \
         ( ( f > (t_CKDOUBLE)1e-15 && f < (t_CKDOUBLE)1e15 ) ? f : 0.0 ) : \
         ( ( f < (t_CKDOUBLE)-1e-15 && f > (t_CKDOUBLE)-1e15 ) ? f : 0.0 ) )
-
+#else
+#define CK_DDN_SINGLE(f) (f)
+#define CK_DDN_DOUBLE(f) (f)
+#endif // __arm__
 
 // tracking
 #if defined(__CHUCK_STAT_TRACK__)
@@ -174,7 +195,9 @@ typedef struct { SAMPLE re ; SAMPLE im ; } t_CKCOMPLEX_SAMPLE;
 #define __STK_USE_SINGLE_PRECISION__
 #endif
 
-
-
+#ifdef __arm__
+// enable additional optimization
+#define __STK_USE_SINGLE_PRECISION__
+#endif // __arm__
 
 #endif

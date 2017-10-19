@@ -6,7 +6,7 @@ CHUGIN_NAME=ExpEnv
 MODULES=ExpEnv.cpp
 
 # where the chuck source code is
-CK_SRC_PATH=../../../
+CK_SRC_PATH=../chuck/include
 
 # you won't generally need to change anything below this line for a new chugin
 
@@ -15,7 +15,7 @@ CK_CHUGIN_STATIC?=0
 
 CHUGIN_PATH=/usr/lib/chuck
 
-FLAGS=-D__LINUX_ALSA__ -I$(CK_SRC_PATH)
+FLAGS=-D__LINUX_ALSA__ -D__PLATFORM_LINUX__ -I$(CK_SRC_PATH) -fPIC
 LDFLAGS=-shared -lstdc++
 
 ifeq ($(CK_CHUGIN_STATIC),0)

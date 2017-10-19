@@ -594,7 +594,7 @@ CK_DLL_CTOR(ladspa_ctor)
   OBJ_MEMBER_INT(SELF, ladspa_data_offset) = 0;
   
   // instantiate our internal c++ class representation
-  Ladspa * bcdata = new Ladspa(API->vm->get_srate());
+  Ladspa * bcdata = new Ladspa(API->vm->get_srate(API, SHRED));
   
   // store the pointer in the ChucK object member
   OBJ_MEMBER_INT(SELF, ladspa_data_offset) = (t_CKINT) bcdata;
@@ -636,7 +636,7 @@ CK_DLL_MFUN(ladspa_load)
   // get our c++ class pointer
   Ladspa * bcdata = (Ladspa *) OBJ_MEMBER_INT(SELF, ladspa_data_offset);
   // set the return value
-  std::string chuckstr = GET_CK_STRING(ARGS)->str;
+  std::string chuckstr = GET_CK_STRING_SAFE(ARGS);
   char * name = new char [chuckstr.length()];
   strcpy (name, chuckstr.data());
   RETURN->v_int = bcdata->LADSPA_load(name);
@@ -648,13 +648,8 @@ CK_DLL_MFUN(ladspa_label)
   // get our c++ class pointer
   Ladspa * bcdata = (Ladspa *) OBJ_MEMBER_INT(SELF, ladspa_data_offset);
   // set the return value
-  Chuck_String * cs = GET_CK_STRING(ARGS);
-  if (cs)
-    {
-    const char * name = cs->str.c_str();
-  RETURN->v_int = bcdata->LadspaActivate(name);
-    }
-  else RETURN->v_int = 0;
+  std::string name = GET_CK_STRING_SAFE(ARGS);
+  RETURN->v_int = bcdata->LadspaActivate(name.c_str());
 }
 
 // example implementation for setter

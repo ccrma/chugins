@@ -258,7 +258,7 @@ CK_DLL_CTOR(expdelay_ctor)
   OBJ_MEMBER_INT(SELF, expdelay_data_offset) = 0;
   
   // instantiate our internal c++ class representation
-  ExpDelay * bcdata = new ExpDelay(API->vm->get_srate());
+  ExpDelay * bcdata = new ExpDelay(API->vm->get_srate(API, SHRED));
   
   // store the pointer in the ChucK object member
   OBJ_MEMBER_INT(SELF, expdelay_data_offset) = (t_CKINT) bcdata;

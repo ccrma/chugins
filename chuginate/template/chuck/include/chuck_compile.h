@@ -53,9 +53,22 @@ struct Chuck_DLL;
 //-----------------------------------------------------------------------------
 struct Chuck_Compiler
 {
+protected: // data
+    // carrier
+    Chuck_Carrier * m_carrier;
+    
+public: // get protected data
+    // REFACTOR-2017: get associated, per-compiler environment
+    Chuck_Env * env() const { return m_carrier->env; }
+    // REFACTOR-2017: get associated, per-compiler VM
+    Chuck_VM * vm() const { return m_carrier->vm; }
+    // REFACTOR-2017: get associated, per-compiler carrier
+    Chuck_Carrier * carrier() const { return m_carrier; }
+    // set carrier
+    t_CKBOOL setCarrier( Chuck_Carrier * c ) { m_carrier = c; return TRUE; }
+
+    
 public: // data
-    // type-checking environment
-    Chuck_Env * env;
     // emitter
     Chuck_Emitter * emitter;
     // generated code
@@ -76,12 +89,17 @@ public: // to all
     virtual ~Chuck_Compiler();
 
     // initialize
-    t_CKBOOL initialize( Chuck_VM * vm, 
-                         std::list<std::string> & chugin_search_paths, 
+    t_CKBOOL initialize( std::list<std::string> & chugin_search_paths,
                          std::list<std::string> & named_dls );
     // shutdown
     void shutdown();
 
+public: // additional binding
+    // bind a new type system module, via query function
+    t_CKBOOL bind( f_ck_query query_func, const std::string & name,
+                   const std::string & nspc = "global" );
+
+public: // compile
     // set auto depend
     void set_auto_depend( t_CKBOOL v );
     // parse, type-check, and emit a program
@@ -109,10 +127,6 @@ protected: // internal
     // add to recent
     t_CKBOOL add_recent_path( const std::string & path, Chuck_Context * context );
 };
-
-
-// call this to detach all open files
-extern "C" void all_detach();
 
 
 

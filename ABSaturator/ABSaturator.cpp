@@ -201,7 +201,7 @@ CK_DLL_CTOR(absaturator_ctor)
 {
     OBJ_MEMBER_INT(SELF, absaturator_data_offset) = 0;
     
-    ABSaturator * bcdata = new ABSaturator(API->vm->get_srate());
+    ABSaturator * bcdata = new ABSaturator(API->vm->get_srate(API, SHRED));
     
     OBJ_MEMBER_INT(SELF, absaturator_data_offset) = (t_CKINT) bcdata;
 }
