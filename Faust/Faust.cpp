@@ -131,6 +131,10 @@ public:
     {
         insertMap(buildPath(label), zone);
     }
+
+    // -- soundfiles
+    void addSoundfile(const char* label, Soundfile** sf_zone)
+    {}
     
     // -- metadata declarations
     void declare(FAUSTFLOAT* zone, const char* key, const char* val)
@@ -139,8 +143,8 @@ public:
     // set/get
     void setValue( const std::string& path, FAUSTFLOAT value )
     {
-        // append "/0x00/" if necessary
-        string p = path.length() > 0 && path[0] == '/' ? path : string("/0x00/")+path;
+        // append "/chuck/" if necessary
+        string p = path.length() > 0 && path[0] == '/' ? path : string("/chuck/")+path;
 
         // TODO: should check if path valid?
         if( fZoneMap.find(p) == fZoneMap.end() )
