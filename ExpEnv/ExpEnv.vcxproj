@@ -60,7 +60,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
       <MinimalRebuild>true</MinimalRebuild>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>..\chuck\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;__PLATFORM_WIN32__;__WINDOWS_DS__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Debug\</AssemblerListingLocation>
