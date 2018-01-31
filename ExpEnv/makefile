@@ -9,6 +9,7 @@ CXX_MODULES=ExpEnv.cpp
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/
 
+
 # ---------------------------------------------------------------------------- #
 # you won't generally need to change anything below this line for a new chugin #
 # ---------------------------------------------------------------------------- #
@@ -26,13 +27,16 @@ endif
 endif
 
 .PHONY: osx linux linux-oss linux-jack linux-alsa win32
-osx linux linux-oss linux-jack linux-alsa win32: all
+osx linux linux-oss linux-jack linux-alsa: all
+
+win32:
+	make -f makefile.win32
 
 CC=gcc
 CXX=gcc
 LD=g++
 
-CHUGIN_PATH=/usr/lib/chuck
+CHUGIN_PATH=/usr/local/lib/chuck
 
 ifneq (,$(strip $(filter osx bin-dist-osx,$(MAKECMDGOALS))))
 include makefile.osx
@@ -54,11 +58,6 @@ ifneq (,$(strip $(filter linux-alsa,$(MAKECMDGOALS))))
 include makefile.linux
 endif
 
-ifneq (,$(strip $(filter win32,$(MAKECMDGOALS))))
-include makefile.win32
-endif
-
-##   FLAGS+= -m32
 
 ifneq ($(CHUCK_DEBUG),)
 FLAGS+= -g
@@ -67,8 +66,10 @@ FLAGS+= -O3
 endif
 
 ifneq ($(CHUCK_STRICT),)
-FLAGS+= -Wall
+FLAGS+= -Werror
 endif
+
+
 
 # default: build a dynamic chugin
 CK_CHUGIN_STATIC?=0
@@ -89,7 +90,7 @@ all: $(CHUG)
 
 $(CHUG): $(C_OBJECTS) $(CXX_OBJECTS)
 ifeq ($(CK_CHUGIN_STATIC),0)
-	g++ $(LDFLAGS) -o $@ $^
+	$(LD) $(LDFLAGS) -o $@ $^
 else
 	ar rv $@ $^
 	ranlib $@
@@ -107,5 +108,5 @@ install: $(CHUG)
 	chmod 755 $(CHUGIN_PATH)/$(CHUG)
 
 clean: 
-	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG)
+	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) Release Debug
 
