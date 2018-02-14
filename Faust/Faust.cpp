@@ -133,7 +133,7 @@ public:
     }
 
     // -- soundfiles
-    void addSoundfile(const char* label, Soundfile** sf_zone)
+    void addSoundfile(const char* label, const char* filename, Soundfile** sf_zone)
     {}
     
     // -- metadata declarations
