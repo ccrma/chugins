@@ -15,6 +15,7 @@
 #include "perlin-noise.h"
 
 #ifdef WIN32
+#include <time.h>
 static long random() { return rand(); }
 static void srandom( unsigned s ) { srand( s ); }
 #endif // WIN32
@@ -212,7 +213,7 @@ CK_DLL_MFUN(perlin_noise2)
     t_CKFLOAT x[2];
     x[0] = GET_NEXT_FLOAT(ARGS);
     x[1] = GET_NEXT_FLOAT(ARGS);
-    RETURN->v_float = p_obj->noise3(x);
+    RETURN->v_float = p_obj->noise2(x);
 }
 
 CK_DLL_MFUN(perlin_noise3)
