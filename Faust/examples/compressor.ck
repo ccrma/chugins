@@ -1,18 +1,20 @@
-// name: fin.ck
+// name: compressor.ck
 // desc: demo of Faust chugin in action!
 
 // instantiate and connect faust => ck
 adc => Faust compressor => dac;
-// compile faust code
+
+// evaluate Faust code
 compressor.eval(` 
 process = dm.compressor_demo;
 `);
-// parameter dump
+
+// print the parameters of the Faust object
 compressor.dump();
 
 // time loop
 while( true )
 {
-    // advance time
-    100::ms => now;
+  // advance time
+  100::ms => now;
 }

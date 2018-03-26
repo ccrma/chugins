@@ -1,4 +1,4 @@
-// name: smcExample.ck
+// name: smcAvancedExample.ck
 // desc: advanced FaucK example! 
 
 // a string connected to a "cry baby" effect
@@ -13,7 +13,7 @@ string.compile("string.dsp");
 
 // crybaby_demo is part of the effect.lib Faust library
 cryBaby.eval(` 
-process = dm.crybaby_demo ;
+  process = dm.crybaby_demo ;
 `);
 
 // generates random notes
