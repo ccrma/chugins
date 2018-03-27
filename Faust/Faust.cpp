@@ -9,6 +9,14 @@
 // NOTE: be mindful of chuck/chugin compilation, particularly on OSX
 //       compiled for 10.5 chuck may not work well with 10.10 chugin!
 //-----------------------------------------------------------------------------
+
+#ifndef MAX_INPUTS
+  #define MAX_INPUTS 12
+#endif
+#ifndef MAX_OUTPUTS
+  #define MAX_OUTPUTS 12
+#endif
+
 // this should align with the correct versions of these ChucK files
 #include "chuck_dl.h"
 #include "chuck_def.h"
@@ -28,15 +36,12 @@ using namespace std;
 #include "faust/gui/UI.h"
 #include "faust/gui/PathBuilder.h"
 
-
-
-
 // declaration of chugin constructor
 CK_DLL_CTOR(faust_ctor);
 // declaration of chugin desctructor
 CK_DLL_DTOR(faust_dtor);
-// for Chugins extending UGen, this is mono synthesis function for 1 sample
-CK_DLL_TICK(faust_tick);
+// multi-channel audio synthesis tick function
+CK_DLL_TICKF(faust_tickf);
 
 // example of getter/setter
 CK_DLL_MFUN(faust_eval);
@@ -55,9 +60,6 @@ t_CKINT faust_data_offset = 0;
 #ifndef FAUSTFLOAT
   #define FAUSTFLOAT float
 #endif
-
-
-
 
 //-----------------------------------------------------------------------------
 // name: class FauckUI
@@ -182,16 +184,12 @@ public:
     {
         // iterator
         std::map<std::string, FAUSTFLOAT*>::iterator iter = fZoneMap.begin();
-        // print
-        cerr << "---------------- DUMPING [Faust] PARAMETERS ---------------" << endl;
         // go
         for( ; iter != fZoneMap.end(); iter++ )
         {
             // print
             cerr << iter->first << " : " << *(iter->second) << endl;
         }
-        // done
-        cerr << "-----------------------------------------------------------" << endl;
     }
     
     // map access
@@ -206,9 +204,6 @@ public:
         return (*it).first;
     }
 };
-
-
-
 
 //-----------------------------------------------------------------------------
 // name: class Faust
@@ -282,8 +277,8 @@ public:
         clearBufs();
         
         // set
-        m_numInputChannels = inputChannels;
-        m_numOutputChannels = outputChannels;
+        m_numInputChannels = min(inputChannels, MAX_INPUTS);
+        m_numOutputChannels = min(outputChannels, MAX_OUTPUTS);
 
         // allocate channels
         m_input = new FAUSTFLOAT *[m_numInputChannels];
@@ -385,10 +380,32 @@ public:
     // dump (snapshot)
     void dump()
     {
-        m_ui->dumpParams();
+      cerr << "---------------- DUMPING [Faust] PARAMETERS ---------------" << endl;
+      m_ui->dumpParams();
+      cerr << "Number of Inputs: " << m_numInputChannels << endl ;
+      cerr << "Number of Outputs: " << m_numOutputChannels << endl ;
+      cerr << "-----------------------------------------------------------" << endl;
+    }
+    
+    void tick( SAMPLE * in, SAMPLE * out, int nframes ){
+      if( m_dsp != NULL ){
+        for(int f = 0; f < nframes; f++)
+        {			
+          for(int c = 0; c < m_numInputChannels; c++)
+          {
+            m_input[c][0] = in[f*m_numInputChannels+c];
+          }
+          m_dsp->compute( 1, m_input, m_output );
+          for(int c = 0; c < m_numOutputChannels; c++)
+          {
+            out[f*m_numOutputChannels+c] = m_output[c][0];
+          }
+        }
+      }
     }
     
     // for Chugins extending UGen
+    /*
     SAMPLE tick( SAMPLE in )
     {
         // sanity check
@@ -406,6 +423,7 @@ public:
         // return sample
         return avg / m_numOutputChannels;
     }
+    */
 
     // set parameter example
     t_CKFLOAT setParam( const string & n, t_CKFLOAT p )
@@ -476,7 +494,7 @@ CK_DLL_QUERY( Faust )
     QUERY->add_dtor(QUERY, faust_dtor);
     
     // for UGen's only: add tick function
-    QUERY->add_ugen_func(QUERY, faust_tick, NULL, 1, 1);
+    QUERY->add_ugen_funcf(QUERY, faust_tickf, NULL, MAX_INPUTS, MAX_OUTPUTS);
     
     // NOTE: if this is to be a UGen with more than 1 channel, 
     // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
@@ -566,13 +584,13 @@ CK_DLL_DTOR(faust_dtor)
 
 
 // implementation for tick function
-CK_DLL_TICK(faust_tick)
+CK_DLL_TICKF(faust_tickf)
 {
     // get our c++ class pointer
     Faust * f_obj = (Faust *) OBJ_MEMBER_INT(SELF, faust_data_offset);
  
     // invoke our tick function; store in the magical out variable
-    if(f_obj) *out = f_obj->tick(in);
+    if(f_obj) f_obj->tick(in, out, nframes);
 
     // yes
     return TRUE;
