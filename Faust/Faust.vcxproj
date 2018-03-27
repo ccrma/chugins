@@ -1,4 +1,5 @@
-﻿<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -19,34 +20,34 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E75F65D7-C6EB-427C-A3F4-BABBF583B3B4}</ProjectGuid>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)/Microsoft.Cpp.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -62,12 +63,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <TargetExt>.chug</TargetExt>
-    <IncludePath>../chuck/include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\rmnmi\reps\faust\architecture;../chuck/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <TargetExt>.chug</TargetExt>
-    <IncludePath>../chuck/include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\rmnmi\reps\faust\architecture;../chuck/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -131,14 +132,15 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;__PLATFORM_WIN32__;__WINDOWS_DS__;NDEBUG;_WINDOWS;_USRDLL;FAUST_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>D:\cygwin\home\Ge\Chuck\faust\compiler;D:\cygwin\home\Ge\Chuck\faust\architecture;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libfaust.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>libfaust-dynamic-x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>C:\Users\rmnmi\reps\faust\build\lib\Release\faust.lib;C:\Program Files\LLVM\lib\LLVMLTO.lib;Ws2_32.lib;C:\Program Files\LLVM\lib\LLVMPasses.lib;C:\Program Files\LLVM\lib\LLVMObjCARCOpts.lib;C:\Program Files\LLVM\lib\LLVMSymbolize.lib;C:\Program Files\LLVM\lib\LLVMDebugInfoPDB.lib;C:\Program Files\LLVM\lib\LLVMDebugInfoDWARF.lib;C:\Program Files\LLVM\lib\LLVMMIRParser.lib;C:\Program Files\LLVM\lib\LLVMCoverage.lib;C:\Program Files\LLVM\lib\LLVMTableGen.lib;C:\Program Files\LLVM\lib\LLVMDlltoolDriver.lib;C:\Program Files\LLVM\lib\LLVMOrcJIT.lib;C:\Program Files\LLVM\lib\LLVMXCoreDisassembler.lib;C:\Program Files\LLVM\lib\LLVMXCoreCodeGen.lib;C:\Program Files\LLVM\lib\LLVMXCoreDesc.lib;C:\Program Files\LLVM\lib\LLVMXCoreInfo.lib;C:\Program Files\LLVM\lib\LLVMXCoreAsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMSystemZDisassembler.lib;C:\Program Files\LLVM\lib\LLVMSystemZCodeGen.lib;C:\Program Files\LLVM\lib\LLVMSystemZAsmParser.lib;C:\Program Files\LLVM\lib\LLVMSystemZDesc.lib;C:\Program Files\LLVM\lib\LLVMSystemZInfo.lib;C:\Program Files\LLVM\lib\LLVMSystemZAsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMSparcDisassembler.lib;C:\Program Files\LLVM\lib\LLVMSparcCodeGen.lib;C:\Program Files\LLVM\lib\LLVMSparcAsmParser.lib;C:\Program Files\LLVM\lib\LLVMSparcDesc.lib;C:\Program Files\LLVM\lib\LLVMSparcInfo.lib;C:\Program Files\LLVM\lib\LLVMSparcAsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMPowerPCDisassembler.lib;C:\Program Files\LLVM\lib\LLVMPowerPCCodeGen.lib;C:\Program Files\LLVM\lib\LLVMPowerPCAsmParser.lib;C:\Program Files\LLVM\lib\LLVMPowerPCDesc.lib;C:\Program Files\LLVM\lib\LLVMPowerPCInfo.lib;C:\Program Files\LLVM\lib\LLVMPowerPCAsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMNVPTXCodeGen.lib;C:\Program Files\LLVM\lib\LLVMNVPTXDesc.lib;C:\Program Files\LLVM\lib\LLVMNVPTXInfo.lib;C:\Program Files\LLVM\lib\LLVMNVPTXAsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMMSP430CodeGen.lib;C:\Program Files\LLVM\lib\LLVMMSP430Desc.lib;C:\Program Files\LLVM\lib\LLVMMSP430Info.lib;C:\Program Files\LLVM\lib\LLVMMSP430AsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMMipsDisassembler.lib;C:\Program Files\LLVM\lib\LLVMMipsCodeGen.lib;C:\Program Files\LLVM\lib\LLVMMipsAsmParser.lib;C:\Program Files\LLVM\lib\LLVMMipsDesc.lib;C:\Program Files\LLVM\lib\LLVMMipsInfo.lib;C:\Program Files\LLVM\lib\LLVMMipsAsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMLanaiDisassembler.lib;C:\Program Files\LLVM\lib\LLVMLanaiCodeGen.lib;C:\Program Files\LLVM\lib\LLVMLanaiAsmParser.lib;C:\Program Files\LLVM\lib\LLVMLanaiDesc.lib;C:\Program Files\LLVM\lib\LLVMLanaiAsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMLanaiInfo.lib;C:\Program Files\LLVM\lib\LLVMHexagonDisassembler.lib;C:\Program Files\LLVM\lib\LLVMHexagonCodeGen.lib;C:\Program Files\LLVM\lib\LLVMHexagonAsmParser.lib;C:\Program Files\LLVM\lib\LLVMHexagonDesc.lib;C:\Program Files\LLVM\lib\LLVMHexagonInfo.lib;C:\Program Files\LLVM\lib\LLVMBPFDisassembler.lib;C:\Program Files\LLVM\lib\LLVMBPFCodeGen.lib;C:\Program Files\LLVM\lib\LLVMBPFDesc.lib;C:\Program Files\LLVM\lib\LLVMBPFInfo.lib;C:\Program Files\LLVM\lib\LLVMBPFAsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMARMDisassembler.lib;C:\Program Files\LLVM\lib\LLVMARMCodeGen.lib;C:\Program Files\LLVM\lib\LLVMARMAsmParser.lib;C:\Program Files\LLVM\lib\LLVMARMDesc.lib;C:\Program Files\LLVM\lib\LLVMARMInfo.lib;C:\Program Files\LLVM\lib\LLVMARMAsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMAMDGPUDisassembler.lib;C:\Program Files\LLVM\lib\LLVMAMDGPUCodeGen.lib;C:\Program Files\LLVM\lib\LLVMAMDGPUAsmParser.lib;C:\Program Files\LLVM\lib\LLVMAMDGPUDesc.lib;C:\Program Files\LLVM\lib\LLVMAMDGPUInfo.lib;C:\Program Files\LLVM\lib\LLVMAMDGPUAsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMAMDGPUUtils.lib;C:\Program Files\LLVM\lib\LLVMAArch64Disassembler.lib;C:\Program Files\LLVM\lib\LLVMAArch64CodeGen.lib;C:\Program Files\LLVM\lib\LLVMAArch64AsmParser.lib;C:\Program Files\LLVM\lib\LLVMAArch64Desc.lib;C:\Program Files\LLVM\lib\LLVMAArch64Info.lib;C:\Program Files\LLVM\lib\LLVMAArch64AsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMAArch64Utils.lib;C:\Program Files\LLVM\lib\LLVMObjectYAML.lib;C:\Program Files\LLVM\lib\LLVMLibDriver.lib;C:\Program Files\LLVM\lib\LLVMOption.lib;C:\Program Files\LLVM\lib\LLVMX86Disassembler.lib;C:\Program Files\LLVM\lib\LLVMX86AsmParser.lib;C:\Program Files\LLVM\lib\LLVMX86CodeGen.lib;C:\Program Files\LLVM\lib\LLVMGlobalISel.lib;C:\Program Files\LLVM\lib\LLVMSelectionDAG.lib;C:\Program Files\LLVM\lib\LLVMAsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMDebugInfoCodeView.lib;C:\Program Files\LLVM\lib\LLVMDebugInfoMSF.lib;C:\Program Files\LLVM\lib\LLVMX86Desc.lib;C:\Program Files\LLVM\lib\LLVMMCDisassembler.lib;C:\Program Files\LLVM\lib\LLVMX86Info.lib;C:\Program Files\LLVM\lib\LLVMX86AsmPrinter.lib;C:\Program Files\LLVM\lib\LLVMX86Utils.lib;C:\Program Files\LLVM\lib\LLVMMCJIT.lib;C:\Program Files\LLVM\lib\LLVMLineEditor.lib;C:\Program Files\LLVM\lib\LLVMInterpreter.lib;C:\Program Files\LLVM\lib\LLVMExecutionEngine.lib;C:\Program Files\LLVM\lib\LLVMRuntimeDyld.lib;C:\Program Files\LLVM\lib\LLVMCodeGen.lib;C:\Program Files\LLVM\lib\LLVMTarget.lib;C:\Program Files\LLVM\lib\LLVMCoroutines.lib;C:\Program Files\LLVM\lib\LLVMipo.lib;C:\Program Files\LLVM\lib\LLVMInstrumentation.lib;C:\Program Files\LLVM\lib\LLVMVectorize.lib;C:\Program Files\LLVM\lib\LLVMScalarOpts.lib;C:\Program Files\LLVM\lib\LLVMLinker.lib;C:\Program Files\LLVM\lib\LLVMIRReader.lib;C:\Program Files\LLVM\lib\LLVMAsmParser.lib;C:\Program Files\LLVM\lib\LLVMInstCombine.lib;C:\Program Files\LLVM\lib\LLVMTransformUtils.lib;C:\Program Files\LLVM\lib\LLVMBitWriter.lib;C:\Program Files\LLVM\lib\LLVMAnalysis.lib;C:\Program Files\LLVM\lib\LLVMProfileData.lib;C:\Program Files\LLVM\lib\LLVMObject.lib;C:\Program Files\LLVM\lib\LLVMMCParser.lib;C:\Program Files\LLVM\lib\LLVMMC.lib;C:\Program Files\LLVM\lib\LLVMBitReader.lib;C:\Program Files\LLVM\lib\LLVMCore.lib;C:\Program Files\LLVM\lib\LLVMBinaryFormat.lib;C:\Program Files\LLVM\lib\LLVMSupport.lib;C:\Program Files\LLVM\lib\LLVMDemangle.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Users\rmnmi\reps\faust\build\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
