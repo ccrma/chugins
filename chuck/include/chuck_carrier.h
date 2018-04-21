@@ -1,10 +1,10 @@
 /*----------------------------------------------------------------------------
  ChucK Concurrent, On-the-fly Audio Programming Language
- Compiler and Virtual Machine
+   Compiler and Virtual Machine
  
  Copyright (c) 2003 Ge Wang and Perry R. Cook.  All rights reserved.
- http://chuck.stanford.edu/
- http://chuck.cs.princeton.edu/
+   http://chuck.stanford.edu/
+   http://chuck.cs.princeton.edu/
  
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -29,21 +29,21 @@
 //
 // author: Ge Wang (http://www.gewang.com/)
 //         Jack Atherton (lja@ccrma.stanford.edu)
-// date: fall 2017
-//
-// additional authors:
 //         Spencer Salazar (spencer@ccrma.stanford.edu)
+// date: fall 2017
 //-----------------------------------------------------------------------------
 #ifndef __CHUCK_CARRIER_H__
 #define __CHUCK_CARRIER_H__
 
 #include "chuck_def.h"
 #include "util_thread.h"
+#include <map>
 
 
 
 
 // forward references (C++)
+class  ChucK;
 struct Chuck_Compiler;
 struct Chuck_VM;
 struct Chuck_Env;
@@ -54,6 +54,9 @@ struct Chuck_IO_Cherr;
 struct ck_socket_;
 typedef struct ck_socket_ * ck_socket;
 
+// forward references (STK-specific)
+class WvOut;
+class XWriteThread;
 
 
 
@@ -64,6 +67,7 @@ typedef struct ck_socket_ * ck_socket;
 //-----------------------------------------------------------------------------
 struct Chuck_Carrier
 {
+    ChucK * chuck;
     Chuck_Compiler * compiler;
     Chuck_Env * env;
     Chuck_VM * vm;
@@ -75,8 +79,13 @@ struct Chuck_Carrier
     t_CKINT otf_port;
     CHUCK_THREAD otf_thread;
     
+    // STK-specific
+    XWriteThread * stk_writeThread;
+    std::map<WvOut *, WvOut *> stk_wvOutMap;
+    
     // constructor
     Chuck_Carrier() :
+        chuck(NULL),
         compiler( NULL ),
         env( NULL ),
         vm( NULL ),
@@ -84,8 +93,12 @@ struct Chuck_Carrier
         cherr( NULL ),
         otf_socket( NULL ),
         otf_port( 0 ),
-        otf_thread( 0 )
+        otf_thread( 0 ),
+        stk_writeThread( NULL )
     { }
+    
+    // get hint: is realtime audio?
+    t_CKBOOL hintIsRealtimeAudio();
 };
 
 

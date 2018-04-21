@@ -37,6 +37,7 @@
 /Debug/
 */Release/
 */Debug/
+*/x64/
 */*.vcxproj.user
 */*.vcxproj.filters
 ipch

@@ -11,7 +11,7 @@ SinOsc LFO => blackhole;
 string.compile("string.dsp");
 
 cryBaby.eval(` 
-process = dm.crybaby_demo ;
+process = dm.crybaby_demo <: _,_ ;
 `);
 
 distortion.eval("
