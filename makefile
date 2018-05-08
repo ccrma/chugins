@@ -2,7 +2,7 @@
 CHUGINS=ABSaturator AmbPan Bitcrusher KasFilter MagicSine FIR FoldbackSaturator \
 	PanN PitchTrack GVerb Mesh2D Spectacle Elliptic Sigmund ExpDelay Overdrive \
 	Multicomb PowerADSR WinFuncEnv WPDiodeLadder WPKorg35 \
-	Binaural ExpEnv Ladspa Perlin Random Wavetable
+	Binaural ExpEnv Ladspa Perlin Random Wavetable NHHall
 
 CHUGS_NOT_ON_WIN32=FluidSynth
 CHUGINS_WIN32=$(filter-out $(CHUGS_NOT_ON_WIN32),$(CHUGINS))
@@ -32,7 +32,7 @@ linux-alsa: $(CHUGS)
 linux-jack: $(CHUGS)
 win32: $(CHUGS_WIN32)
 
-$(CHUGS): 
+$(CHUGS):
 	CHUCK_STRICT=1 make -C $(dir $@) $(MAKECMDGOALS)
 
 clean: $(CHUGS_CLEAN)
@@ -41,8 +41,8 @@ $(CHUGS_CLEAN):
 	make -C $(basename $@) clean
 
 #.PHONY: $(CHUGS_WIN32)
-#$(CHUGS_WIN32): 
-#	cd $(basename $@); msbuild.exe /p:Configuration=Release 
+#$(CHUGS_WIN32):
+#	cd $(basename $@); msbuild.exe /p:Configuration=Release
 
 install: $(CHUGS)
 	mkdir -p $(INSTALL_DIR)
@@ -74,7 +74,7 @@ bin-dist-osx: osx
 	rm -rf chugins-mac-$(DATE)/
 
 WIN_CHUGS=$(foreach CHUG,$(CHUGINS),$(CHUG)/Release/$(CHUG).chug)
-    
+
 bin-dist-win32:
 	-echo '*** Please ensure you have built all chugins from within Visual Studio ***'
 	mkdir -p chugins-windows-$(DATE)/chugins/
@@ -121,6 +121,6 @@ ppa-binary: $(PPA_CHUG_TGZ) ppa-clean
 ppa-upload:
 	dput ppa:t-spencer/chuck ../chugins_$(PPA_DEB_VERSION)_source.changes
 
-ppa-clean: 
+ppa-clean:
 	debian/rules clean
 	rm -rf debian/chuck
