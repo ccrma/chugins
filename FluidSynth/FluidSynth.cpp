@@ -21,6 +21,8 @@ CK_DLL_MFUN(fluidsynth_noteOn);
 CK_DLL_MFUN(fluidsynth_noteOff);
 CK_DLL_MFUN(fluidsynth_noteOnChan);
 CK_DLL_MFUN(fluidsynth_noteOffChan);
+CK_DLL_MFUN(fluidsynth_progChange);
+CK_DLL_MFUN(fluidsynth_progChangeChan);
 
 // this is a special offset reserved for Chugin internal data
 t_CKINT fluidsynth_data_offset = 0;
@@ -36,13 +38,13 @@ public:
     FluidSynth(t_CKFLOAT fs)
     {
         m_srate = fs;
-        
+
         m_settings = new_fluid_settings();
         m_synth = new_fluid_synth(m_settings);
-        
+
         fluid_synth_set_sample_rate(m_synth, m_srate);
     }
-    
+
     ~FluidSynth()
     {
         delete_fluid_settings(m_settings);
@@ -55,25 +57,30 @@ public:
     void tick( SAMPLE *in, SAMPLE *out )
     {
         // default: this passes whatever input is patched into Chugin
-        
+
         fluid_synth_write_float(m_synth, 1, out, 0, 0, out+1, 0, 0);
     }
-    
+
     int open(const std::string &sfont)
     {
         return fluid_synth_sfload(m_synth, sfont.c_str(), 1);
     }
-    
+
     void noteOn(int chan, int key, int vel)
     {
         fluid_synth_noteon(m_synth, chan, key, vel);
     }
-    
+
     void noteOff(int chan, int key)
     {
         fluid_synth_noteoff(m_synth, chan, key);
     }
-    
+
+    void progChange(int chan, int progNum)
+    {
+        fluid_synth_program_change(m_synth, chan, progNum);
+    }
+
 private:
     // instance data
     float m_srate;
@@ -87,36 +94,43 @@ private:
 CK_DLL_QUERY( fluidsynth )
 {
     QUERY->setname(QUERY, "FluidSynth");
-    
+
     // begin the class definition
     QUERY->begin_class(QUERY, "FluidSynth", "UGen");
 
     QUERY->add_ctor(QUERY, fluidsynth_ctor);
     QUERY->add_dtor(QUERY, fluidsynth_dtor);
-    
+
     QUERY->add_ugen_funcf(QUERY, fluidsynth_tickf, NULL, 0, 2);
-    
-    // NOTE: if this is to be a UGen with more than 1 channel, 
+
+    // NOTE: if this is to be a UGen with more than 1 channel,
     // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
     // and declare a tickf function using CK_DLL_TICKF
 
     QUERY->add_mfun(QUERY, fluidsynth_open, "int", "open");
     QUERY->add_arg(QUERY, "string", "file");
-    
+
     QUERY->add_mfun(QUERY, fluidsynth_noteOn, "void", "noteOn");
     QUERY->add_arg(QUERY, "int", "note");
     QUERY->add_arg(QUERY, "int", "velocity");
-    
+
     QUERY->add_mfun(QUERY, fluidsynth_noteOff, "void", "noteOff");
     QUERY->add_arg(QUERY, "int", "note");
-    
+
     QUERY->add_mfun(QUERY, fluidsynth_noteOnChan, "void", "noteOn");
     QUERY->add_arg(QUERY, "int", "note");
     QUERY->add_arg(QUERY, "int", "velocity");
     QUERY->add_arg(QUERY, "int", "chan");
-    
+
     QUERY->add_mfun(QUERY, fluidsynth_noteOffChan, "void", "noteOff");
     QUERY->add_arg(QUERY, "int", "note");
+    QUERY->add_arg(QUERY, "int", "chan");
+
+    QUERY->add_mfun(QUERY, fluidsynth_progChange, "void", "progChange");
+    QUERY->add_arg(QUERY, "int", "progNum");
+
+    QUERY->add_mfun(QUERY, fluidsynth_progChangeChan, "void", "progChange");
+    QUERY->add_arg(QUERY, "int", "progNum");
     QUERY->add_arg(QUERY, "int", "chan");
 
     fluidsynth_data_offset = QUERY->add_mvar(QUERY, "int", "@f_data", false);
@@ -133,10 +147,10 @@ CK_DLL_CTOR(fluidsynth_ctor)
 {
     // get the offset where we'll store our internal c++ class pointer
     OBJ_MEMBER_INT(SELF, fluidsynth_data_offset) = 0;
-    
+
     // instantiate our internal c++ class representation
     FluidSynth * bcdata = new FluidSynth(API->vm->get_srate(API, SHRED));
-    
+
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, fluidsynth_data_offset) = (t_CKINT) bcdata;
 }
@@ -163,7 +177,7 @@ CK_DLL_TICKF(fluidsynth_tickf)
 {
     // get our c++ class pointer
     FluidSynth * c = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
- 
+
     // invoke our tick function; store in the magical out variable
     if(c) c->tick(in, out);
 
@@ -176,9 +190,9 @@ CK_DLL_TICKF(fluidsynth_tickf)
 CK_DLL_MFUN(fluidsynth_open)
 {
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
-    
+
     std::string str = GET_NEXT_STRING_SAFE(ARGS);
-    
+
     RETURN->v_int = f_data->open(str);
 }
 
@@ -187,10 +201,10 @@ CK_DLL_MFUN(fluidsynth_open)
 CK_DLL_MFUN(fluidsynth_noteOn)
 {
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
-    
+
     t_CKINT note = GET_NEXT_INT(ARGS);
     t_CKINT velocity = GET_NEXT_INT(ARGS);
-    
+
     f_data->noteOn(0, note, velocity);
 }
 
@@ -198,9 +212,9 @@ CK_DLL_MFUN(fluidsynth_noteOn)
 CK_DLL_MFUN(fluidsynth_noteOff)
 {
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
-    
+
     t_CKINT note = GET_NEXT_INT(ARGS);
-    
+
     f_data->noteOff(0, note);
 }
 
@@ -208,11 +222,11 @@ CK_DLL_MFUN(fluidsynth_noteOff)
 CK_DLL_MFUN(fluidsynth_noteOnChan)
 {
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
-    
+
     t_CKINT note = GET_NEXT_INT(ARGS);
     t_CKINT velocity = GET_NEXT_INT(ARGS);
     t_CKINT chan = GET_NEXT_INT(ARGS);
-    
+
     f_data->noteOn(chan, note, velocity);
 }
 
@@ -220,9 +234,28 @@ CK_DLL_MFUN(fluidsynth_noteOnChan)
 CK_DLL_MFUN(fluidsynth_noteOffChan)
 {
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
-    
+
     t_CKINT note = GET_NEXT_INT(ARGS);
     t_CKINT chan = GET_NEXT_INT(ARGS);
-    
+
     f_data->noteOff(chan, note);
+}
+
+CK_DLL_MFUN(fluidsynth_progChange)
+{
+  FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+
+  t_CKINT progChange = GET_NEXT_INT(ARGS);
+
+  f_data->progChange(0, progChange);
+}
+
+CK_DLL_MFUN(fluidsynth_progChangeChan)
+{
+  FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+
+  t_CKINT progChange = GET_NEXT_INT(ARGS);
+  t_CKINT chan = GET_NEXT_INT(ARGS);
+
+  f_data->progChange(chan, progChange);
 }
