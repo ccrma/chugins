@@ -2,7 +2,7 @@ public class Scape extends Chubgraph
 {
 	inlet => LADSPA ladspa => outlet;
 	0 => ladspa.verbose;
-	"/usr/local/lib/ladspa/caps.so" => ladspa.load;
+	"/usr/lib/ladspa/caps.so" => ladspa.load;
 	"Scape" => ladspa.activate;
 
 	fun float bpm () { return ladspa.get(0); }
