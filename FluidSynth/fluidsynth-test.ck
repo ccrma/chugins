@@ -12,6 +12,10 @@ f.open("/usr/share/sounds/sf2/FluidR3_GM.sf2");
 // scale (in semitones)
 [ 0, 2, 4, 7, 9 ] @=> int scale[];
 
+f.progChange(0); // piano on MIDI channel 1
+f.progChange(6, 1); // harpsicord on MIDI channel 2
+f.progChange(11, 2); // vibraphone on MIDI channel 3
+
 // infinite time loop
 while( true )
 {
@@ -19,7 +23,9 @@ while( true )
     // get the final freq
     45 + (Math.random2(0,3)*12 + freq) => int note;
     
-    f.noteOn(note, 100);
+    // choose a channel we've set
+    Math.random2(0,2) => int chan;
+    f.noteOn(note, 100, chan);
     
     // advance time
     .25::T => now;
