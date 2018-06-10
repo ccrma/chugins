@@ -23,6 +23,8 @@ CK_DLL_MFUN(fluidsynth_noteOnChan);
 CK_DLL_MFUN(fluidsynth_noteOffChan);
 CK_DLL_MFUN(fluidsynth_progChange);
 CK_DLL_MFUN(fluidsynth_progChangeChan);
+CK_DLL_MFUN(fluidsynth_setBank);
+CK_DLL_MFUN(fluidsynth_setBankChan);
 
 // this is a special offset reserved for Chugin internal data
 t_CKINT fluidsynth_data_offset = 0;
@@ -81,6 +83,11 @@ public:
         fluid_synth_program_change(m_synth, chan, progNum);
     }
 
+    void setBank(int chan, int bankNum)
+    {
+        fluid_synth_bank_select(m_synth, chan, bankNum);
+    }
+
 private:
     // instance data
     float m_srate;
@@ -131,6 +138,13 @@ CK_DLL_QUERY( fluidsynth )
 
     QUERY->add_mfun(QUERY, fluidsynth_progChangeChan, "void", "progChange");
     QUERY->add_arg(QUERY, "int", "progNum");
+    QUERY->add_arg(QUERY, "int", "chan");
+
+    QUERY->add_mfun(QUERY, fluidsynth_setBank, "void", "setBank");
+    QUERY->add_arg(QUERY, "int", "bankNum");
+
+    QUERY->add_mfun(QUERY, fluidsynth_setBankChan, "void", "setBank");
+    QUERY->add_arg(QUERY, "int", "bankNum");
     QUERY->add_arg(QUERY, "int", "chan");
 
     fluidsynth_data_offset = QUERY->add_mvar(QUERY, "int", "@f_data", false);
@@ -245,17 +259,37 @@ CK_DLL_MFUN(fluidsynth_progChange)
 {
   FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
 
-  t_CKINT progChange = GET_NEXT_INT(ARGS);
+  t_CKINT progNum = GET_NEXT_INT(ARGS);
 
-  f_data->progChange(0, progChange);
+  f_data->progChange(0, progNum);
 }
 
 CK_DLL_MFUN(fluidsynth_progChangeChan)
 {
   FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
 
-  t_CKINT progChange = GET_NEXT_INT(ARGS);
+  t_CKINT progNum = GET_NEXT_INT(ARGS);
   t_CKINT chan = GET_NEXT_INT(ARGS);
 
-  f_data->progChange(chan, progChange);
+  f_data->progChange(chan, progNum);
 }
+
+CK_DLL_MFUN(fluidsynth_setBank)
+{
+  FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+
+  t_CKINT bankNum = GET_NEXT_INT(ARGS);
+
+  f_data->setBank(0, bankNum);
+}
+
+CK_DLL_MFUN(fluidsynth_setBankChan)
+{
+  FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+
+  t_CKINT bankNum = GET_NEXT_INT(ARGS);
+  t_CKINT chan = GET_NEXT_INT(ARGS);
+
+  f_data->setBank(chan, bankNum);
+}
+
