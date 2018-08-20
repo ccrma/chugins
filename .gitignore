@@ -43,3 +43,6 @@
 ipch
 
 */*.xcodeproj/xcuserdata
+
+.vscode/*
+
