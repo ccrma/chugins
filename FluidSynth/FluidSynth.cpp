@@ -35,6 +35,12 @@ CK_DLL_MFUN(fluidsynth_tuneNote);
 CK_DLL_MFUN(fluidsynth_tuneNoteChan);
 CK_DLL_MFUN(fluidsynth_tuneNotes);
 CK_DLL_MFUN(fluidsynth_tuneNotesChan);
+CK_DLL_MFUN(fluidsynth_setPitchBend);
+CK_DLL_MFUN(fluidsynth_setPitchBendChan);
+CK_DLL_MFUN(fluidsynth_resetPitchBend);
+CK_DLL_MFUN(fluidsynth_resetPitchBendChan);
+CK_DLL_MFUN(fluidsynth_getPitchBend);
+CK_DLL_MFUN(fluidsynth_getPitchBendChan);
 
 
 // this is a special offset reserved for Chugin internal data
@@ -167,6 +173,18 @@ public:
         delete [] noteNumArr;
     }
 
+    void setPitchBend(int pitchbend, int chan)
+    {
+        fluid_synth_pitch_bend(m_synth, chan, pitchbend);
+    }
+
+    int getPitchBend(int chan)
+    {
+        int pitchbend;
+        fluid_synth_get_pitch_bend(m_synth, chan, &pitchbend);
+        return pitchbend;
+    }
+
 private:
     // instance data
     float m_srate;
@@ -261,6 +279,23 @@ CK_DLL_QUERY( fluidsynth )
     QUERY->add_mfun(QUERY, fluidsynth_tuneNotesChan, "void", "tuneNotes");
     QUERY->add_arg(QUERY, "int[]", "noteNums");
     QUERY->add_arg(QUERY, "float[]", "pitches");
+    QUERY->add_arg(QUERY, "int", "chan");
+
+    QUERY->add_mfun(QUERY, fluidsynth_setPitchBend, "void", "setPitchBend");
+    QUERY->add_arg(QUERY, "int", "pitchbend");
+
+    QUERY->add_mfun(QUERY, fluidsynth_setPitchBendChan, "void", "setPitchBend");
+    QUERY->add_arg(QUERY, "int", "pitchbend");
+    QUERY->add_arg(QUERY, "int", "chan");
+
+    QUERY->add_mfun(QUERY, fluidsynth_resetPitchBend, "void", "resetPitchBend");
+
+    QUERY->add_mfun(QUERY, fluidsynth_resetPitchBendChan, "void", "resetPitchBend");
+    QUERY->add_arg(QUERY, "int", "chan");
+
+    QUERY->add_mfun(QUERY, fluidsynth_getPitchBend, "int", "getPitchBend");
+
+    QUERY->add_mfun(QUERY, fluidsynth_getPitchBendChan, "int", "getPitchBend");
     QUERY->add_arg(QUERY, "int", "chan");
 
     fluidsynth_data_offset = QUERY->add_mvar(QUERY, "int", "@f_data", false);
@@ -531,4 +566,59 @@ CK_DLL_MFUN(fluidsynth_tuneNotesChan)
     }
 
     f_data->tuneNotes(noteNums, pitches, chan);
+}
+
+CK_DLL_MFUN(fluidsynth_setPitchBend)
+{
+    FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+    t_CKINT pitchbend = GET_NEXT_INT(ARGS);
+
+    // Reset out-of-range values to min or max
+    if (pitchbend < 0) pitchbend = 0;
+    else if (pitchbend > 16383) pitchbend = 16383;
+
+    f_data->setPitchBend(pitchbend, 0);
+}
+
+CK_DLL_MFUN(fluidsynth_setPitchBendChan)
+{
+    FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+    t_CKINT pitchbend = GET_NEXT_INT(ARGS);
+    t_CKINT chan = GET_NEXT_INT(ARGS);
+
+    // Reset out-of-range values to min or max
+    if (pitchbend < 0) pitchbend = 0;
+    else if (pitchbend > 16383) pitchbend = 16383;
+
+    f_data->setPitchBend(pitchbend, chan);
+}
+
+CK_DLL_MFUN(fluidsynth_resetPitchBend)
+{
+    FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+
+    for (int chan = 0; chan < 16; chan++) {
+        f_data->setPitchBend(8192, chan);
+    }
+}
+
+CK_DLL_MFUN(fluidsynth_resetPitchBendChan)
+{
+    FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+    t_CKINT chan = GET_NEXT_INT(ARGS);
+
+    f_data->setPitchBend(8192, chan);
+}
+
+CK_DLL_MFUN(fluidsynth_getPitchBend) {
+    FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+
+    RETURN->v_int = f_data->getPitchBend(0);
+}
+
+CK_DLL_MFUN(fluidsynth_getPitchBendChan) {
+    FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+    t_CKINT chan = GET_NEXT_INT(ARGS);
+
+    RETURN->v_int = f_data->getPitchBend(chan);
 }
