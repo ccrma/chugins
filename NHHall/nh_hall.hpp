@@ -1,6 +1,6 @@
 /*
 NHHall -- a stereo reverb
-Version 2018-05-07
+Version 2018-06-24
 
 https://github.com/snappizz/nh-ugens
 
@@ -511,7 +511,7 @@ public:
     {
     }
 
-    float set_diffusion(float diffusion) {
+    void set_diffusion(float diffusion) {
         m_k = diffusion * m_diffusion_sign;
     }
 
@@ -544,7 +544,7 @@ public:
     {
     }
 
-    float set_diffusion(float diffusion) {
+    void set_diffusion(float diffusion) {
         m_k = diffusion * m_diffusion_sign;
     }
 
@@ -566,7 +566,6 @@ public:
         float y3 = m_buffer[(iposition + 3) & m_mask];
 
         float delayed_signal = interpolate_cubic(position_frac, y0, y1, y2, y3);
-        delayed_signal = flush_denormals(delayed_signal);
 
         float feedback_plus_input = in + delayed_signal * m_k;
         m_buffer[m_read_position] = flush_denormals(feedback_plus_input);
