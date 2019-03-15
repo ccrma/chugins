@@ -57,6 +57,9 @@ List of Current Chugins
 - **WinFuncEnv**
   - by [@ericheep](https://github.com/ericheep)
   - Envelope built on window functions.
+- **Duffing**
+  - by [@bensteinberg](https://github.com/bensteinberg)
+  - Oscillator based on the Duffing equation, inspired by Tom Mudd's [Gutter Synthesis](https://entracte.co.uk/projects/tom-mudd-e226/).
 
 Chugins That We Are Working On
 --
