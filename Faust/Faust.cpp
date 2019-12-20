@@ -380,11 +380,15 @@ public:
     // dump (snapshot)
     void dump()
     {
-      cerr << "---------------- DUMPING [Faust] PARAMETERS ---------------" << endl;
-      m_ui->dumpParams();
-      cerr << "Number of Inputs: " << m_numInputChannels << endl ;
-      cerr << "Number of Outputs: " << m_numOutputChannels << endl ;
-      cerr << "-----------------------------------------------------------" << endl;
+        if(m_errorString.empty()){
+        cerr << "---------------- DUMPING [Faust] PARAMETERS ---------------" << endl;
+        m_ui->dumpParams();
+        cerr << "Number of Inputs: " << m_numInputChannels << endl ;
+        cerr << "Number of Outputs: " << m_numOutputChannels << endl ;
+        cerr << "-----------------------------------------------------------" << endl;
+        } else{
+        cerr << "[Faust]: "<< m_errorString <<endl;
+        }
     }
     
     void tick( SAMPLE * in, SAMPLE * out, int nframes ){
@@ -444,7 +448,7 @@ public:
     
     // get code
     string code() { return m_code; }
-    
+
 private:
     // sample rate
     t_CKFLOAT m_srate;
