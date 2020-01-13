@@ -153,7 +153,7 @@ void setTable(Chuck_Object *p)
   Chuck_Array8 *userArray = (Chuck_Array8*)p;
   
   current_table = &userArray->m_vector[0];
-  table_size = (int)userArray->capacity();
+  table_size = (int)userArray->size();
   step = table_size * freq / srate;
   /*
   printf("size of userArray: %d\n", table_size);
