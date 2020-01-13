@@ -75,7 +75,7 @@ SAMPLE tick ( SAMPLE in )
 			}
 			else if (sync == 1)
 			table_pos = table_size * in;
-        while (table_pos > table_size) table_pos -= table_size;
+        while (table_pos >= table_size) table_pos -= table_size;
 
         int y0, y1, y2, y3;
         y0 = (int) table_pos;
@@ -94,7 +94,7 @@ SAMPLE tick ( SAMPLE in )
                                           current_table[y1], current_table[y2], current_table[y3],
                                           table_pos - y0);
         }
-        if (interpolate==3)
+        else if (interpolate==3)
         {
                 return CubicInterpolate(current_table[y0],
                                           current_table[y1], current_table[y2], current_table[y3],
@@ -153,7 +153,7 @@ void setTable(Chuck_Object *p)
   Chuck_Array8 *userArray = (Chuck_Array8*)p;
   
   current_table = &userArray->m_vector[0];
-  table_size = (int)userArray->capacity();
+  table_size = (int)userArray->size();
   step = table_size * freq / srate;
   /*
   printf("size of userArray: %d\n", table_size);
