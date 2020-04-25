@@ -59,6 +59,8 @@ public:
                 prev_ctl_in = in[i+1];
             }
         }
+
+        return 1;
     }
     
 private:
