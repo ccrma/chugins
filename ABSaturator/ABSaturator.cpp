@@ -41,6 +41,8 @@ CK_DLL_DTOR(absaturator_dtor);
 
 CK_DLL_MFUN(absaturator_setDrive);
 CK_DLL_MFUN(absaturator_getDrive);
+CK_DLL_MFUN(absaturator_setDriveDb);
+CK_DLL_MFUN(absaturator_getDriveDb);
 CK_DLL_MFUN(absaturator_setDCOffset);
 CK_DLL_MFUN(absaturator_getDCOffset);
 
@@ -66,7 +68,7 @@ public:
     
     ABSaturator(float fs)
     {
-        m_drive = 1;
+        m_drive = 1; // linear
         m_dcOffset = 0;
         
         for(int j = 0; j < kAAOrder; j++)
@@ -117,14 +119,24 @@ public:
         
         return dsignal;
     }
-    
+
+    // drive, linear
     float setDrive(float d)
     {
-        m_drive = dB2lin(d);
+        m_drive = d;
         return m_drive;
     }
     
     float getDrive() { return m_drive; }
+
+    // drive, in dB
+    float setDriveDb(float d)
+    {
+        m_drive = dB2lin(d);
+        return d;
+    }
+
+    float getDriveDb() { return dB(m_drive); }
     
     float setDCOffset(float d)
     {
@@ -136,7 +148,7 @@ public:
     
 private:
     
-    float m_drive;
+    float m_drive; // linear
     
     float inputFilterGain;
     float inputFilterCutoff;
@@ -174,14 +186,21 @@ CK_DLL_QUERY(ABSaturator)
     QUERY->add_dtor(QUERY, absaturator_dtor);
     
     QUERY->add_ugen_func(QUERY, absaturator_tick, NULL, 1, 1);
-    
+
     QUERY->add_mfun(QUERY, absaturator_setDrive, "float", "drive");
     QUERY->add_arg(QUERY, "float", "arg");
-    QUERY->doc_func(QUERY, "Input gain into the distortion section, in decibels. Controls overall amount of distortion. ");
-    
+    QUERY->doc_func(QUERY, "Input gain into the distortion section. Controls overall amount of distortion. ");
+
     QUERY->add_mfun(QUERY, absaturator_getDrive, "float", "drive");
+    QUERY->doc_func(QUERY, "Input gain into the distortion section. Controls overall amount of distortion. ");
+
+    QUERY->add_mfun(QUERY, absaturator_setDriveDb, "float", "driveDb");
+    QUERY->add_arg(QUERY, "float", "arg");
     QUERY->doc_func(QUERY, "Input gain into the distortion section, in decibels. Controls overall amount of distortion. ");
-    
+
+    QUERY->add_mfun(QUERY, absaturator_getDriveDb, "float", "driveDb");
+    QUERY->doc_func(QUERY, "Input gain into the distortion section, in decibels. Controls overall amount of distortion. ");
+
     QUERY->add_mfun(QUERY, absaturator_setDCOffset, "float", "dcOffset");
     QUERY->add_arg(QUERY, "float", "arg");
     QUERY->doc_func(QUERY, "Constant linear offset applied to the signal. A small offset will introduce odd harmonics into the distoration spectrum, whereas a zero offset will have only even harmonics. ");
@@ -239,6 +258,20 @@ CK_DLL_MFUN(absaturator_getDrive)
 {
     ABSaturator * bcdata = (ABSaturator *) OBJ_MEMBER_INT(SELF, absaturator_data_offset);
     RETURN->v_float = bcdata->getDrive();
+}
+
+CK_DLL_MFUN(absaturator_setDriveDb)
+{
+    ABSaturator * bcdata = (ABSaturator *) OBJ_MEMBER_INT(SELF, absaturator_data_offset);
+    // TODO: sanity check
+    bcdata->setDriveDb(GET_NEXT_FLOAT(ARGS));
+    RETURN->v_float = bcdata->getDriveDb();
+}
+
+CK_DLL_MFUN(absaturator_getDriveDb)
+{
+    ABSaturator * bcdata = (ABSaturator *) OBJ_MEMBER_INT(SELF, absaturator_data_offset);
+    RETURN->v_float = bcdata->getDriveDb();
 }
 
 CK_DLL_MFUN(absaturator_setDCOffset)
