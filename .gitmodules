@@ -1,0 +1,3 @@
+[submodule "VST/thirdparty/JUCE_5"]
+	path = VST/thirdparty/JUCE_5
+	url = https://github.com/juce-framework/JUCE

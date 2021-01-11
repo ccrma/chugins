@@ -54,6 +54,10 @@ List of Current Chugins
 - **PowerADSR**
   - by [@ericheep](https://github.com/ericheep)
   - Power function ADSR envelope.
+- **VST**
+  - by [@dbraun](https://github.com/dbraun)
+  - VST instrument and effect.
+  - Requires special installation (see `VST/README.md`).
 - **WinFuncEnv**
   - by [@ericheep](https://github.com/ericheep)
   - Envelope built on window functions.
@@ -68,4 +72,3 @@ Chugins That We Are Working On
 Chugins We would like to see happen
 --
 - More configurable reverbs, dynamics processors, and distortion units
-- VST loader
