@@ -69,6 +69,8 @@ public:
         if (myBuffer) {
             delete myBuffer;
         }
+
+        delete myChuckString;
     }
 
     // for Chugins extending UGen
