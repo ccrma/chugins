@@ -57,7 +57,7 @@ List of Current Chugins
 - **VST**
   - by [@dbraun](https://github.com/dbraun)
   - VST instrument and effect.
-  - Requires special installation (see `VST/README.md`).
+  - Requires special installation and is only tested on Windows (see `VST/README.md`).
 - **WinFuncEnv**
   - by [@ericheep](https://github.com/ericheep)
   - Envelope built on window functions.
