@@ -66,10 +66,11 @@ public:
 
     ~FluidSynth()
     {
-        delete_fluid_settings(m_settings);
-        m_settings = NULL;
         delete_fluid_synth(m_synth);
         m_synth = NULL;
+
+        delete_fluid_settings(m_settings);
+        m_settings = NULL;
     }
 
     // for Chugins extending UGen
