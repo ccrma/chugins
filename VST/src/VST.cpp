@@ -51,8 +51,11 @@ class VST
 {
 public:
     // constructor
-    VST()
+    VST(t_CKFLOAT srate)
     {
+        // sample rate
+        m_srate = srate;
+
         // output is stereo
         m_chans = 2;
 
@@ -90,6 +93,9 @@ public:
 private:
     // data
     t_CKINT m_chans;
+
+    // sample rate
+    t_CKFLOAT m_srate;
 
 protected:
     
@@ -179,7 +185,7 @@ bool VST::loadPlugin(const string& filename)
     }
 
     int samplesPerBlock = 512;  // todo(DBraun): is 512 right?
-    float sampleRate = 44100; // todo(DBraun): make this dynamic
+    float sampleRate = m_srate;
 
     myPlugin = pluginFormatManager.createPluginInstance(*pluginDescriptions[0],
         sampleRate,
@@ -381,7 +387,7 @@ CK_DLL_CTOR(vst_ctor)
     OBJ_MEMBER_INT(SELF, vst_data_offset) = 0;
 
     // instantiate our internal c++ class representation
-    VST * b_obj = new VST();
+    VST * b_obj = new VST(API->vm->get_srate(API, SHRED));
 
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, vst_data_offset) = (t_CKINT) b_obj;
