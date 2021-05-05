@@ -1,3 +1,6 @@
 [submodule "Sampler/thirdparty/Sampler"]
 	path = Sampler/thirdparty/Sampler
 	url = https://github.com/DBraun/Sampler
+[submodule "Sampler/thirdparty/JUCE"]
+	path = Sampler/thirdparty/JUCE
+	url = https://github.com/juce-framework/JUCE
