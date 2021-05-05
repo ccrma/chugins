@@ -54,6 +54,9 @@ List of Current Chugins
 - **PowerADSR**
   - by [@ericheep](https://github.com/ericheep)
   - Power function ADSR envelope.
+- **Sampler**
+  - by [@dbraun](https://github.com/dbraun)
+  - A polyphonic [sampler](https://github.com/DBraun/Sampler) with ADSR envelopes, filters, and more in development.
 - **WinFuncEnv**
   - by [@ericheep](https://github.com/ericheep)
   - Envelope built on window functions.

@@ -1,0 +1,3 @@
+[submodule "Sampler/thirdparty/Sampler"]
+	path = Sampler/thirdparty/Sampler
+	url = https://github.com/DBraun/Sampler
