@@ -99,6 +99,17 @@ target_compile_definitions(SamplerChugin
     #     JUCE_DLL_BUILD=1
 )
 
+if(MSVC)
+    target_compile_definitions(SamplerChugin
+        PUBLIC
+            _WINDOWS
+            WIN32
+            __WINDOWS_MODERN__
+            __PLATFORM_WIN32__
+            __WINDOWS_DS__
+            )
+endif()
+
 # Include header directories
 target_include_directories(SamplerChugin PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../chuck/include>

@@ -32,22 +32,26 @@ CK_DLL_MFUN(sampler_getnumparameters);
 CK_DLL_MFUN(sampler_getparametername);
 CK_DLL_MFUN(sampler_getparameter);
 CK_DLL_MFUN(sampler_setparameter);
+CK_DLL_MFUN(sampler_resettime);
+CK_DLL_MFUN(sampler_resettime0);
+CK_DLL_MFUN(sampler_setbpm);
+CK_DLL_MFUN(sampler_setnumbervoices);
+CK_DLL_MFUN(sampler_setvoicestealing);
 CK_DLL_MFUN(sampler_noteon);
 CK_DLL_MFUN(sampler_noteoff);
 CK_DLL_MFUN(sampler_loadPreset);
 
 // multi-channel audio synthesis tick function
-CK_DLL_TICKF(sampler_tickstereoin);
+CK_DLL_TICKF(sampler_tick);
 
 // this is a special offset reserved for Chugin internal data
 t_CKINT sampler_data_offset = 0;
-
 
 //-----------------------------------------------------------------------------
 // name: class SamplerChugin
 // desc: SamplerChugin instrument implementation (via JUCE)
 //-----------------------------------------------------------------------------
-class SamplerChugin
+class SamplerChugin : juce::AudioPlayHead
 {
 public:
     // constructor
@@ -55,32 +59,35 @@ public:
     {
         sampler.prepareToPlay(srate, 512);
         sampler.setNonRealtime(false);
+        sampler.setPlayHead(this);
         sampler.reset();
 
         // sample rate
         m_srate = srate;
 
         // output is stereo
-        m_chans = 2;
-
-        myBuffer = new juce::AudioBuffer<float>(m_chans, 512);
+        myBuffer.setSize(2, 512);
     }
 
     ~SamplerChugin()
     {
+        sampler.setPlayHead(nullptr);
         sampler.releaseResources();
     
-        if (myBuffer) {
-            delete myBuffer;
-        }
-
         delete myChuckString;
     }
 
     // for Chugins extending UGen
-    void tickstereoin(SAMPLE* in, SAMPLE* out, int nframes);
+    void tick(SAMPLE* in, SAMPLE* out, int nframes);
     
     bool read(const string& filename);
+
+    void resetTime(float ppq);
+    void resetTime();
+    void setBPM(float bpm);
+
+    void setNumberOfVoices(int numberOfVoices);
+    void setVoiceStealingEnabled(bool voiceStealingEnabled);
 
     bool noteOn(int note, float velocity);
     bool noteOff(int note, float velocity);
@@ -90,61 +97,110 @@ public:
     float getParameter(int index);
     bool setParameter(int index, float v);
 
-private:
-    // data
-    t_CKINT m_chans;
+    // AudioPlayhead
+    bool getCurrentPosition(CurrentPositionInfo& result) override;
+    bool canControlTransport() override;
+    void transportPlay(bool shouldStartPlaying) override;
+    void transportRecord(bool shouldStartRecording) override;
+    void transportRewind() override;
 
+private:
     // sample rate
     t_CKFLOAT m_srate;
+    
+    CurrentPositionInfo myCurrentPositionInfo;
 
 protected:
     
     SamplerAudioProcessor sampler;
 
-    std::string myPluginPath = "";
-
-    juce::AudioSampleBuffer* myBuffer;
+    juce::AudioSampleBuffer myBuffer;
     juce::MidiBuffer myMidiBuffer;
     Chuck_String* myChuckString = new Chuck_String("");
 
 };
 
-void SamplerChugin::tickstereoin(SAMPLE* in, SAMPLE* out, int nframes)
+void SamplerChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 {
 
-    myBuffer->setSize(2, nframes, false, true, false);
+    myBuffer.setSize(2, nframes, false, true, false);
     // in contains alternating left and right channels.
     for (int chan = 0; chan < 2; chan++) {
-        auto chanPtr = myBuffer->getWritePointer(chan);
+        auto chanPtr = myBuffer.getWritePointer(chan);
         for (int i = 0; i < nframes; i++)
         {
             *chanPtr++ = in[i * 2 + chan];
         }
     }
 
-    sampler.processBlock(*myBuffer, myMidiBuffer);
+    sampler.processBlock(myBuffer, myMidiBuffer);
 
     // copy from buffer to output.
     // out needs to receive alternating left/right channels.
     for (int chan = 0; chan < 2; chan++) {
-        auto chanPtr = myBuffer->getReadPointer(chan);
+        auto chanPtr = myBuffer.getReadPointer(chan);
         for (int i = 0; i < nframes; i++)
         {
             out[chan + 2 * i] = *chanPtr++;
         }
     }
-
     myMidiBuffer.clear();
+
+    myCurrentPositionInfo.timeInSamples += nframes;
+    myCurrentPositionInfo.ppqPosition += ((double)nframes / (m_srate * 60.)) * myCurrentPositionInfo.bpm;
+}
+
+void SamplerChugin::resetTime(float ppqPosition) {
+    myCurrentPositionInfo.timeInSamples = 0;
+    myCurrentPositionInfo.timeInSeconds = 0;
+    myCurrentPositionInfo.ppqPosition = ppqPosition;
+}
+
+void SamplerChugin::resetTime() {
+    this->resetTime(0.);
+}
+
+void SamplerChugin::setBPM(float bpm) {
+    myCurrentPositionInfo.bpm = bpm;
 }
 
 bool SamplerChugin::read(const string& path) {
     return sampler.setSample(path.c_str());
 }
 
+bool
+SamplerChugin::getCurrentPosition(CurrentPositionInfo& result) {
+    result = myCurrentPositionInfo;
+    return true;
+};
+
+/** Returns true if this object can control the transport. */
+bool
+SamplerChugin::canControlTransport() { return true; }
+
+/** Starts or stops the audio. */
+void
+SamplerChugin::transportPlay(bool shouldStartPlaying) { }
+
+/** Starts or stops recording the audio. */
+void
+SamplerChugin::transportRecord(bool shouldStartRecording) { }
+
+/** Rewinds the audio. */
+void
+SamplerChugin::transportRewind() {}
+
+void SamplerChugin::setNumberOfVoices(int numberOfVoices) {
+    sampler.setNumberOfVoices(numberOfVoices);
+}
+
+void SamplerChugin::setVoiceStealingEnabled(bool voiceStealingEnabled) {
+    sampler.setVoiceStealingEnabled(voiceStealingEnabled);
+}
 
 bool SamplerChugin::noteOn(int noteNumber, float velocity) {
     using namespace juce;
-    
+
     // Get the note on midiBuffer.
     MidiMessage onMessage = MidiMessage::noteOn(1, noteNumber, velocity);
     onMessage.setTimeStamp(0);
@@ -184,7 +240,7 @@ float SamplerChugin::getParameter(int index) {
 
     try
     {
-        return sampler.getParameter(index);
+        return sampler.getParameterRaw(index);
     }
     catch (const std::exception&)
     {
@@ -195,7 +251,7 @@ float SamplerChugin::getParameter(int index) {
 bool SamplerChugin::setParameter(int index, float v) {
     try
     {
-        sampler.setParameterNotifyingHost(index, v);
+        sampler.setParameterRawNotifyingHost(index, v);
         return true;
     }
     catch (const std::exception&)
@@ -222,8 +278,8 @@ CK_DLL_QUERY( Sampler )
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, sampler_dtor);
 
-    // 2, 2 to do stereo in and stereo out
-    QUERY->add_ugen_funcf(QUERY, sampler_tickstereoin, NULL, 2, 2);
+    // stereo out
+    QUERY->add_ugen_funcf(QUERY, sampler_tick, NULL, 0, 2);
 
     QUERY->add_mfun(QUERY, sampler_read, "int", "read");
     QUERY->add_arg(QUERY, "string", "filename");
@@ -239,6 +295,20 @@ CK_DLL_QUERY( Sampler )
     QUERY->add_mfun(QUERY, sampler_setparameter, "int", "setParameter");
     QUERY->add_arg(QUERY, "int", "index");
     QUERY->add_arg(QUERY, "float", "value");
+
+    QUERY->add_mfun(QUERY, sampler_resettime, "int", "resetTime");
+    QUERY->add_arg(QUERY, "float", "ppqPosition");
+
+    QUERY->add_mfun(QUERY, sampler_resettime0, "int", "resetTime");
+
+    QUERY->add_mfun(QUERY, sampler_setbpm, "int", "setBPM");
+    QUERY->add_arg(QUERY, "float", "bpm");
+
+    QUERY->add_mfun(QUERY, sampler_setnumbervoices, "int", "setNumVoices");
+    QUERY->add_arg(QUERY, "int", "numberVoices");
+
+    QUERY->add_mfun(QUERY, sampler_setvoicestealing, "int", "setVoiceStealing");
+    QUERY->add_arg(QUERY, "float", "voiceStealingEnabled");
 
     QUERY->add_mfun(QUERY, sampler_noteon, "int", "noteOn");
     QUERY->add_arg(QUERY, "int", "noteNumber");
@@ -289,13 +359,13 @@ CK_DLL_DTOR(sampler_dtor)
 }
 
 // implementation for tick function
-CK_DLL_TICKF(sampler_tickstereoin)
+CK_DLL_TICKF(sampler_tick)
 {
     // get our c++ class pointer
     SamplerChugin* b = (SamplerChugin*)OBJ_MEMBER_INT(SELF, sampler_data_offset);
 
     // invoke our tick function; store in the magical out variable
-    if (b) b->tickstereoin(in, out, nframes);
+    if (b) b->tick(in, out, nframes);
 
     // yes
     return TRUE;
@@ -343,6 +413,48 @@ CK_DLL_MFUN(sampler_setparameter)
     SamplerChugin* b = (SamplerChugin*)OBJ_MEMBER_INT(SELF, sampler_data_offset);
 
     RETURN->v_int = b->setParameter(index, val);
+}
+
+CK_DLL_MFUN(sampler_resettime)
+{
+    SamplerChugin* b = (SamplerChugin*)OBJ_MEMBER_INT(SELF, sampler_data_offset);
+    t_CKFLOAT ppqPosition = GET_NEXT_FLOAT(ARGS);
+    b->resetTime(ppqPosition);
+    RETURN->v_int = true;
+}
+
+CK_DLL_MFUN(sampler_resettime0)
+{
+    SamplerChugin* b = (SamplerChugin*)OBJ_MEMBER_INT(SELF, sampler_data_offset);
+    b->resetTime();
+    RETURN->v_int = true;
+}
+
+CK_DLL_MFUN(sampler_setbpm)
+{
+    t_CKFLOAT bpm = GET_NEXT_FLOAT(ARGS);
+
+    SamplerChugin* b = (SamplerChugin*)OBJ_MEMBER_INT(SELF, sampler_data_offset);
+    b->setBPM(bpm);
+    RETURN->v_int = true;
+}
+
+CK_DLL_MFUN(sampler_setnumbervoices)
+{
+    t_CKINT numberVoices = GET_NEXT_INT(ARGS);
+
+    SamplerChugin* b = (SamplerChugin*)OBJ_MEMBER_INT(SELF, sampler_data_offset);
+    b->setNumberOfVoices(numberVoices);
+    RETURN->v_int = true;
+}
+
+CK_DLL_MFUN(sampler_setvoicestealing)
+{
+    t_CKBOOL voiceStealingEnabled = GET_NEXT_INT(ARGS);
+
+    SamplerChugin* b = (SamplerChugin*)OBJ_MEMBER_INT(SELF, sampler_data_offset);
+    b->setVoiceStealingEnabled(voiceStealingEnabled);
+    RETURN->v_int = true;
 }
 
 CK_DLL_MFUN(sampler_noteon)

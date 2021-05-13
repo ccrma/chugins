@@ -1,6 +1,7 @@
-me.dir() + "assets/clap.wav" => string file_path; // Must be absolute path.
+me.dir() + "assets/guitar.wav" => string file_path; // Must be absolute path.
 
 Sampler sampler => dac;
+sampler.gain(0.3);
 
 <<< "Trying sound asset at path: ", file_path >>>;
 
@@ -11,19 +12,32 @@ else {
 	<<< "error reading file!" >>>;
 }
 
-<<< "num parameters: ", sampler.getNumParameters() >>>;
-<<< "parameter 0 is named: ", sampler.getParameterName(0) >>>;
-sampler.setParameter(0, sampler.getParameter(0));  // setting a parameter to its current value.
+for (0 => int i; i < sampler.getNumParameters(); 1 +=> i) {
+	<<< "parameter ", i, " is named: ", sampler.getParameterName(i) >>>;
+}
 
-sampler.setParameter(0, 60./127.);  // set to center C
+sampler.setNumVoices(20);     // 20 by default (30 max)
+sampler.setVoiceStealing(1);  // voice stealing is disabled by default.
 
-sampler.setParameter(1, 0); // disable Amp Active
-sampler.setParameter(8, 0); // disable Filter Active
+sampler.setParameter(0, 60);  // set to middle C
+sampler.setParameter(1, 1);   // enable amp env active
+sampler.setParameter(2, 2);   // amp env attack (ms)
+sampler.setParameter(3, 10);  // amp env decay (ms)
+sampler.setParameter(4, 1);   // amp env sustain
+sampler.setParameter(5, 100); // amp env release (ms)
+sampler.setParameter(8, 0);   // disable filter Active
+
+[0, 2, 4, 5, 7, 9, 11, 12] @=> int notes[];
 
 while(true) {
-	60 + Std.rand2(-5, 5) => int pitch;
-    sampler.noteOn(pitch, 1.);
-    20::ms => now;
-    sampler.noteOff(pitch, 0.);
-    (Std.rand2f(20, 200))::ms => now;
+
+	repeat(10) {
+		60 + notes[Std.rand2(0, notes.size()-1)] => int pitch;
+	    sampler.noteOn(pitch, 1.);
+	    30::ms => now;
+	    sampler.noteOff(pitch, 0.);
+	    Std.rand2(1,2)*30::ms => now;
+	}
+
+	sampler.setParameter(1, 1-sampler.getParameter(1)); // toggle amp envelope active
 }
