@@ -1,0 +1,6 @@
+[submodule "WarpBuf/thirdparty/rubberband"]
+	path = WarpBuf/thirdparty/rubberband
+	url = https://github.com/breakfastquay/rubberband/
+[submodule "WarpBuf/thirdparty/libsamplerate"]
+	path = WarpBuf/thirdparty/libsamplerate
+	url = https://github.com/libsndfile/libsamplerate
