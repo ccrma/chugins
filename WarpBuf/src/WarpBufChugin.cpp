@@ -266,6 +266,8 @@ private:
 
     int numAllocated = 0;
 
+    std::vector<std::pair<double, double>> warp_markers;
+
     void clearBufs();
     void allocate(int numSamples);
 
@@ -354,28 +356,47 @@ void WarpBufChugin::readWarpFile(const string& path) {
     }
 
     double loop_start, loop_end, sample_offset, hidden_loop_start, hidden_loop_end, out_marker;
-    bool loop_on;
-    if (!read_loop_info(f, &loop_start, &loop_end, &sample_offset, &hidden_loop_start, &hidden_loop_end, &out_marker, &loop_on)) {
+    if (!read_loop_info(f, &loop_start, &loop_end, &sample_offset, &hidden_loop_start, &hidden_loop_end, &out_marker, &m_loopEnabled)) {
         printf("couldn't find loop markers\n");
     }
     else {
         printf("loop_start: %.17g loop_end: %.17g sample_offset: %.17g hidden_loop_start: %.17g hidden_loop_end: %.17g out_marker: %.17g\n",
             loop_start, loop_end, sample_offset, hidden_loop_start, hidden_loop_end, out_marker);
-        std::cout << "loop on " << loop_on << std::endl;
+        std::cout << "loop on " << m_loopEnabled << std::endl;
     }
     rewind(f);
 
-    double p1, b1, p2, b2;
-    if (!(find_str(f, "WarpMarker") &&
-        read_warp_marker(f, &p1, &b1) &&
-        read_warp_marker(f, &p2, &b2))) {
-        printf("couldn't find warp markers\n");
-        return;
+    double pos, beat;
+    warp_markers.clear();
+    bool found_one = false;
+
+    // the first appearance of "WarpMarker" isn't meaningful.
+    find_str(f, "WarpMarker");
+
+    // Subsequent "WarpMarkers" are meaningful
+    while (find_str(f, "WarpMarker")) {
+        if (!fseek(f, 4, SEEK_CUR) &&
+            read_double(f, &pos) &&
+            read_double(f, &beat)) {
+
+            found_one = true;
+            warp_markers.push_back(std::make_pair(pos, beat));
+        }
+        else if (found_one) {
+            break;
+        }
     }
+    std::cout << "num warp markers: " << warp_markers.size() << std::endl;
 
-    double bpm = (b2 - b1) / (p2 - p1) * 60.0;
+    if (warp_markers.size() > 1) {
+        double p1 = warp_markers.at(0).first;
+        double b1 = warp_markers.at(0).second;
+        double p2 = warp_markers.at(1).first;
+        double b2 = warp_markers.at(1).second;
 
-    printf("%.17g %.17g\n", p1, bpm);
+        double bpm = (b2 - b1) / (p2 - p1) * 60.0;
+        printf("%.17g %.17g\n", p1, bpm);
+    }
 }
 
 void WarpBufChugin::setLoopEnable(bool enable) {
