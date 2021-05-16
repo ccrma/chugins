@@ -188,7 +188,6 @@ int read_double(FILE* f, double* x) {
 
 int read_bool(FILE* f, bool* b) {
     if (fread(b, 1, 1, f) != 1) return 0;
-    //*b =  *b != NULL;
     return 1;
 }
 
@@ -206,6 +205,59 @@ class ClipInfo {
 
         std::vector<std::pair<double, double>> warp_markers;
 
+        void beat_to_seconds(double beat, float& seconds, float &bpm) {
+
+            if (warp_markers.size() < 2) {
+                std::cerr << "unable to find sample for beat. not enough markers. " << std::endl;
+                return;
+            }
+
+            auto it = warp_markers;
+
+            double p1, b1, p2, b2;
+
+            p1 = warp_markers.at(0).first;
+            b1 = warp_markers.at(0).second;
+            
+            for (auto it = ++warp_markers.begin(); it != warp_markers.end(); it++) {
+                if ((*it).second >= beat) {
+
+                    p2 = (*it).first;
+                    b2 = (*it).second;
+
+                    bpm = (b2 - b1) / (p2 - p1) * 60.0;
+         
+                    // interpolate between the two warp markers
+                    float x = (beat - b1) / (b2 - b1);
+                    
+                    seconds = p1 + x * (p2 - p1);
+                    return;
+                }
+                else {
+                    p1 = (*it).first;
+                    b1 = (*it).second;
+                }
+            }
+
+            int last_index = warp_markers.size() - 1;
+            p1 = warp_markers.at(last_index-1).first;
+            b1 = warp_markers.at(last_index-1).second;
+            p2 = warp_markers.at(last_index).first;
+            b2 = warp_markers.at(last_index).second;
+
+            bpm = (b2 - b1) / (p2 - p1) * 60.0;
+
+            // interpolate between the two warp markers
+            float x = (beat - b1) / (b2 - b1);
+
+            seconds = p1 + x * (p2 - p1);
+            return;
+
+            std::cerr << "unable to find sample for beat: " << beat << std::endl;
+            return;
+
+        }
+
         int read_warp_marker(FILE* f, double* pos, double* beat) {
             return
                 find_str(f, "WarpMarker") &&
@@ -216,8 +268,6 @@ class ClipInfo {
 
         int read_loop_info(FILE* f) {
             return
-                // rViewLevel
-                // "I n t e r l e a v e d B i n D a t a"
                 find_str(f, "SampleOverViewLevel") &&
                 find_str(f, "SampleOverViewLevel") &&
                 !fseek(f, 71, SEEK_CUR) &&
@@ -254,7 +304,7 @@ class ClipInfo {
             else {
                 printf("loop_start: %.17g loop_end: %.17g sample_offset: %.17g hidden_loop_start: %.17g hidden_loop_end: %.17g out_marker: %.17g\n",
                     loop_start, loop_end, sample_offset, hidden_loop_start, hidden_loop_end, out_marker);
-                std::cout << "loop on " << loop_end << std::endl;
+                std::cout << "loop on " << loop_on << std::endl;
             }
             rewind(f);
 
@@ -279,6 +329,11 @@ class ClipInfo {
                 }
             }
             std::cout << "num warp markers: " << warp_markers.size() << std::endl;
+
+            // todo: this is actually the correct place to read loop_on
+            //fseek(f, 0, SEEK_CUR) && read_bool(f, &loop_on);
+            // todo: don't assume this
+            loop_on = true;
 
             if (warp_markers.size() > 1) {
                 double p1 = warp_markers.at(0).first;
@@ -396,7 +451,6 @@ public:
     const int ibs = 1024;
     const int channels = 2;
 
-    int m_playHeadSamples = 0;
     double m_playHeadBeats = 0.;
 
     double m_bpm = 120.;
@@ -412,6 +466,7 @@ private:
     float** m_nonInterleavedBuffer = NULL;  // non interleaved: [channels][ibs]
     SNDFILE* sndfile;
     SF_INFO sfinfo;
+    int sfReadPos = 0;
 
     int numAllocated = 0;
     ClipInfo m_clipInfo;
@@ -480,24 +535,56 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 {
     allocate(nframes);
 
-    int count = -1;
-    int frame = 0;
-    int numAvailable = m_rbstretcher->available();
+    float _;
+    float instant_bpm = -1.;
 
-    m_playHeadBeats = std::fmod(m_playHeadBeats + m_bpm * (double)nframes / (60.*m_srate), 1.);
+    m_clipInfo.beat_to_seconds(m_playHeadBeats, _, instant_bpm);
+
+    float loop_start_seconds = 0.;
+    m_clipInfo.beat_to_seconds(m_clipInfo.loop_start, loop_start_seconds, _);
+
+    float loop_end_seconds = 0.;
+    m_clipInfo.beat_to_seconds(m_clipInfo.loop_end, loop_end_seconds, _);
+
+    if (m_playHeadBeats > m_clipInfo.loop_end && !m_clipInfo.loop_on) {
+        return;
+    }
+
+    m_playHeadBeats += m_bpm * (double)nframes / (60. * m_srate);
 
     double ratio = (m_srate / sfinfo.samplerate);
-    if (m_clipInfo.bpm > 0) {
-        ratio *= m_clipInfo.bpm / m_bpm;
+    if (instant_bpm > 0 && m_clipInfo.warp_on) {
+        ratio *= instant_bpm / m_bpm;
     }
     m_rbstretcher->setTimeRatio(ratio);
 
+    int count = -1;
+    int numAvailable = m_rbstretcher->available();
     while (numAvailable < nframes) {
 
-        if ((count = sf_readf_float(sndfile, m_interleavedBuffer, ibs)) <= 0) {
-            sf_seek(sndfile, 0, SEEK_SET);
-            m_playHeadSamples = 0;
-            count = sf_readf_float(sndfile, m_interleavedBuffer, ibs);
+        int allowedReadCount = m_clipInfo.loop_on ? std::min(ibs, (int)( loop_end_seconds*sfinfo.samplerate- sfReadPos)) : ibs;
+
+        count = sf_readf_float(sndfile, m_interleavedBuffer, allowedReadCount);
+        sfReadPos += count;
+        if (count <= 0) {
+            if (!m_clipInfo.loop_on) {
+                // we're not looping, so just fill with zeros.
+                for (size_t c = 0; c < channels; c++) {
+                    for (int i = 0; i < ibs; i++) {
+                        m_interleavedBuffer[i*channels+c] = 0.;
+                    }
+                }
+            }
+            else {
+                // we are looping, so seek to the loop start of the audio file
+                m_playHeadBeats = m_clipInfo.loop_start;
+                sfReadPos = loop_start_seconds * sfinfo.samplerate;
+                sf_seek(sndfile, sfReadPos, SEEK_SET);
+
+                allowedReadCount = std::min(ibs, (int)(loop_end_seconds * sfinfo.samplerate - sfReadPos));
+                count = sf_readf_float(sndfile, m_interleavedBuffer, allowedReadCount);
+                sfReadPos += count;
+            }
         }
 
         for (size_t c = 0; c < channels; ++c) {
@@ -507,7 +594,7 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
             }
         }
 
-        bool final = (frame + ibs >= sfinfo.frames);
+        bool final = false; // todo
 
         m_rbstretcher->process(m_nonInterleavedBuffer, count, final);
         numAvailable = m_rbstretcher->available();
@@ -530,6 +617,8 @@ bool WarpBufChugin::read(const string& path) {
     memset(&sfinfo, 0, sizeof(SF_INFO));
     m_clipInfo.readWarpFile(path + std::string(".asd"));
 
+    m_playHeadBeats = m_clipInfo.loop_start + m_clipInfo.sample_offset;
+
     sndfile = sf_open(path.c_str(), SFM_READ, &sfinfo);
     if (!sndfile) {
         cerr << "ERROR: Failed to open input file \"" << path << "\": "
@@ -542,60 +631,11 @@ bool WarpBufChugin::read(const string& path) {
         return false;
     }
 
-    //if (duration != 0.0) {
-    //    if (sfinfo.frames == 0) {
-    //        cerr << "ERROR: File lacks frame count in header, cannot use --duration" << endl;
-    //        return 1;
-    //    }
-    //    double induration = double(sfinfo.frames) / double(sfinfo.samplerate);
-    //    if (induration != 0.0) ratio = duration / induration;
-    //}
+    float start_seconds;
+    float _;
+    m_clipInfo.beat_to_seconds(m_playHeadBeats, start_seconds, _);
 
-    int channels = 2;
-    int ibs = 1024;
-
-    m_rbstretcher->setExpectedInputDuration(sfinfo.frames);
-
-    int frame = 0;
-    int percent = 0;
-
-    sf_seek(sndfile, 0, SEEK_SET);
-
-    if (true) {
-
-        while (frame < sfinfo.frames) {
-
-            int count = -1;
-
-            if ((count = sf_readf_float(sndfile, m_interleavedBuffer, ibs)) <= 0) break;
-
-            for (size_t c = 0; c < channels; ++c) {
-                for (int i = 0; i < count; ++i) {
-                    float value = m_interleavedBuffer[i * channels + c];
-                    m_nonInterleavedBuffer[c][i] = value;
-                }
-            }
-
-            bool final = (frame + ibs >= sfinfo.frames);
-
-            m_rbstretcher->study(m_nonInterleavedBuffer, count, final);
-
-            int p = int((double(frame) * 100.0) / sfinfo.frames);
-            if (p > percent || frame == 0) {
-                percent = p;
-            }
-
-            frame += ibs;
-        }
-
-        sf_seek(sndfile, 0, SEEK_SET);
-    }
-
-    // todo:
-    //std::map<size_t, size_t> mapping;
-    //if (!mapping.empty()) {
-    //    m_rbstretcher->setKeyFrameMap(mapping);
-    //}    
+    sf_seek(sndfile, start_seconds*sfinfo.samplerate, SEEK_SET);
 
     return true;
 }
