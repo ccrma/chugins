@@ -149,6 +149,151 @@ using namespace std;
 
 #include "rubberband/RubberBandStretcher.h"
 
+
+int rot(int head, int size) {
+    if (++head >= size) return head - size;
+    return head;
+}
+#include <stdio.h>
+#include <stdlib.h>
+int find_str(FILE* f, const char* string) {
+    const int size = strlen(string);
+    //char buffer[size];
+    char* buffer = (char*)malloc(size * sizeof(char));
+    if (fread(buffer, 1, size, f) != size) return 0;
+    int head = 0, c;
+
+    for (;;) {
+        int rHead = head;
+        for (int i = 0; i < size; i++) {
+            if (buffer[rHead] != string[i]) goto next;
+            rHead = rot(rHead, size);
+        }
+        return 1;
+
+    next:
+        if ((c = getc(f)) == EOF) break;
+        buffer[head] = c;
+        head = rot(head, size);
+    }
+
+    return 0;
+}
+
+int read_double(FILE* f, double* x) {
+    if (fread(x, 1, 8, f) != 8) return 0;
+    *(uint64_t*)x = le64toh(*(uint64_t*)x);
+    return 1;
+}
+
+int read_bool(FILE* f, bool* b) {
+    if (fread(b, 1, 1, f) != 1) return 0;
+    //*b =  *b != NULL;
+    return 1;
+}
+
+class ClipInfo {
+    public:
+        double loop_start;
+        double loop_end;
+        double sample_offset;
+        double hidden_loop_start;
+        double hidden_loop_end;
+        double out_marker;
+        bool loop_on = false;
+        bool warp_on = false;
+        double bpm = 120.;
+
+        std::vector<std::pair<double, double>> warp_markers;
+
+        int read_warp_marker(FILE* f, double* pos, double* beat) {
+            return
+                find_str(f, "WarpMarker") &&
+                !fseek(f, 4, SEEK_CUR) &&
+                read_double(f, pos) &&
+                read_double(f, beat);
+        }
+
+        int read_loop_info(FILE* f) {
+            return
+                // rViewLevel
+                // "I n t e r l e a v e d B i n D a t a"
+                find_str(f, "SampleOverViewLevel") &&
+                find_str(f, "SampleOverViewLevel") &&
+                !fseek(f, 71, SEEK_CUR) &&
+                read_double(f, &loop_start) &&
+                read_double(f, &loop_end) &&
+                read_double(f, &sample_offset) &&
+                read_double(f, &hidden_loop_start) &&
+                read_double(f, &hidden_loop_end) &&
+                read_double(f, &out_marker) &&
+                !fseek(f, 281, SEEK_CUR) &&
+                read_bool(f, &loop_on)
+                ;
+        }
+
+        void reset() {
+            warp_markers.clear();
+            warp_on = false;
+            bpm = 120.;
+        }
+
+        void readWarpFile(const string& path) {
+
+            reset();
+
+            FILE* f = fopen(path.c_str(), "rb");
+            if (!f) {
+                std::cerr << "couldn't open file" << std::endl;
+                return;
+            }
+
+            if (!read_loop_info(f)) {
+                printf("couldn't find loop markers\n");
+            }
+            else {
+                printf("loop_start: %.17g loop_end: %.17g sample_offset: %.17g hidden_loop_start: %.17g hidden_loop_end: %.17g out_marker: %.17g\n",
+                    loop_start, loop_end, sample_offset, hidden_loop_start, hidden_loop_end, out_marker);
+                std::cout << "loop on " << loop_end << std::endl;
+            }
+            rewind(f);
+
+            double pos, beat;
+            
+            bool found_one = false;
+
+            // the first appearance of "WarpMarker" isn't meaningful.
+            find_str(f, "WarpMarker");
+
+            // Subsequent "WarpMarkers" are meaningful
+            while (find_str(f, "WarpMarker")) {
+                if (!fseek(f, 4, SEEK_CUR) &&
+                    read_double(f, &pos) &&
+                    read_double(f, &beat)) {
+
+                    found_one = true;
+                    warp_markers.push_back(std::make_pair(pos, beat));
+                }
+                else if (found_one) {
+                    break;
+                }
+            }
+            std::cout << "num warp markers: " << warp_markers.size() << std::endl;
+
+            if (warp_markers.size() > 1) {
+                double p1 = warp_markers.at(0).first;
+                double b1 = warp_markers.at(0).second;
+                double p2 = warp_markers.at(1).first;
+                double b2 = warp_markers.at(1).second;
+
+                bpm = (b2 - b1) / (p2 - p1) * 60.0;
+                printf("BPM: %.17g\n", bpm);
+
+                warp_on = true;
+            }
+        }
+};
+
 // declaration of chugin constructor
 CK_DLL_CTOR(warpbuf_ctor);
 // declaration of chugin desctructor
@@ -156,7 +301,7 @@ CK_DLL_DTOR(warpbuf_dtor);
 
 // functions
 CK_DLL_MFUN(warpbuf_read);
-CK_DLL_MFUN(warpbuf_settimeratio);
+CK_DLL_MFUN(warpbuf_setbpm);
 CK_DLL_MFUN(warpbuf_setpitchscale);
 CK_DLL_MFUN(warpbuf_setloopenable);
 
@@ -239,24 +384,28 @@ public:
         m_rbstretcher.release();
     }
 
+
     // for Chugins extending UGen
     void tick(SAMPLE* in, SAMPLE* out, int nframes);
 
     void setPitchScale(double scale);
-    void setTimeRatio(double ratio);
+    void setBPM(double bpm);
     void setLoopEnable(bool enable);
 
     bool read(const string& filename);
     const int ibs = 1024;
     const int channels = 2;
 
+    int m_playHeadSamples = 0;
+    double m_playHeadBeats = 0.;
+
+    double m_bpm = 120.;
+
 private:
     // sample rate
     t_CKFLOAT m_srate;
 
     std::unique_ptr<RubberBand::RubberBandStretcher> m_rbstretcher;
-
-    bool m_loopEnabled = true;
 
     float** m_retrieveBuffer = NULL; // non interleaved: [channels][ibs]
     float* m_interleavedBuffer = nullptr;  // interleaved: [channels*ibs]
@@ -265,13 +414,10 @@ private:
     SF_INFO sfinfo;
 
     int numAllocated = 0;
-
-    std::vector<std::pair<double, double>> warp_markers;
+    ClipInfo m_clipInfo;
 
     void clearBufs();
     void allocate(int numSamples);
-
-    void readWarpFile(const string& path);
 
 protected:
 
@@ -279,128 +425,9 @@ protected:
 
 };
 
-int rot(int head, int size) {
-    if (++head >= size) return head - size;
-    return head;
-}
-#include <stdio.h>
-#include <stdlib.h>
-int find_str(FILE* f, const char* string) {
-    const int size = strlen(string);
-    //char buffer[size];
-    char* buffer = (char*) malloc(size * sizeof(char));
-    if (fread(buffer, 1, size, f) != size) return 0;
-    int head = 0, c;
-
-    for (;;) {
-        int rHead = head;
-        for (int i = 0; i < size; i++) {
-            if (buffer[rHead] != string[i]) goto next;
-            rHead = rot(rHead, size);
-        }
-        return 1;
-
-    next:
-        if ((c = getc(f)) == EOF) break;
-        buffer[head] = c;
-        head = rot(head, size);
-    }
-
-    return 0;
-}
-
-int read_double(FILE* f, double* x) {
-    if (fread(x, 1, 8, f) != 8) return 0;
-    *(uint64_t*)x = le64toh(*(uint64_t*)x);
-    return 1;
-}
-
-int read_bool(FILE* f, bool* b) {
-    if (fread(b, 1, 1, f) != 1) return 0;
-    //*b =  *b != NULL;
-    return 1;
-}
-
-int read_warp_marker(FILE* f, double* pos, double* beat) {
-    return
-        find_str(f, "WarpMarker") &&
-        !fseek(f, 4, SEEK_CUR) &&
-        read_double(f, pos) &&
-        read_double(f, beat);
-}
-
-int read_loop_info(FILE* f, double* loop_start, double* loop_end, double* sample_offset,
-    double* hidden_loop_start, double* hidden_loop_end, double* out_marker, bool* loop_on) {
-    return
-        // rViewLevel
-        // "I n t e r l e a v e d B i n D a t a"
-        find_str(f, "SampleOverViewLevel") &&
-        find_str(f, "SampleOverViewLevel") &&
-        !fseek(f, 71, SEEK_CUR) &&
-        read_double(f, loop_start) &&
-        read_double(f, loop_end) &&
-        read_double(f, sample_offset) &&
-        read_double(f, hidden_loop_start) &&
-        read_double(f, hidden_loop_end) &&
-        read_double(f, out_marker) &&
-        !fseek(f, 281, SEEK_CUR) &&
-        read_bool(f, loop_on)
-        ;
-}
-
-void WarpBufChugin::readWarpFile(const string& path) {
-    FILE* f = fopen(path.c_str(), "rb");
-    if (!f) {
-        std::cerr << "couldn't open file" << std::endl;
-        return;
-    }
-
-    double loop_start, loop_end, sample_offset, hidden_loop_start, hidden_loop_end, out_marker;
-    if (!read_loop_info(f, &loop_start, &loop_end, &sample_offset, &hidden_loop_start, &hidden_loop_end, &out_marker, &m_loopEnabled)) {
-        printf("couldn't find loop markers\n");
-    }
-    else {
-        printf("loop_start: %.17g loop_end: %.17g sample_offset: %.17g hidden_loop_start: %.17g hidden_loop_end: %.17g out_marker: %.17g\n",
-            loop_start, loop_end, sample_offset, hidden_loop_start, hidden_loop_end, out_marker);
-        std::cout << "loop on " << m_loopEnabled << std::endl;
-    }
-    rewind(f);
-
-    double pos, beat;
-    warp_markers.clear();
-    bool found_one = false;
-
-    // the first appearance of "WarpMarker" isn't meaningful.
-    find_str(f, "WarpMarker");
-
-    // Subsequent "WarpMarkers" are meaningful
-    while (find_str(f, "WarpMarker")) {
-        if (!fseek(f, 4, SEEK_CUR) &&
-            read_double(f, &pos) &&
-            read_double(f, &beat)) {
-
-            found_one = true;
-            warp_markers.push_back(std::make_pair(pos, beat));
-        }
-        else if (found_one) {
-            break;
-        }
-    }
-    std::cout << "num warp markers: " << warp_markers.size() << std::endl;
-
-    if (warp_markers.size() > 1) {
-        double p1 = warp_markers.at(0).first;
-        double b1 = warp_markers.at(0).second;
-        double p2 = warp_markers.at(1).first;
-        double b2 = warp_markers.at(1).second;
-
-        double bpm = (b2 - b1) / (p2 - p1) * 60.0;
-        printf("%.17g %.17g\n", p1, bpm);
-    }
-}
 
 void WarpBufChugin::setLoopEnable(bool enable) {
-    m_loopEnabled = enable;
+    m_clipInfo.loop_end = enable;
 }
 
 // clear
@@ -437,28 +464,41 @@ void WarpBufChugin::allocate(int numSamples)
 void WarpBufChugin::setPitchScale(double scale) {
     m_rbstretcher->setPitchScale(scale);
 }
-void WarpBufChugin::setTimeRatio(double ratio) {
-    m_rbstretcher->setTimeRatio(ratio);
+
+void WarpBufChugin::setBPM(double bpm) {
+    if (bpm <= 0) {
+        std::cerr << "Error: BPM must be positive." << std::endl;
+        return;
+    }
+    m_bpm = bpm;
+
+    if (m_clipInfo.bpm > 0) {
+        double ratio = (m_srate / sfinfo.samplerate) * m_clipInfo.bpm / bpm;
+        std::cout << "setting ratio: " << ratio << std::endl;
+        m_rbstretcher->setTimeRatio(ratio );
+    }
+    else {
+        m_rbstretcher->setTimeRatio(1.);
+    }
 }
 
 void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 {
     allocate(nframes);
 
-    size_t countIn = 0;
-
     int count = -1;
     int frame = 0;
     int numAvailable = m_rbstretcher->available();
+
+    m_playHeadBeats = std::fmod(m_playHeadBeats + m_bpm * (double)nframes / (60.*m_srate), 1.);
 
     while (numAvailable < nframes) {
 
         if ((count = sf_readf_float(sndfile, m_interleavedBuffer, ibs)) <= 0) {
             sf_seek(sndfile, 0, SEEK_SET);
+            m_playHeadSamples = 0;
             count = sf_readf_float(sndfile, m_interleavedBuffer, ibs);
         }
-
-        countIn += count;
 
         for (size_t c = 0; c < channels; ++c) {
             for (int i = 0; i < count; ++i) {
@@ -488,8 +528,7 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 
 bool WarpBufChugin::read(const string& path) {
     memset(&sfinfo, 0, sizeof(SF_INFO));
-
-    this->readWarpFile(path + std::string(".asd"));
+    m_clipInfo.readWarpFile(path + std::string(".asd"));
 
     sndfile = sf_open(path.c_str(), SFM_READ, &sfinfo);
     if (!sndfile) {
@@ -583,11 +622,11 @@ CK_DLL_QUERY( WarpBuf )
     QUERY->add_mfun(QUERY, warpbuf_read, "int", "read");
     QUERY->add_arg(QUERY, "string", "filename");
 
+    QUERY->add_mfun(QUERY, warpbuf_setbpm, "int", "setBPM");
+    QUERY->add_arg(QUERY, "float", "bpm");
+
     QUERY->add_mfun(QUERY, warpbuf_setpitchscale, "int", "setPitchScale");
     QUERY->add_arg(QUERY, "float", "scale");
-
-    QUERY->add_mfun(QUERY, warpbuf_settimeratio, "int", "setTimeRatio");
-    QUERY->add_arg(QUERY, "float", "ratio");
 
     QUERY->add_mfun(QUERY, warpbuf_setloopenable, "int", "setLoopEnable");
     QUERY->add_arg(QUERY, "float", "enable");
@@ -654,12 +693,12 @@ CK_DLL_MFUN(warpbuf_read)
     RETURN->v_int = b->read(filename.c_str());
 }
 
-CK_DLL_MFUN(warpbuf_settimeratio)
+CK_DLL_MFUN(warpbuf_setbpm)
 {
-    t_CKFLOAT ratio = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT bpm = GET_NEXT_FLOAT(ARGS);
 
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
-    b->setTimeRatio(ratio);
+    b->setBPM(bpm);
     RETURN->v_int = true;
 }
 

@@ -5,26 +5,34 @@ playhead.gain(numQuarterNotes);
 bpm/(60.* numQuarterNotes) => playhead.freq;
 
 playhead => WarpBuf s1 => dac;
-s1.gain(.5);
-
-// s1.setTimeRatio(2.); // play back in twice the amount of time.
-s1.setTimeRatio(.5);  // play back in half the amount of time.
+playhead => WarpBuf s2 => dac;
+s1.gain(.4);
+s2.gain(.4);
 
 me.dir() + "assets/drums.wav" => s1.read;
+me.dir() + "assets/synth.wav" => s2.read;
 
-s1.setTimeRatio(2.0);  // play back in half the amount of time.
-s1.setPitchScale(1.5);  // play back in half the amount of time.
+144. => float BPM;
 
-SinOsc timeLFO => blackhole;
-0.1 => timeLFO.freq;
+s1.setBPM(BPM);
+s2.setBPM(BPM);
 
-fun void modulateTimeRatio() {
-	while (true) {
-		0.5+1.5*(timeLFO.last()*0.5+.5) => s1.setTimeRatio;
-		10::samp => now;
-	}
+fun float semiToRatio(float semi) {
+	return Math.mtof(60. + semi) / Math.mtof(60.);
 }
-spork~modulateTimeRatio();
+
+s2.setPitchScale(semiToRatio(3.));
+
+// SinOsc timeLFO => blackhole;
+// 0.1 => timeLFO.freq;
+
+// fun void modulateTimeRatio() {
+// 	while (true) {
+// 		0.5+1.5*(timeLFO.last()*0.5+.5) => s1.setTimeRatio;
+// 		10::samp => now;
+// 	}
+// }
+// spork~modulateTimeRatio();
 
 while(true) {
 	1::second => now;
