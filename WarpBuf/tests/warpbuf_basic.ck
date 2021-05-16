@@ -12,16 +12,12 @@ s2.gain(.4);
 me.dir() + "assets/drums.wav" => s1.read;
 me.dir() + "assets/synth.wav" => s2.read;
 
-144. => float BPM;
+180. => float BPM;
 
 s1.setBPM(BPM);
 s2.setBPM(BPM);
 
-fun float semiToRatio(float semi) {
-	return Math.mtof(60. + semi) / Math.mtof(60.);
-}
-
-s2.setPitchScale(semiToRatio(3.));
+s2.setTranspose(-3.);
 
 // SinOsc timeLFO => blackhole;
 // 0.1 => timeLFO.freq;

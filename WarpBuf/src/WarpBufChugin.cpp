@@ -302,7 +302,7 @@ CK_DLL_DTOR(warpbuf_dtor);
 // functions
 CK_DLL_MFUN(warpbuf_read);
 CK_DLL_MFUN(warpbuf_setbpm);
-CK_DLL_MFUN(warpbuf_setpitchscale);
+CK_DLL_MFUN(warpbuf_settranspose);
 CK_DLL_MFUN(warpbuf_setloopenable);
 
 // multi-channel audio synthesis tick function
@@ -388,7 +388,7 @@ public:
     // for Chugins extending UGen
     void tick(SAMPLE* in, SAMPLE* out, int nframes);
 
-    void setPitchScale(double scale);
+    void setTranspose(double transpose);
     void setBPM(double bpm);
     void setLoopEnable(bool enable);
 
@@ -461,7 +461,10 @@ void WarpBufChugin::allocate(int numSamples)
     }
 }
 
-void WarpBufChugin::setPitchScale(double scale) {
+void WarpBufChugin::setTranspose(double transpose) {
+
+    float scale = std::pow(2., transpose/12.);
+
     m_rbstretcher->setPitchScale(scale);
 }
 
@@ -471,15 +474,6 @@ void WarpBufChugin::setBPM(double bpm) {
         return;
     }
     m_bpm = bpm;
-
-    if (m_clipInfo.bpm > 0) {
-        double ratio = (m_srate / sfinfo.samplerate) * m_clipInfo.bpm / bpm;
-        std::cout << "setting ratio: " << ratio << std::endl;
-        m_rbstretcher->setTimeRatio(ratio );
-    }
-    else {
-        m_rbstretcher->setTimeRatio(1.);
-    }
 }
 
 void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
@@ -491,6 +485,12 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
     int numAvailable = m_rbstretcher->available();
 
     m_playHeadBeats = std::fmod(m_playHeadBeats + m_bpm * (double)nframes / (60.*m_srate), 1.);
+
+    double ratio = (m_srate / sfinfo.samplerate);
+    if (m_clipInfo.bpm > 0) {
+        ratio *= m_clipInfo.bpm / m_bpm;
+    }
+    m_rbstretcher->setTimeRatio(ratio);
 
     while (numAvailable < nframes) {
 
@@ -625,8 +625,8 @@ CK_DLL_QUERY( WarpBuf )
     QUERY->add_mfun(QUERY, warpbuf_setbpm, "int", "setBPM");
     QUERY->add_arg(QUERY, "float", "bpm");
 
-    QUERY->add_mfun(QUERY, warpbuf_setpitchscale, "int", "setPitchScale");
-    QUERY->add_arg(QUERY, "float", "scale");
+    QUERY->add_mfun(QUERY, warpbuf_settranspose, "int", "setTranspose");
+    QUERY->add_arg(QUERY, "float", "transpose");
 
     QUERY->add_mfun(QUERY, warpbuf_setloopenable, "int", "setLoopEnable");
     QUERY->add_arg(QUERY, "float", "enable");
@@ -702,12 +702,12 @@ CK_DLL_MFUN(warpbuf_setbpm)
     RETURN->v_int = true;
 }
 
-CK_DLL_MFUN(warpbuf_setpitchscale)
+CK_DLL_MFUN(warpbuf_settranspose)
 {
-    t_CKFLOAT scale = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT transpose = GET_NEXT_FLOAT(ARGS);
 
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
-    b->setPitchScale(scale);
+    b->setTranspose(transpose);
     RETURN->v_int = true;
 }
 
