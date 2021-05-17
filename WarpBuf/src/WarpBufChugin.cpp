@@ -267,6 +267,7 @@ public:
     {
         // sample rate
         m_srate = srate;
+        memset(&sfinfo, 0, sizeof(SF_INFO));
 
         using namespace RubberBand;
 
@@ -367,6 +368,7 @@ private:
     SNDFILE* sndfile;
     SF_INFO sfinfo;
     int sfReadPos = 0;
+    bool m_fileWasRead = false;
 
     int numAllocated = 0;
     ClipInfo m_clipInfo;
@@ -449,6 +451,18 @@ void WarpBufChugin::setBPM(double bpm) {
 
 void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 {
+    bool past_loop_end_and_loop_off = m_playHeadBeats > m_clipInfo.loop_end && !m_clipInfo.loop_on;
+    if (past_loop_end_and_loop_off || (!m_play) || (!m_fileWasRead)) {
+        // write zeros
+        for (int chan = 0; chan < channels; chan++) {
+            for (int i = 0; i < nframes; i++)
+            {
+                out[chan + 2 * i] = 0.;
+            }
+        }
+        return;
+    }
+
     allocate(nframes);
 
     float _;
@@ -461,19 +475,6 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 
     float loop_end_seconds = 0.;
     m_clipInfo.beat_to_seconds(m_clipInfo.loop_end, loop_end_seconds, _);
-
-    bool past_loop_end_and_loop_off = m_playHeadBeats > m_clipInfo.loop_end && !m_clipInfo.loop_on;
-    if (past_loop_end_and_loop_off || !m_play) {
-        // write zeros
-        for (int chan = 0; chan < channels; chan++) {
-            auto chanPtr = m_retrieveBuffer[chan];
-            for (int i = 0; i < nframes; i++)
-            {
-                out[chan + 2 * i] = 0.;
-            }
-        }
-        return;
-    }
 
     m_playHeadBeats += m_bpm * (double)nframes / (60. * m_srate);
 
@@ -538,11 +539,9 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 }
 
 bool WarpBufChugin::read(const string& path) {
-    memset(&sfinfo, 0, sizeof(SF_INFO));
-    m_clipInfo.readWarpFile(path + std::string(".asd"));
 
-    m_playHeadBeats = m_clipInfo.loop_start + m_clipInfo.sample_offset;
-
+    m_fileWasRead = false;
+    
     sndfile = sf_open(path.c_str(), SFM_READ, &sfinfo);
     if (!sndfile) {
         cerr << "ERROR: Failed to open input file \"" << path << "\": "
@@ -554,6 +553,12 @@ bool WarpBufChugin::read(const string& path) {
         cerr << "ERROR: File lacks sample rate in header" << endl;
         return false;
     }
+
+    m_fileWasRead = true;
+
+    m_clipInfo.readWarpFile(path + std::string(".asd"));
+
+    m_playHeadBeats = m_clipInfo.loop_start + m_clipInfo.sample_offset;
 
     float start_seconds;
     float _;
