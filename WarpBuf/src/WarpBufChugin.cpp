@@ -596,24 +596,24 @@ CK_DLL_QUERY( WarpBuf )
     QUERY->add_mfun(QUERY, warpbuf_read, "int", "read");
     QUERY->add_arg(QUERY, "string", "filename");
 
-    QUERY->add_mfun(QUERY, warpbuf_getbpm, "int", "bpm");
-    QUERY->add_mfun(QUERY, warpbuf_setbpm, "int", "bpm");
+    QUERY->add_mfun(QUERY, warpbuf_getbpm, "float", "bpm");
+    QUERY->add_mfun(QUERY, warpbuf_setbpm, "float", "bpm");
     QUERY->add_arg(QUERY, "float", "bpm");
 
-    QUERY->add_mfun(QUERY, warpbuf_gettranspose, "int", "transpose");
-    QUERY->add_mfun(QUERY, warpbuf_settranspose, "int", "transpose");
+    QUERY->add_mfun(QUERY, warpbuf_gettranspose, "float", "transpose");
+    QUERY->add_mfun(QUERY, warpbuf_settranspose, "float", "transpose");
     QUERY->add_arg(QUERY, "float", "transpose");
 
     QUERY->add_mfun(QUERY, warpbuf_getloopenable, "int", "loop");
     QUERY->add_mfun(QUERY, warpbuf_setloopenable, "int", "loop");
     QUERY->add_arg(QUERY, "int", "enable");
 
-    QUERY->add_mfun(QUERY, warpbuf_getloopstart, "int", "loopStart");
-    QUERY->add_mfun(QUERY, warpbuf_setloopstart, "int", "loopStart");
+    QUERY->add_mfun(QUERY, warpbuf_getloopstart, "float", "loopStart");
+    QUERY->add_mfun(QUERY, warpbuf_setloopstart, "float", "loopStart");
     QUERY->add_arg(QUERY, "float", "loopStart");
 
-    QUERY->add_mfun(QUERY, warpbuf_getloopend, "int", "loopEnd");
-    QUERY->add_mfun(QUERY, warpbuf_setloopend, "int", "loopEnd");
+    QUERY->add_mfun(QUERY, warpbuf_getloopend, "float", "loopEnd");
+    QUERY->add_mfun(QUERY, warpbuf_setloopend, "float", "loopEnd");
     QUERY->add_arg(QUERY, "float", "loopEnd");
 
     // this reserves a variable in the ChucK internal class to store
@@ -699,7 +699,7 @@ CK_DLL_MFUN(warpbuf_getbpm)
 {
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     
-    RETURN->v_float = b->getBPM();
+    RETURN->v_float = (float) b->getBPM();
 }
 
 CK_DLL_MFUN(warpbuf_setbpm)
@@ -708,14 +708,14 @@ CK_DLL_MFUN(warpbuf_setbpm)
 
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     b->setBPM(bpm);
-    RETURN->v_int = true;
+    RETURN->v_float = bpm;
 }
 
 CK_DLL_MFUN(warpbuf_gettranspose)
 {
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     
-    RETURN->v_float = b->getTranspose();
+    RETURN->v_float = (float) b->getTranspose();
 }
 
 CK_DLL_MFUN(warpbuf_settranspose)
@@ -724,7 +724,7 @@ CK_DLL_MFUN(warpbuf_settranspose)
 
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     b->setTranspose(transpose);
-    RETURN->v_int = true;
+    RETURN->v_float = transpose;
 }
 
 CK_DLL_MFUN(warpbuf_getloopenable)
@@ -757,7 +757,7 @@ CK_DLL_MFUN(warpbuf_setloopstart)
 
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     b->setLoopStart(loopStart);
-    RETURN->v_int = true;
+    RETURN->v_float = loopStart;
 }
 
 CK_DLL_MFUN(warpbuf_getloopend)
@@ -773,5 +773,5 @@ CK_DLL_MFUN(warpbuf_setloopend)
 
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     b->setLoopEnd(loopEnd);
-    RETURN->v_int = true;
+    RETURN->v_float = loopEnd;
 }
