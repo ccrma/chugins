@@ -234,12 +234,20 @@ CK_DLL_CTOR(warpbuf_ctor);
 CK_DLL_DTOR(warpbuf_dtor);
 
 // functions
-CK_DLL_MFUN(warpbuf_setplay);
-CK_DLL_MFUN(warpbuf_getplay);
 CK_DLL_MFUN(warpbuf_read);
+
+CK_DLL_MFUN(warpbuf_getplay);
+CK_DLL_MFUN(warpbuf_setplay);
+CK_DLL_MFUN(warpbuf_getbpm);
 CK_DLL_MFUN(warpbuf_setbpm);
+CK_DLL_MFUN(warpbuf_gettranspose);
 CK_DLL_MFUN(warpbuf_settranspose);
+CK_DLL_MFUN(warpbuf_getloopenable);
 CK_DLL_MFUN(warpbuf_setloopenable);
+CK_DLL_MFUN(warpbuf_getloopstart);
+CK_DLL_MFUN(warpbuf_setloopstart);
+CK_DLL_MFUN(warpbuf_getloopend);
+CK_DLL_MFUN(warpbuf_setloopend);
 
 // multi-channel audio synthesis tick function
 CK_DLL_TICKF(warpbuf_tick);
@@ -324,8 +332,11 @@ public:
     // for Chugins extending UGen
     void tick(SAMPLE* in, SAMPLE* out, int nframes);
 
+    double getTranspose();
     void setTranspose(double transpose);
+    double getBPM();
     void setBPM(double bpm);
+    bool getLoopEnable();
     void setLoopEnable(bool enable);
 
     bool read(const string& filename);
@@ -337,9 +348,13 @@ public:
     double m_bpm = 120.;
 
     bool m_play = true;
-    void setPlay(bool play) { m_play = play; };
     bool getPlay() { return m_play; };
+    void setPlay(bool play) { m_play = play; };
 
+    double getLoopStart() { return m_clipInfo.loop_start; }
+    void setLoopStart(double loopStart) { m_clipInfo.loop_start = loopStart; }
+    double getLoopEnd() { return m_clipInfo.loop_end; }
+    void setLoopEnd(double LoopEnd) { m_clipInfo.loop_end = LoopEnd; }
 private:
     // sample rate
     t_CKFLOAT m_srate;
@@ -365,9 +380,12 @@ protected:
 
 };
 
+bool WarpBufChugin::getLoopEnable() {
+    return m_clipInfo.loop_end;
+}
 
 void WarpBufChugin::setLoopEnable(bool enable) {
-    m_clipInfo.loop_end = enable;
+    m_clipInfo.loop_on = enable;
 }
 
 // clear
@@ -401,11 +419,24 @@ void WarpBufChugin::allocate(int numSamples)
     }
 }
 
+double WarpBufChugin::getTranspose() {
+
+    double scale = m_rbstretcher->getPitchScale();
+
+    double transpose = 12. * std::log2(scale);
+
+    return transpose;
+}
+
 void WarpBufChugin::setTranspose(double transpose) {
 
     float scale = std::pow(2., transpose/12.);
 
     m_rbstretcher->setPitchScale(scale);
+}
+
+double WarpBufChugin::getBPM() {
+    return m_bpm;
 }
 
 void WarpBufChugin::setBPM(double bpm) {
@@ -560,14 +591,25 @@ CK_DLL_QUERY( WarpBuf )
     QUERY->add_mfun(QUERY, warpbuf_read, "int", "read");
     QUERY->add_arg(QUERY, "string", "filename");
 
-    QUERY->add_mfun(QUERY, warpbuf_setbpm, "int", "setBPM");
+    QUERY->add_mfun(QUERY, warpbuf_getbpm, "int", "bpm");
+    QUERY->add_mfun(QUERY, warpbuf_setbpm, "int", "bpm");
     QUERY->add_arg(QUERY, "float", "bpm");
 
-    QUERY->add_mfun(QUERY, warpbuf_settranspose, "int", "setTranspose");
+    QUERY->add_mfun(QUERY, warpbuf_gettranspose, "int", "transpose");
+    QUERY->add_mfun(QUERY, warpbuf_settranspose, "int", "transpose");
     QUERY->add_arg(QUERY, "float", "transpose");
 
-    QUERY->add_mfun(QUERY, warpbuf_setloopenable, "int", "setLoopEnable");
-    QUERY->add_arg(QUERY, "float", "enable");
+    QUERY->add_mfun(QUERY, warpbuf_getloopenable, "int", "loop");
+    QUERY->add_mfun(QUERY, warpbuf_setloopenable, "int", "loop");
+    QUERY->add_arg(QUERY, "int", "enable");
+
+    QUERY->add_mfun(QUERY, warpbuf_getloopstart, "int", "loopStart");
+    QUERY->add_mfun(QUERY, warpbuf_setloopstart, "int", "loopStart");
+    QUERY->add_arg(QUERY, "float", "loopStart");
+
+    QUERY->add_mfun(QUERY, warpbuf_getloopend, "int", "loopEnd");
+    QUERY->add_mfun(QUERY, warpbuf_setloopend, "int", "loopEnd");
+    QUERY->add_arg(QUERY, "float", "loopEnd");
 
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
@@ -648,6 +690,13 @@ CK_DLL_MFUN(warpbuf_read)
     RETURN->v_int = b->read(filename.c_str());
 }
 
+CK_DLL_MFUN(warpbuf_getbpm)
+{
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    
+    RETURN->v_float = b->getBPM();
+}
+
 CK_DLL_MFUN(warpbuf_setbpm)
 {
     t_CKFLOAT bpm = GET_NEXT_FLOAT(ARGS);
@@ -655,6 +704,13 @@ CK_DLL_MFUN(warpbuf_setbpm)
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     b->setBPM(bpm);
     RETURN->v_int = true;
+}
+
+CK_DLL_MFUN(warpbuf_gettranspose)
+{
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    
+    RETURN->v_float = b->getTranspose();
 }
 
 CK_DLL_MFUN(warpbuf_settranspose)
@@ -666,11 +722,51 @@ CK_DLL_MFUN(warpbuf_settranspose)
     RETURN->v_int = true;
 }
 
+CK_DLL_MFUN(warpbuf_getloopenable)
+{
+
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    
+    RETURN->v_int = b->getLoopEnable();
+}
+
 CK_DLL_MFUN(warpbuf_setloopenable)
 {
-    t_CKBOOL enable = GET_NEXT_FLOAT(ARGS);
+    t_CKBOOL enable = GET_NEXT_INT(ARGS);
 
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     b->setLoopEnable(enable);
+    RETURN->v_int = true;
+}
+
+CK_DLL_MFUN(warpbuf_getloopstart)
+{
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    
+    RETURN->v_float = b->getLoopStart();
+}
+
+CK_DLL_MFUN(warpbuf_setloopstart)
+{
+    t_CKFLOAT loopStart = GET_NEXT_FLOAT(ARGS);
+
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    b->setLoopStart(loopStart);
+    RETURN->v_int = true;
+}
+
+CK_DLL_MFUN(warpbuf_getloopend)
+{
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+
+    RETURN->v_float = b->getLoopEnd();
+}
+
+CK_DLL_MFUN(warpbuf_setloopend)
+{
+    t_CKFLOAT loopEnd = GET_NEXT_FLOAT(ARGS);
+
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    b->setLoopEnd(loopEnd);
     RETURN->v_int = true;
 }
