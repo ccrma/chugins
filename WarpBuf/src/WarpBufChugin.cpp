@@ -355,6 +355,8 @@ CK_DLL_CTOR(warpbuf_ctor);
 CK_DLL_DTOR(warpbuf_dtor);
 
 // functions
+CK_DLL_MFUN(warpbuf_setplay);
+CK_DLL_MFUN(warpbuf_getplay);
 CK_DLL_MFUN(warpbuf_read);
 CK_DLL_MFUN(warpbuf_setbpm);
 CK_DLL_MFUN(warpbuf_settranspose);
@@ -455,6 +457,10 @@ public:
 
     double m_bpm = 120.;
 
+    bool m_play = true;
+    void setPlay(bool play) { m_play = play; };
+    bool getPlay() { return m_play; };
+
 private:
     // sample rate
     t_CKFLOAT m_srate;
@@ -546,7 +552,16 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
     float loop_end_seconds = 0.;
     m_clipInfo.beat_to_seconds(m_clipInfo.loop_end, loop_end_seconds, _);
 
-    if (m_playHeadBeats > m_clipInfo.loop_end && !m_clipInfo.loop_on) {
+    bool past_loop_end_and_loop_off = m_playHeadBeats > m_clipInfo.loop_end && !m_clipInfo.loop_on;
+    if (past_loop_end_and_loop_off || !m_play) {
+        // write zeros
+        for (int chan = 0; chan < channels; chan++) {
+            auto chanPtr = m_retrieveBuffer[chan];
+            for (int i = 0; i < nframes; i++)
+            {
+                out[chan + 2 * i] = 0.;
+            }
+        }
         return;
     }
 
@@ -659,6 +674,11 @@ CK_DLL_QUERY( WarpBuf )
     // stereo out
     QUERY->add_ugen_funcf(QUERY, warpbuf_tick, NULL, 1, 2);
 
+    QUERY->add_mfun(QUERY, warpbuf_getplay, "int", "play");
+
+    QUERY->add_mfun(QUERY, warpbuf_setplay, "int", "play");
+    QUERY->add_arg(QUERY, "float", "play");
+
     QUERY->add_mfun(QUERY, warpbuf_read, "int", "read");
     QUERY->add_arg(QUERY, "string", "filename");
 
@@ -722,6 +742,23 @@ CK_DLL_TICKF(warpbuf_tick)
 
     // yes
     return TRUE;
+}
+
+CK_DLL_MFUN(warpbuf_getplay)
+{
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+
+    RETURN->v_int = b->getPlay();
+}
+
+CK_DLL_MFUN(warpbuf_setplay)
+{
+    bool play = GET_NEXT_FLOAT(ARGS);
+
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+
+    b->setPlay(play);
+    RETURN->v_int = true;
 }
 
 CK_DLL_MFUN(warpbuf_read)
