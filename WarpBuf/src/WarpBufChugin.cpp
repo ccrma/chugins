@@ -127,17 +127,16 @@ class ClipInfo {
 
             FILE* f = fopen(path.c_str(), "rb");
             if (!f) {
-                std::cerr << "couldn't open file" << std::endl;
+                std::cerr << "Error: Couldn't open file at path: " << path.c_str() << std::endl;
                 return;
             }
 
             if (!read_loop_info(f)) {
-                printf("couldn't find loop markers\n");
+                printf("Error: Couldn't find loop markers.\n");
             }
             else {
-                printf("loop_start: %.17g loop_end: %.17g sample_offset: %.17g hidden_loop_start: %.17g hidden_loop_end: %.17g out_marker: %.17g\n",
-                    loop_start, loop_end, sample_offset, hidden_loop_start, hidden_loop_end, out_marker);
-                std::cout << "loop on " << loop_on << std::endl;
+                //printf("loop_start: %.17g loop_end: %.17g sample_offset: %.17g hidden_loop_start: %.17g hidden_loop_end: %.17g out_marker: %.17g\n",
+                //    loop_start, loop_end, sample_offset, hidden_loop_start, hidden_loop_end, out_marker);
             }
             rewind(f);
 
@@ -148,6 +147,7 @@ class ClipInfo {
             // the first appearance of "WarpMarker" isn't meaningful.
             find_str(f, "WarpMarker");
 
+            long last_good_marker = 0;
             // Subsequent "WarpMarkers" are meaningful
             while (find_str(f, "WarpMarker")) {
                 if (!fseek(f, 4, SEEK_CUR) &&
@@ -156,17 +156,20 @@ class ClipInfo {
 
                     found_one = true;
                     warp_markers.push_back(std::make_pair(pos, beat));
+
+                    last_good_marker = ftell(f);
                 }
                 else if (found_one) {
                     break;
                 }
             }
-            std::cout << "num warp markers: " << warp_markers.size() << std::endl;
-
-            // todo: this is actually the correct place to read loop_on
-            //fseek(f, 0, SEEK_CUR) && read_bool(f, &loop_on);
-            // todo: don't assume this
-            loop_on = true;
+            
+            if (!fseek(f, last_good_marker, SEEK_SET) && !fseek(f, 7, SEEK_CUR) && read_bool(f, &loop_on)) {
+                // Then we read the bool for loop_on
+            }
+            else {
+                // Then we couldn't get to the byte for loop_on
+            }
 
             if (warp_markers.size() > 1) {
                 double p1 = warp_markers.at(0).first;
@@ -175,9 +178,12 @@ class ClipInfo {
                 double b2 = warp_markers.at(1).second;
 
                 bpm = (b2 - b1) / (p2 - p1) * 60.0;
-                printf("BPM: %.17g\n", bpm);
+                //printf("BPM: %.17g\n", bpm);
 
                 warp_on = true;
+            }
+            else {
+                std::cout << "Error: Num warp markers is " << warp_markers.size() << "." << std::endl;
             }
         }
     private:
@@ -186,8 +192,6 @@ class ClipInfo {
             if (++head >= size) return head - size;
             return head;
         }
-#include <stdio.h>
-#include <stdlib.h>
         int find_str(FILE* f, const char* string) {
             const int size = strlen(string);
             //char buffer[size];
@@ -459,8 +463,9 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
         if (count <= 0) {
             if (!m_clipInfo.loop_on) {
                 // we're not looping, so just fill with zeros.
+                count = ibs;
                 for (size_t c = 0; c < channels; c++) {
-                    for (int i = 0; i < ibs; i++) {
+                    for (int i = 0; i < count; i++) {
                         m_interleavedBuffer[i*channels+c] = 0.;
                     }
                 }
@@ -484,9 +489,7 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
             }
         }
 
-        bool final = false; // todo
-
-        m_rbstretcher->process(m_nonInterleavedBuffer, count, final);
+        m_rbstretcher->process(m_nonInterleavedBuffer, count, false);
         numAvailable = m_rbstretcher->available();
     }
 
@@ -547,7 +550,7 @@ CK_DLL_QUERY( WarpBuf )
     QUERY->add_dtor(QUERY, warpbuf_dtor);
 
     // stereo out
-    QUERY->add_ugen_funcf(QUERY, warpbuf_tick, NULL, 1, 2);
+    QUERY->add_ugen_funcf(QUERY, warpbuf_tick, NULL, 0, 2);
 
     QUERY->add_mfun(QUERY, warpbuf_getplay, "int", "play");
 

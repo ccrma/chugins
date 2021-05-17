@@ -1,34 +1,17 @@
-8 => int numQuarterNotes;  // 8 is two measures  
-125. => float bpm;  
-Phasor playhead => blackhole;
-playhead.gain(numQuarterNotes);
-bpm/(60.* numQuarterNotes) => playhead.freq;
+WarpBuf s1 => dac;
+WarpBuf s2 => dac;
 
-playhead => WarpBuf s1 => dac;
-playhead => WarpBuf s2 => dac;
 s1.gain(.4);
 s2.gain(.4);
+
+151. => float BPM;
+s1.setBPM(BPM);
+s2.setBPM(BPM);
 
 me.dir() + "assets/drums.wav" => s1.read;
 me.dir() + "assets/synth.wav" => s2.read;
 
-180. => float BPM;
-
-s1.setBPM(BPM);
-s2.setBPM(BPM);
-
-s2.setTranspose(-3.);
-
-// SinOsc timeLFO => blackhole;
-// 0.1 => timeLFO.freq;
-
-// fun void modulateTimeRatio() {
-// 	while (true) {
-// 		0.5+1.5*(timeLFO.last()*0.5+.5) => s1.setTimeRatio;
-// 		10::samp => now;
-// 	}
-// }
-// spork~modulateTimeRatio();
+s2.setTranspose(2.);
 
 while(true) {
 	1::second => now;
