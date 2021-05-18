@@ -8,9 +8,7 @@ set(CMAKE_VS_PLATFORM_NAME "x64")
 project(WarpBufChugin VERSION 0.0.1)
 
 ## libsamplerate - start
-
-# list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/cmake)
-# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate)
 ## libsamplerate - end
 
 ## Rubberband - start
@@ -46,7 +44,6 @@ foreach(cpp_file IN LISTS RUBBERBAND_SRC_CPP)
 endforeach()
 
 set(RUBBERBAND_HEADERS 
-    # ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rubberband/rubberband/rubberband-c.h
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rubberband/rubberband/RubberBandStretcher.h
 )
 ## Rubberband - end
@@ -56,10 +53,6 @@ FILE(GLOB CK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../chuck/include/util_sndfile.c
     )
 
-# FILE(GLOB LIBSAMPLERATE_SOURCES
-#     # ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/src/samplerate.c
-#     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/src/*.h)
-
 set(Sources
     "src/WarpBufChugin.cpp"
 )
@@ -67,13 +60,15 @@ set(Sources
 source_group("Sources" FILES ${Sources})
 
 add_library(WarpBufChugin SHARED ${CK_SOURCES} ${Sources} ${RUBBERBAND_SOURCES} ${RUBBERBAND_HEADERS}
-    # ${LIBSAMPLERATE_SOURCES}
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/include/samplerate.h
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/portable_endian/include/portable_endian.h
     )
 
 target_compile_definitions(WarpBufChugin
     PUBLIC
+        HAVE_LIBSAMPLERATE
+        USE_KISSFFT
+
         _USRDLL
         NDEBUG
         _NDEBUG
@@ -85,10 +80,7 @@ target_compile_definitions(WarpBufChugin
 if(MSVC)
     target_compile_definitions(WarpBufChugin
         PUBLIC
-            HAVE_LIBSAMPLERATE
-            USE_KISSFFT
             NOMINMAX
-
             _WINDOWS
             WIN32
             __WINDOWS_MODERN__
@@ -97,8 +89,7 @@ if(MSVC)
             )
 endif()
 
-target_link_libraries(WarpBufChugin PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/build/src/Release/samplerate.lib)
+target_link_libraries(WarpBufChugin samplerate)
 
 # Include header directories
 target_include_directories(WarpBufChugin PUBLIC
@@ -108,7 +99,6 @@ target_include_directories(WarpBufChugin PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/portable_endian/include>
-    # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Sampler/Source/>
     $<INSTALL_INTERFACE:WarpBufChugin> )
 
 # Install library
