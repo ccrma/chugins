@@ -32,7 +32,8 @@ class ClipInfo {
         double hidden_loop_start;
         double hidden_loop_end;
         double end_marker;
-        bool loop_on = false;
+        bool loop_on = true;
+        bool warp_on = false;
 
         std::vector<std::pair<double, double>> warp_markers;
 
@@ -40,6 +41,7 @@ class ClipInfo {
 
             if (warp_markers.size() < 2) {
                 bpm = 120.;
+                seconds = 60.*beat / bpm;
                 return;
             }
 
@@ -116,21 +118,24 @@ class ClipInfo {
         }
 
         void reset() {
+            warp_on = false;
             warp_markers.clear();
         }
 
-        void readWarpFile(const string& path) {
+        bool readWarpFile(const string& path) {
 
             reset();
 
             FILE* f = fopen(path.c_str(), "rb");
             if (!f) {
-                std::cerr << "Error: Couldn't open file at path: " << path.c_str() << std::endl;
-                return;
+                // Return because no warp file was found.
+                // std::cerr << "Error: Couldn't open file at path: " << path.c_str() << std::endl;
+                return false;
             }
 
             if (!read_loop_info(f)) {
                 printf("Error: Couldn't find loop markers.\n");
+                return false;
             }
             else {
                 //printf("loop_start: %.17g loop_end: %.17g sample_offset: %.17g hidden_loop_start: %.17g hidden_loop_end: %.17g end_marker: %.17g\n",
@@ -167,7 +172,10 @@ class ClipInfo {
             }
             else {
                 // Then we couldn't get to the byte for loop_on
+                return false;
             }
+
+            return true;
         }
     private:
 
@@ -419,13 +427,8 @@ void WarpBufChugin::setPlayhead(double playhead) {
     m_playHeadBeats = playhead;
 
     float playhead_seconds;
-    if (m_clipInfo.warp_markers.size()) {
-        float _;
-        m_clipInfo.beat_to_seconds(m_playHeadBeats, playhead_seconds, _);
-    }
-    else {
-        playhead_seconds = playhead;
-    }
+    float _;
+    m_clipInfo.beat_to_seconds(m_playHeadBeats, playhead_seconds, _);
 
     sfReadPos = playhead_seconds * sfinfo.samplerate;
     sf_seek(sndfile, sfReadPos, SEEK_SET);
@@ -566,7 +569,15 @@ bool WarpBufChugin::read(const string& path) {
 
     m_fileWasRead = true;
 
-    m_clipInfo.readWarpFile(path + std::string(".asd"));
+    if (!m_clipInfo.readWarpFile(path + std::string(".asd"))) {
+        // We didn't find a warp file, so assume it's 120 bpm.
+        m_clipInfo.loop_start = 0.;
+        m_clipInfo.hidden_loop_start = 0.;
+        m_clipInfo.start_marker = 0.;
+        m_clipInfo.hidden_loop_end = 120.* sfinfo.frames / (sfinfo.samplerate * 60.);
+        m_clipInfo.loop_end = 120. * sfinfo.frames / (sfinfo.samplerate * 60.);
+        m_clipInfo.end_marker = 120. * sfinfo.frames / (sfinfo.samplerate * 60.);
+    }
 
     m_playHeadBeats = m_clipInfo.start_marker;
 
