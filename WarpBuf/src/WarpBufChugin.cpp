@@ -235,7 +235,9 @@ CK_DLL_DTOR(warpbuf_dtor);
 
 // functions
 CK_DLL_MFUN(warpbuf_read);
-
+CK_DLL_MFUN(warpbuf_reset);
+CK_DLL_MFUN(warpbuf_getplayhead);
+CK_DLL_MFUN(warpbuf_setplayhead);
 CK_DLL_MFUN(warpbuf_getplay);
 CK_DLL_MFUN(warpbuf_setplay);
 CK_DLL_MFUN(warpbuf_getbpm);
@@ -314,8 +316,6 @@ public:
 
     ~WarpBufChugin()
     {
-        delete myChuckString;
-
         clearBufs();
         delete[] m_interleavedBuffer;
 
@@ -333,6 +333,10 @@ public:
     // for Chugins extending UGen
     void tick(SAMPLE* in, SAMPLE* out, int nframes);
 
+    void reset() { m_rbstretcher->reset(); }
+
+    double getPlayhead();
+    void setPlayhead(double playhead);
     double getTranspose();
     void setTranspose(double transpose);
     double getBPM();
@@ -341,14 +345,7 @@ public:
     void setLoopEnable(bool enable);
 
     bool read(const string& filename);
-    const int ibs = 1024;
-    const int channels = 2;
 
-    double m_playHeadBeats = 0.;
-
-    double m_bpm = 120.;
-
-    bool m_play = true;
     bool getPlay() { return m_play; };
     void setPlay(bool play) { m_play = play; };
 
@@ -373,13 +370,14 @@ private:
     int numAllocated = 0;
     ClipInfo m_clipInfo;
 
+    const int ibs = 1024;
+    const int channels = 2;
+    double m_playHeadBeats = 0.;
+    bool m_play = true;
+    double m_bpm = 120.;
+
     void clearBufs();
     void allocate(int numSamples);
-
-protected:
-
-    Chuck_String* myChuckString = new Chuck_String("");
-
 };
 
 bool WarpBufChugin::getLoopEnable() {
@@ -419,6 +417,22 @@ void WarpBufChugin::allocate(int numSamples)
         // single sample for each
         m_retrieveBuffer[i] = new float[numSamples];
     }
+}
+
+double WarpBufChugin::getPlayhead() {
+    return m_playHeadBeats;
+}
+
+void WarpBufChugin::setPlayhead(double playhead) {
+
+    m_playHeadBeats = playhead;
+
+    float playhead_seconds;
+    float _;
+    m_clipInfo.beat_to_seconds(m_playHeadBeats, playhead_seconds, _);
+    
+    sfReadPos = playhead_seconds * sfinfo.samplerate;
+    sf_seek(sndfile, sfReadPos, SEEK_SET);
 }
 
 double WarpBufChugin::getTranspose() {
@@ -596,6 +610,12 @@ CK_DLL_QUERY( WarpBuf )
     QUERY->add_mfun(QUERY, warpbuf_read, "int", "read");
     QUERY->add_arg(QUERY, "string", "filename");
 
+    QUERY->add_mfun(QUERY, warpbuf_reset, "int", "reset");
+
+    QUERY->add_mfun(QUERY, warpbuf_getplayhead, "float", "playhead");
+    QUERY->add_mfun(QUERY, warpbuf_setplayhead, "float", "playhead");
+    QUERY->add_arg(QUERY, "float", "playhead");
+
     QUERY->add_mfun(QUERY, warpbuf_getbpm, "float", "bpm");
     QUERY->add_mfun(QUERY, warpbuf_setbpm, "float", "bpm");
     QUERY->add_arg(QUERY, "float", "bpm");
@@ -669,6 +689,29 @@ CK_DLL_TICKF(warpbuf_tick)
     return TRUE;
 }
 
+CK_DLL_MFUN(warpbuf_reset)
+{
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    b->reset();
+    RETURN->v_int = 1;
+}
+
+CK_DLL_MFUN(warpbuf_getplayhead)
+{
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+
+    RETURN->v_float = b->getPlayhead();
+}
+
+CK_DLL_MFUN(warpbuf_setplayhead)
+{
+    float playhead = GET_NEXT_FLOAT(ARGS);
+
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    b->setPlayhead(playhead);
+    RETURN->v_float = playhead;
+}
+
 CK_DLL_MFUN(warpbuf_getplay)
 {
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
@@ -683,7 +726,7 @@ CK_DLL_MFUN(warpbuf_setplay)
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
 
     b->setPlay(play);
-    RETURN->v_int = true;
+    RETURN->v_int = play;
 }
 
 CK_DLL_MFUN(warpbuf_read)
@@ -741,7 +784,7 @@ CK_DLL_MFUN(warpbuf_setloopenable)
 
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     b->setLoopEnable(enable);
-    RETURN->v_int = true;
+    RETURN->v_int = enable;
 }
 
 CK_DLL_MFUN(warpbuf_getloopstart)

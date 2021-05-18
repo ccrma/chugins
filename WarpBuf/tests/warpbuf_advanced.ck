@@ -55,14 +55,19 @@ me.dir() + "assets/drums.wav" => s1.read;
 me.dir() + "assets/synth.wav" => s2.read;
 
 while(true) {
+
 	// Random transpose
 	Std.rand2(-2, 2) => s2.transpose;
 
 	// Random loop start and end
 	Std.rand2(0, 8) => s1.loopStart;
-	s1.loopStart() + Std.rand2(0, 8) => s1.loopEnd;
+	s1.loopStart() + Std.rand2(1, 8) => s1.loopEnd;
 
 	// Random BPM
-	setBPM(120. + Std.rand2(0,4)*20.);
-	bpm.n1*4 => now;
+	setBPM(120. + Std.rand2(0,5)*20.);
+
+	repeat(4.) {
+		Std.rand2(0, 15) => s2.playhead;
+		bpm.n1 => now;
+	}
 }
