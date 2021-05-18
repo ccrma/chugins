@@ -107,9 +107,7 @@ class ClipInfo {
                 read_double(f, &sample_offset) &&
                 read_double(f, &hidden_loop_start) &&
                 read_double(f, &hidden_loop_end) &&
-                read_double(f, &end_marker) &&
-                !fseek(f, 281, SEEK_CUR) &&
-                read_bool(f, &loop_on)
+                read_double(f, &end_marker)
                 ) {
                 start_marker = loop_start + sample_offset;
                 return 1;
