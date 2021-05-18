@@ -2,6 +2,19 @@
 
 With WarpBuf you can time-stretch and or transpose the pitch of a sound buffer. If don't have an Ableton `.asd` file to go with the audio file, then the BPM will be assumed to be 120. Therefore, to play the file twice as fast, do `240. => myWarpBuf.bpm;`
 
+Control parameters:
+* .read - ( string , WRITE only ) - loads file for reading
+* .playhead - ( float , READ/WRITE ) - set/get playhead position in quarter notes relative to 1.1.1
+* .loop - ( int , READ/WRITE ) - toggle looping
+* .play - ( int , READ/WRITE ) - toggle playing
+* .bpm - ( float , READ/WRITE ) - set/get BPM rate ( Audio files without Ableton warp files are assumed to be 120 BPM )
+* .transpose - ( float , READ/WRITE ) - set/get pitch transpose in semitones
+* .startMarker ( float , READ/WRITE ) - set/get start marker of the clip
+* .endMarker ( float , READ/WRITE ) - set/get end marker of the clip
+* .loopStart ( float , READ/WRITE ) - set/get loop start marker of the clip
+* .loopEnd ( float , READ/WRITE ) - set/get loop end marker of the clip
+* .reset ( float , WRITE ) - reset the internal process buffer of the Rubberband stretcher
+
 ## Ableton Live Beatmatching
 
 With WarpBuf, you can also use Ableton Live `.asd` files to [warp](https://www.ableton.com/en/manual/audio-clips-tempo-and-warping/) audio files. The warp markers and BPM information in the `.asd` file will affect how ChucK plays the file. The `.asd` should be next to the `.wav` file, so you might have `drums.wav` and `drums.wav.asd`.
@@ -9,17 +22,17 @@ With WarpBuf, you can also use Ableton Live `.asd` files to [warp](https://www.a
 Two audio files might have different tempos, but you can "beatmatch" them by giving them the same tempo:
 
 ```chuck
-120. => warpBuf1.bpm => warpBuf2.bpm;
+130. => warpBuf1.bpm => warpBuf2.bpm;
 ```
 
-The WarpBuf chugin has a get/set `playhead` property for the current position of the playhead in quarter notes relative to the `.asd`'s `1.1.1` marker. The chugin's `loop_start` and `loop_end` are also relative to `1.1.1`.
+WarpBuf has been tested with `asd` files created with Ableton Live 10.1.30.
 
 ## Installation
 
 Update submodules:
 `git submodule update --init --recursive`
 
-Create an extra folder for your chugins, `%USERPROFILE%/Documents/ChucK/chugins/`. Create a system environment variable `CHUCK_CHUGIN_PATH` equal to this path.
+If on Windows, create an extra folder for your chugins, `%USERPROFILE%/Documents/ChucK/chugins/`. Create a system environment variable `CHUCK_CHUGIN_PATH` equal to this path.
 
 In `chugins/WarpBuf`, open a command window on Windows or Terminal window on macOS:
 
