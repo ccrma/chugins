@@ -28,10 +28,10 @@ class ClipInfo {
     public:
         double loop_start;
         double loop_end;
-        double sample_offset;
+        double start_marker;
         double hidden_loop_start;
         double hidden_loop_end;
-        double out_marker;
+        double end_marker;
         bool loop_on = false;
 
         std::vector<std::pair<double, double>> warp_markers;
@@ -86,7 +86,6 @@ class ClipInfo {
 
             std::cerr << "unable to find sample for beat: " << beat << std::endl;
             return;
-
         }
 
         int read_warp_marker(FILE* f, double* pos, double* beat) {
@@ -98,8 +97,9 @@ class ClipInfo {
         }
 
         int read_loop_info(FILE* f) {
-            return
-                find_str(f, "SampleOverViewLevel") &&
+            double sample_offset;
+
+            if (find_str(f, "SampleOverViewLevel") &&
                 find_str(f, "SampleOverViewLevel") &&
                 !fseek(f, 71, SEEK_CUR) &&
                 read_double(f, &loop_start) &&
@@ -107,10 +107,14 @@ class ClipInfo {
                 read_double(f, &sample_offset) &&
                 read_double(f, &hidden_loop_start) &&
                 read_double(f, &hidden_loop_end) &&
-                read_double(f, &out_marker) &&
+                read_double(f, &end_marker) &&
                 !fseek(f, 281, SEEK_CUR) &&
                 read_bool(f, &loop_on)
-                ;
+                ) {
+                start_marker = loop_start + sample_offset;
+                return 1;
+            }
+            return 0;
         }
 
         void reset() {
@@ -131,8 +135,8 @@ class ClipInfo {
                 printf("Error: Couldn't find loop markers.\n");
             }
             else {
-                //printf("loop_start: %.17g loop_end: %.17g sample_offset: %.17g hidden_loop_start: %.17g hidden_loop_end: %.17g out_marker: %.17g\n",
-                //    loop_start, loop_end, sample_offset, hidden_loop_start, hidden_loop_end, out_marker);
+                //printf("loop_start: %.17g loop_end: %.17g sample_offset: %.17g hidden_loop_start: %.17g hidden_loop_end: %.17g end_marker: %.17g\n",
+                //    loop_start, loop_end, sample_offset, hidden_loop_start, hidden_loop_end, end_marker);
             }
             rewind(f);
 
@@ -225,6 +229,10 @@ CK_DLL_MFUN(warpbuf_getbpm);
 CK_DLL_MFUN(warpbuf_setbpm);
 CK_DLL_MFUN(warpbuf_gettranspose);
 CK_DLL_MFUN(warpbuf_settranspose);
+CK_DLL_MFUN(warpbuf_getstartmarker);
+CK_DLL_MFUN(warpbuf_setstartmarker);
+CK_DLL_MFUN(warpbuf_getendmarker);
+CK_DLL_MFUN(warpbuf_setendmarker);
 CK_DLL_MFUN(warpbuf_getloopenable);
 CK_DLL_MFUN(warpbuf_setloopenable);
 CK_DLL_MFUN(warpbuf_getloopstart);
@@ -330,6 +338,10 @@ public:
     bool getPlay() { return m_play; };
     void setPlay(bool play) { m_play = play; };
 
+    double getStartMarker() { return m_clipInfo.start_marker; }
+    void setStartMarker(double startMarker) { m_clipInfo.start_marker = startMarker; }
+    double getEndMarker() { return m_clipInfo.end_marker; }
+    void setEndMarker(double endMarker) { m_clipInfo.end_marker = endMarker; }
     double getLoopStart() { return m_clipInfo.loop_start; }
     void setLoopStart(double loopStart) { m_clipInfo.loop_start = loopStart; }
     double getLoopEnd() { return m_clipInfo.loop_end; }
@@ -451,8 +463,8 @@ void WarpBufChugin::setBPM(double bpm) {
 
 void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 {
-    bool past_loop_end_and_loop_off = m_playHeadBeats > m_clipInfo.loop_end && !m_clipInfo.loop_on;
-    if (past_loop_end_and_loop_off || (!m_play) || (!m_fileWasRead)) {
+    bool past_end_marker_and_loop_off = m_playHeadBeats > m_clipInfo.end_marker && !m_clipInfo.loop_on;
+    if (past_end_marker_and_loop_off || (!m_play) || (!m_fileWasRead)) {
         // write zeros
         for (int chan = 0; chan < channels; chan++) {
             for (int i = 0; i < nframes; i++)
@@ -558,7 +570,7 @@ bool WarpBufChugin::read(const string& path) {
 
     m_clipInfo.readWarpFile(path + std::string(".asd"));
 
-    m_playHeadBeats = m_clipInfo.loop_start + m_clipInfo.sample_offset;
+    m_playHeadBeats = m_clipInfo.start_marker;
 
     float start_seconds;
     float _;
@@ -609,6 +621,14 @@ CK_DLL_QUERY( WarpBuf )
     QUERY->add_mfun(QUERY, warpbuf_gettranspose, "float", "transpose");
     QUERY->add_mfun(QUERY, warpbuf_settranspose, "float", "transpose");
     QUERY->add_arg(QUERY, "float", "transpose");
+
+    QUERY->add_mfun(QUERY, warpbuf_getstartmarker, "float", "startMarker");
+    QUERY->add_mfun(QUERY, warpbuf_setstartmarker, "float", "startMarker");
+    QUERY->add_arg(QUERY, "float", "startMarker");
+
+    QUERY->add_mfun(QUERY, warpbuf_getendmarker, "float", "endMarker");
+    QUERY->add_mfun(QUERY, warpbuf_setendmarker, "float", "endMarker");
+    QUERY->add_arg(QUERY, "float", "endMarker");
 
     QUERY->add_mfun(QUERY, warpbuf_getloopenable, "int", "loop");
     QUERY->add_mfun(QUERY, warpbuf_setloopenable, "int", "loop");
@@ -756,9 +776,40 @@ CK_DLL_MFUN(warpbuf_settranspose)
     RETURN->v_float = transpose;
 }
 
+CK_DLL_MFUN(warpbuf_getstartmarker)
+{
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+
+    RETURN->v_float = b->getStartMarker();
+}
+
+CK_DLL_MFUN(warpbuf_setstartmarker)
+{
+    t_CKFLOAT startMarker = GET_NEXT_FLOAT(ARGS);
+
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    b->setStartMarker(startMarker);
+    RETURN->v_float = startMarker;
+}
+
+CK_DLL_MFUN(warpbuf_getendmarker)
+{
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+
+    RETURN->v_float = b->getEndMarker();
+}
+
+CK_DLL_MFUN(warpbuf_setendmarker)
+{
+    t_CKFLOAT endMarker = GET_NEXT_FLOAT(ARGS);
+
+    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    b->setEndMarker(endMarker);
+    RETURN->v_float = endMarker;
+}
+
 CK_DLL_MFUN(warpbuf_getloopenable)
 {
-
     WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     
     RETURN->v_int = b->getLoopEnable();
