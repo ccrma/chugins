@@ -33,15 +33,13 @@ class ClipInfo {
         double hidden_loop_end;
         double out_marker;
         bool loop_on = false;
-        bool warp_on = false;
-        double bpm = 120.;
 
         std::vector<std::pair<double, double>> warp_markers;
 
         void beat_to_seconds(double beat, float& seconds, float &bpm) {
 
             if (warp_markers.size() < 2) {
-                std::cerr << "unable to find sample for beat. not enough markers. " << std::endl;
+                bpm = 120.;
                 return;
             }
 
@@ -117,8 +115,6 @@ class ClipInfo {
 
         void reset() {
             warp_markers.clear();
-            warp_on = false;
-            bpm = 120.;
         }
 
         void readWarpFile(const string& path) {
@@ -169,21 +165,6 @@ class ClipInfo {
             }
             else {
                 // Then we couldn't get to the byte for loop_on
-            }
-
-            if (warp_markers.size() > 1) {
-                double p1 = warp_markers.at(0).first;
-                double b1 = warp_markers.at(0).second;
-                double p2 = warp_markers.at(1).first;
-                double b2 = warp_markers.at(1).second;
-
-                bpm = (b2 - b1) / (p2 - p1) * 60.0;
-                //printf("BPM: %.17g\n", bpm);
-
-                warp_on = true;
-            }
-            else {
-                std::cout << "Error: Num warp markers is " << warp_markers.size() << "." << std::endl;
             }
         }
     private:
@@ -428,9 +409,14 @@ void WarpBufChugin::setPlayhead(double playhead) {
     m_playHeadBeats = playhead;
 
     float playhead_seconds;
-    float _;
-    m_clipInfo.beat_to_seconds(m_playHeadBeats, playhead_seconds, _);
-    
+    if (m_clipInfo.warp_markers.size()) {
+        float _;
+        m_clipInfo.beat_to_seconds(m_playHeadBeats, playhead_seconds, _);
+    }
+    else {
+        playhead_seconds = playhead;
+    }
+
     sfReadPos = playhead_seconds * sfinfo.samplerate;
     sf_seek(sndfile, sfReadPos, SEEK_SET);
 }
@@ -493,7 +479,7 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
     m_playHeadBeats += m_bpm * (double)nframes / (60. * m_srate);
 
     double ratio = (m_srate / sfinfo.samplerate);
-    if (instant_bpm > 0 && m_clipInfo.warp_on) {
+    if (instant_bpm > 0) {
         ratio *= instant_bpm / m_bpm;
     }
     m_rbstretcher->setTimeRatio(ratio);
