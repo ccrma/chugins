@@ -1,10 +1,10 @@
 
 # chugin name
-CHUGIN_NAME=Random
+CHUGIN_NAME=Rand
 
 # all of the c/cpp files that compose this chugin
 C_MODULES=
-CXX_MODULES=Random.cpp
+CXX_MODULES=Rand.cpp
 
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/

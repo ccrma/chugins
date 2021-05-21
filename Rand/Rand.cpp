@@ -27,21 +27,21 @@ static void srandom( unsigned s ) { srand( s ); }
 
 
 // example of getter/setter
-CK_DLL_SFUN(Random_seed);
-CK_DLL_SFUN(Random_gaussian);
+CK_DLL_SFUN(Rand_seed);
+CK_DLL_SFUN(Rand_gaussian);
 
 
-CK_DLL_QUERY( Random )
+CK_DLL_QUERY( Rand )
 {
     // hmm, don't change this...
-    QUERY->setname(QUERY, "Random");
+    QUERY->setname(QUERY, "Rand");
     
-    QUERY->begin_class(QUERY, "Random", "Object");
+    QUERY->begin_class(QUERY, "Rand", "Object");
 
-    QUERY->add_sfun(QUERY, Random_seed, "void", "seed");
+    QUERY->add_sfun(QUERY, Rand_seed, "void", "seed");
     QUERY->add_arg(QUERY, "int", "seed");
 
-    QUERY->add_sfun(QUERY, Random_gaussian, "float", "gaussian");
+    QUERY->add_sfun(QUERY, Rand_gaussian, "float", "gaussian");
     QUERY->add_arg(QUERY, "float", "mean");
     QUERY->add_arg(QUERY, "float", "stdv");
 
@@ -54,7 +54,7 @@ CK_DLL_QUERY( Random )
 }
 
 
-CK_DLL_SFUN(Random_seed)
+CK_DLL_SFUN(Rand_seed)
 {
     t_CKINT seed = GET_NEXT_INT(ARGS);
     
@@ -62,7 +62,7 @@ CK_DLL_SFUN(Random_seed)
 }
 
 
-CK_DLL_SFUN(Random_gaussian)
+CK_DLL_SFUN(Rand_gaussian)
 {
     t_CKFLOAT mean = GET_NEXT_FLOAT(ARGS);
     t_CKFLOAT stdv = GET_NEXT_FLOAT(ARGS);

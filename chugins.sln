@@ -41,7 +41,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Perlin", "Perlin\Perlin.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PowerADSR", "PowerADSR\PowerADSR.vcxproj", "{3ABDEB24-0F9A-4B9A-AE61-528B356AB3A9}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Random", "Random\Random.vcxproj", "{2496DF84-1D4E-4860-9072-38047C37F5B6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Rand", "Rand\Rand.vcxproj", "{2496DF84-1D4E-4860-9072-38047C37F5B6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Sigmund", "Sigmund\Sigmund.vcxproj", "{CB7C6619-BFDC-4F0D-A4C9-B24B3D00C773}"
 EndProject
