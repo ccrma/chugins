@@ -37,44 +37,52 @@ class ClipInfo {
 
         std::vector<std::pair<double, double>> warp_markers;
 
-        void beat_to_seconds(double beat, float& seconds, float &bpm) {
+        int beat_to_sample(double beat, double sr) {
+
+            double seconds;
+            double bpm;
+            beat_to_seconds(beat, seconds, bpm);
+            return (int)(seconds * sr);
+        }
+
+        void beat_to_seconds(double beat, double& seconds, double& bpm) {
 
             if (warp_markers.size() < 2) {
                 bpm = 120.;
-                seconds = 60.*beat / bpm;
+                seconds = 60. * beat / bpm;
                 return;
             }
 
-            auto it = warp_markers;
+            auto it = warp_markers.begin();
 
             double p1, b1, p2, b2;
 
-            p1 = warp_markers.at(0).first;
-            b1 = warp_markers.at(0).second;
-            
-            for (auto it = ++warp_markers.begin(); it != warp_markers.end(); it++) {
-                if ((*it).second >= beat) {
+            p1 = it->first;
+            b1 = it->second;
 
-                    p2 = (*it).first;
-                    b2 = (*it).second;
+            for (++it; it != warp_markers.end(); it++) {
+                if (it->second >= beat) {
+
+                    p2 = it->first;
+                    b2 = it->second;
 
                     bpm = (b2 - b1) / (p2 - p1) * 60.0;
-         
+
                     // interpolate between the two warp markers
                     float x = (beat - b1) / (b2 - b1);
-                    
+
                     seconds = p1 + x * (p2 - p1);
                     return;
                 }
                 else {
-                    p1 = (*it).first;
-                    b1 = (*it).second;
+                    p1 = it->first;
+                    b1 = it->second;
                 }
             }
 
             int last_index = warp_markers.size() - 1;
-            p1 = warp_markers.at(last_index-1).first;
-            b1 = warp_markers.at(last_index-1).second;
+            p1 = warp_markers.at(last_index - 1).first;
+            b1 = warp_markers.at(last_index - 1).second;
             p2 = warp_markers.at(last_index).first;
             b2 = warp_markers.at(last_index).second;
 
@@ -85,48 +93,13 @@ class ClipInfo {
 
             seconds = p1 + x * (p2 - p1);
             return;
-
-            std::cerr << "unable to find sample for beat: " << beat << std::endl;
-            return;
         }
 
-        int read_warp_marker(FILE* f, double* pos, double* beat) {
-            return
-                find_str(f, "WarpMarker") &&
-                !fseek(f, 4, SEEK_CUR) &&
-                read_double(f, pos) &&
-                read_double(f, beat);
-        }
-
-        int read_loop_info(FILE* f) {
-            double sample_offset;
-
-            if (find_str(f, "SampleOverViewLevel") &&
-                find_str(f, "SampleOverViewLevel") &&
-                !fseek(f, 71, SEEK_CUR) &&
-                read_double(f, &loop_start) &&
-                read_double(f, &loop_end) &&
-                read_double(f, &sample_offset) &&
-                read_double(f, &hidden_loop_start) &&
-                read_double(f, &hidden_loop_end) &&
-                read_double(f, &end_marker)
-                ) {
-                start_marker = loop_start + sample_offset;
-                return 1;
-            }
-            return 0;
-        }
-
-        void reset() {
-            warp_on = false;
-            warp_markers.clear();
-        }
-
-        bool readWarpFile(const string& path) {
+        bool readWarpFile(const char* path) {
 
             reset();
 
-            FILE* f = fopen(path.c_str(), "rb");
+            FILE* f = fopen(path, "rb");
             if (!f) {
                 // Return because no warp file was found.
                 // std::cerr << "Error: Couldn't open file at path: " << path.c_str() << std::endl;
@@ -144,7 +117,7 @@ class ClipInfo {
             rewind(f);
 
             double pos, beat;
-            
+
             bool found_one = false;
 
             // the first appearance of "WarpMarker" isn't meaningful.
@@ -166,7 +139,7 @@ class ClipInfo {
                     break;
                 }
             }
-            
+
             if (!fseek(f, last_good_marker, SEEK_SET) && !fseek(f, 7, SEEK_CUR) && read_bool(f, &loop_on)) {
                 // Then we read the bool for loop_on
             }
@@ -178,6 +151,40 @@ class ClipInfo {
             return true;
         }
     private:
+
+        void reset() {
+            warp_on = false;
+            warp_markers.clear();
+        }
+
+        int read_warp_marker(FILE* f, double* pos, double* beat) {
+            return
+                find_str(f, "WarpMarker") &&
+                !fseek(f, 4, SEEK_CUR) &&
+                read_double(f, pos) &&
+                read_double(f, beat);
+        }
+
+        int read_loop_info(FILE* f) {
+            double sample_offset;
+
+            if (find_str(f, "SampleOverViewLevel") &&
+                find_str(f, "SampleOverViewLevel") &&
+                !fseek(f, 71, SEEK_CUR) &&
+                read_double(f, &loop_start) &&
+                read_double(f, &loop_end) &&
+                read_double(f, &sample_offset) &&
+                read_double(f, &hidden_loop_start) &&
+                read_double(f, &hidden_loop_end) &&
+                read_double(f, &end_marker) &&
+                !fseek(f, 3, SEEK_CUR) &&
+                read_bool(f, &warp_on)
+                ) {
+                start_marker = loop_start + sample_offset;
+                return 1;
+            }
+            return 0;
+        }
 
         int rot(int head, int size) {
             if (++head >= size) return head - size;
@@ -426,8 +433,8 @@ void WarpBufChugin::setPlayhead(double playhead) {
 
     m_playHeadBeats = playhead;
 
-    float playhead_seconds;
-    float _;
+    double playhead_seconds;
+    double _;
     m_clipInfo.beat_to_seconds(m_playHeadBeats, playhead_seconds, _);
 
     sfReadPos = playhead_seconds * sfinfo.samplerate;
@@ -478,15 +485,15 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 
     allocate(nframes);
 
-    float _;
-    float instant_bpm = -1.;
+    double _;
+    double instant_bpm = -1.;
 
     m_clipInfo.beat_to_seconds(m_playHeadBeats, _, instant_bpm);
 
-    float loop_start_seconds = 0.;
+    double loop_start_seconds = 0.;
     m_clipInfo.beat_to_seconds(m_clipInfo.loop_start, loop_start_seconds, _);
 
-    float loop_end_seconds = 0.;
+    double loop_end_seconds = 0.;
     m_clipInfo.beat_to_seconds(m_clipInfo.loop_end, loop_end_seconds, _);
 
     m_playHeadBeats += m_bpm * (double)nframes / (60. * m_srate);
@@ -569,7 +576,7 @@ bool WarpBufChugin::read(const string& path) {
 
     m_fileWasRead = true;
 
-    if (!m_clipInfo.readWarpFile(path + std::string(".asd"))) {
+    if (!m_clipInfo.readWarpFile((path + std::string(".asd")).c_str())) {
         // We didn't find a warp file, so assume it's 120 bpm.
         m_clipInfo.loop_start = 0.;
         m_clipInfo.hidden_loop_start = 0.;
@@ -581,8 +588,8 @@ bool WarpBufChugin::read(const string& path) {
 
     m_playHeadBeats = m_clipInfo.start_marker;
 
-    float start_seconds;
-    float _;
+    double start_seconds;
+    double _;
     m_clipInfo.beat_to_seconds(m_playHeadBeats, start_seconds, _);
 
     sf_seek(sndfile, start_seconds*sfinfo.samplerate, SEEK_SET);
