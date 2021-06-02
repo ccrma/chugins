@@ -323,8 +323,9 @@ public:
 
         if (m_nonInterleavedBuffer != NULL)
         {
-            for (int i = 0; i < channels; i++)
+            for (int i = 0; i < channels; i++) {
                 SAFE_DELETE_ARRAY(m_nonInterleavedBuffer[i]);
+            }
         }
         SAFE_DELETE_ARRAY(m_nonInterleavedBuffer);
 
@@ -378,9 +379,9 @@ private:
 
     const int ibs = 1024;
     const int channels = 2;
-    double m_playHeadBeats = 0.;
+    double m_playHeadBeats = 0.; // measured in quarter notes
     bool m_play = true;
-    double m_bpm = 120.;
+    double m_bpm = 120.;  // desired playback bpm (not the source bpm)
 
     void clearBufs();
     void allocate(int numSamples);
@@ -399,8 +400,9 @@ void WarpBufChugin::clearBufs()
 {
     if (m_retrieveBuffer != NULL)
     {
-        for (int i = 0; i < channels; i++)
+        for (int i = 0; i < channels; i++) {
             SAFE_DELETE_ARRAY(m_retrieveBuffer[i]);
+        }
     }
     SAFE_DELETE_ARRAY(m_retrieveBuffer);
 }
@@ -418,8 +420,7 @@ void WarpBufChugin::allocate(int numSamples)
 
     m_retrieveBuffer = new float * [channels];
     // allocate buffers for each channel
-    for (int i = 0; i < 2; i++)
-    {
+    for (int i = 0; i < 2; i++) {
         // single sample for each
         m_retrieveBuffer[i] = new float[numSamples];
     }
@@ -475,8 +476,7 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
     if (past_end_marker_and_loop_off || (!m_play) || (!m_fileWasRead)) {
         // write zeros
         for (int chan = 0; chan < channels; chan++) {
-            for (int i = 0; i < nframes; i++)
-            {
+            for (int i = 0; i < nframes; i++) {
                 out[chan + 2 * i] = 0.;
             }
         }
@@ -489,9 +489,6 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
     double instant_bpm = -1.;
 
     m_clipInfo.beat_to_seconds(m_playHeadBeats, _, instant_bpm);
-
-    double loop_start_seconds = 0.;
-    m_clipInfo.beat_to_seconds(m_clipInfo.loop_start, loop_start_seconds, _);
 
     double loop_end_seconds = 0.;
     m_clipInfo.beat_to_seconds(m_clipInfo.loop_end, loop_end_seconds, _);
@@ -524,9 +521,7 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
             }
             else {
                 // we are looping, so seek to the loop start of the audio file
-                m_playHeadBeats = m_clipInfo.loop_start;
-                sfReadPos = loop_start_seconds * sfinfo.samplerate;
-                sf_seek(sndfile, sfReadPos, SEEK_SET);
+                setPlayhead(m_clipInfo.loop_start);
 
                 allowedReadCount = std::min(ibs, (int)(loop_end_seconds * sfinfo.samplerate - sfReadPos));
                 count = sf_readf_float(sndfile, m_interleavedBuffer, allowedReadCount);
@@ -551,8 +546,7 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
     // out needs to receive alternating left/right channels.
     for (int chan = 0; chan < channels; chan++) {
         auto chanPtr = m_retrieveBuffer[chan];
-        for (int i = 0; i < nframes; i++)
-        {
+        for (int i = 0; i < nframes; i++) {
             out[chan + 2 * i] = *chanPtr++;
         }
     }
@@ -574,6 +568,8 @@ bool WarpBufChugin::read(const string& path) {
         return false;
     }
 
+    m_rbstretcher->reset();
+
     m_fileWasRead = true;
 
     if (!m_clipInfo.readWarpFile((path + std::string(".asd")).c_str())) {
@@ -586,13 +582,7 @@ bool WarpBufChugin::read(const string& path) {
         m_clipInfo.end_marker = 120. * sfinfo.frames / (sfinfo.samplerate * 60.);
     }
 
-    m_playHeadBeats = m_clipInfo.start_marker;
-
-    double start_seconds;
-    double _;
-    m_clipInfo.beat_to_seconds(m_playHeadBeats, start_seconds, _);
-
-    sf_seek(sndfile, start_seconds*sfinfo.samplerate, SEEK_SET);
+    this->setPlayhead(m_clipInfo.start_marker);
 
     return true;
 }
@@ -666,7 +656,6 @@ CK_DLL_QUERY( WarpBuf )
     // IMPORTANT: this MUST be called!
     QUERY->end_class(QUERY);
 
-    // wasn't that a breeze?
     return TRUE;
 }
 
@@ -687,14 +676,14 @@ CK_DLL_CTOR(warpbuf_ctor)
 CK_DLL_DTOR(warpbuf_dtor)
 {
     // get our c++ class pointer
-    WarpBufChugin * b_obj = (WarpBufChugin *) OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    WarpBufChugin * chug = (WarpBufChugin *) OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     // check it
-    if( b_obj )
+    if(chug)
     {
         // clean up
-        delete b_obj;
+        delete chug;
         OBJ_MEMBER_INT(SELF, warpbuf_data_offset) = 0;
-        b_obj = NULL;
+        chug = NULL;
     }
 }
 
@@ -702,10 +691,10 @@ CK_DLL_DTOR(warpbuf_dtor)
 CK_DLL_TICKF(warpbuf_tick)
 {
     // get our c++ class pointer
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
 
     // invoke our tick function; store in the magical out variable
-    if (b) b->tick(in, out, nframes);
+    if (chug) chug->tick(in, out, nframes);
 
     // yes
     return TRUE;
@@ -713,41 +702,41 @@ CK_DLL_TICKF(warpbuf_tick)
 
 CK_DLL_MFUN(warpbuf_reset)
 {
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
-    b->reset();
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    chug->reset();
     RETURN->v_int = 1;
 }
 
 CK_DLL_MFUN(warpbuf_getplayhead)
 {
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
 
-    RETURN->v_float = b->getPlayhead();
+    RETURN->v_float = chug->getPlayhead();
 }
 
 CK_DLL_MFUN(warpbuf_setplayhead)
 {
     float playhead = GET_NEXT_FLOAT(ARGS);
 
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
-    b->setPlayhead(playhead);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    chug->setPlayhead(playhead);
     RETURN->v_float = playhead;
 }
 
 CK_DLL_MFUN(warpbuf_getplay)
 {
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
 
-    RETURN->v_int = b->getPlay();
+    RETURN->v_int = chug->getPlay();
 }
 
 CK_DLL_MFUN(warpbuf_setplay)
 {
     bool play = GET_NEXT_FLOAT(ARGS);
 
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
 
-    b->setPlay(play);
+    chug->setPlay(play);
     RETURN->v_int = play;
 }
 
@@ -755,119 +744,119 @@ CK_DLL_MFUN(warpbuf_read)
 {
     string filename = GET_NEXT_STRING_SAFE(ARGS);
 
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     
-    RETURN->v_int = b->read(filename.c_str());
+    RETURN->v_int = chug->read(filename.c_str());
 }
 
 CK_DLL_MFUN(warpbuf_getbpm)
 {
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     
-    RETURN->v_float = (float) b->getBPM();
+    RETURN->v_float = (float)chug->getBPM();
 }
 
 CK_DLL_MFUN(warpbuf_setbpm)
 {
     t_CKFLOAT bpm = GET_NEXT_FLOAT(ARGS);
 
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
-    b->setBPM(bpm);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    chug->setBPM(bpm);
     RETURN->v_float = bpm;
 }
 
 CK_DLL_MFUN(warpbuf_gettranspose)
 {
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     
-    RETURN->v_float = (float) b->getTranspose();
+    RETURN->v_float = (float)chug->getTranspose();
 }
 
 CK_DLL_MFUN(warpbuf_settranspose)
 {
     t_CKFLOAT transpose = GET_NEXT_FLOAT(ARGS);
 
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
-    b->setTranspose(transpose);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    chug->setTranspose(transpose);
     RETURN->v_float = transpose;
 }
 
 CK_DLL_MFUN(warpbuf_getstartmarker)
 {
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
 
-    RETURN->v_float = b->getStartMarker();
+    RETURN->v_float = chug->getStartMarker();
 }
 
 CK_DLL_MFUN(warpbuf_setstartmarker)
 {
     t_CKFLOAT startMarker = GET_NEXT_FLOAT(ARGS);
 
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
-    b->setStartMarker(startMarker);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    chug->setStartMarker(startMarker);
     RETURN->v_float = startMarker;
 }
 
 CK_DLL_MFUN(warpbuf_getendmarker)
 {
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
 
-    RETURN->v_float = b->getEndMarker();
+    RETURN->v_float = chug->getEndMarker();
 }
 
 CK_DLL_MFUN(warpbuf_setendmarker)
 {
     t_CKFLOAT endMarker = GET_NEXT_FLOAT(ARGS);
 
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
-    b->setEndMarker(endMarker);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    chug->setEndMarker(endMarker);
     RETURN->v_float = endMarker;
 }
 
 CK_DLL_MFUN(warpbuf_getloopenable)
 {
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     
-    RETURN->v_int = b->getLoopEnable();
+    RETURN->v_int = chug->getLoopEnable();
 }
 
 CK_DLL_MFUN(warpbuf_setloopenable)
 {
     t_CKBOOL enable = GET_NEXT_INT(ARGS);
 
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
-    b->setLoopEnable(enable);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    chug->setLoopEnable(enable);
     RETURN->v_int = enable;
 }
 
 CK_DLL_MFUN(warpbuf_getloopstart)
 {
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
     
-    RETURN->v_float = b->getLoopStart();
+    RETURN->v_float = chug->getLoopStart();
 }
 
 CK_DLL_MFUN(warpbuf_setloopstart)
 {
     t_CKFLOAT loopStart = GET_NEXT_FLOAT(ARGS);
 
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
-    b->setLoopStart(loopStart);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    chug->setLoopStart(loopStart);
     RETURN->v_float = loopStart;
 }
 
 CK_DLL_MFUN(warpbuf_getloopend)
 {
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
 
-    RETURN->v_float = b->getLoopEnd();
+    RETURN->v_float = chug->getLoopEnd();
 }
 
 CK_DLL_MFUN(warpbuf_setloopend)
 {
     t_CKFLOAT loopEnd = GET_NEXT_FLOAT(ARGS);
 
-    WarpBufChugin* b = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
-    b->setLoopEnd(loopEnd);
+    WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
+    chug->setLoopEnd(loopEnd);
     RETURN->v_float = loopEnd;
 }

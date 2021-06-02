@@ -1,6 +1,6 @@
 # WarpBuf
 
-With WarpBuf you can time-stretch and or transpose the pitch of a sound buffer. If don't have an Ableton `.asd` file to go with the audio file, then the BPM will be assumed to be 120. Therefore, to play the file twice as fast, do `240. => myWarpBuf.bpm;`
+With WarpBuf you can time-stretch and independently transpose the pitch of a sound buffer. If you don't have an Ableton `.asd` file to go with the audio file, then the BPM will be assumed to be 120. Therefore, to play the file twice as fast, do `240. => myWarpBuf.bpm;`
 
 Control parameters:
 * .read - ( string , WRITE only ) - loads file for reading
@@ -17,7 +17,7 @@ Control parameters:
 
 ## Ableton Live Beatmatching
 
-With WarpBuf, you can also use Ableton Live `.asd` files to [warp](https://www.ableton.com/en/manual/audio-clips-tempo-and-warping/) audio files. The warp markers and BPM information in the `.asd` file will affect how ChucK plays the file. The `.asd` should be next to the `.wav` file, so you might have `drums.wav` and `drums.wav.asd`.
+With WarpBuf, you can also use Ableton Live `.asd` files to [warp](https://www.ableton.com/en/manual/audio-clips-tempo-and-warping/) audio files. The warp markers and implicit BPM information in the `.asd` file will affect how ChucK plays the file. The `.asd` should be next to the `.wav` file, so you might have `drums.wav` and `drums.wav.asd`.
 
 Two audio files might have different tempos, but you can "beatmatch" them by giving them the same tempo:
 
@@ -37,9 +37,7 @@ If on Windows, create an extra folder for your chugins, `%USERPROFILE%/Documents
 In `chugins/WarpBuf`, open a command window on Windows or Terminal window on macOS:
 
 ```
-mkdir build
-cd build
-cmake ..
+cmake -Bbuild
 ```
 
 Then open `chugins/WarpBuf/build/WarpBufChugin.sln` and build in 64-bit Release mode. You should see a new WarpBuf.chug file in the chugins folder you created earlier.
