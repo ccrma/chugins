@@ -23,6 +23,7 @@ using namespace std;
 #include "rubberband/RubberBandStretcher.h"
 
 #include "portable_endian.h"
+#include <cmath>
 
 class ClipInfo {
     public:
@@ -35,7 +36,7 @@ class ClipInfo {
         bool loop_on = true;
         bool warp_on = false;
 
-        std::vector<std::pair<double, double>> warp_markers;
+        std::vector< std::pair<double, double> > warp_markers;
 
         int beat_to_sample(double beat, double sr) {
 

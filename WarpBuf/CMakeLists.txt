@@ -3,7 +3,9 @@ cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 project(WarpBufChugin VERSION 0.0.1)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WarpBufChugin)
 
+if(MSVC)
 set(CMAKE_VS_PLATFORM_NAME "x64")
+endif()
 
 project(WarpBufChugin VERSION 0.0.1)
 
@@ -51,7 +53,7 @@ set(RUBBERBAND_HEADERS
 FILE(GLOB CK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../chuck/include/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../chuck/include/util_sndfile.c
-    )
+     )
 
 set(Sources
     "src/WarpBufChugin.cpp"
@@ -87,6 +89,13 @@ if(MSVC)
             __PLATFORM_WIN32__
             __WINDOWS_DS__
             )
+else()
+    target_compile_definitions(WarpBufChugin
+        PUBLIC
+        __MACOSX_CORE__
+        USE_PTHREADS
+    )   
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fPIC")
 endif()
 
 target_link_libraries(WarpBufChugin samplerate)
@@ -107,7 +116,11 @@ INSTALL(TARGETS WarpBufChugin
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} )
 
+if(MSVC)
 target_compile_options(WarpBufChugin PRIVATE /EHsc /GR)
+else()
+target_compile_options(WarpBufChugin PRIVATE)
+endif()
 
 if(MSVC)
     target_compile_options(WarpBufChugin PRIVATE
@@ -146,4 +159,10 @@ if (MSVC)
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      "$<TARGET_FILE:WarpBufChugin>"
                      "%USERPROFILE%/Documents/ChucK/chugins/WarpBuf.chug")
-endif (MSVC)
+else()
+  add_custom_command(TARGET ${PROJECT_NAME}
+                     POST_BUILD
+                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                     "$<TARGET_FILE:WarpBufChugin>"
+                     "~/Library/Application Support/ChucK/ChuGins/WarpBuf.chug")
+endif()
