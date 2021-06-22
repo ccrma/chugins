@@ -12,7 +12,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout ccrma/chuck
+      uses: actions/checkout@v2
+      with:
+        repository: ccrma/chuck
+        path: chuck
 
-    - name: Compile - Linux
+    - name: Compile ChucK - Linux
+      run: cd chuck/src/
+      run: sudo apt-get install -y libsndfile1-dev && sudo apt-get install -y libpulse-dev && sudo apt-get install -y libasound2-dev
+      run: make linux-pulse
+    
+    - name: Checkout chugins
+name: Linux - Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  linux-build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout ccrma/chuck
+      uses: actions/checkout@v2
+      with:
+        repository: ccrma/chuck
+        path: chuck
+
+    - name: Compile ChucK - Linux
+      run: cd chuck/src/
+      run: sudo apt-get install -y libsndfile1-dev && sudo apt-get install -y libpulse-dev && sudo apt-get install -y libasound2-dev
+      run: make linux-pulse
+    
+    - name: Checkout chugins
+      uses: actions/checkout@v2
+
+    - name: Compile chugins - Linux
+      run: make linux
+      uses: actions/checkout@v2
+
+    - name: Compile chugins - Linux
       run: make linux
