@@ -19,7 +19,7 @@ jobs:
         path: chuck
 
     - name: Compile ChucK - Linux
-      run: cd chuck/src/ && sudo apt-get install -y libsndfile1-dev && sudo apt-get install -y libpulse-dev && sudo apt-get install -y libasound2-dev && make linux-pulse
+      run: cd chuck/src/ && sudo apt-get update --fix-missing && sudo apt-get install -y libsndfile1-dev && sudo apt-get install -y libpulse-dev && sudo apt-get install -y libasound2-dev && make linux-pulse
     
     - name: Checkout chugins
       uses: actions/checkout@v2
