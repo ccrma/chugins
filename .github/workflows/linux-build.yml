@@ -1,0 +1,28 @@
+name: Linux - Build and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  linux-build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout ccrma/chuck
+      uses: actions/checkout@v2
+      with:
+        repository: ccrma/chuck
+        path: chuck
+
+    - name: Compile ChucK - Linux
+      run: cd chuck/src/ && sudo apt-get update --fix-missing && sudo apt-get install -y libsndfile1-dev && sudo apt-get install -y libpulse-dev && sudo apt-get install -y libasound2-dev && make linux-pulse
+    
+    - name: Checkout chugins
+      uses: actions/checkout@v2
+
+    - name: Compile chugins - Linux
+      run: make linux
