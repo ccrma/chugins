@@ -54,6 +54,9 @@ List of Current Chugins
 - **PowerADSR**
   - by [@ericheep](https://github.com/ericheep)
   - Power function ADSR envelope.
+- **WarpBuf**
+  - by [@dbraun](https://github.com/dbraun)
+  - Time-stretching and pitch-stretching sound buffer that can optionally import `asd` files from Ableton Live for beatmatching.
 - **WinFuncEnv**
   - by [@ericheep](https://github.com/ericheep)
   - Envelope built on window functions.
