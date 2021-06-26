@@ -30,7 +30,73 @@ Hopefully, everything went well and you're now ready to FaucK around!
 
 ### Windows
 
-FaucK hasn't been tested on Windows so let us know if you make it work!
+#### Overview
+
+These instructions will build a 64-bit Faust chugin. Therefore, it is **incompatible** with 32-bit `miniAudicle` and 32-bit `chuck.exe`.
+
+#### Preparation
+
+Go to your Documents folder: `%USERPROFILE%/Documents`. Inside, create a `ChucK` folder. Inside this folder, create a `chugins` folder.
+
+Next, create a permanent environment variable `CHUCK_CHUGIN_PATH` and set it equal to `%USERPROFILE%/Documents/ChucK/chugins`.
+
+#### Install FAUST
+
+Download and use the latest `win64.exe` installer for [FAUST](https://github.com/grame-cncm/faust/releases).
+
+Copy the `.lib` files in `C:/Program Files/Faust/share/faust/` to `C:/Program Files (x86)/ChucK/share/faust` or wherever your ChucK is installed. What's important is that the `share` folder is next to the `bin` folder which contains `chuck.exe`.
+
+#### Using Prebuilt Everything
+
+To avoid compiling everything yourself, you may simply follow the instructions in this subsection.
+
+Copy `win-x64/Release/Faust.chug` to `%USERPROFILE%/Documents/ChucK/chugins`. Copy `win-x64/Release/faust.dll` to `C:/Program Files (x86)/ChucK/bin`.
+
+#### Building LLVM
+
+The remaining instructions involve cloning repositories to `C:/repos`. You can make changes if you want your repositories saved elsewhere.
+
+Clone the [LLVM Project](https://github.com/llvm/llvm-project) repository:
+`git clone https://github.com/llvm/llvm-project C:/repos/llvm-project`
+
+Configure with CMake:
+```bash
+cd C:/repos/llvm-project/llvm
+mkdir build
+cd build
+cmake .. -G "Visual Studio 16 2019" -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64
+```
+
+(Note that the `MD` flags build a dynamic library, whereas `MT` would have built a static library.)
+
+Then open `C:/repos/llvm-project/llvm/build/LLVM.sln` and build in Release/64. This will take at least 20 minutes.
+
+#### Building libfaust
+
+Clone the [FAUST](https://github.com/grame-cncm/faust/) repository:
+`git clone https://github.com/grame-cncm/faust.git C:/repos/faust`
+
+Libfaust is compiled as a step during the compilation of the Faust chugin, which comes next.
+
+#### Building Faust.chug
+
+Open a cmd window to the directory containing this README.
+
+Configure with CMake:
+```bash
+mkdir build
+cd build
+set LLVM_DIR=C:/repos/llvm-project/llvm/build/lib/cmake/llvm
+cmake .. -DUSE_LLVM_CONFIG=off -DFAUST_DIR=C:/repos/faust
+```
+
+Then open `FaucK.sln` and build in Release/64.
+
+#### Post-build
+
+Confirm that `%USERPROFILE%/Documents/ChucK/chugins` contains `Faust.chug`.
+
+Copy `C:/repos/faust/build/lib/Release/faust.dll` (about 30 MB) to `C:/Program Files (x86)/ChucK/bin/faust.dll`.
 
 ## Using FaucK
 
