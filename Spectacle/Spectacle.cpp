@@ -358,7 +358,7 @@ public:
   {
 	const char p0 = p[0];
 	const char q0 = q[0];
-	int table, type;
+	int table=0, type;
 
 	switch (p0)
 	  {
