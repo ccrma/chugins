@@ -5,7 +5,7 @@ float nums[0];
 
 repeat(count)
 {
-    Random.gaussian(0, 10) => float r;
+    Rand.gaussian(0, 10) => float r;
     chout <= r <= IO.nl();
     r +=> sum;
     nums << r;

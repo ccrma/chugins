@@ -4,21 +4,21 @@
 
 # TARGTYPE "Win32 (x86) Dynamic-Link Library" 0x0102
 
-CFG=Random - Win32 Debug
+CFG=Rand - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "Random.mak".
+!MESSAGE NMAKE /f "Rand.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "Random.mak" CFG="Random - Win32 Debug"
+!MESSAGE NMAKE /f "Rand.mak" CFG="Rand - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "Random - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
-!MESSAGE "Random - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "Rand - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "Rand - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 
 # Begin Project
@@ -29,7 +29,7 @@ CPP=cl.exe
 MTL=midl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "Random - Win32 Release"
+!IF  "$(CFG)" == "Rand - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -54,9 +54,9 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386 /out:"Release/Random.chug"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386 /out:"Release/Rand.chug"
 
-!ELSEIF  "$(CFG)" == "Random - Win32 Debug"
+!ELSEIF  "$(CFG)" == "Rand - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 1
@@ -80,24 +80,24 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /out:"Debug/Random.chug" /pdbtype:sept
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /out:"Debug/Rand.chug" /pdbtype:sept
 
 !ENDIF 
 
 # Begin Target
 
-# Name "Random - Win32 Release"
-# Name "Random - Win32 Debug"
+# Name "Rand - Win32 Release"
+# Name "Rand - Win32 Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=.\Random.cpp
+SOURCE=.\Rand.cpp
 
-!IF  "$(CFG)" == "Random - Win32 Release"
+!IF  "$(CFG)" == "Rand - Win32 Release"
 
-!ELSEIF  "$(CFG)" == "Random - Win32 Debug"
+!ELSEIF  "$(CFG)" == "Rand - Win32 Debug"
 
 # ADD CPP /D "__WINDOWS_DS__"
 

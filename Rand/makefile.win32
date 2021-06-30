@@ -2,10 +2,10 @@ MSBUILD=msbuild.exe
 
 ifneq (,$(CHUCK_DEBUG))
 CONFIG=Debug
-CHUG_BIN=Debug/Random.chug
+CHUG_BIN=Debug/Rand.chug
 else
 CONFIG=Release
-CHUG_BIN=Release/Random.chug
+CHUG_BIN=Release/Rand.chug
 endif
 
 default: $(CHUG_BIN)
