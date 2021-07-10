@@ -10,16 +10,22 @@
 
 typedef float t_float;
 
-class dbGrainBufImpl
+class dbGrainBuf
 {
 public:
-    dbGrainBufImpl(float sampleRate);
-    ~dbGrainBufImpl();
+    dbGrainBuf(float sampleRate);
+    ~dbGrainBuf();
 
     SAMPLE Tick(SAMPLE in);
     int Read(std::string &filename);
-    int SetLoop(int loop);
+    int SetLoop(int x);
     int GetLoop();
+    int SetPos(int x);
+    int GetPos();
+    float SetRate(float x);
+    float GetRate();
+    int SetMaxFilt(int w); // mostly for testing
+    int GetMaxFilt();
 
 private:
     struct grainState

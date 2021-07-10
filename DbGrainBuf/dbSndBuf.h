@@ -1,63 +1,131 @@
 #ifndef dbSndBuf_h
 #define dbSndBuf_h
-
 #include <chuck_def.h> // defines SAMPLE, usually float
 #include <cmath>
+#include "AudioFile.h"
+#include <chuck_errmsg.h>
 
-#define DB_SND_BUF_CHUNKSIZE 32768  /* 33/44 secs of 1 chan */
+class dbAudioFile : public AudioFile<SAMPLE>
+{
+    // can't override reportError since its a private method
+};
 
 class dbSndBuf
 {
 public:
-    dbSndBuf(float sampleRate);
-    ~dbSndBuf();
+    dbSndBuf(float sampleRate)
+    {
+        this->chuckSampleRate = sampleRate;
+        this->loop = false;
+        this->rateMult = 1.f;
+        this->maxFilterRadius = 5;
+        this->cleanup();
+    }
 
-    int ReadHeader(char const *filename);
+    ~dbSndBuf()
+    {
+        this->cleanup();
+    }
+
+    int ReadHeader(std::string filename)
+    {
+        int err = 0;
+        this->cleanup();
+        if(this->audioFile.load(filename)) // loads entire file
+        {
+            this->numFrames = this->audioFile.getNumSamplesPerChannel();
+            this->sampleRate = this->audioFile.getSampleRate();
+            this->currentSample = (SAMPLE) 0;
+            this->currentFrame = 0.;
+            this->sampleRatio = this->sampleRate / this->chuckSampleRate;
+            this->audioFile.printSummary();
+            this->rateChanged();
+        }
+        else
+        {
+            err = 1;
+        }
+        return err;
+    }
 
     void SetRate(float x)
     {
-        this->m_rateMult = x;
+        this->rateMult = x;
         this->rateChanged();
+    }
+
+    float GetRate()
+    {
+        return this->rateMult;
     }
 
     void SetLoop(bool l)
     {
-        this->m_loop = l;
+        this->loop = l;
+    }
+
+    int GetLoop()
+    {
+        return this->loop;
+    }
+
+    void SetPosition(int pos)
+    {
+        this->currentFrame = pos;
     }
 
     void SetPosition(float pct)
     {
     }
 
+    int GetPosition()
+    {
+        return (int) this->currentFrame;
+    }
+
+    int SetMaxFilt(int w)
+    {
+        this->maxFilterRadius = w;
+        return w;
+    }
+
+    int GetMaxFilt()
+    {
+        return this->maxFilterRadius;
+    }
+
     SAMPLE Sample(int chan=0, bool andStep=true)
     {
-        long frame = static_cast<long>(this->m_currentFrame); // preserve sign
-        long nextFrame = this->calcFrame(frame, 1); // handles fwd and rev
-        if(this->m_filterRadius <= 1)
+        long frame = static_cast<long>(this->currentFrame); // preserve sign
+        if(this->filterRadius <= 1)
         {
-            float pct = this->m_currentFrame - frame;
+            float pct = this->currentFrame - frame;
+            long neighbor = this->calcFrame(frame, 1); // handles fwd and rev
             SAMPLE now = this->lookupSample(frame, chan);
-            SAMPLE next = this->lookupSample(nextFrame, chan);
-            this->m_currentSample =  now + pct * (next - now);
+            SAMPLE next = this->lookupSample(neighbor, chan);
+            this->currentSample =  now + pct * (next - now);
         }
         else
         {
             // for now we'll do box a filter (avg under filter)
             SAMPLE sum = 0;
             int numSamps = 0;
-            for(int i = -this->m_filterRadius;
-                i <= this->m_filterRadius; i++)
+            for(int i = -this->filterRadius;
+                i <= this->filterRadius; i++)
             {
                 long sframe = this->calcFrame(frame, i);
                 sum += this->lookupSample(sframe, chan);
                 numSamps++;
             }
             sum /= numSamps; // box filter
-            this->m_currentSample = sum;
+            this->currentSample = sum;
         }
         if(andStep)
-            this->m_currentFrame = nextFrame;
-        return this->m_currentSample;
+        {
+            this->currentFrame = this->handleEdge((float)
+                    this->currentFrame + this->currentRate);
+        }
+        return this->currentSample;
     }
 
     /*
@@ -68,112 +136,113 @@ public:
 
     int IsDone()
     {
-        return !this->m_loop && 
-            (this->m_currentFrame >= this->m_numFrames ||
-            this->m_currentFrame < 0);
+        return !this->loop && 
+            (this->currentFrame >= this->numFrames ||
+            this->currentFrame < 0);
     }
 
 private:
     SAMPLE lookupSample(unsigned long frame, unsigned chan=0)
     {
-        unsigned long chunkIndex;
-        unsigned int frameOffset;
-
-        this->frameToChunk(frame, &chunkIndex, &frameOffset);
-        if(0 == this->verifyChunk(chunkIndex))
-        {
-            int chunkOffset = frame - chunkIndex * DB_SND_BUF_CHUNKSIZE;
-        }
-        else
-            return (SAMPLE) 0;
+        return this->audioFile.samples[chan][frame];
     }
 
-    void cleanup();
-    int loadChunk(unsigned long chunkIndex); // see .cpp file
-
-    void frameToChunk(unsigned long frame, 
-            unsigned long *chunkIndex, unsigned int *chunkOffset)
+    unsigned long calcFrame(int frame, int steps)
     {
-        // nb: we assume frame has been bound/loop-checked by caller
-        *chunkIndex = frame / DB_SND_BUF_CHUNKSIZE;
-        *chunkOffset = frame - (*chunkIndex*DB_SND_BUF_CHUNKSIZE); 
-    }
-
-    int verifyChunk(unsigned long chunkIndex)
-    {
-        if(this->m_chunkMap[chunkIndex]) // already loaded
-            return 0;
-        else
-            return this->loadChunk(chunkIndex);
-    }
-
-    unsigned long calcFrame(long frame, int steps)
-    {
-        if(!this->m_reverse)
-        {
+        if(!this->reverse)
             frame += steps;
-            if(frame >= this->m_numFrames)
-            {
-                if(this->m_loop)
-                    frame -= this->m_numFrames;
-                else
-                    frame = this->m_numFrames-1;
-            }
-            return (unsigned long) frame;
+        else
+            frame -= steps;
+
+        return this->handleEdge((int) frame);
+    }
+
+    int handleEdge(int f)
+    {
+        if(f >= this->numFrames)
+        {
+            if(this->loop)
+                f -= this->numFrames;
+            else
+                f = this->numFrames-1;
         }
         else
+        if(f < 0)
         {
-            frame -= steps;
-            if(frame < 0)
-            {
-                if(this->m_loop)
-                    frame += this->m_numFrames;
-                else
-                    frame = 0;
-            }
-            return (unsigned long) frame;
+            if(this->loop)
+                f = this->numFrames - 1;
+            else
+                f = 0;
         }
+        return f;
+    }
+
+    float handleEdge(float f)
+    {
+        if(f >= this->numFrames)
+        {
+            if(this->loop)
+                f -= this->numFrames;
+            else
+                f = this->numFrames-1;
+        }
+        else
+        if(f < 0)
+        {
+            if(this->loop)
+                f = this->numFrames - 1;
+            else
+                f = 0;
+        }
+        return f;
     }
 
     void rateChanged()
     {
-        this->m_currentRate = this->m_sampleRatio * this->m_rateMult;
-        this->m_reverse = this->m_currentRate < 0.;
-        this->m_filterRadius = 1 + std::abs(static_cast<int>(.5*this->m_currentRate));
+        this->currentRate = this->sampleRatio * this->rateMult;
+        this->reverse = this->currentRate < 0.;
+        this->filterRadius = 1 + std::abs(static_cast<int>(.5*this->currentRate));
+        if(this->filterRadius > this->maxFilterRadius)
+            this->filterRadius = this->maxFilterRadius;
+        /*
+        std::cout << "rateChanged: " << this->currentRate << " filter: " << 
+            this->filterRadius << std::endl;
+        */
     }
 
+    void cleanup()
+    {
+        this->numFrames = 0;
+        this->sampleRate = 0; // of the file
+        this->currentFrame = 0.f;
+        this->currentRate = 1.f;
+        this->sampleRatio = 1.f; // ratio of filerate to chuckrate
+        this->currentSample = (SAMPLE) 0.f;
+
+        // this->audioFile.clearAudioBuffer(); private, happens on each load
+    }
 
 private:
-    float m_chuckSampleRate;
+    float chuckSampleRate;
 
     // sndfile state -------------
-    int m_chan;
-    int m_numChan;
-    unsigned long m_numFrames; // for multi-chan, a frame is comprised of nChan samps
-    unsigned long m_numSamps; // == m_numFrames * m_numChan
-    unsigned long m_sampleRate; // of the file
-
-    // file-load state ------------
-    SAMPLE **m_chunkMap;        // chuck_def
-    unsigned long m_numChunks;  // non-zero after ReadHeader
-    unsigned long m_framesPerChunk;
-    unsigned long m_chunkNum;
-    unsigned long m_chunksRead;
-    float m_sampleRatio;    // ratio of file sample-rate to chuck samplerate
-    void *m_audiofile;
+    dbAudioFile audioFile;
+    int numFrames;
+    uint32_t sampleRate; // of the file
 
     // playback state ------------
-    bool m_loop; 
-    float m_rateMult;       // specified by user
-    double m_currentFrame;   // fractional in all but rate == 1 cases
+    bool loop; 
+    float rateMult;       // specified by user
+    double currentFrame;   // fractional in all but rate == 1 cases
                             // use of float means that we're limited to 
                             // framesizes < 2^24 (16.8M). Since we've
                             // gone to the trouble of unsigned long numFrames
-                            // we use double for m_currentFrame which
+                            // we use double for currentFrame which
                             // gives framesizes < 2^53
+    float sampleRatio; // ratio of file and chuck
 
     //
-    // m_currentRate combines sampleRatio and rateMult to give us a
+    // currentRate combines sampleRatio and rateMult to give us a
     // ratio of inputSamples to outputSamples.  On each iteration we
     // increase the current frame by this amount.
     //
@@ -185,10 +254,11 @@ private:
     //  * < 1 we can simply interpolate between a fixed number 
     //   of neighbors (2 for lerp) to produce one output.
     //
-    float m_currentRate;    
-    int m_filterRadius; // int(abs(.5*m_currentRate)) + 1)
-    bool m_reverse;
-    SAMPLE m_currentSample;
+    float currentRate;    
+    int filterRadius; // int(abs(.5*currentRate)) + 1)
+    int maxFilterRadius;
+    bool reverse;
+    SAMPLE currentSample;
 };
 
 #endif
