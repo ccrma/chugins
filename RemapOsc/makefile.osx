@@ -1,0 +1,10 @@
+ARCHS?=x86_64
+ARCHOPTS=$(addprefix -arch ,$(ARCHS))
+
+FLAGS+=-D__MACOSX_CORE__ -I$(CK_SRC_PATH) $(ARCHOPTS)
+LDFLAGS+=-shared -lc++ $(addprefix -framework ,$(FRAMEWORKS)) $(ARCHOPTS)
+
+LD=clang++
+CXX=clang++
+
+
