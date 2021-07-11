@@ -74,13 +74,19 @@ public:
         this->currentFrame = pos;
     }
 
-    void SetPosition(float pct)
+    void SetPhase(float pct)
     {
+        this->currentFrame = this->numFrames * pct;
     }
 
     int GetPosition()
     {
         return (int) this->currentFrame;
+    }
+
+    float GetPhase()
+    {
+        return (this->currentFrame / this->numFrames);
     }
 
     int SetMaxFilt(int w)

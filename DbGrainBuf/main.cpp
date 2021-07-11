@@ -68,15 +68,32 @@ CK_DLL_CTOR(gbuf_ctor);
 CK_DLL_DTOR(gbuf_dtor);
 CK_DLL_TICK(gbuf_tick);
 
+/* methods to perform standard sndbuf behavior --- */
 CK_DLL_MFUN(gbuf_ctrl_read);
 CK_DLL_MFUN(gbuf_ctrl_pos);
 CK_DLL_MFUN(gbuf_cget_pos);
+CK_DLL_MFUN(gbuf_ctrl_phase);
+CK_DLL_MFUN(gbuf_cget_phase);
 CK_DLL_MFUN(gbuf_ctrl_loop);
 CK_DLL_MFUN(gbuf_cget_loop);
 CK_DLL_MFUN(gbuf_ctrl_rate);
 CK_DLL_MFUN(gbuf_cget_rate);
 CK_DLL_MFUN(gbuf_ctrl_maxfilt);
 CK_DLL_MFUN(gbuf_cget_maxfilt);
+CK_DLL_MFUN(gbuf_ctrl_bypass); // bypass grain logic
+CK_DLL_MFUN(gbuf_cget_bypass);
+
+/* extra methods to for grainbuf --- */
+CK_DLL_MFUN(gbuf_ctrl_triggerRate);
+CK_DLL_MFUN(gbuf_ctrl_triggerRand);
+CK_DLL_MFUN(gbuf_ctrl_grainDur);
+CK_DLL_MFUN(gbuf_ctrl_grainDurRand);
+CK_DLL_MFUN(gbuf_ctrl_phaseMin); // min==max means constant
+CK_DLL_MFUN(gbuf_ctrl_phaseMax);
+CK_DLL_MFUN(gbuf_ctrl_phaseRate); // 1 means file duration
+CK_DLL_MFUN(gbuf_ctrl_phaseNoise); // large values produce nocide
+// we'll use rate above
+
 
 t_CKINT gbuf_data_offset = 0; // required by chuck
 
@@ -100,21 +117,30 @@ CK_DLL_QUERY(DbGrainBuf)
     QUERY->add_mfun(QUERY, gbuf_cget_pos, "int", "pos");
     // getpos has no args
 
+    // set/get play position by phase (pct of filesize)
+    QUERY->add_mfun(QUERY, gbuf_ctrl_phase, "float", "phase");
+    QUERY->add_arg(QUERY, "float", "phase"); 
+    QUERY->add_mfun(QUERY, gbuf_cget_phase, "float", "phase");
+
     // set/get loop
     QUERY->add_mfun(QUERY, gbuf_ctrl_loop, "int", "loop");
     QUERY->add_arg(QUERY,  "int", "loop" );
-    QUERY->add_mfun(QUERY, gbuf_cget_loop, "int", "pos");
+    QUERY->add_mfun(QUERY, gbuf_cget_loop, "int", "loop");
     // getloop has no args
 
     // set/get rate
     QUERY->add_mfun(QUERY, gbuf_ctrl_rate, "float", "rate");
     QUERY->add_arg(QUERY, "float", "rate" );
-    QUERY->add_mfun(QUERY, gbuf_cget_rate, "int", "pos");
+    QUERY->add_mfun(QUERY, gbuf_cget_rate, "float", "rate");
     // getrate has no args
 
     QUERY->add_mfun(QUERY, gbuf_ctrl_maxfilt, "int", "maxfilt");
     QUERY->add_arg(QUERY,  "int", "maxfilt" );
     QUERY->add_mfun(QUERY, gbuf_cget_maxfilt, "int", "maxfilt");
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_bypass, "int", "bypass");
+    QUERY->add_arg(QUERY,  "int", "bypass" );
+    QUERY->add_mfun(QUERY, gbuf_cget_bypass, "int", "bypass");
 
     gbuf_data_offset = QUERY->add_mvar(QUERY, "int", "@gbuf_data", false);
     QUERY->end_class(QUERY);
@@ -166,6 +192,18 @@ CK_DLL_MFUN(gbuf_cget_pos)
     RETURN->v_int = c->GetPos();
 }
 
+CK_DLL_MFUN(gbuf_ctrl_phase)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetPhase(GET_NEXT_FLOAT(ARGS));
+}
+
+CK_DLL_MFUN(gbuf_cget_phase)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->GetPhase();
+}
+
 CK_DLL_MFUN(gbuf_ctrl_loop)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
@@ -202,3 +240,55 @@ CK_DLL_MFUN(gbuf_cget_maxfilt)
     RETURN->v_int = c->GetMaxFilt();
 }
 
+CK_DLL_MFUN(gbuf_ctrl_bypass)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_int = c->SetBypass(GET_NEXT_INT(ARGS));
+}
+
+CK_DLL_MFUN(gbuf_cget_bypass)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_int = c->GetBypass();
+}
+
+CK_DLL_MFUN(gbuf_ctrl_triggerRate)
+{
+
+}
+
+CK_DLL_MFUN(gbuf_ctrl_triggerRand)
+{
+
+}
+
+CK_DLL_MFUN(gbuf_ctrl_grainDur)
+{
+
+}
+
+CK_DLL_MFUN(gbuf_ctrl_grainDurRand)
+{
+
+}
+
+// phase is the position within the file to initialize new grains.
+// it is expressed in pct of the sndbuf.  We only automate phase
+// generation if we detect that explicit phase isn't provided.
+CK_DLL_MFUN(gbuf_ctrl_phaseMin) // min==max means constant
+{
+
+}
+
+CK_DLL_MFUN(gbuf_ctrl_phaseMax)
+{
+}
+
+CK_DLL_MFUN(gbuf_ctrl_phaseRate) // 1 means file duration
+{
+
+}
+
+CK_DLL_MFUN(gbuf_ctrl_phaseNoise) // large values produce random position
+{
+}
