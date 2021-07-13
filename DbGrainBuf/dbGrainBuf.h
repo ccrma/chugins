@@ -26,12 +26,20 @@ public:
         grainMgr(512),
         phasor(sampleRate),
         bypassGrains(false),
+        windowFilter(dbWindowing::kBlackman),
         grainPeriod(.2f), // seconds
         grainPeriodVariance(0.f),
-        grainRate(1.0f)
+        grainRate(1.0f),
+        debug(0)
     {
     }
     ~dbGrainBuf() {}
+
+    int Debug(int debug)
+    {
+        this->debug = debug;
+        return debug;
+    }
 
     int Read(std::string &filename)
     {
@@ -39,6 +47,41 @@ public:
         if(err == 0)
             this->phasor.SetFileDur(this->sndbuf.GetLengthInSeconds());
         return err;
+    }
+
+    int GrainWindow(std::string &filtername)
+    {
+        int err = 0;
+        if(filtername == "blackman")
+            this->windowFilter = dbWindowing::kBlackman;
+        else
+        if(filtername == "hanning")
+            this->windowFilter = dbWindowing::kHanning;
+        else
+        if(filtername == "hamming")
+            this->windowFilter = dbWindowing::kHamming;
+        else
+        if(filtername == "bartlett")
+            this->windowFilter = dbWindowing::kBartlett;
+        else
+        if(filtername == "plancktaper")
+            this->windowFilter = dbWindowing::kPlanckTaper;
+        else
+        {
+            std::cout << "Unknown windowing filter:" << filtername << std::endl;
+            err = 1;
+        }
+        return err;
+    }
+
+    double GetFileDur() // double gets us sample accuracy
+    {
+        return this->sndbuf.GetLengthInSeconds();
+    }
+
+    int GetNChan()
+    {
+        return this->sndbuf.GetNChan();
     }
 
     SAMPLE Tick(SAMPLE in)
@@ -68,7 +111,17 @@ public:
                     // 
                     long startPos = (long) this->phasor.Sample();
                     long stopPos = this->getGrainStop(startPos);
-                    g->Init(startPos, stopPos, this->grainRate);
+                    g->Init(startPos, stopPos, this->grainRate, 
+                            this->windowFilter);
+                    if(debug)
+                    {
+                        std::cout << "New grain " <<
+                            startPos << "->" << stopPos <<
+                            ", rate:" << this->grainRate << " (" <<
+                            this->grainMgr.GetActiveGrainCount() << "/" <<
+                            this->grainMgr.GrainPoolSize() << ")" <<
+                            std::endl;
+                    }
                 }
                 else
                 {
@@ -203,11 +256,13 @@ private:
     dbTrigger trigger;
     dbPhasor phasor;
     bool bypassGrains; // and use sndbuf directly
+    dbWindowing::FilterType windowFilter;
 
     float grainPeriod; // measured in seconds
     float grainPeriodVariance; // pct of period
     float grainRate; // fractional samplesteps/sample
 
+    bool debug;
 };
 
 #endif

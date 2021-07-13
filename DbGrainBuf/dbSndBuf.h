@@ -53,6 +53,11 @@ public:
         return this->audioFile.getLengthInSeconds();
     }
 
+    int GetNChan()
+    {
+        return this->audioFile.getNumChannels();
+    }
+
     void SetRate(float x)
     {
         this->rateMult = x;

@@ -6,17 +6,29 @@
 /**
  * a fixed-size windowing function with linearly interpolated weights.
  */
-static class dbWindowing *sSingleton = nullptr;
+static class dbWindowing *sSingletons[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
+
 class dbWindowing
 {
 public:
-    static dbWindowing *Get()
+    enum FilterType
     {
-        if(!sSingleton)
+        // general purpose
+        kBlackman = 0, 
+        kHanning = 1,  
+        kHamming = 2,
+        kBartlett = 3,
+        kPlanckTaper = 4 // for long grains (less fading at edges)
+    };
+    static dbWindowing *Get(FilterType t=kBlackman)
+    {
+        unsigned i = (unsigned) t;
+        if(!sSingletons[i])
         {
-            sSingleton = new dbWindowing();
+            // std::cout << "new window " << i << std::endl;
+            sSingletons[i] = new dbWindowing(t);
         }
-        return sSingleton;
+        return sSingletons[i];
     }
 
     inline float Sample(float pct)
@@ -36,12 +48,40 @@ public:
     }
 
 private:
-    dbWindowing()
+    dbWindowing(FilterType t=kBlackman, unsigned len=8192)
     {
-        blackman(this->window, sizeof(window)/sizeof(float));
+        this->window = new float[len];
+        switch(t)
+        {
+        case kBlackman:
+            blackman(this->window, len);
+            break;
+        case kHanning:
+            hanning(this->window, len);
+            break;
+        case kHamming:
+            hamming(this->window, len);
+            break;
+        case kBartlett:
+            bartlett(this->window, len);
+            break;
+        case kPlanckTaper:
+            planckTaper(this->window, len);
+            break;
+        }
     }
-    float window[8192];
+    float *window;
 
+    static void blackman( float * window, unsigned long length )
+    {
+        unsigned long i;
+        double phase = 0, delta = TWO_PI / (double) length;
+        for( i = 0; i < length; i++ )
+        {
+            window[i] = (float)(0.42 - .5*cos(phase) + .08*cos(2*phase));
+            phase += delta;
+        }
+    }
     static void hanning(float * window, unsigned long length)
     {
         unsigned long i;
@@ -62,16 +102,6 @@ private:
             phase += delta;
         }
     }
-    static void blackman( float * window, unsigned long length )
-    {
-        unsigned long i;
-        double phase = 0, delta = TWO_PI / (double) length;
-        for( i = 0; i < length; i++ )
-        {
-            window[i] = (float)(0.42 - .5*cos(phase) + .08*cos(2*phase));
-            phase += delta;
-        }
-    }
     static void bartlett( float* window, unsigned long length )
     {
         unsigned long i;
@@ -81,6 +111,38 @@ private:
             if( i < half ) window[i] = i / half;
             else window[i] = (length - i) / half;
         }
+    }
+    static float za(unsigned long k, float lowKnee)
+    {
+        return lowKnee*(1.f/k + 1.f/(k-lowKnee));
+    }
+    static float zb(unsigned long k, float lowKnee,
+        unsigned long max, float eps)
+    {
+        return lowKnee *
+            (1.f/(max-k) + 1.f/((1.f-eps)*max - k));
+    }
+    static void planckTaper(float* window, unsigned long length)
+    {
+        const unsigned long max = length - 1;
+        const float eps = .05f;
+        const float lowKnee = eps * max;
+        const float highKnee = (1.f-eps) * max;
+        unsigned long k=0;
+        window[k++] = 0.f;
+        for(;k<lowKnee;k++)
+        {
+            window[k] = 1.0 / (exp(za(k, lowKnee)) + 1);
+        }
+        for(;k<=highKnee;k++)
+        {
+            window[k] = 1.0f;
+        }
+        for(;k<max;k++)
+        {
+            window[k] = 1.0 / (exp(zb(k, lowKnee, max, eps)) + 1);
+        }
+        window[k] = 0.f;
     }
 };
 

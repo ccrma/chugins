@@ -20,7 +20,7 @@ struct Grain
         this->chan = 0;
     }
 
-    void Init(long startPos, long stopPos, float rate)
+    void Init(long startPos, long stopPos, float rate, dbWindowing::FilterType t)
     {
         this->active = 1;
         this->pos = startPos;
@@ -32,7 +32,7 @@ struct Grain
             this->filterRadius = 5;
         this->winPct = 0.f;
         this->winStep = std::abs(rate) / (stopPos - startPos + 1);
-        this->window = dbWindowing::Get(); // we don't own this
+        this->window = dbWindowing::Get(t); // we don't own this
 
         // std::cout << "New Grain at " << this->pos << std::endl;
     }
@@ -67,9 +67,11 @@ struct Grain
 class dbGrainMgr
 {
 public:
-    dbGrainMgr(unsigned maxGrains)
+    dbGrainMgr(unsigned max):
+        active(0)
     {
-        this->grainPool.resize(maxGrains);
+        this->grainPool.resize(max);
+
     };
 
     ~dbGrainMgr() {};
@@ -79,12 +81,23 @@ public:
         this->ActiveGrains.remove_if(this->pruner);
     }
 
+    unsigned GetActiveGrainCount()
+    {
+        return this->active;
+    }
+
+    unsigned GrainPoolSize()
+    {
+        return this->grainPool.size();
+    }
+
     Grain *Allocate()
     {
         for(auto& value: this->grainPool) 
         {
             if(!value.active)
             {
+                this->active++;
                 value.active = true;
                 this->ActiveGrains.push_front(&value);
                 return &value;
@@ -97,6 +110,7 @@ public:
     {
         if(g) 
         {
+            this->active--;
             this->ActiveGrains.remove(g);
             g->active = false;
         }
@@ -106,6 +120,7 @@ public:
 
 private:
     std::vector<Grain> grainPool;
+    int active;
     class isInactive
     {
     public:
@@ -124,7 +139,7 @@ public:
         this->lastSamp = 0.f;
     }
 
-    void SetPeriod(long period) // measured in ticksa
+    void SetPeriod(long period) // measured in ticks
     {
         this->period = period;
         this->updateEndPt();
@@ -164,14 +179,17 @@ public:
             return true;
         }
 
-        this->counter++;
-        if(this->counter < this->cycleEnd)
-            return false;
+        // counter initially 0 and we want to fire then
+        if(this->counter++ == 0)
+        {
+            this->updateEndPt(); // in case of randomness we re-roll
+            return true;
+        }
         else
         {
-            this->counter = 0;
-            this->updateEndPt();
-            return true;
+            if(this->counter >= this->cycleEnd)
+                this->counter = 0;
+            return false;
         }
     }
 
@@ -224,15 +242,11 @@ public:
     {
         this->pos += this->deltaPos;
         if(this->pos > this->stopPos)
-        {
-            std::cout << "Phasor reset " << 
-                this->pos << " " << this->stopPos << std::endl;
-            this->pos = this->start + (this->pos - this->stop);
-        }
+            this->pos = this->startPos + (this->pos - this->stopPos);
         else
         if(this->pos < this->startPos)
         {
-            this->pos = this->stop - (this->start - this->pos);
+            this->pos = this->stopPos - (this->startPos - this->pos);
         }
         // XXX: apply wobble
     }
@@ -278,6 +292,11 @@ private:
         this->stopPos = this->stop * this->fileTicks;
         this->pos = this->startPos;
         this->deltaPos = this->rate;
+        if(this->stop < this->start)
+        {
+            std::cout << "Phasor has invalid bounds:" << this->start <<
+                ' >= ' << this->stop << std::endl;
+        }
     }
 
     float sampleRate; // samples/sec (chuck sample rate)
