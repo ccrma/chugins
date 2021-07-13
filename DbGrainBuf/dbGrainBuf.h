@@ -7,8 +7,10 @@
  * Primary entrypoint/class is dbGrainBuf (at bottom).
  */
 
-#include "dbGrainUtil.h"
+#include "dbGrainMgr.h"
 #include "dbSndBuf.h"
+#include "dbPhasor.h"
+#include "dbTrigger.h"
 #include "dbRand.h"
 
 #include <string>
@@ -38,6 +40,7 @@ public:
     int Debug(int debug)
     {
         this->debug = debug;
+        this->phasor.Debug(debug);
         return debug;
     }
 
