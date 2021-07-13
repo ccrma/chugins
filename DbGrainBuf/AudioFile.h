@@ -105,7 +105,7 @@ public:
     int getBitDepth() const;
     
     /** @Returns the number of samples per channel */
-    int getNumSamplesPerChannel() const;
+    long getNumSamplesPerChannel() const;
     
     /** @Returns the length in seconds of the audio file based on the number of samples and sample rate */
     double getLengthInSeconds() const;
@@ -123,12 +123,12 @@ public:
     /** Sets the audio buffer to a given number of channels and number of samples per channel. This will try to preserve
      * the existing audio, adding zeros to any new channels or new samples in a given channel.
      */
-    void setAudioBufferSize (int numChannels, int numSamples);
+    void setAudioBufferSize (int numChannels, long numSamples);
     
     /** Sets the number of samples per channel in the audio buffer. This will try to preserve
      * the existing audio, adding zeros to new samples in a given channel if the number of samples is increased.
      */
-    void setNumSamplesPerChannel (int numSamples);
+    void setNumSamplesPerChannel (long numSamples);
     
     /** Sets the number of channels. New channels will have the correct number of samples and be initialised to zero */
     void setNumChannels (int numChannels);
@@ -319,10 +319,10 @@ int AudioFile<T>::getBitDepth() const
 
 //=============================================================
 template <class T>
-int AudioFile<T>::getNumSamplesPerChannel() const
+long AudioFile<T>::getNumSamplesPerChannel() const
 {
     if (samples.size() > 0)
-        return (int) samples[0].size();
+        return (long) samples[0].size();
     else
         return 0;
 }
@@ -381,7 +381,7 @@ bool AudioFile<T>::setAudioBuffer (AudioBuffer& newBuffer)
 
 //=============================================================
 template <class T>
-void AudioFile<T>::setAudioBufferSize (int numChannels, int numSamples)
+void AudioFile<T>::setAudioBufferSize (int numChannels, long numSamples)
 {
     samples.resize (numChannels);
     setNumSamplesPerChannel (numSamples);
@@ -389,10 +389,9 @@ void AudioFile<T>::setAudioBufferSize (int numChannels, int numSamples)
 
 //=============================================================
 template <class T>
-void AudioFile<T>::setNumSamplesPerChannel (int numSamples)
+void AudioFile<T>::setNumSamplesPerChannel (long numSamples)
 {
-    int originalSize = getNumSamplesPerChannel();
-    
+    long originalSize = getNumSamplesPerChannel();
     for (int i = 0; i < getNumChannels();i++)
     {
         samples[i].resize (numSamples);
@@ -408,7 +407,7 @@ template <class T>
 void AudioFile<T>::setNumChannels (int numChannels)
 {
     int originalNumChannels = getNumChannels();
-    int originalNumSamplesPerChannel = getNumSamplesPerChannel();
+    long originalNumSamplesPerChannel = getNumSamplesPerChannel();
     
     samples.resize (numChannels);
     
@@ -842,7 +841,7 @@ bool AudioFile<T>::saveToWaveFile (std::string filePath)
 {
     std::vector<uint8_t> fileData;
     
-    int32_t dataChunkSize = getNumSamplesPerChannel() * (getNumChannels() * bitDepth / 8);
+    long dataChunkSize = getNumSamplesPerChannel() * (getNumChannels() * bitDepth / 8);
     int16_t audioFormat = bitDepth == 32 ? WavAudioFormat::IEEEFloat : WavAudioFormat::PCM;
     int32_t formatChunkSize = audioFormat == WavAudioFormat::PCM ? 16 : 18;
     int32_t iXMLChunkSize = static_cast<int32_t> (iXMLChunk.size());
@@ -885,9 +884,9 @@ bool AudioFile<T>::saveToWaveFile (std::string filePath)
     // -----------------------------------------------------------
     // DATA CHUNK
     addStringToFileData (fileData, "data");
-    addInt32ToFileData (fileData, dataChunkSize);
+    addInt32ToFileData (fileData, (int) dataChunkSize); // wave file size limitation
     
-    for (int i = 0; i < getNumSamplesPerChannel(); i++)
+    for (long i = 0; i < getNumSamplesPerChannel(); i++)
     {
         for (int channel = 0; channel < getNumChannels(); channel++)
         {
@@ -943,7 +942,8 @@ bool AudioFile<T>::saveToWaveFile (std::string filePath)
     }
     
     // check that the various sizes we put in the metadata are correct
-    if (fileSizeInBytes != static_cast<int32_t> (fileData.size() - 8) || dataChunkSize != (getNumSamplesPerChannel() * getNumChannels() * (bitDepth / 8)))
+    if (fileSizeInBytes != static_cast<int32_t> (fileData.size() - 8) || 
+        dataChunkSize != (getNumSamplesPerChannel() * getNumChannels() * (bitDepth / 8)))
     {
         reportError ("ERROR: couldn't save file to " + filePath);
         return false;
@@ -961,8 +961,8 @@ bool AudioFile<T>::saveToAiffFile (std::string filePath)
     
     int32_t numBytesPerSample = bitDepth / 8;
     int32_t numBytesPerFrame = numBytesPerSample * getNumChannels();
-    int32_t totalNumAudioSampleBytes = getNumSamplesPerChannel() * numBytesPerFrame;
-    int32_t soundDataChunkSize = totalNumAudioSampleBytes + 8;
+    long totalNumAudioSampleBytes = getNumSamplesPerChannel() * numBytesPerFrame; // aiff limits to 32 bits
+    long soundDataChunkSize = totalNumAudioSampleBytes + 8;
     int32_t iXMLChunkSize = static_cast<int32_t> (iXMLChunk.size());
     
     // -----------------------------------------------------------
@@ -993,11 +993,11 @@ bool AudioFile<T>::saveToAiffFile (std::string filePath)
     // -----------------------------------------------------------
     // SSND CHUNK
     addStringToFileData (fileData, "SSND");
-    addInt32ToFileData (fileData, soundDataChunkSize, Endianness::BigEndian);
+    addInt32ToFileData (fileData, (int) soundDataChunkSize, Endianness::BigEndian); // aiff file size limit
     addInt32ToFileData (fileData, 0, Endianness::BigEndian); // offset
     addInt32ToFileData (fileData, 0, Endianness::BigEndian); // block size
     
-    for (int i = 0; i < getNumSamplesPerChannel(); i++)
+    for (long i = 0; i < getNumSamplesPerChannel(); i++)
     {
         for (int channel = 0; channel < getNumChannels(); channel++)
         {
@@ -1048,7 +1048,8 @@ bool AudioFile<T>::saveToAiffFile (std::string filePath)
     }
     
     // check that the various sizes we put in the metadata are correct
-    if (fileSizeInBytes != static_cast<int32_t> (fileData.size() - 8) || soundDataChunkSize != getNumSamplesPerChannel() *  numBytesPerFrame + 8)
+    if (fileSizeInBytes != static_cast<int32_t> (fileData.size() - 8) || 
+        soundDataChunkSize != getNumSamplesPerChannel() *  numBytesPerFrame + 8)
     {
         reportError ("ERROR: couldn't save file to " + filePath);
         return false;

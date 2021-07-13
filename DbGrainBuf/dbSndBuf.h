@@ -48,6 +48,11 @@ public:
         return err;
     }
 
+    double GetLengthInSeconds()
+    {
+        return this->audioFile.getLengthInSeconds();
+    }
+
     void SetRate(float x)
     {
         this->rateMult = x;
@@ -69,13 +74,18 @@ public:
         return this->loop;
     }
 
-    void SetPosition(int pos)
+    void SetPosition(long pos)
     {
         this->currentFrame = pos;
     }
 
-    void SetPhase(float pct)
+    void SetPhase(float pct) // 
     {
+        if(this->numFrames == 0)
+        {
+            std::cerr << "dbSndBuf::SetPhase must be invoked after the file is read." 
+            << std::endl;
+        }
         this->currentFrame = this->numFrames * pct;
     }
 
@@ -100,32 +110,13 @@ public:
         return this->maxFilterRadius;
     }
 
+    // This entrypoint is for "standalone" mode (ie: no grains).
+    // In this scenario, there is one-true "cursor" and we're responsible
+    // for the bookkeeping.
     SAMPLE Sample(int chan=0, bool andStep=true)
     {
-        long frame = static_cast<long>(this->currentFrame); // preserve sign
-        if(this->filterRadius <= 1)
-        {
-            float pct = this->currentFrame - frame;
-            long neighbor = this->calcFrame(frame, 1); // handles fwd and rev
-            SAMPLE now = this->lookupSample(frame, chan);
-            SAMPLE next = this->lookupSample(neighbor, chan);
-            this->currentSample =  now + pct * (next - now);
-        }
-        else
-        {
-            // for now we'll do box a filter (avg under filter)
-            SAMPLE sum = 0;
-            int numSamps = 0;
-            for(int i = -this->filterRadius;
-                i <= this->filterRadius; i++)
-            {
-                long sframe = this->calcFrame(frame, i);
-                sum += this->lookupSample(sframe, chan);
-                numSamps++;
-            }
-            sum /= numSamps; // box filter
-            this->currentSample = sum;
-        }
+        this->currentSample = this->Sample(chan, this->currentFrame, 
+                                this->filterRadius);
         if(andStep)
         {
             this->currentFrame = this->handleEdge((float)
@@ -134,11 +125,34 @@ public:
         return this->currentSample;
     }
 
-    /*
-    SAMPLE Sample(float pos, float rate)
+    SAMPLE Sample(int chan, double pos, int filterRadius)
     {
+        long frame = static_cast<long>(pos); // preserve sign
+        SAMPLE s;
+        if(filterRadius <= 1)
+        {
+            float pct = pos - frame;
+            long neighbor = this->calcFrame(frame, 1); // handles fwd and rev
+            SAMPLE now = this->lookupSample(frame, chan);
+            SAMPLE next = this->lookupSample(neighbor, chan);
+            s = now + pct * (next - now);
+        }
+        else
+        {
+            // for now we'll do box a filter (avg under filter)
+            SAMPLE sum = 0;
+            int numSamps = 0;
+            for(int i = -filterRadius; i <= filterRadius; i++)
+            {
+                long sframe = this->calcFrame(frame, i);
+                sum += this->lookupSample(sframe, chan);
+                numSamps++;
+            }
+            sum /= numSamps; // box filter
+            s = sum;
+        }
+        return s;
     }
-    */
 
     int IsDone()
     {
@@ -233,7 +247,7 @@ private:
 
     // sndfile state -------------
     dbAudioFile audioFile;
-    int numFrames;
+    long numFrames;
     uint32_t sampleRate; // of the file
 
     // playback state ------------

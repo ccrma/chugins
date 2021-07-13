@@ -2,10 +2,43 @@
 
 ## Intro
 DbGrainBuf is a sndbuf-based granular synthesis chugin for Chuck.
-Extends Chuck's SndBuf UGen with SuperCollider's GrainBuf interface
-as motivated by Eli Fieldsteel's highly recommended 
-[youtube tutorial](https://www.youtube.com/watch?v=WBqAM_94TW4)
+A rewrite of chuck's SndBuf UGen that combines functionality of
+SuperCollider's GrainBuf ugen as motivated by Eli Fieldsteel's 
+highly recommended [youtube tutorial](https://www.youtube.com/watch?v=WBqAM_94TW4).
 
+
+## Use Cases
+
+### Bypass
+
+Useful to verify behavior/timing of your sound file.
+
+```chuck
+DbGrainBuf db => NRev rev => dac;
+1 => db.bypass;
+1.1 => db.rate;
+"../../PitchTrack/data/obama.wav" => db.read;
+.5 => db.phase; // start 1/4 through the file
+3::second => now;
+```
+
+### Granular Synthesis
+
+1. specify trigger frequency + range - this is how often new grains are created.
+   Higher frequence means more grains.  Usually higher frequencies require/imply
+   smaller grain-durations. A non-zero range causes triggers to occur at
+   random time within the range (measured a pct of the trigger period).
+   To specify an external trigger, just connect your trigger UGEN to the 
+   input.
+2. pick a grain duration, variance and rate. 
+   Duration specified in time units, variance a pct of the grain duration.
+   Rate controls grain "pitch" and direction. midiratio can be used to
+   pitch-shift in harmonic intervals.
+3. pick a grain position/phase (sampled when a new grain is triggered)
+    * start, stop, rate, wobble
+        * start==stop: constant position
+        * start=0, stop=1, rate=1, play-through via grains
+        * start=0, stop=1, rate=midiratio(1), at a slightly faster rate
 
 ## Reference
 

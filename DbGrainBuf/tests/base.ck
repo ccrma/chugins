@@ -1,6 +1,7 @@
 <<<"Hello from DbGrain">>>;
 
 DbGrainBuf db => NRev rev => dac;
+1 => db.bypass;
 
 "../../PitchTrack/data/obama.wav" => db.read;
 

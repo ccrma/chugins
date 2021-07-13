@@ -1,212 +1,212 @@
-#ifndef dbGraphBuf_h
-#define dbGraphBuf_h
+#ifndef dbGrainBuf_h
+#define dbGrainBuf_h
+
 /**
  * Our job is to create and combine a number of in-flight grains into 
  * a single output sample. All grains index into the one sndbufState.
- * sndbufState lazily loads chunks to minimize startup costs.
+ * Primary entrypoint/class is dbGrainBuf (at bottom).
  */
 
+#include "dbGrainUtil.h"
 #include "dbSndBuf.h"
+#include "dbRand.h"
+
 #include <string>
-#include <vector>
-#include <forward_list>
-#include <cstdlib> // rand
 
-struct Grain
-{
-    Grain()
-    {
-        this->active = 0;
-    }
-
-    void InitDur()
-    {
-    }
-
-    int chan;
-    float rate; // aka sample increment
-    int pos; 
-    int start;
-    int stop;
-    SAMPLE samp;
-    float weight; //windowing[pos/start->stop] 
-    bool active;
-};
-
-class dbGrainMgr
-{
-public:
-    dbGrainMgr(unsigned maxGrains)
-    {
-        this->m_grainPool.resize(maxGrains);
-    };
-
-    ~dbGrainMgr() {};
-
-    Grain *Activate()
-    {
-        for(auto& value: this->m_grainPool) 
-        {
-            if(!value.active)
-            {
-                value.active = true;
-                this->ActiveGrains.push_front(&value);
-                return &value;
-            }
-        }
-        return nullptr;
-    }
-
-    void Release(Grain *g)
-    {
-        if(g) 
-        {
-            this->ActiveGrains.remove(g);
-            g->active = false;
-        }
-    }
-
-    std::forward_list<Grain*> ActiveGrains;
-
-private:
-    std::vector<Grain> m_grainPool;
-};
-
-class dbTrigger
-{
-public:
-    dbTrigger()
-    {
-        this->counter = 0;
-        this->SetTriggerRange(4410, 0); // 10 triggers per second at 44KHz
-    }
-
-    void SetTriggerMin(long ticks)
-    {
-        this->minTicks = ticks;
-        this->ticksPerTrigger = ticks; // in case range is 0
-    }
-
-    void SetTriggerRange(long range)
-    {
-        this->randomTickRange = range;
-        this->update();
-    }
-
-    void SetTriggerRange(long minticks, long range)
-    {
-        this->minTicks = minticks;
-        this->ticksPerTrigger = minticks; // in case range is 0
-        this->randomTickRange = range;
-        this->update();
-    }
-
-    void update()
-    {
-        if(this->randomTickRange)
-            this->ticksPerTrigger = this->minTicks + (rand() % this->randomTickRange);
-    }
-
-    bool IsTriggered()
-    {
-        this->counter++;
-        if(this->counter < this->ticksPerTrigger)
-            return false;
-        else
-        {
-            this->counter = 0;
-            this->update();
-            return true;
-        }
-    }
-
-private:
-    long counter;
-    long ticksPerTrigger; // for current "cycle"
-    long minTicks;
-    long randomTickRange; // non-zero for "dust"
-};
-
+/* ----------------------------------------------------------------------- */
+/**
+ * This is the main context for grain buf...
+ */
 class dbGrainBuf
 {
 public:
-    dbGrainBuf(float sampleRate);
-    ~dbGrainBuf();
+    dbGrainBuf(float sampleRate) :
+        sampleRate(sampleRate),
+        sndbuf(sampleRate),
+        grainMgr(512),
+        phasor(sampleRate),
+        bypassGrains(false),
+        grainPeriod(.2f), // seconds
+        grainPeriodVariance(0.f),
+        grainRate(1.0f)
+    {
+    }
+    ~dbGrainBuf() {}
 
-    SAMPLE Tick(SAMPLE in);
-    int Read(std::string &filename);
+    int Read(std::string &filename)
+    {
+        int err = this->sndbuf.ReadHeader(filename);
+        if(err == 0)
+            this->phasor.SetFileDur(this->sndbuf.GetLengthInSeconds());
+        return err;
+    }
+
+    SAMPLE Tick(SAMPLE in)
+    {
+        if(!this->bypassGrains)
+        {
+            // Trigger and Duration conspire to characterize the number
+            // of active Grains at a given time.  Faster triggers (say 100hz)
+            // with longer durations (say 10sec) would require more live grains
+            // than we can afford (~1000). (Supercollider default max is 512).
+            this->phasor.Tick();
+            if(this->trigger.SampleAndTick(in))
+            {
+                Grain *g = this->grainMgr.Allocate();
+                if(g)
+                {
+                    // upon Grain 'creation', we sample the parameter 
+                    // generators and then initialize the grain: 
+                    // NB: we'd like to support CC for each of these so users
+                    // can wire-up arbitrary behavior.
+                    //    dur: within a range 
+                    //    pos: 
+                    //          constant, 
+                    //          sliding range with randomness (looping implicitly)
+                    //          random locations
+                    //    rate:
+                    // 
+                    long startPos = (long) this->phasor.Sample();
+                    long stopPos = this->getGrainStop(startPos);
+                    g->Init(startPos, stopPos, this->grainRate);
+                }
+                else
+                {
+                    std::cout << "DbGrainBuf: too many active grains." << std::endl;
+                }
+            }
+
+            SAMPLE sum = 0;
+            for(const auto& g: this->grainMgr.ActiveGrains) 
+            {
+                sum += g->SampleAndTick(this->sndbuf);
+            }
+            this->grainMgr.Prune();
+            return sum;
+        }
+        else
+            return this->sndbuf.Sample();
+    }
 
     /* SndBuf interface-ish ---- */
     int SetBypass(int b)
     {
-        this->m_bypassGrains = b;
+        this->bypassGrains = b;
         return b;
     }
-    int GetBypass() { return this->m_bypassGrains; }
+    int GetBypass() { return this->bypassGrains; }
 
+    /* Grainbuf parameters ------------------------------------------------- */
+    float SetTriggerFreq(float freq)
+    {
+        long ticks = this->sampleRate / freq;
+        this->trigger.SetPeriod(ticks);
+        return freq;
+    }
+
+    float SetTriggerRange(float pct) // value depends on  value of trigger rate
+    {
+        this->trigger.SetRange(pct);
+        return pct;
+    }
+
+    float SetGrainPeriod(float period) // measured in seconds
+    {
+        this->grainPeriod = period;
+        return period;
+    }
+
+    float SetGrainPeriodVariance(float pct)
+    {
+        this->grainPeriodVariance = pct;
+        return pct;
+    }
+
+    float SetGrainRate(float factor)
+    {
+        this->grainRate = factor;
+        return factor;
+    }
+
+    float SetGrainPhaseStart(float startPhase)
+    {
+        this->phasor.SetStart(startPhase);
+        return startPhase;
+    }
+
+    float SetGrainPhaseStop(float stopPhase)
+    {
+        this->phasor.SetStop(stopPhase);
+        return stopPhase;
+    }
+
+    float SetGrainPhaseRate(float phaseRate)
+    {
+        this->phasor.SetRate(phaseRate);
+        return phaseRate;
+    }
+
+    float SetGrainPhaseWobble(float phaseWobble)
+    {
+        this->phasor.SetWobble(phaseWobble);
+        return phaseWobble;
+    }
+
+    /* Bypass parameters --------------------------------------------- */
     int SetLoop(int loop)
     {
-        this->m_sndbuf.SetLoop(loop);
+        this->sndbuf.SetLoop(loop);
         return loop;
     }
-    int GetLoop() { return this->m_sndbuf.GetLoop(); }
+    int GetLoop() { return this->sndbuf.GetLoop(); }
 
     int
     SetPos(int pos)
     {
-        this->m_pos = pos;
-        this->m_phase = -666.;
-        this->m_sndbuf.SetPosition(pos);
+        this->sndbuf.SetPosition(pos);
         return pos;
     }
-    int GetPos() { return this->m_sndbuf.GetPosition(); }
+    int GetPos() { return this->sndbuf.GetPosition(); }
 
     float
     SetPhase(float phase)
     {
-        this->m_phase = phase;
-        this->m_pos = -666;
-        this->m_sndbuf.SetPhase(phase);
+        this->sndbuf.SetPhase(phase);
         return phase;
     }
-    float GetPhase() { return this->m_sndbuf.GetPhase(); }
+    float GetPhase() { return this->sndbuf.GetPhase(); }
 
     float SetRate(float rate)
     {
-        this->m_sndbuf.SetRate(rate);
+        this->sndbuf.SetRate(rate);
         return rate;
     }
-    float GetRate() { return this->m_sndbuf.GetRate(); }
+    float GetRate() { return this->sndbuf.GetRate(); }
 
-    int SetMaxFilt(int w) { return this->m_sndbuf.SetMaxFilt(w); }
-    int GetMaxFilt() { return this->m_sndbuf.GetMaxFilt(); }
+    int SetMaxFilt(int w) { return this->sndbuf.SetMaxFilt(w); }
+    int GetMaxFilt() { return this->sndbuf.GetMaxFilt(); }
 
-    float SetTriggerRate(float seconds)
+private:
+    long getGrainStop(long start)
     {
-        long ticks = this->m_sampleRate * seconds;
-        this->m_trigger.SetTriggerMin(ticks);
-        return seconds;
+        long grainSamps = this->grainPeriod * this->sampleRate;
+        long stop = start + grainSamps;
+        if(this->grainPeriodVariance != 0)
+            stop += rand32HalfRange(grainSamps*this->grainPeriodVariance);
+        return stop;
     }
 
 private:
-    float m_sampleRate;
-    dbSndBuf m_sndbuf;
-    dbGrainMgr m_grainMgr;
-    dbTrigger m_trigger;
-    bool m_bypassGrains;
+    float sampleRate;
+    dbSndBuf sndbuf;
+    dbGrainMgr grainMgr;
+    dbTrigger trigger;
+    dbPhasor phasor;
+    bool bypassGrains; // and use sndbuf directly
 
-    float m_phase;  // -666 if unset
-    int m_pos;      // -666 if unset
-
-    int m_minDur, m_maxDur;
-    int m_minPos, m_maxPos;
-
-    void applyWindow(float * data, float * window, 
-        unsigned long length);
-    void hanning(float *w, unsigned long len);
-    void hamming(float *w, unsigned long len);
-    void blackman(float *w, unsigned long len);
-    void bartlett(float *w, unsigned long len);
+    float grainPeriod; // measured in seconds
+    float grainPeriodVariance; // pct of period
+    float grainRate; // fractional samplesteps/sample
 
 };
 

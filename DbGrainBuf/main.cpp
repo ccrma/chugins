@@ -30,38 +30,21 @@ U.S.A.
 #include <limits.h>
 #include <math.h>
 
-/* important parameters of SuperCollider GrainBuf
-
-trigger - a kr or ar trigger to start a new grain. If ar, grains after 
-  the start of the synth are sample accurate.
-    - usually connected to Impulse.ar(10), or Dust.ar(10)
-
-dur	of the grain (in seconds). 
-    - CC-ing dur is of some value.
-    - when long signal gets loud, so gainreduction is a good idea.
-
-rate - the playback rate of the sampled sound
-    - used for pitch-shifting with linear pos playback.
-
-pos - the normalized playback position for the grain.
-    - CC-ing the pos can step through the file (used for pitch-shifting)
-    - Line with wobble. (Wobble of 0 with pitch-shifting gives 'vocoder'-effect,
-      when trigger is impulse).
-*/
-
 /* our parameters ---
+ 
+    connect trigger as input 
+    -or-
+    float triggerFreq, default 10
+    float triggerRange, default 0
 
-    // instead of a trigger ugen:
-    dur triggerRate, default 10::ms
-    float triggerRandomness, default; 0
+    float grainPeriod, default .1 (seconds)
+    float grainPeriodVariance: default 0
+    float grainRate: default 1
 
-    dur grainSize: default 10:ms
-
-    float rate: default 1
-
-    float pos: (same as SndBuf phaseOffset)
-    int autoPosMode:  WIP
-
+    float grainPhaseStart: 0
+    float grainPhaseStop: 1
+    float grainPhaseRate: 1
+    float grainPhaseWobble: 0
  */
 
 CK_DLL_CTOR(gbuf_ctor);
@@ -84,16 +67,17 @@ CK_DLL_MFUN(gbuf_ctrl_bypass); // bypass grain logic
 CK_DLL_MFUN(gbuf_cget_bypass);
 
 /* extra methods to for grainbuf --- */
-CK_DLL_MFUN(gbuf_ctrl_triggerRate);
-CK_DLL_MFUN(gbuf_ctrl_triggerRand);
-CK_DLL_MFUN(gbuf_ctrl_grainDur);
-CK_DLL_MFUN(gbuf_ctrl_grainDurRand);
-CK_DLL_MFUN(gbuf_ctrl_phaseMin); // min==max means constant
-CK_DLL_MFUN(gbuf_ctrl_phaseMax);
-CK_DLL_MFUN(gbuf_ctrl_phaseRate); // 1 means file duration
-CK_DLL_MFUN(gbuf_ctrl_phaseNoise); // large values produce nocide
-// we'll use rate above
+CK_DLL_MFUN(gbuf_ctrl_triggerFreq);
+CK_DLL_MFUN(gbuf_ctrl_triggerRange);
 
+CK_DLL_MFUN(gbuf_ctrl_grainPeriod);
+CK_DLL_MFUN(gbuf_ctrl_grainPeriodVariance);
+CK_DLL_MFUN(gbuf_ctrl_grainRate);
+
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseStart); //start==stop means constant grain pos
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseStop);
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseRate);
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseWobble);
 
 t_CKINT gbuf_data_offset = 0; // required by chuck
 
@@ -141,6 +125,36 @@ CK_DLL_QUERY(DbGrainBuf)
     QUERY->add_mfun(QUERY, gbuf_ctrl_bypass, "int", "bypass");
     QUERY->add_arg(QUERY,  "int", "bypass" );
     QUERY->add_mfun(QUERY, gbuf_cget_bypass, "int", "bypass");
+
+    /* ---------------------------------------------------------------- */
+    QUERY->add_mfun(QUERY, gbuf_ctrl_triggerFreq, "float", "triggerFreq");
+    QUERY->add_arg(QUERY, "float", "triggerFreq" );
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_triggerRange, "float", "triggerRange");
+    QUERY->add_arg(QUERY, "float", "triggerRange" );
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPeriod, "float", "grainPeriod"); // seconds
+    QUERY->add_arg(QUERY, "float", "grainPeriod" );
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPeriodVariance, "float", "grainPeriodVariance");
+    QUERY->add_arg(QUERY, "float", "grainPeriodRand" );
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainRate, "float", "grainRate");
+    QUERY->add_arg(QUERY, "float", "grainRate" );
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseStart, "float", "grainPhaseStart");
+    QUERY->add_arg(QUERY, "float", "grainPhaseStart" );
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseStop, "float", "grainPhaseStop");
+    QUERY->add_arg(QUERY, "float", "grainPhaseStop" );
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseRate, "float", "grainPhaseRate");
+    QUERY->add_arg(QUERY, "float", "grainPhaseRate" );
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseWobble, "float", "grainPhaseWobble");
+    QUERY->add_arg(QUERY, "float", "grainPhaseWobble" );
+
+    // graphPhaseWobbleFreq
 
     gbuf_data_offset = QUERY->add_mvar(QUERY, "int", "@gbuf_data", false);
     QUERY->end_class(QUERY);
@@ -252,43 +266,51 @@ CK_DLL_MFUN(gbuf_cget_bypass)
     RETURN->v_int = c->GetBypass();
 }
 
-CK_DLL_MFUN(gbuf_ctrl_triggerRate)
+CK_DLL_MFUN(gbuf_ctrl_triggerFreq)
 {
-
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetTriggerFreq(GET_NEXT_FLOAT(ARGS));
 }
 
-CK_DLL_MFUN(gbuf_ctrl_triggerRand)
+CK_DLL_MFUN(gbuf_ctrl_triggerRange)
 {
-
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetTriggerRange(GET_NEXT_FLOAT(ARGS));
 }
 
-CK_DLL_MFUN(gbuf_ctrl_grainDur)
+CK_DLL_MFUN(gbuf_ctrl_grainPeriod)
 {
-
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetGrainPeriod(GET_NEXT_FLOAT(ARGS));
+}
+CK_DLL_MFUN(gbuf_ctrl_grainPeriodVariance)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetGrainPeriodVariance(GET_NEXT_FLOAT(ARGS));
+}
+CK_DLL_MFUN(gbuf_ctrl_grainRate)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetGrainRate(GET_NEXT_FLOAT(ARGS));
 }
 
-CK_DLL_MFUN(gbuf_ctrl_grainDurRand)
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseStart)
 {
-
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetGrainPhaseStart(GET_NEXT_FLOAT(ARGS));
 }
-
-// phase is the position within the file to initialize new grains.
-// it is expressed in pct of the sndbuf.  We only automate phase
-// generation if we detect that explicit phase isn't provided.
-CK_DLL_MFUN(gbuf_ctrl_phaseMin) // min==max means constant
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseStop)
 {
-
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetGrainPhaseStop(GET_NEXT_FLOAT(ARGS));
 }
-
-CK_DLL_MFUN(gbuf_ctrl_phaseMax)
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseRate)
 {
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetGrainPhaseRate(GET_NEXT_FLOAT(ARGS));
 }
-
-CK_DLL_MFUN(gbuf_ctrl_phaseRate) // 1 means file duration
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseWobble)
 {
-
-}
-
-CK_DLL_MFUN(gbuf_ctrl_phaseNoise) // large values produce random position
-{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetGrainPhaseWobble(GET_NEXT_FLOAT(ARGS));
 }
