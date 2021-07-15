@@ -1,5 +1,6 @@
 #ifndef dbSndBuf_h
-#define dbSndBuf_h
+#define dbSndBuf_h 
+
 #include <chuck_def.h> // defines SAMPLE, usually float
 #include <cmath>
 #include "AudioFile.h"

@@ -67,8 +67,12 @@ public:
         if(filtername == "bartlett")
             this->windowFilter = dbWindowing::kBartlett;
         else
-        if(filtername == "plancktaper")
-            this->windowFilter = dbWindowing::kPlanckTaper;
+        if(filtername == "plancktaper85" ||
+           filtername == "plancktaper")
+            this->windowFilter = dbWindowing::kPlanckTaper85;
+        else
+        if(filtername == "plancktaper95")
+            this->windowFilter = dbWindowing::kPlanckTaper95;
         else
         {
             std::cout << "Unknown windowing filter:" << filtername << std::endl;
@@ -160,6 +164,11 @@ public:
         return freq;
     }
 
+    float GetTriggerFreq()
+    {
+        return this->sampleRate / this->trigger.GetPeriod();
+    }
+
     float SetTriggerRange(float pct) // value depends on  value of trigger rate
     {
         this->trigger.SetRange(pct);
@@ -170,6 +179,11 @@ public:
     {
         this->grainPeriod = period;
         return period;
+    }
+
+    float GetGrainPeriod()
+    {
+        return this->grainPeriod;
     }
 
     float SetGrainPeriodVariance(float pct)
@@ -192,6 +206,20 @@ public:
 
     float SetGrainPhaseStop(float stopPhase)
     {
+        this->phasor.SetStop(stopPhase);
+        return stopPhase;
+    }
+
+    float SetGrainPhaseStartSec(float startPhaseSec)
+    {
+        float startPhase = startPhaseSec/this->GetFileDur();
+        this->phasor.SetStart(startPhase);
+        return startPhase;
+    }
+
+    float SetGrainPhaseStopSec(float stopPhaseSec)
+    {
+        float stopPhase = stopPhaseSec/this->GetFileDur();
         this->phasor.SetStop(stopPhase);
         return stopPhase;
     }

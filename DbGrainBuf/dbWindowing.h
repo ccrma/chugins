@@ -6,7 +6,10 @@
 /**
  * a fixed-size windowing function with linearly interpolated weights.
  */
-static class dbWindowing *sSingletons[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
+static class dbWindowing *sSingletons[6] = {
+    nullptr, nullptr, nullptr, 
+    nullptr, nullptr, nullptr
+};
 
 class dbWindowing
 {
@@ -18,7 +21,8 @@ public:
         kHanning = 1,  
         kHamming = 2,
         kBartlett = 3,
-        kPlanckTaper = 4 // for long grains (less fading at edges)
+        kPlanckTaper85 = 4, // for long grains (less fading at edges)
+        kPlanckTaper95 = 5 // for long grains (less fading at edges)
     };
     static dbWindowing *Get(FilterType t=kBlackman)
     {
@@ -65,8 +69,11 @@ private:
         case kBartlett:
             bartlett(this->window, len);
             break;
-        case kPlanckTaper:
-            planckTaper(this->window, len);
+        case kPlanckTaper85:
+            planckTaper(this->window, len, .15f);
+            break;
+        case kPlanckTaper95:
+            planckTaper(this->window, len, .05f);
             break;
         }
     }
@@ -122,10 +129,10 @@ private:
         return lowKnee *
             (1.f/(max-k) + 1.f/((1.f-eps)*max - k));
     }
-    static void planckTaper(float* window, unsigned long length)
+    static void planckTaper(float* window, unsigned long length,
+        float eps)
     {
         const unsigned long max = length - 1;
-        const float eps = .05f;
         const float lowKnee = eps * max;
         const float highKnee = (1.f-eps) * max;
         unsigned long k=0;

@@ -20,7 +20,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 U.S.A.
 -----------------------------------------------------------------------------*/
-
 #include "chuck_dl.h"
 #include "chuck_def.h"
 
@@ -35,7 +34,7 @@ U.S.A.
     connect trigger as input 
     -or-
     float triggerFreq, default 10
-    float triggerRange, default 0
+    float triggerRange, default 0 (adds "dust")
 
     float grainPeriod, default .1 (seconds)
     float grainPeriodVariance: default 0
@@ -71,15 +70,19 @@ CK_DLL_MFUN(gbuf_cget_bypass);
 
 /* extra methods to for grainbuf --- */
 CK_DLL_MFUN(gbuf_ctrl_triggerFreq);
+CK_DLL_MFUN(gbuf_cget_triggerFreq);
 CK_DLL_MFUN(gbuf_ctrl_triggerRange);
 
-CK_DLL_MFUN(gbuf_ctrl_grainwindow);
+CK_DLL_MFUN(gbuf_ctrl_grainWindow);
 CK_DLL_MFUN(gbuf_ctrl_grainPeriod);
+CK_DLL_MFUN(gbuf_cget_grainPeriod);
 CK_DLL_MFUN(gbuf_ctrl_grainPeriodVariance);
 CK_DLL_MFUN(gbuf_ctrl_grainRate);
 
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStart); //start==stop means constant grain pos
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStop);
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseStartSec); 
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseStopSec);
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseRate);
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseWobble);
 
@@ -101,8 +104,8 @@ CK_DLL_QUERY(DbGrainBuf)
     QUERY->add_mfun(QUERY, gbuf_ctrl_read, "string", "read");
     QUERY->add_arg(QUERY, "string", "read");
 
-    QUERY->add_mfun(QUERY, gbuf_ctrl_grainwindow, "string", "grainwindow");
-    QUERY->add_arg(QUERY, "string", "grainwindow");
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainWindow, "string", "grainWindow");
+    QUERY->add_arg(QUERY, "string", "grainWindow");
 
     // query of loaded file duration returns seconds
     QUERY->add_mfun(QUERY, gbuf_cget_filelen, "float", "filelen");
@@ -139,6 +142,7 @@ CK_DLL_QUERY(DbGrainBuf)
     /* - trigger ------------------------------------------------------ */
     QUERY->add_mfun(QUERY, gbuf_ctrl_triggerFreq, "float", "triggerFreq");
     QUERY->add_arg(QUERY, "float", "triggerFreq" );
+    QUERY->add_mfun(QUERY, gbuf_cget_triggerFreq, "float", "triggerFreq");
 
     QUERY->add_mfun(QUERY, gbuf_ctrl_triggerRange, "float", "triggerRange");
     QUERY->add_arg(QUERY, "float", "triggerRange" );
@@ -146,6 +150,7 @@ CK_DLL_QUERY(DbGrainBuf)
     /* grain ------------------------------------------------------------ */
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainPeriod, "float", "grainPeriod"); // seconds
     QUERY->add_arg(QUERY, "float", "grainPeriod" );
+    QUERY->add_mfun(QUERY, gbuf_cget_grainPeriod, "float", "grainPeriod");
 
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainPeriodVariance, "float", "grainRand");
     QUERY->add_arg(QUERY, "float", "grainRand" );
@@ -157,8 +162,14 @@ CK_DLL_QUERY(DbGrainBuf)
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseStart, "float", "phasorStart");
     QUERY->add_arg(QUERY, "float", "phasorStart" );
 
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseStartSec, "float", "phasorStartSec");
+    QUERY->add_arg(QUERY, "float", "phasorStartSec" );
+
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseStop, "float", "phasorStop");
     QUERY->add_arg(QUERY, "float", "phasorStop" );
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseStopSec, "float", "phasorStopSec");
+    QUERY->add_arg(QUERY, "float", "phasorStopSec" );
 
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseRate, "float", "phasorRate");
     QUERY->add_arg(QUERY, "float", "phasorRate" );
@@ -212,7 +223,7 @@ CK_DLL_MFUN(gbuf_ctrl_read)
     // no return atm
 }
 
-CK_DLL_MFUN(gbuf_ctrl_grainwindow)
+CK_DLL_MFUN(gbuf_ctrl_grainWindow)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
     std::string winfilter = GET_NEXT_STRING_SAFE(ARGS);
@@ -310,6 +321,12 @@ CK_DLL_MFUN(gbuf_ctrl_triggerFreq)
     RETURN->v_float = c->SetTriggerFreq(GET_NEXT_FLOAT(ARGS));
 }
 
+CK_DLL_MFUN(gbuf_cget_triggerFreq)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->GetTriggerFreq();
+}
+
 CK_DLL_MFUN(gbuf_ctrl_triggerRange)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
@@ -321,6 +338,13 @@ CK_DLL_MFUN(gbuf_ctrl_grainPeriod)
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
     RETURN->v_float = c->SetGrainPeriod(GET_NEXT_FLOAT(ARGS));
 }
+
+CK_DLL_MFUN(gbuf_cget_grainPeriod)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->GetGrainPeriod();
+}
+
 CK_DLL_MFUN(gbuf_ctrl_grainPeriodVariance)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
@@ -337,16 +361,31 @@ CK_DLL_MFUN(gbuf_ctrl_grainPhaseStart)
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
     RETURN->v_float = c->SetGrainPhaseStart(GET_NEXT_FLOAT(ARGS));
 }
+
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStop)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
     RETURN->v_float = c->SetGrainPhaseStop(GET_NEXT_FLOAT(ARGS));
 }
+
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseStartSec)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetGrainPhaseStartSec(GET_NEXT_FLOAT(ARGS));
+}
+
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseStopSec)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetGrainPhaseStopSec(GET_NEXT_FLOAT(ARGS));
+}
+
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseRate)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
     RETURN->v_float = c->SetGrainPhaseRate(GET_NEXT_FLOAT(ARGS));
 }
+
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseWobble)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);

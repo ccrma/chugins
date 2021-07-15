@@ -7,7 +7,7 @@ DbGrainBuf db => dac;
 "../../PitchTrack/data/obama.wav" => db.read;
 
 0 => int done;
-fun void updateTriggerFreq()
+fun void updateGrainPeriod(float min, float max)
 {
     Hid hi;
     HidMsg msg;
@@ -23,37 +23,36 @@ fun void updateTriggerFreq()
             {
                 if(msg.deltaX)
                 {
-                    db.triggerFreq() + msg.deltaX * .1 => float dfreq; 
-                    if(dfreq < 5)
-                        5 => dfreq;
+                    db.grainPeriod() + msg.deltaX * .01 => float p; 
+                    if(p < min)
+                        min => p;
                     else
-                    if(dfreq > 200)
-                        200 => dfreq;
-                    <<< dfreq >>>;
-                    dfreq => db.triggerFreq;
+                    if(p > max)
+                        max => p;
+                    <<< "grainPeriod", p >>>;
+                    p => db.grainPeriod;
                 }
             }
         }
     }
 }
 
-spork ~ updateTriggerFreq();
+spork ~ updateGrainPeriod(.01, 4.);
 
-<<<"tiny grain as tone (synchronous granular synthesis)">>>;
+<<<"varying grain size (synchronous)">>>;
 .09 => db.grainPeriod; // seconds per grain (long)
 .43 => db.phasorStart;
 .43 => db.phasorStop;
-25 => db.triggerFreq; // triggers per second (varied with mouseX 5->200)
+10 => db.triggerFreq; // triggers per second (varied with mouseX 5->200)
+.5 => db.gain; // as grainPeriod increases more overlap => louder
 15::second => now;
 
-
-<<<"tiny grain as dust (asynchronous granular synthesis)">>>;
+<<<"lower trigger">>>;
 .09 => db.grainPeriod; // seconds per grain (long)
 .43 => db.phasorStart;
 .43 => db.phasorStop;
-25 => db.triggerFreq; // 10 triggers per second
-2 => db.triggerRange; // pct randomness per trigger
-
-
+4 => db.triggerFreq; // triggers per second (varied with mouseX 5->200)
+.5 => db.gain; // as grainPeriod increases more overlap => louder
 15::second => now;
-1 => done;
+
+

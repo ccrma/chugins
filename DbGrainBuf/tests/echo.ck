@@ -8,8 +8,8 @@ DbGrainBuf db => dac;
 <<<"repeating grains (2.5sec trigger, 2.5sec grain, so repeating)">>>;
 .5 => db.gain; // lots of overlap
 10 => db.grainPeriod; // seconds per grain (long)
-// "blackman" => db.grainwindow;
-"plancktaper" => db.grainwindow;
+// "blackman" => db.grainWindow;
+"plancktaper" => db.grainWindow;
 .35 => db.phasorStart;
 .35 + 2.5 / db.filelen() => db.phasorStop; // fraction of the file == 2.5sec
 1/2.5 => db.triggerFreq; // one trigger every 2.5 sec

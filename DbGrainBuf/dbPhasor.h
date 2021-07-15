@@ -109,8 +109,10 @@ private:
             this->deltaPos = this->rate;
         if(this->stop < this->start)
         {
-            std::cout << "Phasor has invalid bounds:" << this->start <<
-                ' >= ' << this->stop << std::endl;
+            /* (happens legitimately when changing bounds)
+            std::cout << "Phasor has invalid bounds: " << this->start <<
+                " >= " << this->stop << std::endl;
+            */
         }
         if(this->debug)
         {

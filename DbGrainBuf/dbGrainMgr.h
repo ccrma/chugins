@@ -10,18 +10,13 @@ class dbGrainMgr
 {
 public:
     dbGrainMgr(unsigned max):
-        active(0)
+        active(0),
+        pruner(this->active)
     {
         this->grainPool.resize(max);
-
     };
 
     ~dbGrainMgr() {};
-
-    void Prune()
-    {
-        this->ActiveGrains.remove_if(this->pruner);
-    }
 
     unsigned GetActiveGrainCount()
     {
@@ -48,6 +43,11 @@ public:
         return nullptr;
     }
 
+    void Prune()
+    {
+        this->ActiveGrains.remove_if(this->pruner);
+    }
+
     void Release(Grain *g)
     {
         if(g) 
@@ -63,10 +63,21 @@ public:
 private:
     std::vector<Grain> grainPool;
     int active;
+
     class isInactive
     {
     public:
-        bool operator() (Grain * g) {return !g->active;}
+        isInactive(int &a) : active(a) {}
+        bool operator() (Grain * g) 
+        {
+            if(!g->active)
+            {
+                this->active--; // owned by enclosing class
+                // std::cout << "pruning grain " << g->start  << std::endl;
+            }
+            return !g->active;
+        }
+        int &active;
     } pruner;
 };
 

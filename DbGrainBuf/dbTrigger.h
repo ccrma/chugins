@@ -20,6 +20,11 @@ public:
         this->updateEndPt();
     }
 
+    long GetPeriod()
+    {
+        return this->period;
+    }
+
     void SetRange(float range) // measured as a pct of period
     {
         this->range = range;
@@ -42,6 +47,7 @@ public:
             uint32_t prange = rand32Range(this->period * this->range);
             this->cycleEnd = this->period + prange;
         }
+        // std::cout << "trigger to " << this->cycleEnd << std::endl;
     }
 
     /* Tick returns true when the trigger activates
@@ -57,12 +63,13 @@ public:
         // counter initially 0 and we want to fire then
         if(this->counter++ == 0)
         {
+            // std::cout <<"trigger\n";
             this->updateEndPt(); // in case of randomness we re-roll
             return true;
         }
         else
         {
-            if(this->counter >= this->cycleEnd)
+            if(this->counter > this->cycleEnd)
                 this->counter = 0;
             return false;
         }
