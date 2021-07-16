@@ -3,6 +3,7 @@
 DbGrainBuf db => NRev rev => dac;
 .5 => db.gain;
 .5 => rev.mix;
+1 => db.bypass;
 
 "../../PitchTrack/data/obama.wav" => db.read;
 

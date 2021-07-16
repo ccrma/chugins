@@ -40,7 +40,7 @@ fun void updateTriggerFreq()
 spork ~ updateTriggerFreq();
 
 <<<"tiny grain as tone (synchronous granular synthesis)">>>;
-.09 => db.grainPeriod; // seconds per grain (long)
+.09::second => db.grainPeriod;
 .43 => db.phasorStart;
 .43 => db.phasorStop;
 25 => db.triggerFreq; // triggers per second (varied with mouseX 5->200)
@@ -48,7 +48,7 @@ spork ~ updateTriggerFreq();
 
 
 <<<"tiny grain as dust (asynchronous granular synthesis)">>>;
-.09 => db.grainPeriod; // seconds per grain (long)
+.09::second => db.grainPeriod; // seconds per grain (long)
 .43 => db.phasorStart;
 .43 => db.phasorStop;
 25 => db.triggerFreq; // 10 triggers per second

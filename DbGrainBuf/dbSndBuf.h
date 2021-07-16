@@ -133,8 +133,8 @@ public:
 
     SAMPLE Sample(int chan, double pos, int filterRadius)
     {
-        long frame = static_cast<long>(pos); // preserve sign
         SAMPLE s;
+        long frame = this->calcFrame(static_cast<long>(pos), 0); 
         if(filterRadius <= 1)
         {
             float pct = pos - frame;
@@ -179,7 +179,6 @@ private:
             frame += steps;
         else
             frame -= steps;
-
         return this->handleEdge((int) frame);
     }
 

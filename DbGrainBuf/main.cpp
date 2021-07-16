@@ -36,14 +36,16 @@ U.S.A.
     float triggerFreq, default 10
     float triggerRange, default 0 (adds "dust")
 
+    float grainRate: default 1
     float grainPeriod, default .1 (seconds)
     float grainPeriodVariance: default 0
-    float grainRate: default 1
+    float grainPeriodVarianceFreq: default 1. (Hz)
 
     float grainPhaseStart: 0
     float grainPhaseStop: 1
     float grainPhaseRate: 1
     float grainPhaseWobble: 0
+    float grainPhaseFreq: 1
  */
 
 CK_DLL_CTOR(gbuf_ctor);
@@ -77,6 +79,7 @@ CK_DLL_MFUN(gbuf_ctrl_grainWindow);
 CK_DLL_MFUN(gbuf_ctrl_grainPeriod);
 CK_DLL_MFUN(gbuf_cget_grainPeriod);
 CK_DLL_MFUN(gbuf_ctrl_grainPeriodVariance);
+CK_DLL_MFUN(gbuf_ctrl_grainPeriodVarianceFreq);
 CK_DLL_MFUN(gbuf_ctrl_grainRate);
 
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStart); //start==stop means constant grain pos
@@ -85,6 +88,7 @@ CK_DLL_MFUN(gbuf_ctrl_grainPhaseStartSec);
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStopSec);
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseRate);
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseWobble);
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseWobbleFreq);
 
 t_CKINT gbuf_data_offset = 0; // required by chuck
 
@@ -148,12 +152,15 @@ CK_DLL_QUERY(DbGrainBuf)
     QUERY->add_arg(QUERY, "float", "triggerRange" );
 
     /* grain ------------------------------------------------------------ */
-    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPeriod, "float", "grainPeriod"); // seconds
-    QUERY->add_arg(QUERY, "float", "grainPeriod" );
-    QUERY->add_mfun(QUERY, gbuf_cget_grainPeriod, "float", "grainPeriod");
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPeriod, "dur", "grainPeriod"); // seconds
+    QUERY->add_arg(QUERY, "dur", "grainPeriod" );
+    QUERY->add_mfun(QUERY, gbuf_cget_grainPeriod, "dur", "grainPeriod");
 
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainPeriodVariance, "float", "grainRand");
     QUERY->add_arg(QUERY, "float", "grainRand" );
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPeriodVarianceFreq, "float", "grainRandFreq");
+    QUERY->add_arg(QUERY, "float", "grainRandFreq" );
 
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainRate, "float", "grainRate");
     QUERY->add_arg(QUERY, "float", "grainRate" );
@@ -176,6 +183,9 @@ CK_DLL_QUERY(DbGrainBuf)
 
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseWobble, "float", "phasorWobble");
     QUERY->add_arg(QUERY, "float", "phasorWobble" );
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseWobbleFreq, "float", "phasorWobbleFreq");
+    QUERY->add_arg(QUERY, "float", "phasorWobbleFreq" );
 
     // phasorWobbleFreq
 
@@ -336,13 +346,20 @@ CK_DLL_MFUN(gbuf_ctrl_triggerRange)
 CK_DLL_MFUN(gbuf_ctrl_grainPeriod)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainPeriod(GET_NEXT_FLOAT(ARGS));
+    t_CKDUR d = GET_NEXT_DUR(ARGS); // dur is measured in samples
+    RETURN->v_dur = c->SetGrainPeriod(d);
 }
 
 CK_DLL_MFUN(gbuf_cget_grainPeriod)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->GetGrainPeriod();
+    RETURN->v_dur = c->GetGrainPeriod();
+}
+
+CK_DLL_MFUN(gbuf_ctrl_grainRate)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetGrainRate(GET_NEXT_FLOAT(ARGS));
 }
 
 CK_DLL_MFUN(gbuf_ctrl_grainPeriodVariance)
@@ -350,10 +367,11 @@ CK_DLL_MFUN(gbuf_ctrl_grainPeriodVariance)
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
     RETURN->v_float = c->SetGrainPeriodVariance(GET_NEXT_FLOAT(ARGS));
 }
-CK_DLL_MFUN(gbuf_ctrl_grainRate)
+
+CK_DLL_MFUN(gbuf_ctrl_grainPeriodVarianceFreq)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainRate(GET_NEXT_FLOAT(ARGS));
+    RETURN->v_float = c->SetGrainPeriodVarianceFreq(GET_NEXT_FLOAT(ARGS));
 }
 
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStart)
@@ -390,4 +408,10 @@ CK_DLL_MFUN(gbuf_ctrl_grainPhaseWobble)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
     RETURN->v_float = c->SetGrainPhaseWobble(GET_NEXT_FLOAT(ARGS));
+}
+
+CK_DLL_MFUN(gbuf_ctrl_grainPhaseWobbleFreq)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetGrainPhaseWobbleFreq(GET_NEXT_FLOAT(ARGS));
 }

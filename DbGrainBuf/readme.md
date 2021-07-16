@@ -2,23 +2,22 @@
 
 ## Intro
 DbGrainBuf is a sndbuf-based granular synthesis chugin for Chuck.
-A rewrite of chuck's SndBuf UGen that combines functionality of
-SuperCollider's GrainBuf ugen as motivated by Eli Fieldsteel's 
+It's a rewrite of chuck's SndBuf UGen that combines functionality 
+of SuperCollider's GrainBuf ugen as motivated by Eli Fieldsteel's 
 highly recommended [youtube tutorial](https://www.youtube.com/watch?v=WBqAM_94TW4).
-
 
 ## Use Cases
 
 ### Bypass
 
-Useful to verify behavior/timing of your sound file.
+Useful to verify behavior/timing/format of your sound file.
 
 ```chuck
 DbGrainBuf db => NRev rev => dac;
 1 => db.bypass;
 1.1 => db.rate;
 "../../PitchTrack/data/obama.wav" => db.read;
-.5 => db.phase; // start 1/4 through the file
+.5 => db.phase; // start 1/2 through the file
 3::second => now;
 ```
 
@@ -40,7 +39,41 @@ DbGrainBuf db => NRev rev => dac;
         * start=0, stop=1, rate=1, play-through via grains
         * start=0, stop=1, rate=midiratio(1), at a slightly faster rate
 
+Example 1:
+
+```chuck
+dbGrainBuf db => dac;
+"../../PitchTrack/data/obama.wav" => db.read;
+
+<<<"word scale">>>;
+// define the grain duration and speed
+.35::second => db.grainPeriod;
+1 => db.grainRate;
+
+// identify the subsection of the file for phasor trigger
+// Here, the word scale.
+49.6 => float start;
+start => db.phasorStartSec;
+start + db.grainPeriod() => db.phasorStopSec;
+
+// select the triggering frequency
+// here we trigger at a freq that is half the grain 
+1::second / (.5*db.grainPeriod()) => db.triggerFreq; 
+
+// select a window with less "softness" (default is blackman)
+"plancktaper95" => db.grainWindow; 
+5::second => now;
+
+
+```
+
+Example 2:
+```
+```
+
 ## Reference
+
+```
 
 ```supercollider
 # from Eli Fieldsteel's Granular Synthesis Tutorial

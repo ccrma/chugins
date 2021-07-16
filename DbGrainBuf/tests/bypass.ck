@@ -6,5 +6,5 @@ DbGrainBuf db => dac;
 "../../PitchTrack/data/obama.wav" => db.read;
 
 <<<"GrainBuf bypass">>>;
-20::second => now;
+10::second => now;
 

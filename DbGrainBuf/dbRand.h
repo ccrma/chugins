@@ -53,4 +53,9 @@ inline int32_t rand32HalfRange(int32_t range)
     return ret;
 }
 
+inline float rand32Pct() 
+{
+    return rand32Range(1000) / 1000.0f;
+}
+
 #endif

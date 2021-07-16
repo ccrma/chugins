@@ -2,6 +2,7 @@
 #define dbPhasor_h
 
 #include <iostream>
+#include "dbRand.h"
 
 /* Phasor produces values between [0, 1] representing the 
  * sndbuf location pointer. When rate is 1, the expectation 
@@ -26,7 +27,9 @@ public:
         stop(1.f),  // pct of file
         rate(1.f),
         wobble(0.f),
-        wobbleFreq(0.f),
+        wobbleFreq(1.f),
+        nextWobbleUpdate(0),
+        wobbleAmt(0.f),
         debug(0)
     {}
     ~dbPhasor() {};
@@ -44,19 +47,32 @@ public:
         this->debug = d;
     }
 
-    void Tick() 
+    void Tick(long totalTicks) 
     {
         this->pos += this->deltaPos;
-        if(this->pos > this->stopPos)
+        if(this->wobble != 0 && totalTicks > this->nextWobbleUpdate)
         {
-            this->pos = this->startPos + (this->pos - this->stopPos);
+            // wobble is a modulation of rate
+            this->nextWobbleUpdate = totalTicks + 
+                                this->sampleRate/this->wobbleFreq;
+            this->wobbleAmt = this->wobble * rand32Pct() * this->rate;
+
+        }
+        if(this->stopPos != this->startPos)
+        {
+            if(this->wobble != 0)
+                this->pos += this->wobbleAmt;
+            if(this->pos > this->stopPos)
+                this->pos = this->startPos + (this->pos - this->stopPos);
+            else
+            if(this->pos < this->startPos)
+                this->pos = this->stopPos - (this->startPos - this->pos);
         }
         else
-        if(this->pos < this->startPos)
         {
-            this->pos = this->stopPos - (this->startPos - this->pos);
+            // wobble around fixed position
+            this->pos = this->startPos + this->wobbleAmt;
         }
-        // XXX: apply wobble
     }
 
     /**
@@ -94,14 +110,21 @@ public:
     void SetWobble(float wobble)
     {
         this->wobble = wobble;
+        this->nextWobbleUpdate = 0;
+    }
+
+    void SetWobbleFreq(float wfreq)
+    {
+        this->wobbleFreq = wfreq;
+        this->nextWobbleUpdate = 0;
     }
 
 private:
 
     void updatePos()
     {
-        this->startPos = this->start * this->fileTicks;
-        this->stopPos = this->stop * this->fileTicks;
+        this->startPos = static_cast<double>(this->start) * this->fileTicks;
+        this->stopPos = static_cast<double>(this->stop) * this->fileTicks;
         this->pos = this->startPos;
         if(this->startPos == this->stopPos)
             this->deltaPos = 0;
@@ -117,7 +140,8 @@ private:
         if(this->debug)
         {
             std::cout << "Phasor init: " << (long) this->startPos << ", "
-                << (long) this->stopPos << std::endl;
+                << (long) this->stopPos << ", delta" << this->deltaPos 
+                << std::endl;
         }
 
     }
@@ -138,6 +162,8 @@ private:
     float rate;
     float wobble;
     float wobbleFreq; 
+    float wobbleAmt;
+    long nextWobbleUpdate;
 
     int debug;
 };

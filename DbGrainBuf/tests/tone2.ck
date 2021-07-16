@@ -7,7 +7,7 @@ DbGrainBuf db => dac;
 "../../PitchTrack/data/obama.wav" => db.read;
 
 0 => int done;
-fun void updateGrainPeriod(float min, float max)
+fun void updateGrainPeriod(dur min, dur max)
 {
     Hid hi;
     HidMsg msg;
@@ -23,7 +23,8 @@ fun void updateGrainPeriod(float min, float max)
             {
                 if(msg.deltaX)
                 {
-                    db.grainPeriod() + msg.deltaX * .01 => float p; 
+                    (msg.deltaX * .01)::second => dur dPeriod;
+                    db.grainPeriod() + dPeriod => dur p; 
                     if(p < min)
                         min => p;
                     else
@@ -37,10 +38,10 @@ fun void updateGrainPeriod(float min, float max)
     }
 }
 
-spork ~ updateGrainPeriod(.01, 4.);
+spork ~ updateGrainPeriod(.01::second, 4.::second);
 
 <<<"varying grain size (synchronous)">>>;
-.09 => db.grainPeriod; // seconds per grain (long)
+.09::second => db.grainPeriod; // seconds per grain (long)
 .43 => db.phasorStart;
 .43 => db.phasorStop;
 10 => db.triggerFreq; // triggers per second (varied with mouseX 5->200)
@@ -48,7 +49,7 @@ spork ~ updateGrainPeriod(.01, 4.);
 15::second => now;
 
 <<<"lower trigger">>>;
-.09 => db.grainPeriod; // seconds per grain (long)
+.09::second => db.grainPeriod; // seconds per grain (long)
 .43 => db.phasorStart;
 .43 => db.phasorStop;
 4 => db.triggerFreq; // triggers per second (varied with mouseX 5->200)

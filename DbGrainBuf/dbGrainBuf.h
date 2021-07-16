@@ -29,9 +29,13 @@ public:
         phasor(sampleRate),
         bypassGrains(false),
         windowFilter(dbWindowing::kBlackman),
-        grainPeriod(.2f), // seconds
+        grainPeriod(.2f * sampleRate), // 200 ms
+        currentGrainPeriod(.2f * sampleRate), // 200 ms
         grainPeriodVariance(0.f),
+        grainPeriodVarianceFreq(1.f),
         grainRate(1.0f),
+        totalTicks(0),
+        nextGrainPeriodRand(0),
         debug(0)
     {
     }
@@ -99,7 +103,8 @@ public:
             // of active Grains at a given time.  Faster triggers (say 100hz)
             // with longer durations (say 10sec) would require more live grains
             // than we can afford (~1000). (Supercollider default max is 512).
-            this->phasor.Tick();
+            this->totalTicks++;
+            this->phasor.Tick(this->totalTicks);
             if(this->trigger.SampleAndTick(in))
             {
                 Grain *g = this->grainMgr.Allocate();
@@ -117,6 +122,7 @@ public:
                     //    rate:
                     // 
                     long startPos = (long) this->phasor.Sample();
+                     // end conditions handled by grain
                     long stopPos = this->getGrainStop(startPos);
                     g->Init(startPos, stopPos, this->grainRate, 
                             this->windowFilter);
@@ -175,13 +181,20 @@ public:
         return pct;
     }
 
-    float SetGrainPeriod(float period) // measured in seconds
+    float SetGrainRate(float factor)
+    {
+        this->grainRate = factor;
+        return factor;
+    }
+
+    long SetGrainPeriod(long period) // measured in samples
     {
         this->grainPeriod = period;
+        this->currentGrainPeriod = period;
         return period;
     }
 
-    float GetGrainPeriod()
+    long GetGrainPeriod()
     {
         return this->grainPeriod;
     }
@@ -192,10 +205,10 @@ public:
         return pct;
     }
 
-    float SetGrainRate(float factor)
+    float SetGrainPeriodVarianceFreq(float hz)
     {
-        this->grainRate = factor;
-        return factor;
+        this->grainPeriodVarianceFreq = hz;
+        return hz;
     }
 
     float SetGrainPhaseStart(float startPhase)
@@ -236,6 +249,12 @@ public:
         return phaseWobble;
     }
 
+    float SetGrainPhaseWobbleFreq(float wfreq)
+    {
+        this->phasor.SetWobbleFreq(wfreq);
+        return wfreq;
+    }
+
     /* Bypass parameters --------------------------------------------- */
     int SetLoop(int loop)
     {
@@ -273,10 +292,19 @@ public:
 private:
     long getGrainStop(long start)
     {
-        long grainSamps = this->grainPeriod * this->sampleRate;
-        long stop = start + grainSamps;
+        long stop = start + this->currentGrainPeriod;
         if(this->grainPeriodVariance != 0)
-            stop += rand32HalfRange(grainSamps*this->grainPeriodVariance);
+        {
+            if(this->totalTicks > this->nextGrainPeriodRand)
+            {
+                this->nextGrainPeriodRand = this->totalTicks  +
+                    this->grainPeriodVarianceFreq * this->sampleRate;
+                this->currentGrainPeriod = this->grainPeriod +
+                    rand32HalfRange(this->grainPeriod*this->grainPeriodVariance);
+                if(this->debug)
+                    std::cout << "grain period:" << this->currentGrainPeriod << std::endl;
+            }
+        }
         return stop;
     }
 
@@ -289,11 +317,15 @@ private:
     bool bypassGrains; // and use sndbuf directly
     dbWindowing::FilterType windowFilter;
 
-    float grainPeriod; // measured in seconds
-    float grainPeriodVariance; // pct of period
     float grainRate; // fractional samplesteps/sample
+    long grainPeriod; // measured in samples
+    long currentGrainPeriod; // == grainPeriod unless grainPeriodVariance > 0
+    float grainPeriodVariance; // pct of period
+    float grainPeriodVarianceFreq; // Hz
 
     bool debug;
+    long totalTicks;
+    long nextGrainPeriodRand;
 };
 
 #endif
