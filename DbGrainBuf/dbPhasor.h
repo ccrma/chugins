@@ -49,6 +49,11 @@ public:
 
     void Tick(long totalTicks) 
     {
+        if(this->startPos > this->stopPos)
+        {
+            std::cout << "DbGrainBuf phasorStop must be >= phasorStart\n";
+            this->stopPos = this->startPos;
+        }
         this->pos += this->deltaPos;
         if(this->wobble != 0 && totalTicks > this->nextWobbleUpdate)
         {
@@ -95,10 +100,20 @@ public:
         this->updatePos();
     }
 
+    float GetStart()
+    {
+        return this->start;
+    }
+
     void SetStop(float stop)
     {
         this->stop = stop;
         this->updatePos();
+    }
+
+    float GetStop()
+    {
+        return this->stop;
     }
 
     void SetRate(float rate)
@@ -140,7 +155,7 @@ private:
         if(this->debug)
         {
             std::cout << "Phasor init: " << (long) this->startPos << ", "
-                << (long) this->stopPos << ", delta" << this->deltaPos 
+                << (long) this->stopPos << ", delta: " << this->deltaPos 
                 << std::endl;
         }
 

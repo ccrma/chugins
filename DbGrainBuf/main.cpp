@@ -55,6 +55,7 @@ CK_DLL_TICK(gbuf_tick);
 /* methods to perform standard sndbuf behavior --- */
 CK_DLL_MFUN(gbuf_ctrl_debug);
 CK_DLL_MFUN(gbuf_ctrl_read);
+CK_DLL_MFUN(gbuf_ctrl_printinfo);
 CK_DLL_MFUN(gbuf_cget_filelen);
 CK_DLL_MFUN(gbuf_cget_nchan);
 CK_DLL_MFUN(gbuf_ctrl_pos);
@@ -83,7 +84,9 @@ CK_DLL_MFUN(gbuf_ctrl_grainPeriodVarianceFreq);
 CK_DLL_MFUN(gbuf_ctrl_grainRate);
 
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStart); //start==stop means constant grain pos
+CK_DLL_MFUN(gbuf_cget_grainPhaseStart);
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStop);
+CK_DLL_MFUN(gbuf_cget_grainPhaseStop);
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStartSec); 
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStopSec);
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseRate);
@@ -105,14 +108,16 @@ CK_DLL_QUERY(DbGrainBuf)
     QUERY->add_mfun(QUERY, gbuf_ctrl_debug, "int", "debug");
     QUERY->add_arg(QUERY, "int", "debug");
 
-    QUERY->add_mfun(QUERY, gbuf_ctrl_read, "string", "read");
-    QUERY->add_arg(QUERY, "string", "read");
+    QUERY->add_mfun(QUERY, gbuf_ctrl_read, "void", "read");
+    QUERY->add_arg(QUERY, "string", "filename");
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_printinfo, "void", "printinfo");
 
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainWindow, "string", "grainWindow");
     QUERY->add_arg(QUERY, "string", "grainWindow");
 
     // query of loaded file duration returns seconds
-    QUERY->add_mfun(QUERY, gbuf_cget_filelen, "float", "filelen");
+    QUERY->add_mfun(QUERY, gbuf_cget_filelen, "dur", "filelen");
     QUERY->add_mfun(QUERY, gbuf_cget_nchan, "int", "nchan");
 
     // bypassMode pos
@@ -168,12 +173,14 @@ CK_DLL_QUERY(DbGrainBuf)
     /* phasor ------------------------------------------------------------ */
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseStart, "float", "phasorStart");
     QUERY->add_arg(QUERY, "float", "phasorStart" );
+    QUERY->add_mfun(QUERY, gbuf_cget_grainPhaseStart, "float", "phasorStart");
 
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseStartSec, "float", "phasorStartSec");
     QUERY->add_arg(QUERY, "float", "phasorStartSec" );
 
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseStop, "float", "phasorStop");
     QUERY->add_arg(QUERY, "float", "phasorStop" );
+    QUERY->add_mfun(QUERY, gbuf_cget_grainPhaseStop, "float", "phasorStop");
 
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseStopSec, "float", "phasorStopSec");
     QUERY->add_arg(QUERY, "float", "phasorStopSec" );
@@ -233,6 +240,13 @@ CK_DLL_MFUN(gbuf_ctrl_read)
     // no return atm
 }
 
+CK_DLL_MFUN(gbuf_ctrl_printinfo)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    c->PrintInfo();
+    // no return atm
+}
+
 CK_DLL_MFUN(gbuf_ctrl_grainWindow)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
@@ -244,7 +258,7 @@ CK_DLL_MFUN(gbuf_ctrl_grainWindow)
 CK_DLL_MFUN(gbuf_cget_filelen)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->GetFileDur();
+    RETURN->v_dur = c->GetFileDur();
 }
 
 CK_DLL_MFUN(gbuf_cget_nchan)
@@ -380,10 +394,22 @@ CK_DLL_MFUN(gbuf_ctrl_grainPhaseStart)
     RETURN->v_float = c->SetGrainPhaseStart(GET_NEXT_FLOAT(ARGS));
 }
 
+CK_DLL_MFUN(gbuf_cget_grainPhaseStart)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->GetGrainPhaseStart();
+}
+
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStop)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
     RETURN->v_float = c->SetGrainPhaseStop(GET_NEXT_FLOAT(ARGS));
+}
+
+CK_DLL_MFUN(gbuf_cget_grainPhaseStop)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->GetGrainPhaseStop();
 }
 
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStartSec)

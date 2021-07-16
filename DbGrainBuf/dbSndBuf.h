@@ -39,7 +39,6 @@ public:
             this->currentSample = (SAMPLE) 0;
             this->currentFrame = 0.;
             this->sampleRatio = this->sampleRate / this->chuckSampleRate;
-            this->audioFile.printSummary();
             this->rateChanged();
         }
         else
@@ -47,6 +46,11 @@ public:
             err = 1;
         }
         return err;
+    }
+
+    void DumpToStdout()
+    {
+        this->audioFile.printSummary();
     }
 
     double GetLengthInSeconds()

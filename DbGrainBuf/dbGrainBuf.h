@@ -56,6 +56,11 @@ public:
         return err;
     }
 
+    void PrintInfo()
+    {
+        this->sndbuf.DumpToStdout();
+    }
+
     int GrainWindow(std::string &filtername)
     {
         int err = 0;
@@ -85,9 +90,9 @@ public:
         return err;
     }
 
-    double GetFileDur() // double gets us sample accuracy
+    long GetFileDur()  // a chuck dur is ticks in current sample rate
     {
-        return this->sndbuf.GetLengthInSeconds();
+        return this->sndbuf.GetLengthInSeconds() * this->sampleRate;
     }
 
     int GetNChan()
@@ -217,22 +222,32 @@ public:
         return startPhase;
     }
 
+    float GetGrainPhaseStart()
+    {
+        return this->phasor.GetStart();
+    }
+
     float SetGrainPhaseStop(float stopPhase)
     {
         this->phasor.SetStop(stopPhase);
         return stopPhase;
     }
 
+    float GetGrainPhaseStop()
+    {
+        return this->phasor.GetStop();
+    }
+
     float SetGrainPhaseStartSec(float startPhaseSec)
     {
-        float startPhase = startPhaseSec/this->GetFileDur();
+        float startPhase = startPhaseSec/this->sndbuf.GetLengthInSeconds();
         this->phasor.SetStart(startPhase);
         return startPhase;
     }
 
     float SetGrainPhaseStopSec(float stopPhaseSec)
     {
-        float stopPhase = stopPhaseSec/this->GetFileDur();
+        float stopPhase = stopPhaseSec/this->sndbuf.GetLengthInSeconds();
         this->phasor.SetStop(stopPhase);
         return stopPhase;
     }
