@@ -50,7 +50,7 @@ U.S.A.
 
 CK_DLL_CTOR(gbuf_ctor);
 CK_DLL_DTOR(gbuf_dtor);
-CK_DLL_TICK(gbuf_tick);
+CK_DLL_TICKF(gbuf_tickf); // for stereo
 
 /* methods to perform standard sndbuf behavior --- */
 CK_DLL_MFUN(gbuf_ctrl_debug);
@@ -82,6 +82,8 @@ CK_DLL_MFUN(gbuf_cget_grainPeriod);
 CK_DLL_MFUN(gbuf_ctrl_grainPeriodVariance);
 CK_DLL_MFUN(gbuf_ctrl_grainPeriodVarianceFreq);
 CK_DLL_MFUN(gbuf_ctrl_grainRate);
+CK_DLL_MFUN(gbuf_ctrl_grainPan);
+CK_DLL_MFUN(gbuf_ctrl_grainPanRange);
 
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStart); //start==stop means constant grain pos
 CK_DLL_MFUN(gbuf_cget_grainPhaseStart);
@@ -99,11 +101,11 @@ t_CKINT gbuf_data_offset = 0; // required by chuck
 CK_DLL_QUERY(DbGrainBuf)
 {
     QUERY->setname(QUERY, "DbGrainBuf");
-    QUERY->begin_class(QUERY, "DbGrainBuf", "UGen");
+    QUERY->begin_class(QUERY, "DbGrainBuf", "UGen"); // following Pan4 example
 
     QUERY->add_ctor(QUERY, gbuf_ctor);
     QUERY->add_dtor(QUERY, gbuf_dtor);
-    QUERY->add_ugen_func(QUERY, gbuf_tick, NULL, 1, 1);
+    QUERY->add_ugen_funcf(QUERY, gbuf_tickf, NULL, 0, 2); // inputs, outputs
 
     QUERY->add_mfun(QUERY, gbuf_ctrl_debug, "int", "debug");
     QUERY->add_arg(QUERY, "int", "debug");
@@ -170,6 +172,12 @@ CK_DLL_QUERY(DbGrainBuf)
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainRate, "float", "grainRate");
     QUERY->add_arg(QUERY, "float", "grainRate" );
 
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPan, "float", "grainPan");
+    QUERY->add_arg(QUERY, "float", "grainPan" );
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_grainPanRange, "float", "grainPanRange");
+    QUERY->add_arg(QUERY, "float", "grainPanRange" );
+
     /* phasor ------------------------------------------------------------ */
     QUERY->add_mfun(QUERY, gbuf_ctrl_grainPhaseStart, "float", "phasorStart");
     QUERY->add_arg(QUERY, "float", "phasorStart" );
@@ -219,10 +227,10 @@ CK_DLL_DTOR(gbuf_dtor)
     }
 }
 
-CK_DLL_TICK(gbuf_tick)
+CK_DLL_TICKF(gbuf_tickf)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    *out = c->Tick(in);
+    c->Tick(in, out, nframes);
     return TRUE;
 }
 
@@ -386,6 +394,18 @@ CK_DLL_MFUN(gbuf_ctrl_grainPeriodVarianceFreq)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
     RETURN->v_float = c->SetGrainPeriodVarianceFreq(GET_NEXT_FLOAT(ARGS));
+}
+
+CK_DLL_MFUN(gbuf_ctrl_grainPan)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetGrainPan(GET_NEXT_FLOAT(ARGS));
+}
+
+CK_DLL_MFUN(gbuf_ctrl_grainPanRange)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_float = c->SetGrainPanRange(GET_NEXT_FLOAT(ARGS));
 }
 
 CK_DLL_MFUN(gbuf_ctrl_grainPhaseStart)

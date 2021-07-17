@@ -14,7 +14,8 @@ struct Grain
         this->chan = 0;
     }
 
-    void Init(long startPos, long stopPos, float rate, dbWindowing::FilterType t)
+    void Init(long startPos, long stopPos, float rate, 
+            dbWindowing::FilterType t, float pan)
     {
         this->active = 1;
         this->pos = startPos;
@@ -27,6 +28,20 @@ struct Grain
         this->winPct = 0.f;
         this->winStep = std::abs(rate) / (stopPos - startPos + 1);
         this->window = dbWindowing::Get(t); // we don't own this
+
+        if(pan == 0.f)
+        {
+            this->panLeft = .7071f;
+            this->panRight = .7071f;
+        }
+        else
+        {
+            // remap pan from [-1,1] to [0,pi/2]
+            float panme = (pan+1.0)/2.f * ONE_PI/2.f;
+            // pan it (NEW: constant-power panning; fixed 1.4.1.0)
+            this->panLeft = cos(panme);
+            this->panRight = sin(panme);
+        }
 
         // std::cout << "New Grain at " << this->pos << std::endl;
     }
@@ -54,6 +69,8 @@ struct Grain
     float winStep;
     int filterRadius;
     int chan;
+    float panLeft;
+    float panRight;
     dbWindowing *window; // we don't own this
 };
 

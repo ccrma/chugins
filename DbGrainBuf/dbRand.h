@@ -58,4 +58,10 @@ inline float rand32Pct()
     return rand32Range(1000) / 1000.0f;
 }
 
+inline float rand32Pan()
+{
+    float pct = rand32Range(1000) / 1000.0f;
+    return 2.f * pct - 1.f;
+}
+
 #endif

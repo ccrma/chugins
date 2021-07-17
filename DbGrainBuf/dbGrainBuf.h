@@ -29,13 +29,15 @@ public:
         phasor(sampleRate),
         bypassGrains(false),
         windowFilter(dbWindowing::kBlackman),
+        grainRate(1.f),
         grainPeriod(.2f * sampleRate), // 200 ms
         currentGrainPeriod(.2f * sampleRate), // 200 ms
+        nextGrainPeriodRand(0),
         grainPeriodVariance(0.f),
         grainPeriodVarianceFreq(1.f),
-        grainRate(1.0f),
+        pan(0.f),
+        panRange(1.f),
         totalTicks(0),
-        nextGrainPeriodRand(0),
         debug(0)
     {
     }
@@ -100,8 +102,9 @@ public:
         return this->sndbuf.GetNChan();
     }
 
-    SAMPLE Tick(SAMPLE in)
+    void Tick(SAMPLE *in, SAMPLE *out, int nframes)
     {
+        // we know we have two samples on output
         if(!this->bypassGrains)
         {
             // Trigger and Duration conspire to characterize the number
@@ -110,7 +113,7 @@ public:
             // than we can afford (~1000). (Supercollider default max is 512).
             this->totalTicks++;
             this->phasor.Tick(this->totalTicks);
-            if(this->trigger.SampleAndTick(in))
+            if(this->trigger.SampleAndTick(in?in[0]:0.f)) // WIP trigger is mono
             {
                 Grain *g = this->grainMgr.Allocate();
                 if(g)
@@ -129,9 +132,19 @@ public:
                     long startPos = (long) this->phasor.Sample();
                      // end conditions handled by grain
                     long stopPos = this->getGrainStop(startPos);
+                    float pan = this->pan;
+                    if(this->panRange != 0.f)
+                    {
+                        pan += this->panRange * rand32Pan(); // [-1, 1]
+                        if(pan < -1.f)
+                            pan = -1.f;
+                        else
+                        if(pan > 1.f)
+                            pan = 1.f;
+                    }
                     g->Init(startPos, stopPos, this->grainRate, 
-                            this->windowFilter);
-                    if(debug)
+                            this->windowFilter, pan);
+                    if(this->debug)
                     {
                         std::cout << "New grain " <<
                             startPos << "->" << stopPos <<
@@ -147,16 +160,31 @@ public:
                 }
             }
 
-            SAMPLE sum = 0;
-            for(const auto& g: this->grainMgr.ActiveGrains) 
+            SAMPLE *op = out;
+            for(int i=0;i<nframes;i++)
             {
-                sum += g->SampleAndTick(this->sndbuf);
+                SAMPLE left = 0.f, right = 0.f;
+                for(const auto& g: this->grainMgr.ActiveGrains) 
+                {
+                    SAMPLE s = g->SampleAndTick(this->sndbuf);
+                    left += s * g->panLeft;
+                    right += s * g->panRight;
+                }
+                this->grainMgr.Prune();
+                *op++ = left;
+                *op++ = right;
             }
-            this->grainMgr.Prune();
-            return sum;
         }
         else
-            return this->sndbuf.Sample();
+        {
+            for(int i=0;i<nframes;i++)
+            {
+                SAMPLE s = this->sndbuf.Sample();
+                // place equal power into both changles
+                out[i*2] = .7071f * s;
+                out[i*2+1] = .7071f * s;
+            }
+        }
     }
 
     /* SndBuf interface-ish ---- */
@@ -270,6 +298,18 @@ public:
         return wfreq;
     }
 
+    float SetGrainPan(float pan)
+    {
+        this->pan = pan;
+        return pan;
+    }
+
+    float SetGrainPanRange(float panrange)
+    {
+        this->panRange = panrange;
+        return panrange;
+    }
+
     /* Bypass parameters --------------------------------------------- */
     int SetLoop(int loop)
     {
@@ -337,6 +377,9 @@ private:
     long currentGrainPeriod; // == grainPeriod unless grainPeriodVariance > 0
     float grainPeriodVariance; // pct of period
     float grainPeriodVarianceFreq; // Hz
+
+    float pan; // [-1, 1]
+    float panRange; // [0, 1]
 
     bool debug;
     long totalTicks;
