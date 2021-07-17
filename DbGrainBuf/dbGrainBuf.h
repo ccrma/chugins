@@ -37,6 +37,7 @@ public:
         grainPeriodVarianceFreq(1.f),
         pan(0.f),
         panRange(1.f),
+        fileChan(0),
         totalTicks(0),
         debug(0)
     {
@@ -56,6 +57,12 @@ public:
         if(err == 0)
             this->phasor.SetFileDur(this->sndbuf.GetLengthInSeconds());
         return err;
+    }
+
+    int FileChan(int chan)
+    {
+        this->fileChan = chan;
+        return chan;
     }
 
     void PrintInfo()
@@ -143,7 +150,7 @@ public:
                             pan = 1.f;
                     }
                     g->Init(startPos, stopPos, this->grainRate, 
-                            this->windowFilter, pan);
+                            this->windowFilter, pan, this->fileChan);
                     if(this->debug)
                     {
                         std::cout << "New grain " <<
@@ -177,12 +184,13 @@ public:
         }
         else
         {
+            SAMPLE *op = out;
             for(int i=0;i<nframes;i++)
             {
-                SAMPLE s = this->sndbuf.Sample();
+                SAMPLE s = this->sndbuf.Sample(this->fileChan);
                 // place equal power into both changles
-                out[i*2] = .7071f * s;
-                out[i*2+1] = .7071f * s;
+                *op++ = .7071f * s;
+                *op++ = .7071f * s;
             }
         }
     }
@@ -310,6 +318,11 @@ public:
         return panrange;
     }
 
+    int SetFileChan(int chan)
+    {
+        this->fileChan = chan;
+    }
+
     /* Bypass parameters --------------------------------------------- */
     int SetLoop(int loop)
     {
@@ -380,6 +393,7 @@ private:
 
     float pan; // [-1, 1]
     float panRange; // [0, 1]
+    int fileChan;
 
     bool debug;
     long totalTicks;

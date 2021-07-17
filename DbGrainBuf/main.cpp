@@ -57,6 +57,7 @@ CK_DLL_MFUN(gbuf_ctrl_debug);
 CK_DLL_MFUN(gbuf_ctrl_read);
 CK_DLL_MFUN(gbuf_ctrl_printinfo);
 CK_DLL_MFUN(gbuf_cget_filelen);
+CK_DLL_MFUN(gbuf_ctrl_filechan);
 CK_DLL_MFUN(gbuf_cget_nchan);
 CK_DLL_MFUN(gbuf_ctrl_pos);
 CK_DLL_MFUN(gbuf_cget_pos);
@@ -121,6 +122,9 @@ CK_DLL_QUERY(DbGrainBuf)
     // query of loaded file duration returns seconds
     QUERY->add_mfun(QUERY, gbuf_cget_filelen, "dur", "filelen");
     QUERY->add_mfun(QUERY, gbuf_cget_nchan, "int", "nchan");
+
+    QUERY->add_mfun(QUERY, gbuf_ctrl_filechan, "int", "filechan");
+    QUERY->add_arg(QUERY, "int", "chan");
 
     // bypassMode pos
     QUERY->add_mfun(QUERY, gbuf_ctrl_pos, "int", "pos");
@@ -273,6 +277,12 @@ CK_DLL_MFUN(gbuf_cget_nchan)
 {
     dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
     RETURN->v_int = c->GetNChan();
+}
+
+CK_DLL_MFUN(gbuf_ctrl_filechan)
+{
+    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
+    RETURN->v_int = c->FileChan(GET_NEXT_INT(ARGS));
 }
 
 CK_DLL_MFUN(gbuf_ctrl_pos)

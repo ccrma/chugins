@@ -15,9 +15,10 @@ struct Grain
     }
 
     void Init(long startPos, long stopPos, float rate, 
-            dbWindowing::FilterType t, float pan)
+            dbWindowing::FilterType t, float pan, int chan=0)
     {
         this->active = 1;
+        this->chan = chan;
         this->pos = startPos;
         this->start = startPos;
         this->stop = stopPos;
