@@ -167,6 +167,8 @@ public:
                 }
             }
 
+            // (currently, nframes is 1) std::cout << nframes << std::endl;
+
             SAMPLE *op = out;
             for(int i=0;i<nframes;i++)
             {
