@@ -47,6 +47,7 @@ public:
     void graceoff();
     void playonrep(char const *);
     void sluron(int);
+    void sluroff(int);
     void tie();
     void broken(int type, int mult);
     void tuple(int n, int q, int r);
@@ -55,9 +56,9 @@ public:
     void mrest(int n, int m, char c);
     void chordon(int chorddecorators[]);
     void chordoff(int, int);
-    void note(int decorators[Abc::DECSIZE], AbcMusic::ClefType *,
-            int mult, char accidental, char note,
-            int xoctave, int n, int m);
+    void note(int decorators[Abc::DECSIZE], AbcMusic::ClefType *clef,
+                char accidental, int mult, 
+                char note, int xoctave, int n, int m);
     void temperament(char const *line);
     void microtone(int dir, int a, int b);
     void normal_tone();
@@ -87,15 +88,10 @@ private:
     int ratio_a, ratio_b;
     int velocitychange;
     int chordstart;
-    int propagate_accidentals; /* [SS] 2015-08-18 */
+    int propagate_accidentals;
 
-    /* microtonal support and scale temperament */
     int active_pitchbend;
-    // XXX extern struct fraction setmicrotone; /* [SS] 2014-01-07 */
-    // XXX extern int microtone;
-    // XXX extern int temperament;  /* [SS] 2020-06-25 */
 
-    /* [HL] 2020-07-03 */
     float temperament_dt[12];
     #define TEMPERDT -1
     #define TEMPEREQ 1
@@ -124,6 +120,7 @@ private:
 
     void init_p48toc53();
     void convert_to_comma53(char acc, int *midipitch, int* midibend);  
+    int p48toc53[50];
 
     struct voicecontext 
     {
@@ -326,9 +323,10 @@ private:
     /* Tempo handling (Q: field) */
     int time_num, time_denom;
     int mtime_num, mtime_denom;
-    long tempo;
+    long current_tempo;
     int tempo_num, tempo_denom;
     int relative_tempo, Qtempo;
+
     // XXX: extern int division;
     // XXX: extern int div_factor;
     int default_tempo; /* quarter notes per minutes */
@@ -406,6 +404,7 @@ private:
     void textfeature(Abc::FeatureType type, char const *s);
     void interchange_features(int loc1, int loc2);
     void removefeatures(int locfrom, int locto);
+    void removefeature(int loc);
 
     int extendNotelist(int maxnotes);
 
@@ -437,6 +436,9 @@ private:
     void dump_trackdescriptor();
     void setup_trackstructure();
 
+    void dump_notestruct();
+    void free_notestructs();
+
     void recurse_back_to_original_voice();
     int search_backwards_for_last_bar_line(int from);
     void setmap(int sf, char map[7], int mult[7]);
@@ -458,6 +460,37 @@ private:
     void extract_filename(char const *s);
     void checkbreak();
     int flattenPartSpec(char const *spec, std::string *partnm);
+    void lenmul(int n, int a, int b);
+    void stack_broken(voicecontext *); // used for eg gracenotes
+    void restore_broken(voicecontext *);
+    void brokenadjust();
+
+    void marknote();
+    void marknotestart();
+    void marknoteend();
+
+    void hornp(int num, int denom);
+    int barepitch(char note, char accidental, int mult, int octave);
+    int pitchof_b(char note, char accidental, int mult, int octave, 
+                int propagate_accs, int *pitchbend);
+    int pitchof(char note, char accidental, int mult, int octave, 
+                int propagate_accs);
+
+    void doroll(char note, int octave, int n, int m, int pitch);
+    void doroll_setup(char note, int octave, int n, int m, int pitch);
+    void doroll_output(int i);
+
+    void dotrill_setup(char note, int octave, int n, int m, int pitch);
+    void dotrill_output(int i);
+
+    void doornament(char note, int octave, int n, int m, int pitch);
+    void makecut(int mainpitch, int shortpitch, int mainbend, int shortbend, 
+            int n, int m);
+    void makeharproll(int pitch, int bend, int n, int m);
+    void makeharproll3(int pitch, int bend, int n, int m);
+
+    char const *get_accidental(char const *place, char *accidental);
+
 }; // end class
 
 #endif

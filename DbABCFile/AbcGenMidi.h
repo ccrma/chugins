@@ -44,16 +44,27 @@ public:
     int stressmodel;
     int stress_pattern_loaded;
     int barflymode;
+
+    /* related to meter --- */
+    int mtime_num;
+    int mtime_denom;
+    int time_num;
+    int time_denom;
+    int barsize;
+    int beat;
     int bar_num;
     int bar_denom;
+    int b_num;
+    int b_denom;
+
     trackstruct trackdescriptor[MAXTRACKS];
     int drum_map[256];
 
     void Init();
 
+    void set_meter(int num, int denom);
     void reduce(int *num, int *denom);
-    void set_meter();
-    void addunits();
+    void addunits(int a, int b);
     void set_gchords(char const *);
     void set_drums(char const *);
     /* required by queues.c */
@@ -66,6 +77,5 @@ public:
     void readstressfile(char const *filepath);
     void calculate_stress_parameters(int time_num, int time_denom);
 };
-
 
 #endif

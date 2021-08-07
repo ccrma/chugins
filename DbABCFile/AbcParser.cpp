@@ -1228,6 +1228,21 @@ AbcParser::readsnump (char const **p)
     }
 }
 
+/* reads signed integer from string without advancing character pointer */
+int
+AbcParser::readsnumf(char const *s)
+{
+    char const *p = s;
+    if (*p == '-')
+    {
+        p = p + 1;
+        this->skipspace(&p);
+        return -this->readnumf(p);
+    }
+    else
+      return this->readnumf(p);
+}
+
 /* read length part of a note and advance character pointer */
 void 
 AbcParser::readlen(int *a, int *b, char const **p)

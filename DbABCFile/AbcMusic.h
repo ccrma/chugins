@@ -70,6 +70,7 @@ namespace AbcMusic
 
     static void reduceFraction(int *num, int *denom);
     static float compute_fifth_size (float octave_size, int ndiv);
+
 };
 
 #endif

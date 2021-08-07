@@ -155,3 +155,48 @@ AbcGenMidi::calculate_stress_parameters(int time_num, int time_denom)
         }
     }
 }
+
+/* init all vars associated with meter --- */
+void
+AbcGenMidi::set_meter(int n, int m)
+{
+    this->mtime_num = n;
+    this->mtime_denom = m;
+    this->time_num = n; 
+    this->time_denom = m; 
+
+    /* set up barsize */
+    this->barsize = n;
+    if (barsize % 3 == 0) 
+    {
+        this->beat = 3;
+    } 
+    else 
+    {
+        if (this->barsize % 2 == 0) 
+            this->beat = 2;
+        else 
+            this->beat = barsize;
+    }
+    /* correction factor to make sure we count in the right units */
+    if(m > 4) 
+    {
+        this->b_num = m/4;
+        this->b_denom = 1;
+    } 
+    else 
+    {
+        this->b_num = 1;
+        this->b_denom = 4/m;
+    }
+}
+
+/* add a/b to the count of units in the bar */
+void
+AbcGenMidi::addunits(int a, int b)
+{
+    this->bar_num = this->bar_num*(b*this->b_denom) + (a*this->b_num)*this->bar_denom;
+    this->bar_denom = this->bar_denom * (b*this->b_denom);
+    this->reduce(&this->bar_num, &this->bar_denom);
+  /*printf("position = %d/%d\n",bar_num,bar_denom);*/
+}

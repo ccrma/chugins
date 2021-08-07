@@ -128,7 +128,8 @@ public:
         virtual void chordoff(int, int) {}
         virtual void instruction(char const *s) {}
         virtual void gchord(char const *s) {}
-        virtual void note(std::vector<int> decorators, AbcMusic::ClefType *clef,
+        virtual void note(int decorators[Abc::DECSIZE], 
+                    AbcMusic::ClefType *clef,
                     char accidental, int mult, 
                     char note, int xoctave, int n, int m) {}
         virtual void abbreviation(char symbol, char const *string, char container) {}
@@ -143,7 +144,8 @@ public:
     }; // end EventHandler
 
 public:
-    // following public vars accessible by EventHandler client
+    // following public vars accessible by EventHandler cliento
+
     char const *abcversion;
     char lastfieldcmd;
     std::vector<int> modeminor;
@@ -152,10 +154,15 @@ public:
     int repcheck; /* AbcStore may enable/disable repeat checking */
     int oldchordconvention;
     int lineposition;
-    int temperament; // value is client specific
     int lineno;
+
+    /* microtonal support and scale temperament */
     int microtone;
+    fraction setmicrotone;	
+    int temperament; // value is client specific
+
     int beatmodel;
+    int inchordflag; // set by chordon event
 
     int decorators_passback[Abc::DECSIZE];
     /* this public array is accessed by AbcStore.c and 
@@ -217,6 +224,7 @@ public:
     }
 
     int readsnump(char const **p);
+    int readsnumf(char const *p);
 
 private:
     int parse(std::istream *, EventHandler *h, ParseMode m);
@@ -343,8 +351,6 @@ private:
     int chord_n, chord_m;		/* for event_chordoff */
     int fileline_number;
     int intune;
-    int inchordflag;
-    fraction setmicrotone;	
 };
 
 #endif
