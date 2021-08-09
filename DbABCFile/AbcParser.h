@@ -163,6 +163,7 @@ public:
 
     int beatmodel;
     int inchordflag; // set by chordon event
+    char timesigstring[16];  /* links with stresspat */
 
     int decorators_passback[Abc::DECSIZE];
     /* this public array is accessed by AbcStore.c and 
@@ -185,6 +186,7 @@ public:
 public:
     int readnumf(char const *num);
     int readnump(char const **num);
+    void parserOn();
     void parserOff();
     void skipspace(char const **p) /* skip space and tab */
     {
@@ -230,7 +232,6 @@ private:
     int parse(std::istream *, EventHandler *h, ParseMode m);
     void parseBegin(ParseMode m);
     void parseEnd();
-    void parserOn();
     void reset_parser_status(); // on each tune
 
     int parseStream(std::istream *); // re-entrant for include
@@ -344,7 +345,6 @@ private:
     
     std::string inputline;
     char const*linestart;
-    char timesigstring[16];		/* [SS] 2011-08-19 links with stresspat.c */
     
     int nokey;
     int nokeysig;               /* links with toabc.c [SS] 2016-03-03 */

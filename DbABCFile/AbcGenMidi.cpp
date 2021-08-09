@@ -200,3 +200,129 @@ AbcGenMidi::addunits(int a, int b)
     this->reduce(&this->bar_num, &this->bar_denom);
   /*printf("position = %d/%d\n",bar_num,bar_denom);*/
 }
+
+/* set up a string which indicates how to generate accompaniment from */
+/* guitar chords (i.e. "A", "G" in abc). */
+/* called from dodeferred(), startfile() and setbeat() */
+void
+AbcGenMidi::set_gchords(char const *s)
+{
+    char const *p = s;
+    int j = 0;
+    int seq_len = 0;
+#if 0
+    while ((strchr("zcfbghijGHIJx", *p) != NULL) && (j <39)) 
+    {
+        if (*p == 0) break;
+        gchord_seq[j] = *p;
+        p = p + 1;
+    if ((*p >= '0') && (*p <= '9')) {
+      gchord_len[j] = readnump(&p);
+    } else {
+      gchord_len[j] = 1;
+    };
+    seq_len = seq_len + gchord_len[j];
+    j = j + 1;
+  };
+  if (seq_len == 0) {
+    event_error("Bad gchord");
+    gchord_seq[0] = 'z';
+    gchord_len[0] = 1;
+    seq_len = 1;
+  };
+  gchord_seq[j] = '\0';
+  if (j == 39) {
+    event_error("Sequence string too long");
+  };
+  /* work out unit delay in 1/4 notes*/
+  g_num = mtime_num * 4*gchordbars;
+  g_denom = mtime_denom * seq_len;
+  reduce(&g_num, &g_denom);
+/*  printf("%s  %d %d\n",s,g_num,g_denom); */
+#endif
+}
+
+void set_drums(s)
+char* s;
+/* set up a string which indicates drum pattern */
+/* called from dodeferred() */
+{
+  int seq_len, count, drum_hits;
+  char* p;
+  int i, j, place;
+
+  p = s;
+  count = 0;
+  drum_hits = 0;
+  seq_len = 0;
+  while (((*p == 'z') || (*p == 'd')) && (count<39)) {
+    if (*p == 'd') {
+      drum_hits = drum_hits + 1;
+    };
+    drum_seq[count] = *p;
+    p = p + 1;
+    if ((*p >= '0') && (*p <= '9')) {
+      drum_len[count] = readnump(&p);
+    } else {
+      drum_len[count] = 1;
+    };
+    seq_len = seq_len + drum_len[count];
+    count = count + 1;
+  };
+  drum_seq[count] = '\0';
+  if (seq_len == 0) {
+    event_error("Bad drum sequence");
+    drum_seq[0] = 'z';
+    drum_len[0] = 1;
+    seq_len = 1;
+  };
+  if (count == 39) {
+    event_error("Drum sequence string too long");
+  };
+  /* look for program and velocity specifiers */
+  for (i = 0; i<count; i++) {
+    drum_program[i] = 35;
+    drum_velocity[i] = 80;
+  };
+  skipspace(&p);
+  i = 0;
+  place = 0;
+  while (isdigit(*p)) {
+    j = readnump(&p);
+    if (i < drum_hits) {
+      while (drum_seq[place] != 'd') {
+        place = place + 1;
+      };
+      if (j > 127) {
+        event_error("Drum program must be in the range 0-127");
+      } else {
+        drum_program[place] = j;
+      };
+      place = place + 1;
+    } else {
+      if (i < 2*count) {
+        if (i == drum_hits) {
+          place = 0;
+        };
+        while (drum_seq[place] != 'd') {
+          place = place + 1;
+        };
+        if ((j < 1) || (j > 127)) {
+          event_error("Drum velocity must be in the range 1-127");
+        } else {
+          drum_velocity[place] = j;
+        };
+        place = place + 1;
+      };
+    };
+    i = i + 1;
+    skipspace(&p);
+  };
+  if (i > 2*drum_hits) {
+    event_error("Too many data items for drum sequence");
+  };
+  /* work out unit delay in 1/4 notes*/
+  drum_num = mtime_num * 4*drumbars;
+  drum_denom = mtime_denom * seq_len;
+  reduce(&drum_num, &drum_denom);
+}

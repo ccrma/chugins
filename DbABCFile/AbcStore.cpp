@@ -74,7 +74,7 @@ AbcStore::AbcStore(AbcParser *p) :
 
     this->programbase = 0;
 
-    this->csmfilename = nullptr;
+    this->csmfilename.clear();
 
     this->extended_overlay_running = 0;
     this->default_middle_c = 60;
@@ -82,75 +82,6 @@ AbcStore::AbcStore(AbcParser *p) :
     this->default_fermata_fixed = 0;
     this->default_ratio_a = 2; // for swing
     this->default_ratio_b = 6;
-}
-
-/* called at the beginning of an abc tune by event_refno */
-/* This sets up all the default values */
-void
-AbcStore::startfile()
-{
-    int j;
-    if(this->verbose)
-        this->info("scanning tune\n");
-
-    /* set up defaults */
-    this->sf = 0;
-    this->mi = 0;
-    this->setmap(0, this->global.basemap, this->global.basemul);
-    this->copymap(&global);
-    this->global.octaveshift = 0;
-    this->global.keyset = 0;
-    this->voicecount = 0;
-    this->head = nullptr;
-    for(j=0;j<64;j++) 
-        this->vaddr[j] = nullptr; 
-    this->v = nullptr;
-    this->got_titlename = 0;
-    this->time_num = 4;
-    this->time_denom = 4;
-    this->mtime_num = 4;
-    this->mtime_denom = 4;
-    this->timesigset = 0;
-    this->barchecking = 1;
-    this->global.default_length = -1;
-    this->tempo(this->default_tempo, 1, 4, 0, nullptr, nullptr);
-    this->notes = 0;
-    this->wordlist.clear();
-    this->ntexts = 0;
-    this->gfact_num = 1;
-    this->gfact_denom = 4;
-    this->hornpipe = 0;
-    this->karaoke = 0;
-    this->numsplits = 0;
-    this->splitdepth = 0;
-    this->v1index = -1;
-    this->propagate_accidentals = this->default_retain_accidentals;
-    this->fermata_fixed = this->default_fermata_fixed;
-    if(this->ratio_standard == -1) 
-    {
-        this->ratio_a = this->default_ratio_a;
-        this->ratio_b = this->default_ratio_b;
-    } 
-    else 
-    {
-        /* use celtic ratio for swing */
-        this->ratio_a = 2;
-        this->ratio_b = 4;
-    }
-    this->wcount = 0;
-    this->genMidi.Init();
-    this->genMidi.set_gchords("x");
-    this->genMidi.set_drums("z");
-
-    this->middle_c = this->default_middle_c;
-    this->parser->temperament = TEMPERNORMAL;
-    this->headerpartlabel = 0;
-
-    this->gchordvoice = 0;
-    this->drumvoice = 0;
-    this->wordvoice = 0;
-    this->notesdefined = 0;
-    this->rhythmdesignator[0] = '\0';
 }
 
 /* look for argument 'option' in command line */
@@ -2231,7 +2162,363 @@ AbcStore::convert_to_comma53(char acc, int *midipitch, int* midibend)
     *midibend = 8192 + (int) (bendvalue * 4096);
 }
 
-/* applies a roll to a note */
+/* assign lengths to grace notes. Call this just before  performing 
+ * or converting.
+ */
+void 
+AbcStore::dograce()
+{
+    int j = 0;
+    while (j < this->notes) 
+    {
+        featureDesc &fd = this->notelist[j];
+        if(fd.feature == Abc::GRACEON)
+            this->applygrace(j);
+        else
+        if(fd.feature == Abc::SETGRACE) 
+        {
+            this->gfact_method = fd.pitch;
+            this->gfact_num =  fd.num;
+            this->gfact_denom = fd.denom;
+        }
+        else
+        if(fd.feature == Abc::LINENUM) 
+            this->parser->lineno = fd.pitch;
+        j = j + 1;
+    };
+    if (this->verbose >3) 
+        this->info("dograce finished\n");
+}
+
+void
+AbcStore::applygrace(int place)
+{
+    if(this->gfact_method)
+        this->applygrace_orig(place);
+    else
+        this->applygrace_new(place);
+}
+
+/* assign lengths to grace notes before generating MIDI */
+/* This version adjusts the length of the grace notes
+ * based on the length of the following note, the
+ * number of the notes in the group of grace notes
+ * and the desired fraction, gfact_num/gfact_denom.
+ * This does not sound very natural.
+ */
+void 
+AbcStore::applygrace_orig(int place)
+{
+    int j = place;
+    int start = -1;
+    while((j < this->notes) && (start == -1)) 
+    {
+        featureDesc &fd = this->notelist[j];
+        if(fd.feature == Abc::GRACEON) 
+        {
+            start = j;
+            break;
+        }
+        else
+        if(fd.feature == Abc::GRACEOFF) 
+            this->error("} with no matching {");
+        j = j + 1;
+    }
+    /* now find end of grace notes */
+    int end = -1;
+    while((j < this->notes) && (end == -1)) 
+    {
+        featureDesc &fd = this->notelist[j];
+        if(fd.feature == Abc::GRACEOFF) 
+        {
+            end = j;
+            break;
+        }
+        if(fd.feature == Abc::GRACEON && (j != start - 1)) 
+            this->error("nested { not allowed"); // } match
+        j = j + 1;
+    }
+
+    /* now find following note */
+    int nextinchord = 0;
+    int hostnotestart = -1;
+    while((hostnotestart == -1) && (j < this->notes)) 
+    {
+        featureDesc &fd = this->notelist[j];
+        if(fd.feature == Abc::SINGLE_BAR || 
+           fd.feature == Abc::DOUBLE_BAR) 
+        {
+            this->cleargracenotes(start, end); /* [SS] 2021.01.24 */
+            return;
+        }      
+        else
+        if((fd.feature == Abc::NOTE) || (fd.feature == Abc::REST)) 
+        {
+            hostnotestart = j;
+            break;
+        }
+        else
+        if(fd.feature == Abc::GRACEON) 
+        {
+            this->error("Intervening note needed between grace notes");
+        }
+        else
+        if(fd.feature == Abc::CHORDON) 
+            nextinchord = 1;
+        j = j + 1;
+    }
+    int hostnoteend = -1;
+    if(nextinchord) 
+    {
+        while((hostnoteend == -1) && (j < notes)) 
+        {
+            featureDesc &fd = this->notelist[j];
+            if(fd.feature == Abc::CHORDOFF || 
+               fd.feature == Abc::CHORDOFFEX) 
+            {
+                hostnoteend = j;
+                break;
+            }
+            j = j + 1;
+        }
+    }
+    else 
+        hostnoteend = hostnotestart;
+
+    if (hostnotestart == -1) 
+        this->error("No note found to follow grace notes");
+    else 
+    {
+        /* count up grace units */
+        int next_num = 1, next_denom = 1; /* [SDG] 2020-06-03 */
+        int fact_num, fact_denom;
+        int grace_num = 0;
+        int grace_denom = 1;
+        int p = start;
+        while (p <= end) 
+        {
+            featureDesc &fd = this->notelist[p];
+            if((fd.feature == Abc::NOTE) || 
+               (fd.feature == Abc::REST)) 
+            {
+                grace_num = grace_num * fd.denom + grace_denom * fd.num;
+                grace_denom = grace_denom * fd.denom;
+                this->genMidi.reduce(&grace_num, &grace_denom);
+            }
+            p = p + 1;
+        }
+        /* adjust host note or notes */
+        p = hostnotestart;
+        while (p <= hostnoteend) 
+        {
+            featureDesc &fd = this->notelist[p];
+            if((fd.feature == Abc::NOTE) || 
+               (fd.feature == Abc::REST) || 
+               (fd.feature == Abc::CHORDOFF) || 
+               (fd.feature == Abc::CHORDOFFEX)) 
+            {
+                next_num = fd.num;
+                next_denom = fd.denom;
+                fd.num = next_num * (gfact_denom - gfact_num);
+                fd.denom = next_denom * gfact_denom;
+                this->genMidi.reduce(&fd.num, &fd.denom);
+            }
+            p = p + 1;
+        }
+        fact_num = next_num * grace_denom * gfact_num;
+        fact_denom = next_denom * grace_num * gfact_denom;
+        this->genMidi.reduce(&fact_num, &fact_denom);
+        /* adjust length of grace notes */
+        p = start;
+        while (p <= end) 
+        {
+            this->lenmul(p, fact_num, fact_denom);
+            p = p + 1;
+        }
+    }
+}
+
+/* assign lengths to grace notes before generating MIDI */
+/* In this version each grace note has a predetermined
+ * length, eg, (1/64 th note) and the total length of
+ * the group of grace notes is stolen from the following
+ * note. If the length of the following note is not
+ * long enough to accommodate the group of grace notes,
+ * then all the grace notes are given a length of 0.
+ */
+void 
+AbcStore::applygrace_new(int place)
+{
+    int j = place;
+    int start = -1;
+    while ((j < this->notes) && (start == -1)) 
+    {
+        featureDesc &fd = this->notelist[j];
+        if(fd.feature == Abc::GRACEON) 
+        {
+            start = j;
+            break;
+        }
+        else
+        if(fd.feature == Abc::GRACEOFF) 
+            this->error("} with no matching {");
+        j = j + 1;
+    }
+
+    /* now find end of grace notes */
+    int end = -1;
+    while ((j < notes) && (end == -1)) 
+    {
+        featureDesc &fd = this->notelist[j];
+        if(fd.feature == Abc::GRACEOFF) 
+        {
+            end = j;
+            break;
+        }
+        else
+        if ((fd.feature == Abc::GRACEON) && (j != start - 1)) 
+        {
+            this->error("nested { not allowed"); // } match
+        }
+        j = j + 1;
+    }
+    /* now find following note */
+    int nextinchord = 0;
+    int hostnotestart = -1;
+    while((hostnotestart == -1) && (j < this->notes)) 
+    {
+        featureDesc &fd = this->notelist[j];
+        if(fd.feature == Abc::SINGLE_BAR || 
+           fd.feature == Abc::DOUBLE_BAR) 
+        {
+            this->cleargracenotes(start,end);
+            return;
+        } 
+        else
+        if((fd.feature == Abc::NOTE) || (fd.feature == Abc::REST)) 
+        {
+            hostnotestart = j;
+            break;
+        }
+        else
+        if(fd.feature == Abc::GRACEON) 
+        {
+            this->error("Intervening note needed between grace notes");
+        }
+        else
+        if(fd.feature == Abc::CHORDON) 
+            nextinchord = 1;
+        j = j + 1;
+    };
+    int hostnoteend = -1;
+    if(nextinchord) 
+    {
+        while((hostnoteend == -1) && (j < notes)) 
+        {
+            featureDesc &fd = this->notelist[j];
+            if(fd.feature == Abc::CHORDOFF || 
+               fd.feature == Abc::CHORDOFFEX) 
+            {
+                hostnoteend = j;
+                break;
+            }
+            j = j + 1;
+        }
+    }
+    else 
+        hostnoteend = hostnotestart;
+
+    if (hostnotestart == -1)
+        this->error("No note found to follow grace notes");
+    else 
+    {
+        /* count up grace units */
+        int grace_num = 0;
+        int grace_denom = 1;
+        int p = start;
+        int notesinchord = -1;
+        while (p <= end) 
+        {
+            featureDesc &fd = this->notelist[p];
+            switch(fd.feature) 
+            {
+            case Abc::NOTE:
+            case Abc::REST:
+                if (notesinchord <= 0) 
+                {
+                    /* if chordal grace note, only count the first note */
+                    grace_num = grace_num * fd.denom + grace_denom * fd.num;
+                    grace_denom = grace_denom * fd.denom;
+                    this->genMidi.reduce(&grace_num, &grace_denom);
+                    if (notesinchord == 0) 
+                        notesinchord++;
+                }
+                break; 
+                case Abc::CHORDON:
+                    notesinchord = 0;
+                break;
+                case Abc::CHORDOFF:
+                    notesinchord = -1;
+                    break;
+                default:
+                    break;
+            }
+            p = p + 1;
+        }
+
+        /* new stuff starts here [SS] 2004/06/11 */
+        /* is the following note long enough */
+        featureDesc &fd = this->notelist[p];
+        p = hostnotestart;
+        int adjusted_num = fd.num*grace_denom*gfact_denom - 
+                           fd.denom*grace_num;
+        int adjusted_den = fd.denom*grace_denom*gfact_denom;
+        if(adjusted_num <= 0) /* not long enough [SS] 2014-10-09 */
+        {
+            p = start;
+            this->removefeatures(start, end); 
+            if(this->quiet == -1) 
+                this->warning("Grace sequence exceeds host note. Grace sequence cut off.");
+            return;
+        }
+
+        /* adjust host note or notes */
+        p = hostnotestart;
+        while (p <= hostnoteend) 
+        {
+            featureDesc &fd = this->notelist[p];
+            if(fd.feature == Abc::NOTE || 
+               fd.feature == Abc::REST || 
+               fd.feature == Abc::CHORDOFF || 
+               fd.feature == Abc::CHORDOFFEX) 
+            {
+                fd.num = adjusted_num;
+                fd.denom = adjusted_den;
+                this->genMidi.reduce(&fd.num, &fd.denom);
+            }
+            p = p + 1;
+        }
+
+        int fact_num = 1;
+        int fact_denom = gfact_denom;
+        this->genMidi.reduce(&fact_num, &fact_denom);
+        /* adjust length of grace notes */
+        p = start;
+        while (p <= end) 
+        {
+            this->lenmul(p, fact_num, fact_denom);
+            p = p + 1;
+        }
+    }
+}
+
+void 
+AbcStore::cleargracenotes(int start,int end) 
+{
+    this->removefeatures(start, end);
+}
+
+/* applies a roll to a note --------------------------------------  */
 void 
 AbcStore::doroll(char note, int octave, int n, int m, int pitch)
 {
@@ -2574,4 +2861,113 @@ AbcStore::get_accidental(
         p = p + 1;
     }
     return p;
+}
+
+/* The function attempts to clean up the missing left repeats |:
+ * that occur in many multivoiced or multipart abc tunes.
+ * The function scans the feature[] representation and
+ * keeps track where the voice appears for the first time
+ * in an individual part. If a :| appears in that voice,
+ * but no |: was detected, then the function inserts a |:
+ * at the point where the voice first appears.
+ */
+void 
+AbcStore::scan_for_missing_repeats()
+{
+    int i, j;
+    int voicenum = 0;
+    char part = '0';
+    int num2add = 0; /* 2010-02-06 */
+    int voicestart[64];
+    int bar_rep_found[64];
+    int add_leftrepeat_at[100];
+
+    this->clear_voice_repeat_arrays(voicestart, bar_rep_found);
+
+    /* set voicestart[0] in case there are no voices or parts */
+    for (i=0;i<this->notes;i++) 
+    {
+        featureDesc &fd = this->notelist[i];
+        if (fd.feature == Abc::MUSICLINE) 
+        {
+            this->insertfeature(Abc::DOUBLE_BAR, 0, 0, 0, i+1);
+            voicestart[0] = i+1; 
+            break;
+        }
+    }
+
+    for (i=0;i<notes;i++) 
+    {
+        featureDesc &fd = this->notelist[i];
+        if(fd.feature == Abc::PART && this->genMidi.parts != -1) 
+        {
+            clear_voice_repeat_arrays(voicestart, bar_rep_found);
+            part = (char) fd.pitch;
+            voicestart[0] = i;
+        }
+        else
+        if(fd.feature == Abc::VOICE) 
+        {
+            voicenum = fd.pitch;
+            if(!voicestart[voicenum]) 
+            {
+                voicestart[voicenum] = i;
+                /*printf("voicestart[%d] = %d\n",voicenum,voicestart[voicenum]);*/
+            }
+        }
+        else
+        if(fd.feature == Abc::BAR_REP) 
+            bar_rep_found[voicenum] = 1;
+        else
+        if ((fd.feature == Abc::REP_BAR || fd.feature == Abc::DOUBLE_REP) && 
+            (!bar_rep_found[voicenum])) 
+        {
+            /* printf("missing BAR_REP for voice inserted for voice %d part %c\n",voicenum,part); [SS] 2011-04-19 */
+            add_leftrepeat_at[num2add] = voicestart[voicenum]; 
+            num2add++;
+            bar_rep_found[voicenum] = 1;
+        }
+    }
+    if(num2add > 0) 
+        this->add_missing_repeats(num2add, add_leftrepeat_at); 
+    if(this->verbose > 3) 
+        this->info("scan_for_missing_repeats finished");
+}
+
+void 
+AbcStore::clear_voice_repeat_arrays(int voicestart[64], int bar_rep_found[64]) 
+{
+    for(int i=0;i<64;i++) 
+    {
+        voicestart[i] = 0;
+        bar_rep_found[i] = 0;
+   }
+}
+
+void 
+AbcStore::add_missing_repeats(int num2add, int add_leftrepeat_at[100])
+{
+    for(int i = num2add-1; i >= 0; i--) 
+    {
+        int leftrepeat = add_leftrepeat_at[i];
+        int k = 0;
+        if(this->voicesused) 
+        {
+            while(k < 20)
+            {
+                featureDesc &fd = this->notelist[leftrepeat];
+                if(fd.feature != Abc::VOICE)
+                    leftrepeat++; 
+                else
+                    break;
+                k++;
+            }
+        }
+        this->insertfeature(Abc::BAR_REP, 0, 0, 0, leftrepeat+1); 
+        for(int j=0;j<26;j++) 
+        {
+            if(this->genMidi.part_start[j] > add_leftrepeat_at[i])
+                this->genMidi.part_start[j]++; // XXX?
+        }
+    }
 }

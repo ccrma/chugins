@@ -1712,3 +1712,67 @@ AbcStore::handle_gchord(char const *s)
     }
     this->addfeature(Abc::GCHORD, basepitch, inversion, chordno);
 }
+
+/* blank line found in abc signifies the end of a tune */
+void 
+AbcStore::blankline()
+{
+    if(this->dotune) 
+    {
+        if(!this->silent) 
+            this->print_voicecodes();
+        this->finishfile();
+        this->parser->parserOff();
+        this->dotune = 0;
+    }
+}
+
+/* handles an X: field (which indicates the start of a tune) */
+void 
+AbcStore::refno(int n)
+{
+    this->started_parsing = 1;
+    this->bodystarted = 0;
+    if(this->dotune) 
+        this->blankline();
+    if ((n == this->xmatch) || (this->xmatch == 0) || (this->xmatch == -1)) 
+    {
+        if(this->xmatch == -1) 
+            this->xmatch = -2;
+    }
+    this->parser->parserOn();
+    this->dotune = 1;
+    this->pastheader = 0;
+
+    this->outname.clear();
+    if(this->userfilename == 0) 
+    {
+        char numstr[23]; /* Big enough for a 64-bit int! */
+        char newname[256];
+        snprintf(numstr, 23, "%d", n);
+        if((this->outbase.size() + strlen(numstr)) > this->namelimit) 
+        {
+            strncpy(newname, this->outbase.c_str(), 
+                    this->namelimit - strlen(numstr));
+            strcpy(&newname[this->namelimit - strlen(numstr)], numstr);
+            strcpy(&newname[strlen(newname)], ".mid");
+        } 
+        else 
+            sprintf(newname, "%s%s.mid", outbase, numstr);
+        this->outname = newname;
+    }
+    this->startfile(); // <---------- GO!
+}
+
+/* end of abc file encountered */
+void 
+AbcStore::eof()
+{
+    this->blankline();
+    if(this->verbose) 
+        this->info("End of File reached\n");
+    this->notelist.clear();
+    this->wordlist.clear();
+    this->outname.clear();
+    this->outbase.clear();
+}

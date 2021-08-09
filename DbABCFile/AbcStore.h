@@ -389,7 +389,6 @@ private:
     int default_ratio_a;
     int default_ratio_b;
 
-    void startfile();
     voicecontext* newvoice(int n);
     voicecontext* getvoicecontext(int splitno);
     void clearvoicecontexts();
@@ -475,6 +474,12 @@ private:
                 int propagate_accs, int *pitchbend);
     int pitchof(char note, char accidental, int mult, int octave, 
                 int propagate_accs);
+    
+    void dograce();
+    void applygrace(int); // offset into this->notelist
+    void applygrace_orig(int);
+    void applygrace_new(int);
+    void cleargracenotes(int start, int end);
 
     void doroll(char note, int octave, int n, int m, int pitch);
     void doroll_setup(char note, int octave, int n, int m, int pitch);
@@ -490,6 +495,41 @@ private:
     void makeharproll3(int pitch, int bend, int n, int m);
 
     char const *get_accidental(char const *place, char *accidental);
+
+    /* stress patterns ----------------------------------- */
+    struct stressdef
+    {
+        std::string name;
+        std::string meter;
+        int nseg;			        /* number of segments; */
+        int nval;			        /* number of values; */
+        int vel[16];			    /* segment velocities */
+        float expcoef[16];		    /* segment expander coefficient */
+    } stresspat[48];
+    int nmodels;
+    void init_stresspat();
+    int stress_locator(char const *rhythmdesignator, 
+                        char const *timesigstring);
+    int load_stress_parameters(char const *rhythmdesignator);
+    int parse_stress_params(char const *input);
+    void readstressfile(char const *filename);
+    void calculate_stress_parameters();
+
+    /* driver -------------------------------------------- */
+    void startfile();
+    void finishfile();
+
+    void scan_for_missing_repeats();
+    void clear_voice_repeat_arrays(int voicestart[64],
+                                   int bar_rep_found[64]);
+    void add_missing_repeats(int num2add, int add_leftrepeat_at[100]);
+    void apply_bf_stress_factors();
+
+    void tiefix();
+    void fixreps();
+    void expand_ornaments();
+    void check_for_timesig_preceding_bar_line();
+    void fix_part_start();
 
 }; // end class
 
