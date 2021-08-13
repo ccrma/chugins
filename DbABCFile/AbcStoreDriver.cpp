@@ -10,8 +10,8 @@ AbcStore::startfile()
         this->info("scanning tune\n");
 
     /* set up defaults */
-    this->sf = 0;
-    this->mi = 0;
+    this->keySharps = 0;
+    this->keyMinor = 0;
     this->setmap(0, this->global.basemap, this->global.basemul);
     this->copymap(&global);
     this->global.octaveshift = 0;
@@ -30,7 +30,7 @@ AbcStore::startfile()
     this->barchecking = 1;
     this->global.default_length = -1;
     this->tempo(this->default_tempo, 1, 4, 0, nullptr, nullptr);
-    this->notes = 0;
+    this->nextFeature = 0;
     this->wordlist.clear();
     this->ntexts = 0;
     this->gfact_num = 1;
@@ -76,8 +76,9 @@ AbcStore::finishfile()
     this->complete_all_split_voices();
 
     /* dump_voicecontexts(); for debugging*/
-    this->setup_trackstructure();
+    this->setup_trackstructure(); // from voice contexts
     this->clearvoicecontexts();
+
     /* init_drum_map(); [SS] 2017-12-10 moved to main() */
     if(!this->pastheader) 
     {
@@ -112,72 +113,40 @@ AbcStore::finishfile()
         if(this->genMidi.parts >= 0) 
             this->fix_part_start();
         if(this->verbose > 5) 
-            this->dumpfeat(0, this->notes);
+            this->dumpfeat(0, this->nextFeature);
 
-        if(this->check) 
-        {
-            Mf_putc = nullputc;
-            header_time_num = time_num;
-            header_time_denom = time_denom;
-            Mf_numbyteswritten = 0;
-            if(ntracks == 1) 
-            {
-                this->writetrack(0);
-            } 
-            else 
-            {
-                if(!done_with_barloc) 
-                {
-                    diaghandle = fopen("barloc.txt","w");
-                    for(i=0; i<ntracks; i++) 
-                    {
-                        this->writetrack(i);
-                        this->dump_barloc(diaghandle,i);
-                    }
-                    fclose(diaghandle);
-                    done_with_barloc = 1;
-                } 
-                else 
-                {  
-                    /* done_with_barloc == 1 */
-                    for (i=0; i<ntracks; i++) 
-                    {
-                        this->writetrack(i);
-                    }	
-                }
-            } /* more than 1 track */
-        } 
-        else 
-        {    
-            /* check != 0 */
-            if((fp = fopen(outname, "wb")) == NULL) 
-            {
-                this->error("File open failed");
-                return;
-            }
-            if (!silent) 
-                printf("writing MIDI file %s\n", outname);
-            Mf_putc = myputc;
-            Mf_writetrack = writetrack;
-            header_time_num = time_num;
-            header_time_denom = time_denom;
-            if(ntracks == 1) 
-            {
-                this->mfwrite(0, 1, division, fp);
-            } 
-            else 
-            {
-                this->mfwrite(1, ntracks, division, fp);
-            }
-            fclose(fp);
-            #ifdef __MACINTOSH__
-            (void) setOutFileCreator(outname,'Midi','ttxt');
-            #endif /* __MACINTOSH__ */
+        AbcGenMidi::InitState initState(this->nextFeature, 
+                                        this->featurelist,
+                                        this->atext,
+                                        this->chords,
+                                        this->wordlist);
+        initState.verbose = this->verbose;
+        initState.silent = this->silent;
+        initState.quiet = this->quiet;
+        initState.programbase = this->programbase;
+        initState.ntracks = this->ntracks;
+        initState.voicesused = this->voicesused;
+        initState.tempo = this->current_tempo;
+        initState.time_num = this->time_num;
+        initState.time_denom = this->time_denom;
+        initState.mtime_num = this->mtime_num;
+        initState.mtime_denom = this->mtime_denom;
+        initState.keySharps = this->keySharps;
+        initState.keyMinor = this->keyMinor;
+        initState.karaoke = this->karaoke;
+        initState.wcount = this->wcount;
+        initState.retuning = this->retuning;
+        initState.bend = this->bend;
+        initState.dependent_voice = this->dependent_voice;
+        initState.barchecking = this->barchecking;
 
-        }
+        this->genMidi.writefile(this->outname.c_str(), &initState);
+
         this->atext.clear();
         this->wordlist.clear();
         this->genMidi.partspec.clear();
+        this->chords.clear();
         this->free_notestructs();
     }
 }
+

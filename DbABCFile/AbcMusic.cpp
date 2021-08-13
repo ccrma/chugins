@@ -70,7 +70,7 @@ static int get_clef_octave_offset(char const *clef_ending)
  * key signature and "" the empty string to represent "major" where this
  * is inferred as the default value rather than being supplied.
  */
-const char *AbcMusic::mode[12] = 
+char const *AbcMusic::mode[12] = 
 { 
     "maj", "min", "m",
     "aeo", "loc", "ion", 
@@ -92,7 +92,7 @@ const char *AbcMusic::mode[12] =
  * new key signature is 1 - 2 = -1 (1 flat)
  * GDor is 1 flat.
  */
-const int AbcMusic::modeshift[12] = 
+int const AbcMusic::modeshift[12] = 
 { 
     0, -3, -3, 
     -3, -5, 0, 
@@ -178,6 +178,16 @@ AbcMusic::ClefType::InitExtended(char const *name)
     return 0;
 }
 
+void AbcMusic::copy_clef(ClefType *target_clef, 
+    ClefType const *source_clef)
+{
+    target_clef->basic_clef = source_clef->basic_clef;
+    target_clef->staveline = source_clef->staveline;
+    target_clef->octave_offset = source_clef->octave_offset;
+    target_clef->named = source_clef->named;
+}
+
+/* --------------------------------------------------------------*/
 /* elimate common factors in fraction a/b */
 void
 AbcMusic::reduceFraction(int *a, int *b)
@@ -213,6 +223,33 @@ AbcMusic::reduceFraction(int *a, int *b)
     *a = (*a/n)*sign;
     *b = *b/n;
 }
+
+/* add a/b to the count of units in the bar */
+/*static*/ void
+AbcMusic::addFraction(int *xnum, int *xdenom, int a, int b)
+{
+    *xnum = (*xnum)*b + a*(*xdenom);
+    *xdenom = (*xdenom) * b;
+    if (*xnum < 0 && *xdenom < 0) 
+    {
+        *xnum = -*xnum; 
+        *xdenom = -*xdenom;
+    }
+    reduceFraction(xnum, xdenom);
+}
+
+/* compare two fractions  anum/adenom > bnum/bdenom */
+/* returns   (a > b)                       */
+int
+AbcMusic::gtFraction(int anum, int adenom, int bnum,int bdenom)
+{
+    if((anum*bdenom) > (bnum*adenom)) 
+        return 1;
+    else
+        return 0;
+}
+
+
 
 /* rather than compute the fifth_size in cents directly
  * we subtract the octave from the third harmonic.

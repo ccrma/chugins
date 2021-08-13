@@ -16,21 +16,16 @@ public:
     dbABCFile();
     ~dbABCFile();
 
-    int Open(std::string filepath);
+    int Open(std::string const &filepath);
     int Close();
 
-    unsigned long GetNextMidiEvent(std::vector<unsigned char> *midiEvent, 
-        unsigned track = 0);
+    int GetNumTracks() { return this->m_numTracks; }
+    
+    int Read(int track1); // called in loop
+    int Rewind();
 
 private:
-    unsigned long getNextEvent(std::vector<unsigned char> *midiEvent, 
-        unsigned track);
-
-private:
-    std::ifstream m_file;
-    unsigned m_numTracks;
-    float m_bpm;
-
+    int m_numTracks;
 };
 
 #endif

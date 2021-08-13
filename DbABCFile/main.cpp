@@ -32,9 +32,8 @@ CK_DLL_CTOR( abcFile_ctor );
 CK_DLL_DTOR( abcFile_dtor );
 CK_DLL_MFUN( abcFile_open );
 CK_DLL_MFUN( abcFile_close );
-CK_DLL_MFUN( abcFile_numTracks );
 CK_DLL_MFUN( abcFile_read );
-CK_DLL_MFUN( abcFile_readTrack );
+CK_DLL_MFUN( abcFile_numTracks );
 CK_DLL_MFUN( abcFile_rewind );
 
 t_CKINT abcFile_data_offset = 0; // required by chuck
@@ -52,16 +51,17 @@ CK_DLL_QUERY(DbAbcFile)
     QUERY->add_arg(QUERY, "string", "path");
 
     QUERY->add_mfun(QUERY, abcFile_close, "void", "close");
-    
-    QUERY->add_mfun(QUERY, abcFile_read, "int", "read");
-    QUERY->add_arg(QUERY, "MidiMsg", "msg");
+    QUERY->add_arg(QUERY, "string", "path");
 
-    QUERY->add_mfun(QUERY, abcFile_readTrack, "int", "read");
-    QUERY->add_arg(QUERY, "MidiMsg", "msg");
+    QUERY->add_mfun(QUERY, abcFile_read, "int", "read");
     QUERY->add_arg(QUERY, "int", "track");
+    QUERY->add_arg(QUERY, "MidiMsg", "msg");
 
     QUERY->add_mfun(QUERY, abcFile_numTracks, "int", "numTracks");
+    // no params
+
     QUERY->add_mfun(QUERY, abcFile_rewind, "void", "rewind");
+    // no params
 
     abcFile_data_offset = QUERY->add_mvar(QUERY, "int", "@abcFile_data", false);
     QUERY->end_class(QUERY);
@@ -71,13 +71,13 @@ CK_DLL_QUERY(DbAbcFile)
 CK_DLL_CTOR(abcFile_ctor)
 {
     OBJ_MEMBER_INT(SELF, abcFile_data_offset) = 0;
-    dbGrainBuf * c = new dbGrainBuf(API->vm->get_srate(API, SHRED));
+    dbABCFile *c = new dbABCFile();
     OBJ_MEMBER_INT(SELF, abcFile_data_offset) = (t_CKINT) c;
 }
 
 CK_DLL_DTOR(abcFile_dtor)
 {
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
+    dbABCFile *c = (dbABCFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
     if(c)
     {
         delete c;
@@ -86,203 +86,53 @@ CK_DLL_DTOR(abcFile_dtor)
     }
 }
 
+CK_DLL_MFUN(abcFile_open)
+{
+    dbABCFile * c = (dbABCFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
+    std::string filename = GET_NEXT_STRING_SAFE(ARGS);
+    int err = c->Open(filename);
+    RETURN->v_int = err ? 0 : 1; // following midifilein return conventions
+}
+
+CK_DLL_MFUN(abcFile_close)
+{
+    dbABCFile *c = (dbABCFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
+    int err = c->Close();
+    RETURN->v_int = err ? 0 : 1;
+}
+
+CK_DLL_MFUN(abcFile_numTracks)
+{
+    dbABCFile * c = (dbABCFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
+    RETURN->v_int = c->GetNumTracks();
+}
+
 CK_DLL_MFUN(abcFile_read)
 {
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
-    std::string filename = GET_NEXT_STRING_SAFE(ARGS);
-    c->Read(filename);
+    dbABCFile *c = (dbABCFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
+    t_CKINT track = GET_NEXT_INT(ARGS);
+
+    RETURN->v_int = 0; // means error, nothing to read
+    if(track >= 0 && track < c->GetNumTracks())
+    {
+        #if 0
+        std::vector<unsigned char> event;
+        t_CKDUR dur = c->GetNextMidiEvent(event, track);
+        if(event.size())
+        {
+            OBJ_MEMBER_INT(msg, MidiMsg_offset_data1) = event[0];
+            OBJ_MEMBER_INT(msg, MidiMsg_offset_data2) = event.size() >= 2 ? event[1] : 0;
+            OBJ_MEMBER_INT(msg, MidiMsg_offset_data3) = event.size() >= 3 ? event[2] : 0;
+            OBJ_MEMBER_DUR(msg, MidiMsg_offset_when) = dur;
+            RETURN->v_int = 1; 
+        }
+        #endif
+    }
+}
+
+CK_DLL_MFUN(abcFile_rewind)
+{
+    dbABCFile *c = (dbABCFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
+    c->Rewind();
     // no return atm
-}
-
-CK_DLL_MFUN(abcFile_numChan)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
-    RETURN->v_int = c->FileChan(GET_NEXT_INT(ARGS));
-}
-
-CK_DLL_MFUN(abcFile_ctrl_pos)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
-    RETURN->v_int = c->SetPos(GET_NEXT_INT(ARGS));
-}
-
-CK_DLL_MFUN(abcFile_cget_pos)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
-    RETURN->v_int = c->GetPos();
-}
-
-CK_DLL_MFUN(abcFile_ctrl_phase)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
-    RETURN->v_float = c->SetPhase(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(abcFile_cget_phase)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
-    RETURN->v_float = c->GetPhase();
-}
-
-CK_DLL_MFUN(gbuf_ctrl_loop)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_int = c->SetLoop(GET_NEXT_INT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_cget_loop)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_int = c->GetLoop();
-}
-
-CK_DLL_MFUN(gbuf_ctrl_rate)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetRate(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_cget_rate)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->GetRate();
-}
-
-CK_DLL_MFUN(gbuf_ctrl_maxfilt)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_int = c->SetMaxFilt(GET_NEXT_INT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_cget_maxfilt)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_int = c->GetMaxFilt();
-}
-
-CK_DLL_MFUN(gbuf_ctrl_bypass)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_int = c->SetBypass(GET_NEXT_INT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_cget_bypass)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_int = c->GetBypass();
-}
-
-CK_DLL_MFUN(gbuf_ctrl_triggerFreq)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetTriggerFreq(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_cget_triggerFreq)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->GetTriggerFreq();
-}
-
-CK_DLL_MFUN(gbuf_ctrl_triggerRange)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetTriggerRange(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_ctrl_grainPeriod)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    t_CKDUR d = GET_NEXT_DUR(ARGS); // dur is measured in samples
-    RETURN->v_dur = c->SetGrainPeriod(d);
-}
-
-CK_DLL_MFUN(gbuf_cget_grainPeriod)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_dur = c->GetGrainPeriod();
-}
-
-CK_DLL_MFUN(gbuf_ctrl_grainRate)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainRate(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_ctrl_grainPeriodVariance)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainPeriodVariance(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_ctrl_grainPeriodVarianceFreq)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainPeriodVarianceFreq(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_ctrl_grainPan)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainPan(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_ctrl_grainPanRange)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainPanRange(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_ctrl_grainPhaseStart)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainPhaseStart(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_cget_grainPhaseStart)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->GetGrainPhaseStart();
-}
-
-CK_DLL_MFUN(gbuf_ctrl_grainPhaseStop)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainPhaseStop(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_cget_grainPhaseStop)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->GetGrainPhaseStop();
-}
-
-CK_DLL_MFUN(gbuf_ctrl_grainPhaseStartSec)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainPhaseStartSec(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_ctrl_grainPhaseStopSec)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainPhaseStopSec(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_ctrl_grainPhaseRate)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainPhaseRate(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_ctrl_grainPhaseWobble)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainPhaseWobble(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(gbuf_ctrl_grainPhaseWobbleFreq)
-{
-    dbGrainBuf * c = (dbGrainBuf *) OBJ_MEMBER_INT(SELF, gbuf_data_offset);
-    RETURN->v_float = c->SetGrainPhaseWobbleFreq(GET_NEXT_FLOAT(ARGS));
 }

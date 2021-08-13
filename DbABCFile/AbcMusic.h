@@ -52,25 +52,33 @@ namespace AbcMusic
         int named;
     };
 
-    static const char *mode[12];
-    static const int modeshift[12];
+    struct fraction
+    {
+        int num;
+        int denom;
+    };
+
+    extern const char *mode[12];
+    extern const int modeshift[12];
 
     /* note operations */
-    static NoteLetter note_index(char note_ch);
-    static int semitone_value_for_note(NoteLetter note);
-    static int semitone_shift_for_acc(char acc);
-    static void note_for_semitone(int semitones, NoteLetter *note, char *accidental);
+    NoteLetter note_index(char note_ch);
+    int semitone_value_for_note(NoteLetter note);
+    int semitone_shift_for_acc(char acc);
+    void note_for_semitone(int semitones, NoteLetter *note, char *accidental);
 
     /* clef operations */
-    static void init_new_clef(ClefType *new_clef);
-    static void copy_clef(ClefType *target_clef, ClefType *source_clef);
-    static int get_standard_clef (const char *name, ClefType *new_clef);
-    static int get_extended_clef_details (const char *name, ClefType *new_clef);
-    static int get_clef_name (ClefType *new_clef, char *name);
+    void init_new_clef(ClefType *new_clef);
+    void copy_clef(ClefType *target_clef, ClefType const *source_clef);
+    int get_standard_clef (const char *name, ClefType *new_clef);
+    int get_extended_clef_details (const char *name, ClefType *new_clef);
+    int get_clef_name (ClefType *new_clef, char *name);
 
-    static void reduceFraction(int *num, int *denom);
-    static float compute_fifth_size (float octave_size, int ndiv);
+    void reduceFraction(int *num, int *denom);
+    void addFraction(int *xnum, int *xdenom, int a, int b);
+    int gtFraction(int anum, int adenom, int bnum, int bdenom);
 
+    float compute_fifth_size (float octave_size, int ndiv);
 };
 
 #endif

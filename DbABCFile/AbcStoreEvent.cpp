@@ -156,8 +156,8 @@ AbcStore::init(int argc, char const*argv[], std::string *filename)
         this->silent = 1;
 
     /* allocate space for notes, we'll grow it as needed */
-    this->maxnotes = 500;
-    this->notelist.resize(this->maxnotes);
+    this->maxFeatures = 500;
+    this->featurelist.resize(this->maxFeatures);
     /* and for text */
     this->atext.resize(this->maxtexts);
     this->wordlist.clear();
@@ -341,6 +341,8 @@ AbcStore::x_reserved(char c)
    the split voice already exists, we still sync it to the
    source voice (there may have been intervening bars with
    no splits) by adding rests. 
+
+   voice-splits occur when user employs "voice overlay feature" (via '&')
 */
 void 
 AbcStore::split_voice()
@@ -353,10 +355,10 @@ AbcStore::split_voice()
     int splitno = v->tosplitno;
 
     /* a voice split in bar is just like a bar line */
-    this->zerobar();
+    this->genMidi.zerobar();
 
     /* in case we need to change it */
-    this->v->lastbarloc = this->notes;  
+    this->v->lastbarloc = this->nextFeature;  
     int voiceno = v->voiceno;
     int indexno = v->indexno;
     int topvoiceno = v->topvoiceno;
@@ -366,7 +368,7 @@ AbcStore::split_voice()
     int midichannel = v->midichannel;
     int sync_to;
     if(topvoiceno == voiceno) 
-        sync_to = this->search_backwards_for_last_bar_line(this->notes-1);
+        sync_to = this->search_backwards_for_last_bar_line(this->nextFeature-1);
     this->addfeature(Abc::SINGLE_BAR,0,0,0);
 
     if(splitno == -1) 
@@ -415,7 +417,7 @@ AbcStore::split_voice()
     if(this->extended_overlay_running) 
         this->sync_voice(v, extended_overlay_running, 1);
     else
-        this->sync_voice (v, sync_to, 1);
+        this->sync_voice(v, sync_to, 1);
 }
 
 // event_tex inherit
@@ -465,7 +467,7 @@ AbcStore::comment(char const *s)
 void 
 AbcStore::start_extended_overlay()
 {
-    this->extended_overlay_running = this->notes;
+    this->extended_overlay_running = this->nextFeature;
 }
 
 void 
@@ -517,7 +519,6 @@ AbcStore::specific(char const *package, char const *s)
             if(strcmp(command, "copyright") == 0)
             {            
                 int n;
-                char *ptr;
                 done = 1;            
                 this->parser->skipspace(&p);
                 /* Copy string to parse.
@@ -859,14 +860,14 @@ AbcStore::part(char const *s)
                 this->headerpartlabel = 0;
                 /* comment-out speculative part label, introduced below */
                 int featindex = this->genMidi.part_start[index];
-                this->notelist[featindex].feature = Abc::NONOTE;
+                this->featurelist[featindex].feature = Abc::NONOTE;
             } 
             else 
             {
                 if(this->genMidi.part_start[index] != -1) 
                     this->error("Part defined more than once");
             }
-            this->genMidi.part_start[index] = this->notes;
+            this->genMidi.part_start[index] = this->nextFeature;
             this->addfeature(Abc::PART, (int)*p, 0, 0);
             this->checkbreak();
             this->v = this->getvoicecontext(1);
@@ -912,6 +913,54 @@ AbcStore::length(int n)
         this->v->default_length = n;
     else 
         this->global.default_length = n;
+}
+
+/* handles a K: field */
+void 
+AbcStore::key(int sharps, char const *s, int modeindex, 
+    char modmap[7], int modmul[7], AbcMusic::fraction modmicro[7],
+    int gotkey, int gotclef, 
+    char const *clefname, AbcMusic::ClefType *new_clef,
+    int octave, int transpose, int gotoctave, int gottranspose,
+    int explict)
+{
+    if(this->dotune && gotkey) 
+    {
+        int minor = 0;
+        if(modeindex > 0 && modeindex < 4) 
+            minor = 1;
+        if(this->pastheader) 
+        {
+            if(!explict) 
+                setmap(sharps, v->basemap, v->basemul);
+            this->altermap(v, modmap, modmul, this->modmicrotone);
+            this->copymap(v);
+            this->addfeature(Abc::KEY, sharps, 0, minor);
+            if (gottranspose) 
+                this->addfeature(Abc::TRANSPOSE, transpose, 0, 0);
+        } 
+        else 
+        {
+            if (gottranspose)
+                this->addfeature(Abc::GTRANSPOSE, transpose, 0, 0);
+            if(!explict) 
+                this->setmap(sharps, global.basemap, global.basemul); /* [SS] 2010-05-08 */
+            this->altermap(&global, modmap, modmul, this->modmicrotone);
+            this->global.keyset = 1;
+            this->copymap(&global);
+            this->keySharps = sharps;
+            this->keyMinor = minor;
+
+            if(gotclef)
+                this->octave(new_clef->octave_offset, 0);
+            if(gotoctave) 
+                this->octave(octave,0);
+            this->headerprocess();
+            this->v = this->getvoicecontext(1);
+            if (!this->parser->inbody) 
+                this->v1index = this->nextFeature; /* save position in case of split voice */
+        }
+    }
 }
 
 /* handles a Q: field e.g. Q: a/b = n  or  Q: Ca/b = n */
@@ -1131,11 +1180,11 @@ AbcStore::tie()
 {
     if(this->gracenotes && this->ignore_gracenotes) 
         return;
-    if(this->notelist[this->notes-1].feature == Abc::CHORDOFF ||
-       this->notelist[notes-1].feature == Abc::CHORDOFFEX) 
+    if(this->featurelist[this->nextFeature-1].feature == Abc::CHORDOFF ||
+       this->featurelist[this->nextFeature-1].feature == Abc::CHORDOFFEX) 
     { 
         /* did a TIE connect with a chord */
-        this->patchup_chordtie(chordstart,notes-1);
+        this->patchup_chordtie(chordstart, this->nextFeature - 1);
     }
     else
         this->addfeature(Abc::TIE, 0, 0, 0);
@@ -1152,10 +1201,11 @@ AbcStore::broken(int type, int mult)
         this->error("Broken rhythm not allowed in grace notes");
     else 
     {
-        if((this->hornpipe) && (this->notelist[notes-1].feature == Abc::GT)) 
+        if((this->hornpipe) && 
+           (this->featurelist[this->nextFeature-1].feature == Abc::GT)) 
         {
             /* remove any superfluous hornpiping */
-            this->notes = this->notes - 1;
+            this->nextFeature = this->nextFeature - 1;
         }
         /* addfeature(type, mult, 0, 0); */
         this->v->brokentype = type;
@@ -1280,7 +1330,7 @@ AbcStore::rest(int decorators[Abc::DECSIZE],
     }
     if((!this->v->ingrace) && ((!this->v->inchord)||(this->v->chordcount==1))) 
     {
-        this->genMidi.addunits(num, denom*(v->default_length));
+        this->genMidi.addBarUnits(num, denom*(v->default_length));
     }
     this->last_num = 3; /* hornpiping (>) cannot follow rest */
     this->addfeature(Abc::REST, 0, num*4, denom*(v->default_length));
@@ -1300,8 +1350,8 @@ AbcStore::mrest(int n, int m, char c)
     for(int i=0; i<n; i++) 
     {
         this->rest(decorators, 
-                    this->genMidi.mtime_num*(v->default_length), 
-                    this->genMidi.mtime_denom, 0);
+                    this->mtime_num*(v->default_length), 
+                    this->mtime_denom, 0);
         if(i != n-1) 
             this->bar(Abc::SINGLE_BAR, "");
     }
@@ -1319,7 +1369,7 @@ AbcStore::chordon(int chorddecorators[])
         this->error("Attempt to nest chords");
     else 
     {
-        this->chordstart = this->notes;
+        this->chordstart = this->nextFeature;
         if(this->easyabcmode) 
         {
             this->addfeature(Abc::META,0, this->parser->lineno,
@@ -1340,7 +1390,7 @@ AbcStore::chordoff(int chord_n, int chord_m)
 {
     int c_n, c_m;
     this->parser->inchordflag = 0;
-    featureDesc &fd = this->notelist[this->chordstart];
+    FeatureDesc &fd = this->featurelist[this->chordstart];
     if(chord_m == 1 && chord_n == 1) 
     {
         c_n = fd.num;
@@ -1384,7 +1434,7 @@ AbcStore::chordoff(int chord_n, int chord_m)
         else
         {
             this->addfeature(Abc::CHORDOFFEX, 0, c_n*4, c_m*v->default_length);
-            this->fix_enclosed_note_lengths(chordstart, notes-1);
+            this->fix_enclosed_note_lengths(chordstart, this->nextFeature-1);
         }
         v->inchord = 0;
         v->chordcount = 0;
@@ -1400,7 +1450,7 @@ AbcStore::note(int decorators[Abc::DECSIZE],
     AbcMusic::ClefType *clef, char accidental, int mult, 
     char note, int xoctave, int n, int m)
 {
-    featureDesc &fd = this->notelist[notes];
+    FeatureDesc &fd = this->featurelist[this->nextFeature];
     fd.decotype = 0;
     if(this->voicesused == 0) 
         this->bodystarted = 1;
@@ -1448,7 +1498,7 @@ AbcStore::note(int decorators[Abc::DECSIZE],
         this->last_num = 3; /* hornpiping (>) cannot follow chord or grace notes */
 
     if((!v->ingrace) && ((!v->inchord)||(v->chordcount==1))) 
-        this->genMidi.addunits(num, denom*(v->default_length));
+        this->genMidi.addBarUnits(num, denom*(v->default_length));
 
     /* linear temperament support */
     int pitch, dummy, pitch_noacc;
@@ -1482,7 +1532,7 @@ AbcStore::note(int decorators[Abc::DECSIZE],
         } 
         else 
         {
-            if(this->easyabcmode) /* [SS] 2011-07-18 */ 
+            if(this->easyabcmode)
             {
                 this->addfeature(Abc::META, 0, 
                     this->parser->lineno, this->parser->lineposition);
@@ -1490,7 +1540,6 @@ AbcStore::note(int decorators[Abc::DECSIZE],
             if(decorators[Abc::TRILL]) 
             {
                 fd.decotype = this->notesdefined;
-                /*dotrill(note, octave, num, denom, pitch);*/
                 this->dotrill_setup(note, octave, num, denom, pitch);
                 this->addfeature(Abc::NOTE, pitch, num*4, denom*(v->default_length));
             }
@@ -1499,13 +1548,13 @@ AbcStore::note(int decorators[Abc::DECSIZE],
                 this->doornament(note, octave, num, denom, pitch);
             else 
             { 
-                fd.decotype = notesdefined; /* [SS] 2012-06-29 */
-                /*doroll(note, octave, num, denom, pitch);*/
+                // ROLL
+                fd.decotype = notesdefined; 
                 this->doroll_setup(note, octave, num, denom, pitch);
                 fd.bentpitch = active_pitchbend;
                 this->addfeature(Abc::NOTE, pitch, num*4, denom*(v->default_length));
             }
-            this->marknote(); /* [SS] 2019-10-13 */
+            this->marknote();
         } /* end of else block for not in chord */
     } /* end of if block for ROLL,ORNAMENT,TRILL */
     else 
@@ -1720,7 +1769,7 @@ AbcStore::blankline()
     if(this->dotune) 
     {
         if(!this->silent) 
-            this->print_voicecodes();
+            this->parser->print_voicecodes();
         this->finishfile();
         this->parser->parserOff();
         this->dotune = 0;
@@ -1771,7 +1820,7 @@ AbcStore::eof()
     this->blankline();
     if(this->verbose) 
         this->info("End of File reached\n");
-    this->notelist.clear();
+    this->featurelist.clear();
     this->wordlist.clear();
     this->outname.clear();
     this->outbase.clear();

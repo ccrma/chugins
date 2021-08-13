@@ -103,12 +103,12 @@ AbcParser::reset_parser_status()
 int
 AbcParser::parseStream(std::istream *istream)
 {
+    int err = 0;
     int reading;
     int streamline;
     std::streampos last_position = 0; /* [SDG] 2020-06-03 */
     std::string line;
     int lastch, done_eol;
-    int err;
     std::istream *currentStream = istream;
     std::ifstream *includeStream = nullptr;
 
@@ -159,11 +159,11 @@ AbcParser::parseStream(std::istream *istream)
                         done_eol = 1;
                     } 
                     else 
-                    if (includeStream == nullptr) 
+                    if(includeStream == nullptr) 
                     {
                         last_position = currentStream->tellg();
                         /*printf("last position = %d\n",last_position);*/
-                        includeStream = inc;
+                        includeStream = inc; // closed below
                         currentStream = static_cast<std::istream*>(inc);
                         if (parsing)
                             this->handler->linebreak();
@@ -173,6 +173,8 @@ AbcParser::parseStream(std::istream *istream)
                     else 
                     {
                         this->handler->error("Not allowed to recurse include file");
+                        inc->close();
+                        delete inc;
                     }
                 }
             }
@@ -194,6 +196,7 @@ AbcParser::parseStream(std::istream *istream)
             {  
                 /* [SS] 2017-12-10 */
                 includeStream->close();
+                delete includeStream;
                 currentStream = istream;
                 // err = fseek(fp,last_position,SEEK_SET);
                 /*printf("fseek return err = %d\n",err);*/
@@ -205,6 +208,7 @@ AbcParser::parseStream(std::istream *istream)
     this->handler->eof();
     if (parsing_started == 0)
         this->handler->error("No tune processed. Possible missing X: field");
+    return err;
 }
 
 void
@@ -351,7 +355,6 @@ void
 AbcParser::parsemusic(char const *line) /* parse a line of abc notes */
 {
     std::string field(line); // so we can perform inline edits
-    char *p;
     char endchar = ' ';
     int iscomment = 0;
     int starcount;
@@ -365,7 +368,7 @@ AbcParser::parsemusic(char const *line) /* parse a line of abc notes */
     this->handler->startmusicline();
 
     char *comment = (char *) field.c_str();
-    while((*comment != '\0') && (*p != '%'))
+    while((*comment != '\0') && (*comment != '%'))
         comment = comment + 1;
     if(*comment == '%')
     {
@@ -374,7 +377,7 @@ AbcParser::parsemusic(char const *line) /* parse a line of abc notes */
         comment = comment + 1;
     };
 
-    p = (char *) field.c_str();
+    char const *p = field.c_str();
     this->skipspace(&p);
     while(*p != '\0')
     {
@@ -526,7 +529,10 @@ AbcParser::parsemusic(char const *line) /* parse a line of abc notes */
                     else
                     {
                         if(isalpha(*p) && (*(p + 1) == ':'))
-                            p = this->parseinlinefield(p);
+                        {
+                            // NB: may edit p
+                            p = this->parseinlinefield((char *) p);
+                        }
                         else
                         {
                             lineposition = p - linestart;	/* [SS] 2011-07-18 */
@@ -697,7 +703,7 @@ AbcParser::parsemusic(char const *line) /* parse a line of abc notes */
                     std::string instruction;
                     char endcode = *p;
                     p = p + 1;
-                    char *s = p;
+                    char const *s = p;
                     while((*p != endcode) && (*p != '\0'))
                     {
                         instruction.push_back(*p);
@@ -782,22 +788,213 @@ AbcParser::parsemusic(char const *line) /* parse a line of abc notes */
     }
 }
 
+/* parse abc note and advance character pointer */
+void
+AbcParser::parsenote(char const **s)
+{
+    int decorators[Abc::DECSIZE];
+    int octave, n, m;
+
+    for(int i=0; i < Abc::DECSIZE; i++)
+    {
+        decorators[i] = this->decorators_passback[i];
+        if (!this->inchordflag)
+            this->decorators_passback[i] = 0;
+    }
+    while(strchr(this->decorations, **s) != nullptr)
+    {
+        int t = strchr(this->decorations, **s) - this->decorations;
+        decorators[t] = 1;
+        *s = *s + 1;
+    }
+    /*check for decorated chord */
+    if (**s == '[')
+    {
+        this->lineposition = *s - this->linestart;
+        if(this->parseMode == k_AbcToYaps)
+            this->handler->warning("decorations applied to chord");
+        for(int i = 0; i < Abc::DECSIZE; i++)
+            this->chorddecorators[i] = decorators[i];
+        this->handler->chordon(chorddecorators);
+        if(this->parseMode == k_AbcToAbc)
+        {
+            for(int i = 0; i < Abc::DECSIZE; i++)
+                decorators[i] = 0;
+        }
+        this->parserinchord = 1;
+        *s = *s + 1;
+        this->skipspace(s);
+    }
+    if(this->parserinchord)
+    {
+        /* inherit decorators */
+        if(this->parseMode != k_AbcToAbc)
+        {
+            for(int i = 0; i < Abc::DECSIZE; i++)
+                decorators[i] = decorators[i] | this->chorddecorators[i];
+        }
+    }
+
+    /* catch fermata H followed by a rest */
+
+    if (**s == 'z')
+    {
+        *s = *s + 1;
+        this->readlen(&n, &m, s);
+        this->handler->rest(decorators, n, m, 0);
+        return;
+    }
+
+    if (**s == 'x')
+    {
+        *s = *s + 1;
+        this->readlen(&n, &m, s);
+        this->handler->rest(decorators, n, m, 1);
+        return;
+    }
+
+    /* read accidental */
+    int mult = 1;
+    this->microtone = 0;
+    char accidental = ' ';
+    char note = ' ';
+    switch (**s)
+    {
+    case '_':
+        accidental = **s;
+        *s = *s + 1;
+        if (**s == '_')
+        {
+            *s = *s + 1;
+            mult = 2;
+        }
+        this->microtone = this->ismicrotone(s, -1);
+        if(this->microtone)
+        {
+            if (mult == 2)
+                mult = 1;
+            else
+                accidental = ' ';
+        }
+        break;
+    case '^':
+        accidental = **s;
+        *s = *s + 1;
+        if(**s == '^')
+        {
+            *s = *s + 1;
+            mult = 2;
+        }
+        this->microtone = this->ismicrotone(s, 1);
+        if(this->microtone)
+        {
+            if (mult == 2)
+                mult = 1;
+            else
+                accidental = ' ';
+        }
+        break;
+    case '=':
+        accidental = **s;
+        *s = *s + 1;
+        /* if ((**s == '^') || (**s == '_')) {
+            accidental = **s;
+            }; */
+        if(**s == '^')
+        {
+            accidental = **s;
+            *s = *s + 1;
+            this->microtone = this->ismicrotone(s, 1);
+            if (this->microtone == 0)
+                accidental = '^';
+        }
+        else 
+        if(**s == '_')
+        {
+            accidental = **s;
+            *s = *s + 1;
+            this->microtone = this->ismicrotone(s, -1);
+            if (this->microtone == 0)
+                accidental = '_';
+        }
+        break;
+    default:
+        this->microtone = this->ismicrotone(s, 1);
+        break;
+    }
+    if((**s >= 'a') && (**s <= 'g'))
+    {
+        note = **s;
+        octave = 1;
+        *s = *s + 1;
+        while((**s == '\'') || (**s == ','))
+        {
+            if(**s == '\'')
+            {
+                octave = octave + 1;
+                *s = *s + 1;
+            }
+            if(**s == ',')
+            {
+                char msg[80];
+                snprintf(msg, 80, "Bad pitch specifier , after note %c", note);
+                this->handler->error(msg);
+                octave = octave - 1;
+                *s = *s + 1;
+            }
+        }
+    }
+    else
+    {
+        octave = 0;
+        if((**s >= 'A') && (**s <= 'G'))
+        {
+            note = **s + 'a' - 'A';
+            *s = *s + 1;
+            while((**s == '\'') || (**s == ','))
+            {
+                if(**s == ',')
+                {
+                    octave = octave - 1;
+                    *s = *s + 1;
+                }
+                if (**s == '\'')
+                {
+                    char msg[80];
+                    snprintf(msg, 80, "Bad pitch specifier ' after note %c",
+                                note + 'A' - 'a');
+                    this->handler->error(msg);
+                    octave = octave + 1;
+                    *s = *s + 1;
+                }
+            }
+        }
+    }
+    if(note == ' ')
+        this->handler->error("Malformed note : expecting a-g or A-G");
+    else
+    {
+        this->readlen(&n, &m, s);
+        this->handler->note(decorators, &this->voicecode[voicenum - 1].clef, 
+                            accidental, mult, note, octave, n, m);
+    }
+}
+
 /* top-level routine handling all lines containing a field */
 void
 AbcParser::parsefield(char key, char const *f)
 {
-    std::string sfield(f); // so we can edit it
+    std::string sfield(f); // copy f, so we can edit it in-place
     char *field = (char *) sfield.c_str();
     char *comment;
     char *place;
-    char *xplace;
     int iscomment;
     int foundkey;
     if (key == 'X')
     {
         int x;
-        xplace = field;
-        this->skipspace(&xplace);
+        char *xplace = field;
+        this->skipspace((char const **) &xplace);
         x = this->readnumf(xplace);
         if(inhead)
             this->handler->error("second X: field in header");
@@ -837,7 +1034,7 @@ AbcParser::parsefield(char key, char const *f)
     };
 
     place = field;
-    this->skipspace(&place);
+    this->skipspace((char const **) &place);
     switch (key)
     {
     case 'K':
@@ -879,7 +1076,7 @@ AbcParser::parsefield(char key, char const *f)
         {
             Abc::TimeSigDetails timesig;
             snprintf(timesigstring, sizeof(timesigstring), "%s", place); /* [SEG] 2020-06-07 */
-            this->readsig(&place, &timesig);
+            this->readsig((char const **) &place, &timesig);
             if ((*place == 's') || (*place == 'l')) 
             {
                 this->handler->error ("s and l in M: field not supported");
@@ -907,7 +1104,7 @@ AbcParser::parsefield(char key, char const *f)
     case 'L':
         {
             int num, denom;
-            this->read_L_unitlen(&num, &denom, &place);
+            this->read_L_unitlen(&num, &denom, (char const **) &place);
             if (num != 1)
                 this->handler->error("Default length must be 1/X");
             else
@@ -947,16 +1144,16 @@ AbcParser::parsefield(char key, char const *f)
             char symbol;
             char container;
             char *expansion;
-            this->skipspace(&place);
+            this->skipspace((char const **) &place);
             if ((*place >= 'A') && (*place <= 'z'))  /* [SS] 2016-09-20 */
             {
                 symbol = *place;
                 place = place + 1;
-                this->skipspace(&place);
+                this->skipspace((char const **) &place);
                 if (*place == '=')
                 {
                     place = place + 1;
-                    this->skipspace(&place);
+                    this->skipspace((char const **) &place);
                     if(*place == '!')
                     {
                         place = place + 1;
@@ -1017,7 +1214,7 @@ AbcParser::parsefield(char key, char const *f)
 }
 
 /* parse field within abc line e.g. [K:G] */
-char *
+char const *
 AbcParser::parseinlinefield(char *p)
 {
     char *q = p;
@@ -1124,10 +1321,10 @@ AbcParser::check_bar_repeats(int bar_type, char const *replist)
 }
 
 /* look for number or list following [ | or :| */
-char *
-AbcParser::getrep(char *p, char *out)
+char const *
+AbcParser::getrep(char const *p, char *out)
 {
-    char *q = p;
+    char const *q = p;
     int digits=0, done=0, count=0;
     while(!done)
     {
@@ -1194,12 +1391,46 @@ AbcParser::readnumf(char const *num)
     return t;
 }
 
-/* read integer from string and advance character pointer */
-int
-AbcParser::readnump (char const **p)
+/*static*/ void
+AbcParser::Skipspace(char const **p)
+{
+    char c = **p;
+    while((c == ' ') || (c == '\t'))
+    {
+        *p = *p + 1;
+        c = **p;
+    }
+}
+
+/*static*/ void
+AbcParser::Readstr(char *out, char const **in, int limit)
+{
+    int i = 0;
+    while((isalpha(**in)) && (i < limit - 1))
+    {
+        out[i] = **in;
+        i = i + 1;
+        *in = *in + 1;
+    }
+    out[i] = '\0';
+}
+
+void 
+AbcParser::readstr(char *out, char const **in, int limit)
+{
+    AbcParser::Readstr(out, in, limit);
+}
+
+void
+AbcParser::skipspace(char const **p)
+{
+    AbcParser::Skipspace(p);
+}
+
+/*static*/ int
+AbcParser::Readnump(char const **p)
 {
     int t = 0;
-    /* [JA] 2021-05-25 */
     while (((int) **p >= '0') && ((int) **p <= '9') && (t < (INT_MAX-9)/10))
     {
         t = t * 10 + (int) **p - '0';
@@ -1213,19 +1444,32 @@ AbcParser::readnump (char const **p)
     return t;
 }
 
+/* read integer from string and advance character pointer */
 int
-AbcParser::readsnump (char const **p)
+AbcParser::readnump (char const **p)
 {
-    if (**p == '-')
+    return Readnump(p);
+}
+
+/*static*/ int
+AbcParser::Readsnump(char const **p)
+{
+    if(**p == '-')
     {
         *p = *p + 1;
-        this->skipspace(p);
-        return -this->readnump(p);
+        AbcParser::Skipspace(p);
+        return -AbcParser::Readnump(p);
     }
     else
     {
-        return (this->readnump (p));
+        return AbcParser::Readnump(p);
     }
+}
+
+int
+AbcParser::readsnump(char const **p)
+{
+    return AbcParser::Readsnump(p);
 }
 
 /* reads signed integer from string without advancing character pointer */
@@ -1247,8 +1491,6 @@ AbcParser::readsnumf(char const *s)
 void 
 AbcParser::readlen(int *a, int *b, char const **p)
 {
-    int t;
-
     *a = this->readnump (p);
     if (*a == 0) 
         *a = 1;
@@ -1330,7 +1572,7 @@ AbcParser::checkend(char const *s)
 {
     char const *p = s;
     int atend;
-    this->skipspace (&p);
+    this->skipspace(&p);
     if (*p == '\0')
         atend = 1;
     else
@@ -1421,14 +1663,11 @@ AbcParser::parsekey(char *str)
     int sf = -1, minor = -1;
     char modmap[7];
     int modmul[7];
-    fraction modmicrotone[7];
+    AbcMusic::fraction modmicrotone[7];
     int i, j;
     int cgotoctave, coctave;
     char *key = "FCGDAEB";
     int modeindex;
-    int a, b;			/* for microtones [SS] 2014-01-06 */
-    int success;
-    char c;
     AbcMusic::ClefType newclef; // auto-inits
 
     clefstr[0] = (char) 0;
@@ -1456,8 +1695,8 @@ AbcParser::parsekey(char *str)
     word[0] = 0; /* in case of empty string [SDG] 2020-06-04 */
     while(*s != '\0')
     {
-        parsed = this->parseclef(&s, word, &gotclef, clefstr, &newclef, 
-                                &cgotoctave, &coctave);
+        parsed = this->parseclef((char const **) &s, word, 
+                    &gotclef, clefstr, &newclef, &cgotoctave, &coctave);
         if(parsed) 
         {  
             /* [JA] 2021-05-21 changed (gotclef) to (parsed) */
@@ -1469,21 +1708,23 @@ AbcParser::parsekey(char *str)
         }
         /* parseclef also scans the s string using readword(), placing */
         /* the next token  into the char array word[].                   */
-        if (!parsed)
-            parsed = this->parsetranspose(&s, word, &gottranspose, &transpose);
+        if(!parsed)
+            parsed = this->parsetranspose((char const **) &s, word,     
+                        &gottranspose, &transpose);
 
-        if (!parsed)
-            parsed = this->parseoctave (&s, word, &gotoctave, &octave);
+        if(!parsed)
+            parsed = this->parseoctave ((char const **) &s, word, 
+                        &gotoctave, &octave);
 
-        if ((parsed == 0) && (stricmp(word, "Hp") == 0))
+        if((parsed == 0) && (stricmp(word, "Hp") == 0))
         {
             sf = 2;
             minor = 0;
             gotkey = 1;
             parsed = 1;
-        };
+        }
 
-        if ((parsed == 0) && (stricmp(word, "none") == 0))
+        if((parsed == 0) && (stricmp(word, "none") == 0))
         {
             gotkey = 1;
             parsed = 1;
@@ -1492,7 +1733,7 @@ AbcParser::parsekey(char *str)
             sf = 0;
         }
 
-        if (stricmp(word, "exp") == 0)
+        if(stricmp(word, "exp") == 0)
         {
             explict = 1;
             parsed = 1;
@@ -1503,7 +1744,7 @@ AbcParser::parsekey(char *str)
          * The key signature is expressed by sf which indicates the
          * number of sharps (if positive) or flats (if negative)
          */
-        if ((parsed == 0) && ((word[0] >= 'A') && (word[0] <= 'G')))
+        if((parsed == 0) && ((word[0] >= 'A') && (word[0] <= 'G')))
         {
             gotkey = 1;
             parsed = 1;
@@ -1529,7 +1770,7 @@ AbcParser::parsekey(char *str)
             if(strlen(word) == j)
             {
                 /* look at next word for mode */
-                this->skipspace(&s);
+                this->skipspace((char const **) &s);
                 moveon = (char *) this->readword(modestr, s);
                 this->lcase(modestr);
                 for (i = 0; i < 10; i++)
@@ -1569,7 +1810,8 @@ AbcParser::parsekey(char *str)
                 }
             }
         }
-        if (gotkey)
+
+        if(gotkey)
         {
             if (sf > 7)
             {
@@ -1588,7 +1830,7 @@ AbcParser::parsekey(char *str)
          * which will include a Bb in the D major key signature
          *
          */
-        if ((word[0] == '^') || (word[0] == '_') || (word[0] == '='))
+        if((word[0] == '^') || (word[0] == '_') || (word[0] == '='))
         {
             modnotes = 1;
             if ((strlen (word) == 2) && (word[1] >= 'a') && (word[1] <= 'g'))
@@ -1614,7 +1856,7 @@ AbcParser::parsekey(char *str)
         }
 
         /* if (explict)  for compatibility with abcm2ps 2010-05-08  2010-05-20 */
-        if ((word[0] == '^') || (word[0] == '_') || (word[0] == '='))
+        if((word[0] == '^') || (word[0] == '_') || (word[0] == '='))
         {
             modnotes = 1;
             if((strlen(word) == 2) && (word[1] >= 'A') && (word[1] <= 'G'))
@@ -1652,8 +1894,9 @@ AbcParser::parsekey(char *str)
         gotoctave = 1;
         octave = coctave;
     }
-    if (modnotes & !gotkey)
-    {				/*[SS] 2010-07-29 for explicit key signature */
+    if(modnotes & !gotkey)
+    {
+        /* explicit key signature */
         sf = 0;
         /*gotkey = 1; [SS] 2010-07-29 */
         explict = 1;		/* [SS] 2010-07-29 */
@@ -1661,7 +1904,7 @@ AbcParser::parsekey(char *str)
     this->handler->key(sf, str, modeindex, modmap, modmul, modmicrotone, gotkey,
 	     gotclef, clefstr, &newclef, octave, transpose, gotoctave, gottranspose,
 	     explict);
-    return (gotkey);
+    return gotkey;
 }
 
 void 
@@ -1675,7 +1918,6 @@ AbcParser::set_voice_from_master(int voice_num)
 
 void 
 AbcParser::readsig(char const **sig, Abc::TimeSigDetails *timesig)
-/* upgraded [JA] 2020-12-10 */
 {
     if ((strncmp (*sig, "none", 4) == 0) ||
         (strncmp (*sig, "None", 4) == 0)) 
@@ -1734,13 +1976,13 @@ AbcParser::readsig(char const **sig, Abc::TimeSigDetails *timesig)
 void
 AbcParser::read_L_unitlen(int *num, int *denom, char const **place)
 {
-    if (!isdigit(**place))
+    if(!isdigit(**place))
         this->handler->warning("No digit at the start of L: field");
 
     *num = this->readnump(place);
-    if (*num == 0)
+    if(*num == 0)
         *num = 1;
-    if ((int)**place != '/') 
+    if((int)**place != '/') 
     {
         this->handler->error("Missing / ");
         *denom = 1;
@@ -1751,7 +1993,7 @@ AbcParser::read_L_unitlen(int *num, int *denom, char const **place)
         this->skipspace(place);
         *denom = this->readnump(place);
     }
-    if ((*num == 0) || (*denom == 0)) 
+    if((*num == 0) || (*denom == 0)) 
         this->handler->error("Expecting fraction in form A/B");
     else 
         *denom = this->check_power_of_two(*denom);
@@ -1882,7 +2124,7 @@ AbcParser::parsetranspose(char const **s, char word[30],
 {
     if(stricmp(word, "transpose") != 0)
         return 0;
-    this->skipspace (s);
+    this->skipspace(s);
     if (**s != '=')
     {
         this->handler->error ("transpose must be followed by '='");
@@ -1903,7 +2145,7 @@ AbcParser::parseoctave (char const **s, char word[], int *gotoctave, int *octave
 {
     if(stricmp(word, "octave") != 0)
         return 0;
-    this->skipspace (s);
+    this->skipspace(s);
     if(**s != '=')
     {
         this->handler->error("octave must be followed by '='");
@@ -1911,14 +2153,27 @@ AbcParser::parseoctave (char const **s, char word[], int *gotoctave, int *octave
     else
     {
         *s = *s + 1;
-        this->skipspace (s);
+        this->skipspace(s);
         *octave = this->readsnump (s);
         *gotoctave = 1;
     }
     return 1;
 }
 
-/* [JA] 2020-10-12 */
+void
+AbcParser::print_voicecodes()
+{
+    if(this->num_voices == 0)
+        return;
+    char msg[80];
+    this->handler->info("voice mapping:");
+    for(int i = 0; i < this->num_voices; i++)
+    {
+        snprintf(msg, 80, "%s  %d   ", this->voicecode[i].label, i + 1);
+        this->handler->info(msg);
+    }
+}
+
 /* We expect a numeric value indicating the voice number.
  * The assumption is that these will ocuur in the order in which voices
  * appear, so that we have V:1, V:2, ... V:N if there are N voices.
@@ -2018,48 +2273,6 @@ AbcParser::interpret_voice_label(char const *s, int num, int *is_new)
     return num_voices;
 }
 
-int
-AbcParser::parsetranspose (char const **s, char word[30], 
-            int *gottranspose, int *transpose)
-{
-    if (stricmp(word, "transpose") != 0)
-        return 0;
-    this->skipspace (s);
-    if (**s != '=')
-    {
-      this->handler->error("transpose must be followed by '='");
-    }
-    else
-    {
-        *s = *s + 1;
-        this->skipspace(s);
-        *transpose = this->readsnump(s);
-        *gottranspose = 1;
-    };
-    return 1;
-}
-
-int
-AbcParser::parseoctave(char const **s, char word[30], int *gotoctave, int *octave)
-{
-    if(stricmp(word, "octave") != 0)
-        return 0;
-    this->skipspace(s);
-    if(**s != '=')
-    {
-        this->handler->error ("octave must be followed by '='");
-    }
-    else
-    {
-        *s = *s + 1;
-        this->skipspace(s);
-        *octave = this->readsnump(s);
-        *gotoctave = 1;
-    }
-    return 1;
-}
-
-/* [JA] 2020-12-10 */
 /* read the numerator of a time signature in M: field
  *
  * abc standard 2.2 allows M:(a + b + c + ...)/d
@@ -2142,7 +2355,7 @@ AbcParser::lcase(char *s)
 
 void 
 AbcParser::process_microtones(int *parsed,  char word[30],
-    char modmap[], int modmul[], fraction modmicrotone[])
+    char modmap[], int modmul[], AbcMusic::fraction modmicrotone[])
 {
     int a, b;/* for microtones [SS] 2014-01-06 */
     char c;
@@ -2296,7 +2509,7 @@ AbcParser::parsesname(char const **s, char word[], int *gotname,
     {
         namestring->clear();
         *s = *s + 1;
-        this->skipspace (s);
+        this->skipspace(s);
         /* string enclosed in double quotes */
         if (**s == '"')		
         {
@@ -2405,4 +2618,87 @@ AbcParser::isclef(char const *s, AbcMusic::ClefType *new_clef,
         this->handler->warning(error_message);
     } 
     return gotclef;
+}
+
+int
+AbcParser::ismicrotone(char const **p, int dir)
+{
+    int a, b;
+    char const *chp = *p;
+
+    this->read_microtone_value(&a, &b, p);
+    /* readlen_nocheck advances past microtone indication if present */
+    if (chp != *p) /* [HL] 2020-06-20 */
+    {
+        /* printf("event_microtone a = %d b = %d\n",a,b); */
+        this->handler->microtone (dir, a, b);
+        return 1;
+    }
+    this->setmicrotone.num = 0;
+    this->setmicrotone.denom = 0;
+    return 0;
+}
+
+/* read length part of a note and advance character pointer */
+void
+AbcParser::read_microtone_value (int *a, int *b, char const **p)
+{
+    *a = this->readnump(p);
+    if(*a == 0)
+        *a = 1;
+    *b = 1;
+    if (**p == '/')
+    {
+        *p = *p + 1;
+        *b = this->readnump(p);
+        if (*b == 0)
+        {
+            *b = 2;
+            while(**p == '/')
+            {
+                *b = *b * 2;
+                *p = *p + 1;
+            }
+        }
+    } 
+    else 
+    {
+        /* To signal that the microtone value is not a fraction */
+        *b = 0; 
+    }
+    int t = *b;
+    while(t > 1)
+    {
+        if(t % 2 != 0)
+        {
+            /*event_warning("divisor not a power of 2"); */
+            t = 1;
+        }
+        else
+            t = t / 2;
+    }
+}
+
+std::ifstream *
+AbcParser::parse_abc_include(char const *s)
+{
+    char includefilename[256];
+    std::ifstream *istr = nullptr;
+    int success = sscanf(s, "%%%%abc-include %79s", 
+                        includefilename);
+    if (success == 1) 
+    {
+        /* printf("opening include file %s\n",includefilename); */
+        istr = new std::ifstream(includefilename, 
+                    std::ifstream::in);
+        if(istr == nullptr)
+        {
+            char msg[300];
+            snprintf(msg, 300, 
+                "Failed to open include file %s", 
+                includefilename);
+            this->handler->error(msg);
+        }
+    }
+    return istr; 
 }

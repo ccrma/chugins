@@ -30,12 +30,6 @@
 #include "Abc.h"
 #include "AbcMusic.h"
 
-struct fraction
-{
-    int num;
-    int denom;
-};
-
 class AbcParser
 {
 public:
@@ -101,7 +95,7 @@ public:
         virtual void info_key(char const *key, char const *value) {}
         virtual void info(char const *s) {}
         virtual void key(int sharps, char const *s, int modeindex, 
-                    char modmap[7], int modmul[7], fraction modmicro[7],
+                    char modmap[7], int modmul[7], AbcMusic::fraction modmicro[7],
                     int gotkey, int gotclef, char const *clefname, AbcMusic::ClefType *new_clef,
                     int octave, int transpose, int gotoctave, int gottranspose,
                     int explict) {}
@@ -144,21 +138,28 @@ public:
     }; // end EventHandler
 
 public:
-    // following public vars accessible by EventHandler cliento
+    // following static parser methods available for context-free
+    // parsing (used by AbcGenMidi).
+    static int Readnump(char const **p);
+    static int Readsnump(char const **p);
+    static void Skipspace(char const **p);
+    static void Readstr(char *out, char const **in, int limit);
 
+    // following public vars accessible by EventHandler cliento
     char const *abcversion;
     char lastfieldcmd;
     std::vector<int> modeminor;
     std::vector<int> modekeyshift;
-    std::vector<int> decorations; // STACCATO, TENUTO, ...
+    char const *decorations; // STACCATO, TENUTO, ...
     int repcheck; /* AbcStore may enable/disable repeat checking */
     int oldchordconvention;
     int lineposition;
     int lineno;
+    int inhead, inbody;
 
     /* microtonal support and scale temperament */
     int microtone;
-    fraction setmicrotone;	
+    AbcMusic::fraction setmicrotone;	
     int temperament; // value is client specific
 
     int beatmodel;
@@ -178,6 +179,7 @@ public:
     {
         k_AbcToMidi,
         k_AbcToAbc,
+        k_AbcToYaps // unsupported
     };
 
     int Parse(char const *buf, EventHandler *, ParseMode m);
@@ -188,27 +190,9 @@ public:
     int readnump(char const **num);
     void parserOn();
     void parserOff();
-    void skipspace(char const **p) /* skip space and tab */
-    {
-        char c = **p;
-        while((c == ' ') || (c == '\t'))
-        {
-            *p = *p + 1;
-            c = **p;
-        }
-    }
+    void skipspace(char const **p);/* skip space and tab */
     /* copy across alpha string -- */
-    void readstr(char *out, char const **in, int limit)
-    {
-        int i = 0;
-        while((isalpha(**in)) && (i < limit - 1))
-        {
-            out[i] = **in;
-            i = i + 1;
-            *in = *in + 1;
-        }
-        out[i] = '\0';
-    }
+    void readstr(char *out, char const **in, int limit);
 
     /* Used by parse_mididef() in AbcStore */
     /* Just like readstr but also allows anything except white space */
@@ -227,6 +211,7 @@ public:
 
     int readsnump(char const **p);
     int readsnumf(char const *p);
+    void print_voicecodes();
 
 private:
     int parse(std::istream *, EventHandler *h, ParseMode m);
@@ -255,7 +240,7 @@ private:
     char const *lookup_abbreviation(char symbol);
     void clear_abbreviations();
     void process_microtones(int *parsed, char word[30],
-        char modmap[], int modmul[], fraction modmicrotone[7]);
+        char modmap[], int modmul[], AbcMusic::fraction modmicrotone[7]);
     int check_power_of_two(int denom);
 
 
@@ -263,7 +248,7 @@ private:
     void parse_precomment(char const *s);
     void preparse_words(char const *s);
     void parsefield(char c, char const *s);
-    char *parseinlinefield(char *s); // may overrwrite input
+    char const *parseinlinefield(char *s); // may overrwrite input
     void parsemusic(char const *s);
     void parsenote(char const **s);
     void parsevoice(char const *s);
@@ -282,7 +267,7 @@ private:
     int parsekey(char *s);
     void check_and_call_bar(int bar_type, char const *replist);
     void check_bar_repeats(int bar_type, char const *replist);
-    char *getrep(char *p, char *out); /* look for number or list following [ | or :| */
+    char const *getrep(char const *p, char *out); /* look for number or list following [ | or :| */
     int checkend(char const *s);
     void resolve_unitlen(); // for each tune
     void set_voice_from_master(int voice_num);
@@ -293,6 +278,9 @@ private:
         int *gotoctave, int *octave);
     int isclef(char const *s, AbcMusic::ClefType *new_clef,
         int *gotoctave, int *octave, int expect_clef);
+    
+    int ismicrotone(char const **p, int dir);
+    void read_microtone_value (int *a, int *b, char const **p);
 
 private:
     struct voice_context 
@@ -327,11 +315,9 @@ private:
     int parsing_started;
     int parsing, slur;
     int ignore_line;
-    int inhead, inbody;
     int parserinchord;
     int ingrace;
     int chorddecorators[Abc::DECSIZE];
-    char const *decorations;
     std::vector<std::string> abbreviation; // SIZE_ABBREVIATIONS
     
     int num_voices;  /* [JA] 2020-10-12 */

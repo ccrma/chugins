@@ -1,22 +1,29 @@
-/**********************************************************************/
-/*! \class MidiFileIn
- \brief A standard MIDI file reading/parsing class.
- 
- This class can be used to read events from a standard MIDI file.
- Event bytes are copied to a C++ vector and must be subsequently
- interpreted by the user. The function getNextMidiEvent() skips
- meta and sysex events, returning only MIDI channel messages.
- Event delta-times are returned in the form of "ticks" and a
- function is provided to determine the current "seconds per tick".
- Tempo changes are internally tracked by the class and reflected in
- the values returned by the function getTickSeconds().
- 
- by Gary P. Scavone, 2003 - 2010.
- */
-/**********************************************************************/
+#include "dbABCFile.h"
 
 #include <cstring>
 #include <iostream>
+
+dbABCFile::dbABCFile()
+{}
+
+dbABCFile::~dbABCFile()
+{
+}
+
+int
+dbABCFile::Open(std::string const &fp)
+{
+    return 0;
+}
+
+int
+dbABCFile::Close()
+{
+    return 0;
+}
+
+
+#if 0
 
 #if !defined(__BIG_ENDIAN__) && !defined(__LITTLE_ENDIAN__)
 #define __LITTLE_ENDIAN__
@@ -384,3 +391,5 @@ bool MidiFileIn :: readVariableLength( unsigned long *value )
 } 
     
 } // stk namespace
+
+#endif

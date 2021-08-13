@@ -43,6 +43,7 @@ public:
     void timesig(Abc::TimeSigDetails *);
     void octave(int num, int local);
     void info_key(char const *key, char const *value);
+
     void graceon();
     void graceoff();
     void playonrep(char const *);
@@ -66,7 +67,7 @@ public:
     void handle_instruction(char const *s);
     void bar(int type, char const *replist);
     void key(int sharps, char const *s, int modeindex, 
-            char modmap[7], int modmul[7], fraction modmicro[7],
+            char modmap[7], int modmul[7], AbcMusic::fraction modmicro[7],
             int gotkey, int gotclef, char const *clefname, AbcMusic::ClefType *new_clef,
             int octave, int transpose, int gotoctave, int gottranspose,
             int explict);
@@ -100,6 +101,7 @@ private:
     float octave_size; 
     float fifth_size; 
     float sharp_size; 
+    AbcMusic::fraction modmicrotone[7];
     float microstep_size; 
     int started_parsing;
     int v1index;
@@ -121,6 +123,8 @@ private:
     void init_p48toc53();
     void convert_to_comma53(char acc, int *midipitch, int* midibend);  
     int p48toc53[50];
+
+    AbcGenMidi genMidi;
 
     struct voicecontext 
     {
@@ -196,7 +200,7 @@ private:
 
         char basemap[7], workmap[7][10];
         int basemul[7], workmul[7][10];
-        fraction basemic[7],workmic[7][10];
+        AbcMusic::fraction basemic[7],workmic[7][10];
         int keyset; /* flag to indicate whether key signature set */
         int default_length;
         int active_meter_num; /* [SS] 2012-11-08 */
@@ -240,6 +244,7 @@ private:
     voicecontext* vaddr[64]; /* address of all voices (by v->indexno) */
     /* vaddr is only a convenience for debugging */
 
+
     /* structure for expanding a note into a TRILL, ROLL, or ORNAMENT */
     struct notestruct 
     {
@@ -257,8 +262,6 @@ private:
     notestruct* noteaddr[1000];
     int notesdefined;
 
-    AbcGenMidi::trackstruct trackdescriptor[40];
-
     int detune_list[12];
     int dependent_voice[64]; /* flag to indicate type of voice */
     int voicecount;
@@ -271,42 +274,20 @@ private:
     int ntexts;
 
     /* Named guitar chords */
-    struct Chord
-    {
-        std::string name;
-        std::vector<int> notes;
-    };
-    std::vector<Chord> chords;
+    std::vector<AbcGenMidi::Chord> chords;
 
-    /* general purpose storage structure */
-    int maxnotes;
-    int notes; // index into following...
-    struct featureDesc
-    {
-        featureDesc()
-        {
-            this->bentpitch = 0;
-            this->decotype = 0;
-        }
-
-        Abc::FeatureType feature;
-        int pitch;
-        int num;
-        int denom;
-        int bentpitch; // microtones
-        int stressvelocity;
-        int pitchline; // file location
-        int decotype; // ROLLS, TRILLS, etc
-        int charloc; // character position in abctune
-    };
-    std::vector<featureDesc> notelist;
+    int maxFeatures;
+    int nextFeature; // index into following...
+    typedef AbcGenMidi::FeatureDesc FeatureDesc;
+    std::vector<FeatureDesc> featurelist;
 
     int verbose;
     int titlenames;
     int got_titlename;
     int namelimit;
     int xmatch;
-    int sf, mi;
+    int keySharps; /* number of sharps in key signature [-7, 7] */
+    int keyMinor; /* minor */
     int gchordvoice, wordvoice, drumvoice, dronevoice;
     int ratio_standard; /* flag corresponding to -RS parameter */
     /* when ratio_standard != -1 the ratio for a>b is 3:1 instead of 2:1 */
@@ -315,15 +296,12 @@ private:
     int fermata_fixed; /* flag on how to process fermata */
     int apply_fermata_to_chord; 
 
-    /* Part handling */
-    AbcGenMidi genMidi;
-
     int voicesused;
 
     /* Tempo handling (Q: field) */
     int time_num, time_denom;
-    int mtime_num, mtime_denom;
-    long current_tempo;
+    int mtime_num, mtime_denom; // active_meter
+    long current_tempo; // was: tempo
     int tempo_num, tempo_denom;
     int relative_tempo, Qtempo;
 
@@ -348,7 +326,6 @@ private:
     int ntracks; /* manages GenMidi.trackdesciptor[] */
 
     /* bar length checking */
-    // XXX: extern int bar_num, bar_denom;
     int barchecking;
 
     /* generating MIDI output */
@@ -358,7 +335,7 @@ private:
 
     /* karaoke handling */
     int karaoke, wcount;
-    std::vector<std::string> wordlist; // no max
+    std::vector<std::string> wordlist; // (was words) no max
 
     // extern int decorators_passback[DECSIZE]; 
     /* a kludge for passing
@@ -368,9 +345,6 @@ private:
 
     // extern int inchordflag;
     /* for reseting decorators_passback in parseabc.c */
-
-    /* time signature after header processed */
-    int header_time_num, header_time_denom;
 
     int dummydecorator[Abc::DECSIZE]; /* used in event_chord */
     // extern char* featname[];
@@ -396,7 +370,6 @@ private:
     int getchordnumber(char const *s);
 
     void addfract(int *xnum, int *xdenom, int a, int b);
-    void zerobar();
     void addfeature(Abc::FeatureType f,int p,int n,int d);
     void replacefeature(Abc::FeatureType f, int p, int n, int d, int loc);
     void insertfeature(Abc::FeatureType f, int p, int n, int d, int loc);
@@ -405,7 +378,7 @@ private:
     void removefeatures(int locfrom, int locto);
     void removefeature(int loc);
 
-    int extendNotelist(int maxnotes);
+    void extendFeaturelist();
 
     // extern long writetrack();
     void init_drum_map();
@@ -441,14 +414,12 @@ private:
     void recurse_back_to_original_voice();
     int search_backwards_for_last_bar_line(int from);
     void setmap(int sf, char map[7], int mult[7]);
-    void copymap(voicecontext*);
     void altermap(voicecontext *v, char modmap[7], int modmul[7], 
-        fraction modmic[7]);
+        AbcMusic::fraction modmic[7]);
  
-    void event_tempo(int n, int a, int b, int rel,
-                char const *pre, char const *post);
     int get_tempo_from_name (char const *s);
     void tempounits(int *t_num, int *t_denom);
+    void headerprocess(); // called after event_key
 
     void specific_in_header(char const *, char const *); // via event_specific
     void parse_drummap(char const **s);
@@ -476,7 +447,7 @@ private:
                 int propagate_accs);
     
     void dograce();
-    void applygrace(int); // offset into this->notelist
+    void applygrace(int); // offset into this->featurelist
     void applygrace_orig(int);
     void applygrace_new(int);
     void cleargracenotes(int start, int end);
@@ -507,7 +478,6 @@ private:
         float expcoef[16];		    /* segment expander coefficient */
     } stresspat[48];
     int nmodels;
-    void init_stresspat();
     int stress_locator(char const *rhythmdesignator, 
                         char const *timesigstring);
     int load_stress_parameters(char const *rhythmdesignator);
@@ -526,6 +496,8 @@ private:
     void apply_bf_stress_factors();
 
     void tiefix();
+    void dotie(int j, int xinchord, int voiceno);
+
     void fixreps();
     void expand_ornaments();
     void check_for_timesig_preceding_bar_line();

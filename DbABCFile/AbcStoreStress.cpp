@@ -402,9 +402,9 @@ AbcStore::apply_bf_stress_factors()
     char command[40];
     char const *p;
     int barnumber = 0;
-    while(j < this->notes) 
+    while(j < this->nextFeature) 
     {
-        featureDesc &fd = this->notelist[j];
+        FeatureDesc &fd = this->featurelist[j];
         switch(fd.feature) 
         {
         case Abc::SINGLE_BAR:           /*  |  */
@@ -527,12 +527,12 @@ AbcStore::load_stress_parameters(char const *rhythmdesignator)
 
     this->genMidi.segnum = time_num;
     this->genMidi.segden = time_denom * this->genMidi.nseg;
-    this->genMidi.reduce(&this->genMidi.segnum, &this->genMidi.segden);
+    AbcMusic::reduceFraction(&this->genMidi.segnum, &this->genMidi.segden);
 
     /* compute number of segments in quarter note */
     int qnotenum = this->genMidi.segden;
     int qnoteden = this->genMidi.segnum * 4;
-    this->genMidi.reduce(&qnotenum, &qnoteden);
+    AbcMusic::reduceFraction(&qnotenum, &qnoteden);
 
     for (int n = 0; n < this->genMidi.nseg + 1; n++)
     {
@@ -763,14 +763,14 @@ void
 AbcStore::calculate_stress_parameters()
 {
     char msg[100];
-    this->genMidi.segnum = this->genMidi.time_num;
-    this->genMidi.segden = this->genMidi.time_denom * this->genMidi.nseg;
-    this->genMidi.reduce(&this->genMidi.segnum, &this->genMidi.segden);
+    this->genMidi.segnum = this->time_num;
+    this->genMidi.segden = this->time_denom * this->genMidi.nseg;
+    AbcMusic::reduceFraction(&this->genMidi.segnum, &this->genMidi.segden);
 
     /* compute number of segments in quarter note */
     int qnotenum = this->genMidi.segden;
     int qnoteden = this->genMidi.segnum*4;
-    this->genMidi.reduce(&qnotenum, &qnoteden);
+    AbcMusic::reduceFraction(&qnotenum, &qnoteden);
     if(this->verbose > 1) 
     {
         snprintf(msg, 100, "segment size set to %d/%d",
