@@ -172,14 +172,13 @@ public:
     void zerobar();
     void addBarUnits(int num, int denom);  // adds a/b to count of units in bar
     void getBarUnits(int *num, int *denom);
+    void set_gchords(char const *);
+    void set_drums(char const *);
     void drum_map(int midipitch, int mapto);
 
 public:
     // primary callback from AbcMidiFile
     int writetrack(int xtrack) override; 
-
-    void set_gchords(char const *);
-    void set_drums(char const *);
 
 private:
     void parse_drummap(char const **);
@@ -270,7 +269,7 @@ private:
 
         void error(char const *msg);
         void warning(char const *msg);
-        void info(char const *msg);
+        void log(char const *msg);
 
         void initTrack(int xtrack);
         void set_meter(int n, int m);

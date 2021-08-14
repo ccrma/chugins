@@ -1,0 +1,59 @@
+X: 63
+T: Baym Rebin's Sude
+T: At the Rabbi's Table
+Z: John Chambers <jc:trillian.mit.edu>
+M: 2/4
+L: 1/16
+K: C^f^c^a 
+Q:1/4=80
+V:1
+%%MIDI program 65 %alto sax
+FE \
+|: "F#"^DEF2 F2F2 | F8 | ABc2 "Em"BAG2 | "F#"F8 \
+| A4 "Bm"B4 | "F#"c4 "Bm"B4 | "F#"A6 G2 | A2G2 F2E2 |
+| "F#"^DEF2 F2F2 | F8 | FGA2 "Em"GFE2 | E8 \
+| e2d2 c2B2 | A2E2 F2G2 | "F#"F8- | F4 z4 :|
+|: "Bm"F2B2 A2B2 | "F#7"c2d2 c2F2 | "Bm"B6 cd | B8 \
+| "Em"e4 "F#7"f4 | "Em"e4 "Bm"d4 | "F#"c6 B2 | c2B2 A4 |
+| "F#"A4 "Bm"B4 | "F#"c4 "Bm"B4 | "F#"A6 G2 | A2G2 F2E2 \
+| "Em"A2B2 B2B2 | AcBA GFEG | "F#"F4-  FAcA | F8 :|
+|: "Bm"dcdc dcB2 | "Em"BABA BAG2 | "F#"FGA2 "Em"GFE2 | E8 \
+| A2B2 B2B2 | AcB2 A2B2 | "F#"c4- cBAG | F8 |
+| "Bm"dcdc dcB2 | "Em"BABA BAG2 | "F#"FGA2 "Em"GFE2 | E8 \
+| "Em"e2d2 c2B2 | A2E2 F2G2 | "F#"F8- | F8 :|
+V: drum
+%%MIDI channel 10
+zz |: D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,D,,D,, D,D,,D,, ^G,,^G,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,D,,D,, D,D,,D,, ^G,,^G,, |
+ D,D,,D,, D,D,,D,, D,^G,,  |
+ |D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,D,,D,, D,D,,D,, ^G,,^G,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,D,,D,, D,D,,D,, ^G,,^G,, |
+ D,D,,D,, D,D,,D,, D,^G,,  :|
+%
+|: D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,D,,D,, D,D,,D,, ^G,,^G,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,D,,D,, D,D,,D,, ^G,,^G,, |
+ D,D,,D,, D,D,,D,, D,^G,,  |
+ |D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,D,,D,, D,D,,D,, ^G,,^G,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,^G,,^G,, D,D,,D,, ^G,,D,, |
+ D,D,,D,, D,D,,D,, ^G,,^G,, |
+ D,D,,D,, D,D,,D,, D,^G,,  :|
+

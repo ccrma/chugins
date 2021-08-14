@@ -1,0 +1,53 @@
+X: 8
+%%MIDI channel 1
+%%MIDI chordprog 3
+%%MIDI bassprog 3
+%%MIDI program 26
+%%MIDI beat 110 100  90 4
+%%MIDI ratio 2 1
+%%MIDI chordvol 64
+%%MIDI bassvol 65
+%%MIDI transpose 0
+%%MIDI gracedivider 4
+Q:1/4 = 142
+T: Coleraine
+B: Kerr's Violin IV
+Z: John Chambers <jc@eddie.mit.edu> http://eddie.mit.edu/~jc/music/
+R: jig
+M: 6/8
+L: 1/8
+K: Am
+%%MIDI drum d2z2ddd2d2d2 65 66 66 50 66 66 90 70 70 90 70 70
+%%MIDI drumon
+V:1
+%%MIDI program 72
+%%MIDI control 7 115
+%%MIDI control 10 67
+%%MIDI beat 110 100  90 4
+|: "E7"E | "Am"E>AA ABc | "E7"B>ee e2d | "Am"c>AA ABc | "E7"B^GE E2E | \
+| "Am"E>AA ABc | "E7"B>ee e2d | "Am"c>BA "E7"B^GE | "Am"A3- A2 :|
+|: "G7"B | "C"c2c cdc | "G"Bdg "(E)"g2^g | "Am"a>ed cBA | "E7"^GBG E^FG | \
+| "Am"A^GA "E7"BAB | "Am"cde "Dm"fed | "Am"c>BA "E7"B^GE | "Am"A3- A2 :|
+V: drum
+M: 6/8
+L: 1/16
+%%MIDI channel 10
+ |: z2|G,,3A,,G,,2 A,,G,,A,,2A,,2 |
+ G,,3A,,G,,2 A,,2G,,A,,G,,2 |
+ G,,3A,,G,,2 A,,G,,A,,2A,,2 |
+ G,,3A,,G,,2 A,,2G,,A,,G,,2 |
+ G,,3A,,G,,2 A,,G,,A,,2A,,2 |
+ G,,3A,,G,,2 A,,2G,,A,,G,,2 |
+ G,,3A,,G,,2 A,,G,,A,,2A,,2 |
+ G,,3A,,G,,2 A,,2G,,A,,  :|
+%
+ |:z2| G,,3A,,G,,2 A,,G,,A,,2A,,2 |
+ G,,3A,,G,,2 A,,2G,,A,,G,,2 |
+ G,,3A,,G,,2 A,,G,,A,,2A,,2 |
+ G,,3A,,G,,2 A,,2G,,A,,G,,2 |
+ G,,2G,,2G,,2 z6 |
+ G,,2G,,2G,,2 z6 |
+ G,,2G,,2G,,2 z6 |
+ G,,6 z4  :|
+
+

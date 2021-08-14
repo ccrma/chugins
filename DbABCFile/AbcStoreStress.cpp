@@ -828,3 +828,166 @@ AbcStore::calculate_stress_parameters()
         this->genMidi.fdursum[this->genMidi.nseg] = lastsegvalue;
     }
 }
+
+/* modifies the note durations inside a beat using Phil Taylor's model */
+void 
+AbcStore::beat_modifier(int i)
+{
+    /* start_num/start_denom is the original position of the note onset
+    * end_num/end_denom is the original position of the end of the note
+    * mstart_num/mstart_denom is the modified position of the note onset
+    * mend_num/mend_denom is the modified position of the note end
+    * startseg_num/startseg_denom is the position of the note onset in
+    * segment units. eg. if a note starts in the middle of segment 1,
+    * its value would be 3/2 (assuming we are counting from 0).
+    */
+    int notecount = 0;
+    int inchord = 0;
+    int start_num = 0;
+    int start_denom = 1;
+    int end_num = start_num;
+    int end_denom = start_denom;
+    int startseg_num, startseg_denom;
+    int endseg_num, endseg_denom;
+    int delta_num, delta_denom;
+    int mstart_num, mstart_denom;
+    int mend_num, mend_denom;
+
+    i++;
+
+    AbcGenMidi::FeatureDesc &fd = this->featurelist[i];
+    while(fd.feature != Abc::SINGLE_BAR) 
+    {
+        fd = this->featurelist[i];
+        if(fd.feature == Abc::DOUBLE_BAR ||
+           fd.feature == Abc::BAR_REP ||
+           fd.feature == Abc::DOUBLE_REP ||
+           fd.feature == Abc::REP_BAR) 
+           break;
+        if(fd.feature == Abc::CHORDON) 
+        {
+            inchord = 1;
+            notecount = 0;
+            i++;
+            continue;
+        }
+        if(fd.feature == Abc::CHORDOFF ||
+           fd.feature == Abc::CHORDOFFEX) 
+        {
+            inchord = 0;
+            notecount = 0;
+            start_num = end_num;
+            start_denom = end_denom;
+            i++;
+            continue;
+        }
+        if(fd.feature == Abc::NOTE || fd.feature == Abc::TNOTE ||
+           (fd.feature == Abc::REST && fd.pitch == 0)) 
+        {
+            /* Care is needed for tied notes; they appear as TNOTE followed by*/
+            /* two REST. We want to ignore those two rests.*/
+            /* if REST and pitch[i] != 0 it is a tied note converted to a rest */
+            /* Hopefully we do not encounter tied rests. */
+            if(notecount == 0) 
+            {
+                AbcMusic::addFraction(&end_num, &end_denom, fd.num, fd.denom);
+                AbcMusic::reduceFraction(&end_num, &end_denom);
+
+                /* Convert note positions to where they would map to after applying
+                   the duration modifiers. We map the positions to segment units and then
+                   transform them back to note units using the modified space fdursum.
+                   Since all units of time are represented as fractions, the operations
+                   are less transparent.
+                */
+                /* divide start_num/start_denom by segnum/segden */
+                /* (divide note duration by 4 because they are 4 times larger in num/denom*/
+                startseg_num = start_num * this->genMidi.segden;
+                startseg_denom = start_denom * this->genMidi.segnum*4;
+                AbcMusic::reduceFraction(&startseg_num, &startseg_denom);
+
+                /* repeat for end_num and end_denom; */
+                endseg_num = end_num * this->genMidi.segden;
+                endseg_denom = end_denom * this->genMidi.segnum*4;
+                AbcMusic::reduceFraction(&endseg_num, &endseg_denom);
+
+                fdursum_at_segment(startseg_num, startseg_denom, 
+                            &mstart_num, &mstart_denom);
+                fdursum_at_segment(endseg_num, endseg_denom, 
+                            &mend_num, &mend_denom);
+
+                /*  now compute the new note length */
+                delta_num = mend_num;
+                delta_denom = mend_denom;
+                AbcMusic::addFraction(&delta_num, &delta_denom,
+                                -mstart_num, mstart_denom);
+                AbcMusic::reduceFraction(&delta_num, &delta_denom);
+                if(inchord) 
+                    notecount++;
+            }
+            if(this->verbose > 1) 
+            {
+                char msg[100];
+                snprintf(msg, 100,
+                    "pitch %d from = %d/%d (%d/%d) to %d/%d (%d/%d) becomes %d/%d %d/%d",
+                    fd.pitch, start_num, start_denom, startseg_num, startseg_denom,
+                    end_num, end_denom, endseg_num, endseg_denom,
+                    mstart_num, mstart_denom, mend_num, mend_denom);
+                this->info(msg);
+                snprintf(msg, 100, " - %d/%d", delta_num, delta_denom);
+                this->info(msg);
+            }
+            fd.num = delta_num; 
+            fd.denom = delta_denom;
+
+            int segnumber = startseg_num/startseg_denom; /* [SS] 2011-08-17 */
+            fd.stressvelocity = this->genMidi.ngain[segnumber];
+            
+            if(notecount == 0) 
+            {
+                start_num = end_num;
+                start_denom = end_denom;
+            }
+            if(fd.feature == Abc::TNOTE) 
+                i++; /*skip following rest */
+        }
+        i++;
+    } // end while
+}
+
+void 
+AbcStore::fdursum_at_segment(int segposnum, int segposden, 
+    int *val_num, int *val_den)
+{
+    int inx0, inx1, remainder;
+    int nseg = this->genMidi.nseg;
+    float val, a0, a1;
+    *val_num = 0;
+    inx0 = segposnum/segposden;
+    if(inx0 > nseg) 
+    {
+        *val_num = *val_num + (int) ((float) 1000.0*this->genMidi.fdursum[nseg]);
+        /*inx0 = inx0 - nseg;  [SS] 2013-06-07*/
+        inx0 = inx0 % nseg;  /* [SS] 2013-06-07 */
+    }
+    inx1 = inx0 + 1;
+    remainder = segposnum % segposden;
+    if(remainder == 0) 
+    {
+        val = this->genMidi.fdursum[inx0];
+    } 
+    else 
+    {
+        if(inx1 > nseg) 
+        {
+            printf("***fdursum_at_segment: inx1 = %d too large\n",inx1);
+        }
+        
+        a0 = remainder / (float) segposden;
+        a1 = 1.f - a0; 
+        val = a1 * this->genMidi.fdursum[inx0] + 
+              a0 * this->genMidi.fdursum[inx1];
+    }
+    *val_num  += (int) (1000.0 * val +0.5);
+    *val_den = 1000; 
+    AbcMusic::reduceFraction(val_num, val_den);
+}

@@ -6,7 +6,7 @@
 #include "Abc.h"
 #include "AbcPort.h"
 
-class AbcStore : public AbcParser::EventHandler
+class AbcStore : public IAbcParseClient
 {
 public:
     static char const *version; 
@@ -20,10 +20,12 @@ public:
     AbcStore(AbcParser *);
     virtual ~AbcStore();
 
+    void Init(int argc, char const *argv[], std::string *filename);
+
     /**
      * @Override intercept parser's eventhandler methods
      */
-    void init(int argc, char const *argv[], std::string *filename); 
+    // void init(int argc, char const *argv[], std::string *filename); 
     void text(char const *);
     void x_reserved(char);
     void split_voice();
@@ -37,7 +39,7 @@ public:
     void field(char k, char const *f);
     void words(char const *p, int continuation);
     void part(char const *s);
-    void voice(int n, char const *s, AbcParser::voice_params *vp);
+    void voice(int n, char const *s, voice_params *vp);
     void length(int l);
     void tempo(int n, int a, int b, int rel, char const *pre, char const *post);
     void timesig(Abc::TimeSigDetails *);
@@ -369,7 +371,6 @@ private:
 
     int getchordnumber(char const *s);
 
-    void addfract(int *xnum, int *xdenom, int a, int b);
     void addfeature(Abc::FeatureType f,int p,int n,int d);
     void replacefeature(Abc::FeatureType f, int p, int n, int d, int loc);
     void insertfeature(Abc::FeatureType f, int p, int n, int d, int loc);
@@ -388,7 +389,7 @@ private:
     void init_stresspat();
     void beat_modifier(int);
 
-    void dumpfeat (int from, int to); /* defined in genmidi.c */
+    void dumpfeat (int from, int to);
     char *concatenatestring(char * s1,char * s2); /* defined in parseabc.c */
     void read_custom_stress_file (char *filename); /* defined in stresspat.c */
 
@@ -466,6 +467,8 @@ private:
     void makeharproll3(int pitch, int bend, int n, int m);
 
     char const *get_accidental(char const *place, char *accidental);
+    void fdursum_at_segment(int segposnum, int segposden, 
+        int *val_num, int *val_den);
 
     /* stress patterns ----------------------------------- */
     struct stressdef
@@ -498,10 +501,15 @@ private:
     void tiefix();
     void dotie(int j, int xinchord, int voiceno);
 
-    void fixreps();
-    void expand_ornaments();
     void check_for_timesig_preceding_bar_line();
     void fix_part_start();
+
+    void fixreps();
+    void placestartrep(int j);
+    void placeendrep(int j);
+
+    void expand_ornaments();
+    void convert_tnote_to_note(int);
 
 }; // end class
 

@@ -6,311 +6,6 @@
 #include "AbcStore.h"
 
 void
-AbcStore::init(int argc, char const*argv[], std::string *filename)
-{
-    int j;
-    int arg, m, n;
-
-    /* look for code checking option */
-    if(this->getarg("-c", argc, argv) != -1) 
-        this->check = 1;
-    else
-        this->check = 0;
-
-    /* disable repeat checking because abc2midi does its own workaround
-     * attempting to fix various repeat errors.
-     */
-    this->parser->repcheck = 0;
-
-    /* look for filename-from-tune-titles option */
-    this->namelimit = 252;
-    this->titlenames = 0;
-    if(this->getarg("-t", argc, argv) != -1)
-    {
-        this->titlenames = 1;
-        this->namelimit = 8;
-    }
-    /* look for verbose option */
-    arg = this->getarg("-v", argc, argv);
-    if(arg != -1) 
-    {
-        if(argc > arg)
-        {
-            n = sscanf(argv[arg],"%d", &m);
-            if(n > 0) 
-                this->verbose = m; 
-            else 
-                this->verbose = 1; /* arg != -1 but arg == argc */
-        } 
-        else 
-            this->verbose = 0;
-    }
-    if(this->getarg("-ver", argc, argv) != -1) 
-    {
-        printf("%s\n", this->version);
-        return;
-    }
-    /* look for "no forte no piano" option */
-    if(this->getarg("-NFNP", argc, argv) != -1)
-        this->nofnop = 1;
-    else
-        this->nofnop = 0;
-
-    if(this->getarg("-NFER",argc, argv) != -1)
-        this->ignore_fermata = 1;
-    else
-        this->ignore_fermata = 0;
-
-    if(this->getarg("-NGRA",argc, argv) != -1)
-        this->ignore_gracenotes = 1;
-    else
-        this->ignore_gracenotes = 0;
-
-    if(this->getarg("-NGUI",argc, argv) != -1)
-        this->ignore_guitarchords = 1;
-    else
-        this->ignore_guitarchords = 0;
-  
-    if(this->getarg("-NCOM", argc, argv) != -1) 
-        this->nocom = 1;
-    else
-        this->nocom = 0;
-
-    if(this->getarg("-STFW",argc,argv) != -1)
-        this->separate_tracks_for_words = 1;
-    else
-        this->separate_tracks_for_words = 0;
-
-    if(this->getarg("-HARP",argc,argv) != -1)
-        this->harpmode = 1;
-    else 
-        this->harpmode = 0;
-
-    if(this->getarg("-EA",argc,argv) != -1)
-        this->easyabcmode = 1;
-    else
-        this->easyabcmode = 0;
-
-    arg = getarg("-BF",argc,argv);
-    if(arg != -1)  
-    { 
-        if(argc > arg) 
-        {
-            n = sscanf(argv[arg],"%d",&m);
-            if(n > 0) 
-                this->genMidi.stressmodel = m;
-        } 
-        else 
-            this->genMidi.stressmodel = 2;
-    } 
-    else 
-        this->genMidi.stressmodel = 0;
-    this->genMidi.barflymode = this->genMidi.stressmodel;
-
-    arg = getarg("-TT",argc,argv); /* [SS] 2012-04-01 */
-    if(arg != -1) 
-    {
-        float afreq, semitone_shift;
-        n = 0;
-        if(argc > arg) 
-        {
-            n = sscanf(argv[arg],"%f", &afreq);
-        }
-        if(n < 1) 
-        {
-            this->error("expecting float between 415.30 and 466.16 after -TT\n");
-        } 
-        else 
-        {
-            char msg[100];
-            this->retuning = 1;
-            semitone_shift = (float) (12.0 * log10(afreq/440.0f)/log10(2.0f));
-            snprintf(msg, 100, "afreq = %f semitone_shift = %f\n", 
-                    afreq, semitone_shift);
-            this->log(msg);
-            if(semitone_shift >= 1.001) 
-            {
-                snprintf(msg, 100, "frequency %f must be less than 466.16\n",
-                    afreq);
-                this->warning(msg);
-                this->retuning = 0;
-            }
-            else
-            if(semitone_shift <= -1.015) 
-            {
-                printf("frequency %f must be greater than 415.0\n", afreq);
-                this->retuning = 0;
-            }             
-            if(this->retuning) 
-            {
-                this->bend = (int) (8192.0 * semitone_shift) + 8192;
-                if(bend > 16383) bend=16383;
-                if(bend < 0) bend = 0;
-                printf("bend = %d\n",bend);
-            }
-        }
-    } 
-    if(this->getarg("-OCC",argc,argv) != -1) 
-        this->parser->oldchordconvention = 1;
-    if(this->getarg("-silent",argc,argv) != -1) 
-        this->silent = 1;
-
-    /* allocate space for notes, we'll grow it as needed */
-    this->maxFeatures = 500;
-    this->featurelist.resize(this->maxFeatures);
-    /* and for text */
-    this->atext.resize(this->maxtexts);
-    this->wordlist.clear();
-
-    for(j=0;j<Abc::DECSIZE;j++)  
-        this->dummydecorator[j] = 0;
-
-    if((this->getarg("-h", argc, argv) != -1) || (argc < 2)) 
-    {
-        char msg[100];
-        snprintf(msg, 100, "abc2midi_cpp version %s", this->version);
-        this->log(msg);
-        this->log(
-        "Usage : abc2midi <abc file> [reference number] [-c] [-v] "
-        "[-o filename]\n"
-        "        [-t] [-n <value>] [-CS] [-NFNP] [-NCOM] [-NFER] [-NGRA] [-NGUI] [-HARP]\n"
-        "        [reference number] selects a tune\n"
-        "        -c  selects checking only\n"
-        "        -v  selects verbose option\n"
-        "        -ver prints version number and exits\n"
-        "        -o <filename>  selects output filename\n"
-        "        -t selects filenames derived from tune titles\n"
-        "        -n <limit> set limit for length of filename stem\n"
-        "        -CS use 2:1 instead of 3:1 for broken rhythms\n"
-        "        -quiet suppress some common warnings\n"
-        "        -silent suppresses most messages\n"
-        "        -Q default tempo (quarter notes/minute)\n"
-        "        -NFNP don't process !p! or !f!-like fields\n"
-        "        -NCOM suppress comments in output MIDI file\n"
-        "        -NFER ignore all fermata markings\n"
-        "        -NGRA ignore grace notes\n"
-        "        -NGUI ignore guitar chord indications\n"
-        "        -STFW separate tracks for words (lyrics)\n"
-        "        -HARP ornaments=roll for harpist (same pitch)\n"
-        "        -BF Barfly mode: invokes a stress model if possible\n"
-        "        -OCC old chord convention (eg. +CE+)\n"
-        "        -TT tune to A =  <frequency>\n"
-        "        -CSM <filename> load custom stress models from file\n"
-        " The default action is to write a MIDI file for each abc tune\n"
-        " with the filename <stem>N.mid, where <stem> is the filestem\n"
-        " of the abc file and N is the tune reference number. If the -o\n"
-        " option is used, only one file is written. This is the tune\n"
-        " specified by the reference number or, if no reference number\n"
-        " is given, the first tune in the file.\n"
-        );
-        return;
-    } 
-    else 
-    {
-        xmatch = 0;
-        if((argc >= 3) && (isdigit(*argv[2]))) 
-        {
-            xmatch = this->parser->readnumf(argv[2]);
-        }
-        *filename = argv[1];
-        this->outbase = argv[1];
-        std::string::size_type s = this->outbase.find_last_of('.');
-        if(s != std::string::npos)
-            this->outbase.assign(this->outbase.substr(0, s-1));
-    }
-  
-    /* look for filename stem limit */
-    j = this->getarg("-n", argc, argv);
-    if(j != -1) 
-    {
-        if(argc >= j+1) 
-        {
-            namelimit = 0;
-            sscanf(argv[j], "%d", &namelimit);
-            if((namelimit < 3) || (namelimit > 252)) 
-            {
-                this->error("filename stem limit must be in the range 3 - 252");
-                return;
-            }
-        }
-    } 
-    else 
-        this->warning("No number given, ignoring -n option");
-
-    /* look for default tempo */
-    j = getarg("-Q", argc, argv);
-    if(j != -1) 
-    {
-        if(argc >= j+1) 
-        {
-            sscanf(argv[j], "%d", &default_tempo);
-            if(default_tempo < 3) 
-            {
-                this->error("Q parameter is too small\nEnter -Q 240 not -Q 1/4=240");
-                return;
-            }
-        } 
-        else 
-            this->warning("No number given, ignoring -Q option");
-    }
-       
-    /* look for user-supplied output filename */
-    j = getarg("-o", argc, argv);
-    if(j != -1)
-    {
-        if(argc >= j+1)
-        {
-            this->outname = argv[j];
-            this->userfilename = 1;
-            if(this->xmatch == 0) 
-            {
-                this->xmatch = -1;
-            }
-            if(this->titlenames == 1) 
-            {
-                this->warning("-o option overrides -t option");
-                this->titlenames = 0;
-            }
-        } 
-        else 
-        {
-            this->warning("No filename given, ignoring -o option");
-        }
-    }
-
-    j = this->getarg("-CSM", argc, argv);
-    if(j != -1)
-    {
-        if(argc >= j+1)
-        {
-            this->csmfilename = argv[j];
-            if(this->csmfilename[0] == '-') 
-            {
-                this->warning("csmfilename confused with options");
-                this->csmfilename.clear();
-            }
-        } 
-        else 
-            this->warning("Filename required after -CSM option");
-    }
-
-    this->ratio_standard = this->getarg("-CS", argc, argv); /* [SS] 2016-01-02 */
-    this->quiet  = this->getarg("-quiet", argc, argv);
-    this->dotune = 0;
-    this->parser->parserOff();
-    this->setup_chordnames();
-
-    /* [SS] 2016-01-02 */
-    if(this->getarg("-RS",argc,argv) != -1) 
-        this->warning("use -CS to get Celtic broken rhythm");
-  
-    /* XXX: 
-    if(this->barflymode) 
-        this->init_stresspat();
-    */
-}
-
-void
 AbcStore::text(char const *s)
 {
     if(this->quiet == -1)
@@ -877,7 +572,7 @@ AbcStore::part(char const *s)
 
 /* handles a V: field in the abc */
 void 
-AbcStore::voice(int n, char const *s, AbcParser::voice_params *vp)
+AbcStore::voice(int n, char const *s, IAbcParseClient::voice_params *vp)
 {
     if(!this->voicesused && this->bodystarted) 
     {
@@ -1289,7 +984,7 @@ AbcStore::rest(int decorators[Abc::DECSIZE],
     if(decorators[Abc::FERMATA] && !this->ignore_fermata) 
     {
         if(fermata_fixed) 
-            this->addfract(&num, &denom, 1, 1);
+            AbcMusic::addFraction(&num, &denom, 1, 1);
         else 
             num = num*2;
     }
@@ -1510,7 +1205,7 @@ AbcStore::note(int decorators[Abc::DECSIZE],
     if(decorators[Abc::FERMATA] && !this->ignore_fermata) 
     {
         if(this->fermata_fixed) 
-            this->addfract(&num, &denom, 1, 1);
+            AbcMusic::addFraction(&num, &denom, 1, 1);
         else 
             num = num*2;
     }
@@ -1819,9 +1514,62 @@ AbcStore::eof()
 {
     this->blankline();
     if(this->verbose) 
-        this->info("End of File reached\n");
+        this->log("End of File reached\n");
     this->featurelist.clear();
     this->wordlist.clear();
     this->outname.clear();
     this->outbase.clear();
+}
+
+/* handles bar lines of various types in the abc
+   This function was reorganized to handle play on repeats 
+   when there are split voices.
+*/
+void
+AbcStore::bar(int type, char const *replist)
+{
+    int depth = this->splitdepth;
+    if(this->splitdepth > 0 && this->extended_overlay_running == 0) 
+    {
+        /* we encountered the repeat while in a split voice;
+            first recurse back to the original voice.
+        */
+        this->recurse_back_to_original_voice();
+    }
+
+    int newtype = type;
+
+    if ((type == Abc::THIN_THICK) || (type == Abc::THICK_THIN) || 
+        (type == Abc::DOTTED_BAR)) 
+    {
+        newtype = Abc::DOUBLE_BAR;
+    }
+    this->addfeature((Abc::FeatureType) newtype, 0, 0, 0);
+    this->copymap(v);
+    this->genMidi.zerobar();
+    if(strlen(replist) > 0) 
+    {
+        this->playonrep(replist);
+    }
+
+    /* If there are any split voices (voice overlays),  we need to
+    put repeat symbol in all the split voices. This is all done
+    by sync_voice() [SS] 2013-12-02.
+    */
+    {
+        int voiceno = v->voiceno;
+        int indexno = v->indexno;
+        if (extended_overlay_running) 
+            return;
+        while(v->tosplitno != -1)
+        { 
+            v = getvoicecontext(v->tosplitno);
+            splitdepth++;
+            this->addfeature(Abc::VOICE, v->indexno, 0, 0);
+            this->sync_voice(v,0,0);
+        }
+        if (v->fromsplitno != -1 || splitdepth >0) 
+            this->recurse_back_to_original_voice();
+    }
+    v->nbars = v->nbars + 1;
 }

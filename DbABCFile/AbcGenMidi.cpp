@@ -1500,6 +1500,12 @@ AbcGenMidi::set_drums(char const *s)
     this->wctx.set_drums(s);
 }
 
+void
+AbcGenMidi::drum_map(int mpitch, int mapto)
+{
+    this->wctx.drum_map[mpitch] = mapto;
+}
+
 void 
 AbcGenMidi::set_gchords(char const *s)
 {
@@ -1820,7 +1826,7 @@ AbcGenMidi::findpart(int j)
                 this->partspec[this->wctx.partno], 
                 this->wctx.partno, 
                 this->parts);
-            this->wctx.info(buf);
+            this->wctx.log(buf);
         }
     }
     return place;
@@ -1986,7 +1992,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
     {
         snprintf(msg, 100, "dodeferred: track = %d cmd = %s\n",
             this->wctx.tracknumber, command);
-        this->wctx.info(msg);
+        this->wctx.log(msg);
     }
 
     if (strcmp(command,"makechordchannels") == 0) 
@@ -2063,7 +2069,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
                 if (found == 1 && octave > -3 && octave < 3) 
                     this->wctx.gchord.base = 48 + 12*octave;
                 snprintf(msg, 100, "gchord.base = %d", this->wctx.gchord.base);
-                this->wctx.info(msg);
+                this->wctx.log(msg);
             }
         }
         done = 1;
@@ -2084,7 +2090,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
                 if(found == 1 && octave > -3 && octave < 3)
                     this->wctx.fun.base = 36 + 12*octave;
                 snprintf(msg, 100, "fun.base = %d", this->wctx.fun.base);
-                this->wctx.info(msg);
+                this->wctx.log(msg);
             }
         }
         done = 1;
@@ -2878,9 +2884,9 @@ AbcGenMidi::articulated_stress_factors(int n,  int *vel)
         snprintf(msg, 100, "%d %d/%d = %d/%d to  %d/%d = %d/%d",
             fd.pitch, begnum, begden, firstsegnum, firstsegden,
             endnum, endden, lastsegnum, lastsegden);
-        this->wctx.info(msg);
+        this->wctx.log(msg);
         snprintf(msg, 100, " dur gain = %f %d", dur, gain);
-        this->wctx.info(msg);
+        this->wctx.log(msg);
     }
     /* tnotenum and tnotedenom is used for debugging only.
         int tnotenum = (int) (0.5 +dur*100.0);
@@ -2916,7 +2922,7 @@ AbcGenMidi::makechordchannels(int n)
     {
         char msg[64];
         snprintf(msg, 64, "making %d chord channels", n);
-        this->wctx.info(msg);
+        this->wctx.log(msg);
     }
     for (int i=1; i<=n; i++) 
     {

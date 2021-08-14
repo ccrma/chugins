@@ -1,0 +1,280 @@
+%               Example tunes for abc2midi.
+% Illustrating various aspects of the abc notation language
+%
+%
+
+% A French tune using an in-body key change
+%
+X: 1
+T:Horses Branle
+M:4/4
+L:1/8
+Q:1/4=127
+C:Trad
+K:G
+P:A
+|: G>A BB cBAc|BAGF E2D2|G>A BB cBAc|BGAF G2 G2
+P:B
+:: d c/2B/2 AB c B/2A/2 GB|AGFG A>B A2|\
+   d c/2B/2 AB c B/2A/2 GB|AGGF G2 G2 ::
+P:C
+K:F
+B/2A/2 G B/2A/2 G FG A2|DEFG ABAG | \
+B/2A/2 G B/2A/2 G FG A2|DEFG GF G2 :|
+
+% A hornpipe using triplets, accidentals and broken rhythm 
+%
+X: 2
+T:Trumpet Hornpipe 
+T:Captain Pugwash Theme
+C: Trad
+M:4/4
+L:1/8
+Q:1/4=140
+R:hornpipe
+K:G
+|: (3GGG G2 (3GGG G>d|B>GB>d g>dB>G|\
+(3DDD D2 (3DDD D>A|F>DF>A c>AF>A|
+  (3GGG G2 (3GGG G>d|B>G B>d g2 g2|\
+f>ag>f e>gf>e |1 d>^cd>e d>=cB>A :|2 d>^cd>e d2 B>=c |:
+ (3ddd d2 (3ddd d2|e>fg>f e>dc>B|\
+c>de>d c>BA>G|F>GA>G F>DE>F|
+(3GGG G2 (3=FFF F2|(3EEE E2 (3^DDD D2| \
+=D>gf>e d>cB>A|1 G2B2G2 B>c :|2 G2B2G4 ||
+
+% Using ties to create non-standard length notes.
+%
+X:3
+T:Smash the Windows
+T:Roaring Jelly
+S:One Thousand English Country Dance Tunes, Michael Raven
+C:Trad
+M:6/8
+L:1/8
+Q:1/8=400
+K:D
+|:A|DED F2A|d2f ecA|G2B F2A|E2F GFE|DED F2A|d2f ecA|Bgf edc|d3-d2:|
+a|a2f d2f|A2a agf|g2e c2e|A2g gfe|f2d g2e|a2f bag|fed edc|d3-d2a|
+agf fed|Adf agf|gfe ecA|Ace gfe|fed gfe|agf bag|fed edc|d3-d2z||
+
+% Four-part arrangement using V: for multiple voices
+%
+X: 4
+T: Candlemas Eve
+S: Hymn 126 Arr. R. Herrick from an old church-gallery book
+M:4/4
+L:1/8
+Q:1/8=400
+N:from an old church-gallery book
+H:The old church-gallery book was discovered by the Rev. L.J.T. Darwall.
+H:The source has a 4-part harmony.
+O:English
+R:Reel
+K:G
+V: 1
+% soprano
+D2 |\
+G2  G2  B2  G2  | E2  F2  G2  Bd  | c2  B2   A2  G2  | A6  Bc  |
+d2  B2  G2  AB  | c2  A2  F2  GA  | B2  G2   E2  F2  | G6  Bc  |
+d2  d2  d2  B2  | e2  c2  A2  Bd  | c2  B2   A2  G2  | d6  B2  |
+e2  d2  c2  B2  | A2  G2  F2  GA  | B2  G2   E2  F2  | G6  z2  ||
+V: 2
+% alto
+D2 |\
+D2  C2  B,2 D2  | C2  C2  D2  D2  | G2  G2   E2  E2  | F6  G2  |
+G2  F2  E2  D2  | C2  E2  D2  E2  | D2  D2   C2  C2  | D6  G2 |
+G2  G2  G2  G2  | G2  G2  F2  D2  | G2  G2   E2  G2  | F6  D2  |
+C2  D2  EF  G2  | E2  E2  D2  E2  | D2  B,2  C2  D2  | D6  z2  ||
+V: 3
+% tenor
+D,2 |\
+G,2 G,2 G,2 G,2 | G,2 A,2 B,2 B,2 | E2  D2   C2  B,2 | D6  D2  |
+D2  D2  B,2 G,2 | E,2 A,2 A,2 C2  | G,2 G,2  G,2 A,2 | B,6  DC |
+B,2 D2  B,2 D2  | C2  E2  D2  B,2 | C2  D2   C2  G,2 | A,6 G,2 |
+G,2 G,2 C2  D2  | CD  CB, A,2 C2  | G,2 G,2  A,2 A,2 | B,6 z2  ||
+V: 4
+% bass up one octave
+D2  |\
+B,2 A,2 G,2 B,2 | C2  A,2 G,2 G2  | E2  G2   A2  E2  | D6  GA  |
+B,2 D2  E2  E2  | A,2 C2  D2  C2  | B,2 A,B, C2  A,2 | G,6 G,2 |
+G2  B2  G2  G2  | c2  C2  D2  G2  | E2  G2   C2  E2  | D6   G2 |
+C2  B,2 A,2 G,2 | A,2 C2  D2  C2  | B,2 E2   A,2 D2  | G,6  z2 ||
+
+% Using the w: field and part notation to create a karaoke file.
+% There are a lot more verses to this song than the 3 shown here.
+%
+X: 5
+T: Oh You New York Girls
+C:Trad
+M: 4/4
+L: 1/8
+Q:1/4=200
+P:(AB)3
+K:C % 0 sharps
+%%MIDI gchord fz
+%%MIDI chordvol 90
+P:A
+g2|e2g2g3g|f2a2a3a|g2g2f2g2|e6 
+w:As I walked out on So-uth Street, a fair maid I did meet
+w:I said, "My dear young la-dy, I'm a stran-ger here in town
+w:I took her out to Tiff-an-y's, I spared her no ex-pense
+g2|c'3c'c'2g2|b2 a2a3a|g3 gf2d2|c4
+w:Who asked me please to see her home, she lived on Blee-cker Street
+w:I left my ship just yes-ter-day, from Liver-pool I was bound."
+w:I bought her two gold ea-r-rings, they cost me fif-teen cents.
+P:B
+e2f2|g6e2|f2 a6|b4 a4|a2g4 z2|
+w:And a-way, you John-ny, my dear hon-ey
+c'6b2|b2a2 a4|g3g f2B2|d2c4
+w:Oh you New York girls, can you dance the pol-ka?
+
+% Using "guitar chords" to generate an accompaniment.
+% Also uses R:hornpipe to generate broken rhythm.
+%
+X:6
+T:The Friendly Visit
+R:hornpipe
+S:Nottingham Music Database
+M:4/4
+L:1/8
+Q:1/4=200
+K:G
+|: BA|\
+"G"(3GFG DG BGBd|"C"(3cBc AB "D7"cdef|"G"g2df "C"ecAG|"Am"FGAB "D7"cAFD|
+"G"(3GFG DG BGBd|"C"(3cBc AB "D7"cdef|"G"gdBG "D7"FAdc|"G"B2G2 G2::
+(3GBd|\
+"G"g2dB GBdg|"Am"e2cA FGAg|"D"f2ed "A7"^cdeg|"D7"(3fgf (3efe dcBA|
+"G"(3GFG DG BGBd|"C"(3cBc AB "D7"cdef|"G"gdBG "D7"FAdc|"G"B2G2 G2:|z2||
+
+% Using drone commands for bagpipe music
+X: 7
+T:The First Slip  "Arranged by Terry Tully"
+M:C
+L:1/8
+Q:80
+C:Traditional Irish
+S:Reel
+Z: The Brussels Caledonian Corneymusers Pipe Band
+Z: http://membres.lycos.fr/corneymusers/Tunes.html
+K:HP
+%%MIDI program 109
+%%MIDI drone 70 45 33 90 90
+%%MIDI droneon
+|: {g}eA{gAGAG}A2{gef}e2{g}dB|
+{g}eA{gAGAG}A2{g}GB{gBeBG}B2|
+{g}eA{gAGAG}A2{gef}e2{g}fa|  !
+ge{gde}dB{G}ABcd:| |:
+{g}ea{g}ag{ef}e2{A}ef|
+{g}dB{gBeBG}B2{g}GB{gBeBG}B2|  !
+{g}ea{g}ag{ef}e2{A}ef|
+{a}ge{gde}dB{G}ABcd:|
+%%MIDI droneoff
+
+% Using extended gchord codes for playing arpeggios
+X: 8
+T:Roddy McCawley
+% Nottingham Music Database
+S:Saen Smith, via PR
+M:4/4
+L:1/4
+K:G
+%%MIDI program 73
+%%MIDI chordprog 0
+%%MIDI bassprog 1
+%%MIDI gchord ghhi
+GA |B2 AB|D2 GA|"G"B3/2c/2 BA|G2 D2|"C"E2 G2|G2 A2|"G"G4-|
+B2 Bc|"G"d2 d2|d2 Bd|"C"e2 e2|"G"d2 BA|"Em"G2 E2|"Am"c2 B2|"D"A4-|
+A2 Bc|"G"d2 d2|d2 Bd|"C"e2 e2|"G"d2 BA|"Em"G2 E2|"Am"c2 B2|"D"A4-|A2 GA|
+"G"B2 AB|D2 GA|"G"B3/2c/2 BA|G2 D2|"C"E2 G2|G2 A2|"G"G4-|G4||
+
+% uses microtones
+X:9
+T:Daramad of Shur
+L:1/8
+% adapted from http://anamnese.online.fr/iran/persianm.abc
+% see http://anamnese.online.fr/iran/persian_music.html for more info
+Q:1/4=135
+M:4/4
+K:C
+%%MIDI program 111
+d _/e g f _/e d c _B  A G A d2 {c}_B2 {A}G2 |
+G A c _B A G F _/E  D _/E  F G A c {_B} A2 {G} F4 |
+FFF A2 G2 {F} _/E_/E_/E G2 F2 {_/E} DDDF2 _/E2| 
+
+
+%using the %%MIDI trim command to distinguish slurs
+X:10 
+T:Heights of Alma
+% Nottingham Music Database
+S:KCC p3, via EF
+M:4/4
+L:1/4
+K:A
+%%MIDI trim 1/5
+%%MIDI program 74
+%%MIDI beat 89 79 69 4
+%%MIDI chordprog 45
+%%MIDI bassprog 45
+%%MIDI chordvol 77
+%%MIDI bassvol 73
+P:A
+(e/2d/2)|"A"cA AE|"A"(A/2B/2c/2d/2) e2|"A"(f/2e/2d/2c/2) eA|\
+"G"(d/2=c/2B/2A/2) =Ge/2d/2|
+"A"cA AE|"A"A/2B/2c/2d/2 e2|"A"(f/2e/2d/2c/2) "E7"(e/2f/2e/2d/2)|"A"cA A:|
+P:B
+c/2d/2|"A"ea ca|"A"e/2f/2e/2c/2 AB/2=c/2|"G"d=g Bg|"G"d/2e/2d/2B/2 =Gc/2d/2|
+"A"ea ca|"A"e/2f/2e/2c/2 AB/2c/2|"E7"(d/2c/2B/2A/2) (G/2B/2e/2d/2)|"A"cA A:|
+
+
+
+X:11
+T:Linear Temperament
+M:4/4
+L:1/4
+Q:1/4=35
+% %MIDI temperamentlinear 1200.0 694.736842    % 19-EDO
+% %MIDI temperamentlinear 1200.0 709.090909    % 22-EDO
+% %MIDI temperamentlinear 1200.0 696.774194    % 31-EDO
+% %MIDI temperamentlinear 1200.0 698.0         % fifth=698 cents
+% %MIDI temperamentlinear 1200.0 696.57843     % 1/4-comma meantone
+%%MIDI temperamentlinear 1200.0 701.955001    % Pythagorean
+% %MIDI temperamentnormal                      % 12-EDO
+K:C
+V:1
+%%MIDI program 16
+c2 B2 | c3/z/ ^A2 |
+V:2
+%%MIDI program 16
+G2 G2 | G3/z/ G2 |
+V:3
+%%MIDI program 16
+(3E_E^D (3=DF_F | =E3/z/ E2 |
+V:4
+%%MIDI program 16
+C2  G,2 | C3/z/ C2 |
+
+
+X: 12
+T:Cuckoo's Nest
+% Nottingham Music Database
+% drum line added by Seymour
+S:Song
+M:4/4
+L:1/8
+R:Hornpipe
+Q:1/4=144
+K:Dm
+V:1
+"Dm"D2DE DCA,C|"Dm"DCDE F2"C7"FA|"F"c2cd A2GF|"C"ECCC C2"A7"FE|
+"Dm"D2DE DCA,C|"Dm"DCDE F2"C7"FG|"F"ABcA "A7"GFEF|"Dm"E2"Gm"D2 "Dm"D2||
+V:2
+%%MIDI channel 10
+%%MIDI chordattack 50
+[^F,,E,,]/[^F,,E,,]/[D,,^F,,]/[D,,^F,,]/ ^F,,F,, z4|^F,,E,,E,,^F,,z4|\
+[^F,,E,,]/[^F,,E,,]/[D,,^F,,]/[D,,^F,,]/ ^F,,F,, z4|D,,D,,D,,^F,,z4|
+[^F,,E,,]/[^F,,E,,]/[D,,^F,,]/[D,,^F,,]/ ^F,,F,, z4|^F,,D,,D,,^F,,z4|\
+[^F,,E,,]/[^F,,E,,]/[D,,^F,,]/[D,,^F,,]/ ^F,,E,, z4|E,,^F,,B,,,4|
+
+
+
+

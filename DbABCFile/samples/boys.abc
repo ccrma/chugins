@@ -1,0 +1,39 @@
+X: 3
+T: The Boys of Carrigallen
+B: O'Neill's 210
+N: "Cheerful"
+N: "Collected by J.O'Neill"
+Z: 1997 by John Chambers <jc@eddie.mit.edu> http://eddie.mit.edu/~jc/music/abc/
+M: 6/8
+L: 1/8
+K: Am
+V:1
+|:E \
+| A2E A>(Bc/d/) | e>de (A2B/A/) | G2D G>(AB/c/) | d>cd G2B |
+| A2E ABd | e2^f g>fg | edc Bcd | ecA A2 :|
+|: a \
+| :a^ga A2a | a^ga A2g | g^fg G2=g | g^fg G2B |
+| c2c d2d | e^fg a3 | edc Bcd | ecA A2 :|
+V: drum
+M: 6/8
+L: 1/16
+%%MIDI channel 10
+ |: z2|F4FF ^F2F2^F2 |
+ F4^F2 ^F4^F2 |
+ F4FF ^F2F2^F2 |
+ F4^F2 ^F4^F2 |
+ F4FF ^F2F2^F2 |
+ F4^F2 ^F4^F2 |
+ F4FF ^F2F2^F2 |
+ F2^F2F2 F4  :|
+ |: z2|F4FF ^F2F2^F2 |
+ F4^F2 ^F4^F2 |
+ F4FF ^F2F2^F2 |
+ F4^F2 ^F4^F2 |
+ F4FF ^F2F2^F2 |
+ F4^F2 ^F4^F2 |
+ F4FF ^F2F2^F2 |
+ F2^F2F2 F4  :|
+
+
+

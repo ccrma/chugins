@@ -1,0 +1,31 @@
+X:1
+T: drums
+M: 2/4
+L:1/8
+K: C
+%%MIDI drum dddd 35 36 37 38
+%%MIDI drumon
+z4|
+%%MIDI drum dddd 39 40 41 42
+z4|
+%%MIDI drum dddd 43 44 45 46
+z4|
+%%MIDI drum dddd 47 48 49 50
+z4|
+%%MIDI drum dddd 51 52 53 54
+z4|
+%%MIDI drum dddd 55 56 57 58
+z4|
+%%MIDI drum dddd 59 60 61 62
+z4|
+%%MIDI drum dddd 63 64 65 66
+z4|
+%%MIDI drum dddd 67 68 69 70
+z4|
+%%MIDI drum dddd 71 72 73 74
+z4|
+%%MIDI drum dddd 75 76 77 78
+z4|
+%%MIDI drum dddd 79 80 81 82
+z4|
+

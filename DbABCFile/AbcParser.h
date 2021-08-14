@@ -30,12 +30,20 @@
 #include "Abc.h"
 #include "AbcMusic.h"
 
-class AbcParser
+/* ------------------------------------------------------------- */
+// IAbcParseClient represents callbacks from the parser to the client.
+// Client instantiates an AbcParser and installs a handler or these events.
+class IAbcParseClient
 {
+protected:
+    class AbcParser *parser;
+
 public:
-    // Event handler represents callbacks of the parser client.
-    // Client instantiates an AbcParser and installs a handler
-    // for these events.
+    IAbcParseClient(class AbcParser *p) :
+        parser(p) 
+    {}
+    virtual ~IAbcParseClient() {}
+
     struct voice_params  // passed to client in voice event
     {
         int gotclef;
@@ -55,87 +63,94 @@ public:
         std::string other; /* [SS] 2011-04-18 */
     };
 
-    class EventHandler
+    // virtual void init(int argc, char const *argv[], std::string *filename) = 0;
+    virtual void text(char const *s) {}
+    virtual void reserved(char p) {}
+    virtual void x_reserved(char p) {}
+    virtual void tex(char const *s) {}
+    virtual void score_linebreak(char ch) {}
+    virtual void linebreak(void) {}
+    virtual void startmusicline(void) {}
+    virtual void endmusicline(char endchar) {}
+    virtual void eof(void) {}
+    virtual void comment(char const *s) {}
+    virtual void specific(char const *package, char const *s) {}
+    virtual void startinline() {}
+    virtual void closeinline() {}
+    virtual void field(char k, char const *f) {}
+    virtual void appendfield(char k, const char *f) {};
+    virtual void words(char const *p, int continuation) {}
+    virtual void part(char const *s) {}
+    virtual void voice(int n, char const *s, voice_params *params) {}
+    virtual void length(int n) {}
+    virtual void default_length(int n) {}
+    virtual void blankline() {}
+    virtual void refno(int n) {}
+    virtual void tempo(int n, int a, int b, int rel, char const *pre, char const *post) {}
+    virtual void timesig(Abc::TimeSigDetails *timesig) {}
+    virtual void octave(int num, int local) {}
+    virtual void info_key(char const *key, char const *value) {}
+    virtual void info(char const *s) {}
+    virtual void key(int sharps, char const *s, int modeindex, 
+                char modmap[7], int modmul[7], AbcMusic::fraction modmicro[7],
+                int gotkey, int gotclef, char const *clefname, AbcMusic::ClefType *new_clef,
+                int octave, int transpose, int gotoctave, int gottranspose,
+                int explict) {}
+    virtual void microtone(int dir, int a, int b) {}
+    virtual void graceon() {}
+    virtual void graceoff() {}
+    virtual void rep1() {}
+    virtual void rep2() {}
+    virtual void playonrep(char const *s) {}
+    virtual void tie() {}
+    virtual void slur(int t) {}
+    virtual void sluron(int t) {}
+    virtual void sluroff(int t) {}
+    virtual void rest(int decorators[], int n,int m,int type) {}
+    virtual void mrest(int n,int m, char c) {}
+    virtual void spacing(int n, int m) {}
+    virtual void bar(int type, char const *replist) {}
+    virtual void space(void) {}
+    virtual void lineend(char ch, int n) {}
+    virtual void broken(int type, int mult) {}
+    virtual void tuple(int n, int q, int r) {}
+    virtual void chord() {}
+    virtual void chordon(int chorddecorators[]) {}
+    virtual void chordoff(int, int) {}
+    virtual void instruction(char const *s) {}
+    virtual void gchord(char const *s) {}
+    virtual void note(int decorators[Abc::DECSIZE], 
+                AbcMusic::ClefType *clef,
+                char accidental, int mult, 
+                char note, int xoctave, int n, int m) {}
+    virtual void abbreviation(char symbol, char const *string, char container) {}
+    virtual void acciaccatura() {}
+    virtual void start_extended_overlay() {}
+    virtual void stop_extended_overlay() {}
+    virtual void split_voice() {}
+    virtual void temperament(char const *line) {}
+    virtual void warning(char const *msg) { fprintf(stderr, "warning: %s\n", msg); }
+    virtual void error(char const *msg) { fprintf(stderr, "error: %s\n", msg); }
+    virtual void log(char const *msg) { fprintf(stderr, "info: %s\n", msg); }
+}; 
+
+/* --------------------------------------------------------------------*/
+class AbcParser
+{
+public:
+    AbcParser();
+    ~AbcParser();
+
+    enum ParseMode
     {
-    protected:
-        AbcParser *parser;
+        k_AbcToMidi,
+        k_AbcToAbc,
+        k_AbcToYaps // unsupported
+    };
 
-    public:
-        EventHandler(AbcParser *p) :
-            parser(p) 
-        {}
-        virtual ~EventHandler() {}
+    int Parse(char const *buf, class IAbcParseClient *, ParseMode m);
+    int Parse(std::ifstream *stream, class IAbcParseClient *, ParseMode m);
 
-        virtual void init(int argc, char const *argv[], std::string *filename);
-        virtual void text(char const *s) {}
-        virtual void reserved(char p) {}
-        virtual void x_reserved(char p) {}
-        virtual void tex(char const *s) {}
-        virtual void score_linebreak(char ch) {}
-        virtual void linebreak(void) {}
-        virtual void startmusicline(void) {}
-        virtual void endmusicline(char endchar) {}
-        virtual void eof(void) {}
-        virtual void comment(char const *s) {}
-        virtual void specific(char const *package, char const *s) {}
-        virtual void startinline() {}
-        virtual void closeinline() {}
-        virtual void field(char k, char const *f) {}
-        virtual void appendfield(char k, const char *f) {};
-        virtual void words(char const *p, int continuation) {}
-        virtual void part(char const *s) {}
-        virtual void voice(int n, char const *s, struct voice_params *params) {}
-        virtual void length(int n) {}
-        virtual void default_length(int n) {}
-        virtual void blankline() {}
-        virtual void refno(int n) {}
-        virtual void tempo(int n, int a, int b, int rel, char const *pre, char const *post) {}
-        virtual void timesig(Abc::TimeSigDetails *timesig) {}
-        virtual void octave(int num, int local) {}
-        virtual void info_key(char const *key, char const *value) {}
-        virtual void info(char const *s) {}
-        virtual void key(int sharps, char const *s, int modeindex, 
-                    char modmap[7], int modmul[7], AbcMusic::fraction modmicro[7],
-                    int gotkey, int gotclef, char const *clefname, AbcMusic::ClefType *new_clef,
-                    int octave, int transpose, int gotoctave, int gottranspose,
-                    int explict) {}
-        virtual void microtone(int dir, int a, int b) {}
-        virtual void graceon() {}
-        virtual void graceoff() {}
-        virtual void rep1() {}
-        virtual void rep2() {}
-        virtual void playonrep(char const *s) {}
-        virtual void tie() {}
-        virtual void slur(int t) {}
-        virtual void sluron(int t) {}
-        virtual void sluroff(int t) {}
-        virtual void rest(int decorators[], int n,int m,int type) {}
-        virtual void mrest(int n,int m, char c) {}
-        virtual void spacing(int n, int m) {}
-        virtual void bar(int type, char const *replist) {}
-        virtual void space(void) {}
-        virtual void lineend(char ch, int n) {}
-        virtual void broken(int type, int mult) {}
-        virtual void tuple(int n, int q, int r) {}
-        virtual void chord() {}
-        virtual void chordon(int chorddecorators[]) {}
-        virtual void chordoff(int, int) {}
-        virtual void instruction(char const *s) {}
-        virtual void gchord(char const *s) {}
-        virtual void note(int decorators[Abc::DECSIZE], 
-                    AbcMusic::ClefType *clef,
-                    char accidental, int mult, 
-                    char note, int xoctave, int n, int m) {}
-        virtual void abbreviation(char symbol, char const *string, char container) {}
-        virtual void acciaccatura() {}
-        virtual void start_extended_overlay() {}
-        virtual void stop_extended_overlay() {}
-        virtual void split_voice() {}
-        virtual void temperament(char const *line) {}
-        virtual void log(char const *msg) { fprintf(stderr, "info: %s\n", msg); }
-        virtual void warning(char const *msg) { fprintf(stderr, "warning: %s\n", msg); }
-        virtual void error(char const *msg) { fprintf(stderr, "error: %s\n", msg); }
-    }; // end EventHandler
 
 public:
     // following static parser methods available for context-free
@@ -145,7 +160,7 @@ public:
     static void Skipspace(char const **p);
     static void Readstr(char *out, char const **in, int limit);
 
-    // following public vars accessible by EventHandler cliento
+    // following public vars accessible by IAbcParseClient
     char const *abcversion;
     char lastfieldcmd;
     std::vector<int> modeminor;
@@ -171,19 +186,6 @@ public:
      *   yaps.tree.c and to communicate decorator information
      *   from event_instruction to parsenote.
      */
-
-    AbcParser();
-    ~AbcParser();
-
-    enum ParseMode
-    {
-        k_AbcToMidi,
-        k_AbcToAbc,
-        k_AbcToYaps // unsupported
-    };
-
-    int Parse(char const *buf, EventHandler *, ParseMode m);
-    int Parse(std::ifstream *stream, EventHandler *, ParseMode m);
 
 public:
     int readnumf(char const *num);
@@ -214,7 +216,7 @@ public:
     void print_voicecodes();
 
 private:
-    int parse(std::istream *, EventHandler *h, ParseMode m);
+    int parse(std::istream *, IAbcParseClient *h, ParseMode m);
     void parseBegin(ParseMode m);
     void parseEnd();
     void reset_parser_status(); // on each tune
@@ -246,13 +248,15 @@ private:
 
     std::ifstream *parse_abc_include(char const *s);
     void parse_precomment(char const *s);
-    void preparse_words(char const *s);
+
+    void preparse_words(char *s); // tokenizes s
+    void parsetempo(char *s);     // ditto
+    char const *parseinlinefield(char *s); // ditto
+
     void parsefield(char c, char const *s);
-    char const *parseinlinefield(char *s); // may overrwrite input
     void parsemusic(char const *s);
     void parsenote(char const **s);
     void parsevoice(char const *s);
-    void parsetempo(char const *s);
     int parsename (char const **s, char word[], int *gotname,
         std::string *namestring);
     int parsesname (char const **s, char word[], int *gotname, 
@@ -308,7 +312,7 @@ private:
     };
 
 private:
-    EventHandler *handler;
+    IAbcParseClient *handler;
     ParseMode parseMode;
     std::vector<std::istream *> istreamStack;
 

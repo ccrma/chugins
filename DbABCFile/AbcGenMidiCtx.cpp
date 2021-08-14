@@ -62,7 +62,7 @@ AbcGenMidi::WriteContext::warning(char const *msg)
 }
 
 void
-AbcGenMidi::WriteContext::info(char const *msg)
+AbcGenMidi::WriteContext::log(char const *msg)
 {
     printf("info: %s\n", msg);
 }
@@ -434,7 +434,7 @@ AbcGenMidi::WriteContext::starttrack(int tracknum)
                 snprintf(msg, 100, 
                     "assigning channel %d to track %d",
                     this->channel, tracknum);
-                this->info(msg);
+                this->log(msg);
             }
             this->channel_in_use[this->channel] = 1;
         }
@@ -460,7 +460,7 @@ AbcGenMidi::WriteContext::starttrack(int tracknum)
         if(this->initState->verbose) 
         {
             snprintf(msg, 100, "assigning channel %d to bass voice\n", this->fun.chan);
-            this->info(msg);
+            this->log(msg);
         }
         this->gchord.chan = this->genMidi->findchannel();
         this->channel_in_use[this->gchord.chan] = 1;
@@ -469,7 +469,7 @@ AbcGenMidi::WriteContext::starttrack(int tracknum)
             snprintf(msg, 100, 
                 "assigning channel %d to chordal accompaniment\n",
                 gchord.chan);
-            this->info(msg);
+            this->log(msg);
         }
         if (this->initState->retuning) 
         {
@@ -492,7 +492,7 @@ AbcGenMidi::WriteContext::starttrack(int tracknum)
             snprintf(msg, 100, 
                 "assigning channel %d to drone", 
                 this->drone.chan);
-            this->info(msg);
+            this->log(msg);
         }
         if(this->initState->retuning) 
             this->genMidi->midi_re_tune(this->drone.chan);

@@ -1,0 +1,147 @@
+%%splittune
+%%textfont Helvetica 14
+%%scale .9
+
+
+%%begintext obeylines
+=================
+temperamentlinear
+=================
+%%endtext
+%%begintext justify
+Microtone accidentals can be used along with temperamentlinear. 
+
+In that case, the accidental ratio is based on the new chromatic semitone size,
+defined as 7 fifths minus 4 octaves. (Run abc2midi with the verbose
+option (-v) to see the temperament values.)
+
+As an exception, the microtonal deviation in cents can be represented
+by using denominator=100 in the accidentals. Example:
+%%endtext
+
+X:1
+T:\%\%MIDI temperamentlinear - microtone accidentals in cents
+%%postscript /ft5475{M -3 3 RM 6 -6 RL 2 SLW stroke}def
+%%postscript /ft35939{2 copy ft0 M -7.5 -3 RM 12 F3 (7) show}def
+M:none
+K:C
+%%scale 1.3
+V:1
+%%MIDI program 17
+%%MIDI temperamentlinear 1200 702 %% Pythagorian tunings
+%%MIDI makechordchannels 3
+"^Pure;major;chord"\
+[C_22/100EG]8 y |\
+"^Pythagorian;major;chord"\
+[CEG]8 y ||\
+"^Pure;4:5:6:7;chord"\
+[C_22/100EG_141/100B]8 y |\
+"^Pythagorean;7-chord"\
+[CEG_B]8 y ||
+
+%%newpage
+
+%%begintext obeylines
+================
+temperamentequal
+================
+%%endtext
+%%begintext justify
+New command.
+
+\%\%MIDI temperamentequal <ndiv> [octave_cents] [fifth_steps] [sharp_steps]
+
+This commans sets a tempered scale defined by 'ndiv' equal divisions
+of 'octave_cents' (default is the octave = 1200 cents).
+
+The optional parameter 'fifth_steps', if provided, is an integer that 
+defines the size of the fifth in steps of the temperament.
+This sets where is the note G in the temperament.
+
+When 'fifth_steps' is omited or 0 (zero), the program computes it
+as an approximation of the frequency ratio 3/1, minus the
+(possibly tempered) octave.
+
+The optional 'sharp_steps' defines the meaning of the accidentals.
+'sharp_steps' is the number of steps between a natural note and
+a sharpened note (e.g. between =C and ^C).
+
+By default, the size of a sharp/flat deviation is based on the
+size of the chromatic semitone in the specified temperament: 7 fifths minus
+4 octaves. The values in use in the temperament can be viewed
+by running abc2midi with the command-line option -v (verbose).
+
+With temperamentequal (as with temperamentlinear), microtone accidentals
+are interpreted as fractions of the sharp size in the
+specified temperament, except if they use denominator=100, which
+defines microtonal deviations in cents.
+
+The conventional temperament can be reset with the command temperamentnormal.
+
+
+See also: temperamentlinear, temperamentnormal, makechordchannels
+
+
+Example:
+%%endtext
+
+X:2
+T:\%\%MIDI temperamentequal
+%%stretchlast 1
+M:none
+L:1/2
+K:C
+V:1
+%%MIDI program 44
+%%MIDI makechordchannels 3
+%
+%%text \%\%MIDI temperamentequal 7 1200 4 \% N.B.: fifth = 4 steps
+%%MIDI temperamentequal 7 1200 4 % N.B.: fifth = 4 steps
+"^Octave divided in 7 equal parts"\
+c d e f g a b c' & [I:MIDI=program 44] C8 | [CEGc]2 z |
+%
+%%text \%\%MIDI temperamentequal 17
+%%MIDI temperamentequal 17
+"^Octave divided in 17 equal parts"\
+=c ^/c ^c =d _/d _d =c & C7 | [CEGc]2 z |
+%
+%%text \%\%MIDI temperamentequal 22 \% N.B.: 1/3-sharps
+%%postscript /sh2{M 0 -5 RM 14 F3 (/) show}bind def
+%%postscript /sh258{2 copy M -7.5 -5 RM 14 F3 (\\) show sh0}bind def
+%%postscript /ft2{M 0 -5 RM 14 F3 (\\) show}bind def
+%%postscript /ft258{2 copy M -7.5 -5 RM 14 F3 (/) show ft0}bind def
+%%MIDI temperamentequal 22 % N.B.: 1/3-sharps
+"^Octave divided in 22 equal parts"\
+=c ^1/3c ^2/3c ^c =d _1/3d _2/3d _d =c & C8-C | [C_1/3EGc]2 z |
+%
+%%text \%\%MIDI temperamentequal 31
+%%MIDI temperamentequal 31
+"^Octave divided in 31 equal parts"\
+=c ^/c ^c ^3/c ^^c =d _/d _d _3/d __d =c2 & C12 | [CEGc]2 z |
+%
+%%text \%\%MIDI temperamentequal 19
+%%MIDI temperamentequal 19
+"^Octave divided in 19 equal parts"\
+=c ^c ^^c =d _d __d =c & C7 | [CEGc]2 z |
+%
+%%text \%\%MIDI temperamentequal 19 1205
+%%MIDI temperamentequal 19 1205
+"^Streched octave (1205 cents) divided in 19 equal parts"\
+=c ^c ^^c =d _d __d =c & C7 | [CEGc]2 z |
+%
+%%text \%\%MIDI temperamentequal 11 1200 7 1
+%%MIDI temperamentequal 11 1200 7 1
+"^Octave divided in 11 equal parts"\
+c __d _d =d ^d ^^d =e =g ^g ^^g =a =c' & C12 |
+%
+%%tex \%\%MIDI temperamentnormal
+%%MIDI temperamentnormal
+"^Conventional temperament: octave divided in 12 equal parts"\
+c _d =d ^d =e =f ^f =g ^g =a _b =b =c'2 & C14 |
+
+
+
+
+
+
+

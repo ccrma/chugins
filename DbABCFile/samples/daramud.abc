@@ -1,0 +1,13 @@
+X:1
+T:Daramad of Shur
+L:1/8
+% adapted from http://anamnese.online.fr/iran/persianm.abc
+% see http://anamnese.online.fr/iran/persian_music.html for more info
+Q:1/4=135
+M:4/4
+K:C
+%%MIDI program 111
+d _/e g f _/e d c _B  A G A d2 {c}_B2 {A}G2 |
+G A c _B A G F _/E  D _/E  F G A c {_B} A2 {G} F4 |
+FFF A2 G2 {F} _/E_/E_/E G2 F2 {_/E} DDDF2 _/E2| 
+

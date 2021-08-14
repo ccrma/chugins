@@ -22,6 +22,12 @@ dbABCFile::Close()
     return 0;
 }
 
+int
+dbABCFile::Rewind()
+{
+    return 0;
+}
+
 
 #if 0
 

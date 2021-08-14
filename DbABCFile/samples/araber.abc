@@ -1,0 +1,31 @@
+X: 47
+%%MIDI channel 1
+%%MIDI chordprog 32
+%%MIDI bassprog 0
+%%MIDI program 25
+%%MIDI beat 110 100  90 4
+%%MIDI ratio 2 1
+%%MIDI chordvol 95
+%%MIDI bassvol 97
+%%MIDI transpose 0
+%%MIDI gracedivider 4
+Q:1/4 = 144
+T: Araber tants  [D]
+R: Terkish
+S: handwritten MS of unknown origin labelled "III-2"
+Z: 2009 John Chambers <jc:trillian.mit.edu>
+M: C
+L: 1/8
+K: Dphr ^F
+%%MIDI drum d2zdd2d2 65 50 50 50 90 90 90 90
+%%MIDI drumon
+D2 \
+| "D"FGA2 A2A2 | "Gm"B6 AG | "D"^FGA2 "Eb"BAGA | "D"GF3 z2D2 |
+| "D"FGA2 A2A2 | "Cm"c4- cBAG | "D"FGA2 "Eb"BAGA | "D"GF3 z4 |
+| "D7"Dd2^c d2A2 | "Gm"B3c d2c/B/A/G/ | "Cm"FG3- GFEF | "D"ED3 zD (3BAG |]
+|: "D7"F8 | "Gm"G8 | "D"FGAF- FD"Cm"EC | "D"DEFG AdAG |
+|  "D7"F8 | "Gm"G4 zD (3BAG | "D"FGAF- FD"Cm"EC |1 "D"D4 zD (3BAG :|2 "D"D4 zd "Cm"c/B/A/G/ ||
+|: "D"FGAF- FD "Cm"E/D/E/C/ | "D"DEFG Ad "Cm"c/B/A/G/ \
+|  "D"FGAF- FD"Cm"EC |1 "D"DD2A, DA,D2 :|2 "D"D6 |]
+
+

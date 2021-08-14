@@ -18,7 +18,7 @@ AbcParser::AbcParser() :
 }
 
 int 
-AbcParser::Parse(char const *buf, EventHandler *h, ParseMode m)
+AbcParser::Parse(char const *buf, IAbcParseClient *h, ParseMode m)
 {
     std::istringstream strstr;
     strstr.str(buf);
@@ -26,13 +26,13 @@ AbcParser::Parse(char const *buf, EventHandler *h, ParseMode m)
 }
 
 int 
-AbcParser::Parse(std::ifstream *s, EventHandler *h, ParseMode m)
+AbcParser::Parse(std::ifstream *s, IAbcParseClient *h, ParseMode m)
 {
     return this->parse(s, h, m);
 }
 
 int
-AbcParser::parse(std::istream *istream, EventHandler *h, ParseMode m)
+AbcParser::parse(std::istream *istream, IAbcParseClient *h, ParseMode m)
 {
     this->handler = h;
     this->parseBegin(m);
@@ -295,7 +295,7 @@ AbcParser::parseline(char const *line)
                             this->parsemusic(p);
                     }
                     else
-                        this->preparse_words(p);
+                        this->preparse_words((char *) p); // okay since we have a copy
                 }
                 else
                 {
@@ -2003,7 +2003,7 @@ void
 AbcParser::parsevoice(char const *s)
 {
     int num;			/* voice number */
-    voice_params vparams;
+    IAbcParseClient::voice_params vparams;
     char word[64]; /* 2017-10-11 */
     int parsed;
     int coctave = 0, cgotoctave = 0;
@@ -2701,4 +2701,107 @@ AbcParser::parse_abc_include(char const *s)
         }
     }
     return istr; 
+}
+
+/* takes a line of lyrics (w: field) and strips off */
+/* any continuation character */
+void
+AbcParser::preparse_words(char *s)
+{
+    /* printf("Parsing %s\n", s); */
+    /* strip off any trailing spaces */
+    int l = strlen(s) - 1;
+    while((l >= 0) && (*(s + l) == ' '))
+    {
+        *(s + l) = '\0';
+        l = l - 1;
+    }
+    int continuation;
+    if(*(s + l) != '\\')
+        continuation = 0;
+    else
+    {
+        /* [SS] 2014-08-14 */
+        this->handler->warning("\\n continuation no longer supported in w: line");
+        continuation = 1;
+        /* remove continuation character */
+        *(s + l) = '\0'; // <----------------
+        l = l - 1;
+        while ((l >= 0) && (*(s + l) == ' '))
+        {
+            *(s + l) = '\0'; // <----------------
+            l = l - 1;
+        }
+    }
+    this->handler->words(s, continuation);
+}
+
+/* parse tempo descriptor i.e. Q: field */
+void
+AbcParser::parsetempo(char *place)
+{
+
+    int relative = 0;
+    char *p = place;
+    char *pre_string = nullptr;
+    if (*p == '"')
+    {
+        p = p + 1;
+        pre_string = p;
+        while((*p != '"') && (*p != '\0'))
+            p = p + 1;
+        if(*p == '\0')
+            this->handler->error("Missing closing double quote");
+        else
+        {
+            *p = '\0'; // <-------------
+            p = p + 1;
+            place = p;
+        }
+    }
+    while((*p != '\0') && (*p != '='))
+        p = p + 1;
+    
+    int a, b;
+    if(*p == '=')
+    {
+        p = place;
+        this->skipspace((char const **) &p);
+        if(((*p >= 'A') && (*p <= 'G')) || ((*p >= 'a') && (*p <= 'g')))
+        {
+            relative = 1;
+            p = p + 1;
+        }
+        this->readlen(&a, &b, (char const **) &p);
+        this->skipspace((char const **) &p);
+        if(*p != '=')
+            this->handler->error("Expecting = in tempo");
+        p = p + 1;
+    }
+    else
+    {
+        a = 1;
+        /*a = 0;  [SS] 2013-01-27 */
+        b = 4;
+        p = place;
+    }
+    this->skipspace((char const **) &p);
+    int n = this->readnump((char const **) &p);
+    char *post_string = nullptr;
+    if (*p == '"')
+    {
+        p = p + 1;
+        post_string = p;
+        while((*p != '"') && (*p != '\0'))
+            p = p + 1;
+
+        if(*p == '\0')
+            this->handler->error("Missing closing double quote");
+        else
+        {
+            *p = '\0'; // <-----
+            p = p + 1;
+        }
+    }
+    this->handler->tempo(n, a, b, relative, pre_string, post_string);
 }

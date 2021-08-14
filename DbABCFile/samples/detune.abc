@@ -1,0 +1,46 @@
+X:1
+T:temperament command
+M: 4/4
+L: 1/8
+K:C
+%%temperament +00 -06 -04  -02 -08 +02  -08 -02 -04  -06 10 0
+c d e f g a b c' |
+K:C#
+c d e f g a b c' |
+K:Cb
+c d e f g a b c' |
+M:12/8
+L:1/8
+K:C
+c ^c d ^d e f ^f g ^g a ^a b |
+M:13/8
+L:1/8
+c _d =d _e =e f _g =g _a =a _b =b c' |
+
+
+X:2
+T:temperament command
+T:from https://chiselapp.com/user/moinejf/repository/abc2svg/artifact/9b9730a7decefc8f
+L:1/2
+M:6/2
+K:C
+%%MIDI program 16
+%%MIDI makechordchannels 2
+% pythagore (~500 B.C)
+%%temperament +00 +14 +04 -06 +08 -02 +12 +02 +16 +06 -04 +10
+[CEG]2z [C_EG]2z | [^F^A^c]2z [^F=A^c]2z |
+% just intonation
+%%temperament +00 -08 -18 -06 -14 -02 -10 +02 -08 -16 -04 -12
+[CEG]2z [C_EG]2z | [^F^A^c]2z [^F=A^c]2z |
+% meantone (Pietro Aaron 1523)
+%%temperament +00 -24 -07 +10 -14 +03 -21 -03 -27 +10 +07 -17
+[CEG]2z [C_EG]2z | [^F^A^c]2z [^F=A^c]2z |
+% Andreas Werckmeister III (1681)
+%%temperament +00 -04 +04 +00 -04 +04 +00 +02 -08 +00 +02 -02
+[CEG]2z [C_EG]2z | [^F^A^c]2z [^F=A^c]2z |
+% well temperament (F.A. Vallotti 1754)
+%%temperament +00 -06 -04 -02 -08 +02 -08 -02 -04 -06 +00 -10
+[CEG]2z [C_EG]2z | [^F^A^c]2z [^F=A^c]2z |
+% 12-tone equal temperament
+%%MIDI temperamentnormal
+[CEG]2z [C_EG]2z | [^F^A^c]2z [^F=A^c]2z |

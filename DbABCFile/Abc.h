@@ -125,7 +125,9 @@ namespace Abc
         META,
         PEDAL_ON,
         PEDAL_OFF,
-        EFFECT
+        EFFECT,
+
+        NUM_FEATURES
     }; 
 
     char const *featname(FeatureType f);

@@ -8,7 +8,7 @@ static const char *sOneOctave = "cdefgab";
 static int sScale[7] = {0, 2, 4, 5, 7, 9, 11}; // diatonic 'major' mode
 
 AbcStore::AbcStore(AbcParser *p) :
-    AbcParser::EventHandler(p),
+    IAbcParseClient(p),
     temperament_dt {0.0,0.0,0.0,0.0, 0.0,0.0,0.0,0.0, 0.0,0.0,0.0,0.0},
     temponame {
         "larghissimo" , "adagissimo", "lentissimo",
@@ -86,6 +86,311 @@ AbcStore::AbcStore(AbcParser *p) :
 
 AbcStore::~AbcStore()
 {}
+
+void
+AbcStore::Init(int argc, char const*argv[], std::string *filename)
+{
+    int j;
+    int arg, m, n;
+
+    /* look for code checking option */
+    if(this->getarg("-c", argc, argv) != -1) 
+        this->check = 1;
+    else
+        this->check = 0;
+
+    /* disable repeat checking because abc2midi does its own workaround
+     * attempting to fix various repeat errors.
+     */
+    this->parser->repcheck = 0;
+
+    /* look for filename-from-tune-titles option */
+    this->namelimit = 252;
+    this->titlenames = 0;
+    if(this->getarg("-t", argc, argv) != -1)
+    {
+        this->titlenames = 1;
+        this->namelimit = 8;
+    }
+    /* look for verbose option */
+    arg = this->getarg("-v", argc, argv);
+    if(arg != -1) 
+    {
+        if(argc > arg)
+        {
+            n = sscanf(argv[arg],"%d", &m);
+            if(n > 0) 
+                this->verbose = m; 
+            else 
+                this->verbose = 1; /* arg != -1 but arg == argc */
+        } 
+        else 
+            this->verbose = 0;
+    }
+    if(this->getarg("-ver", argc, argv) != -1) 
+    {
+        printf("%s\n", this->version);
+        return;
+    }
+    /* look for "no forte no piano" option */
+    if(this->getarg("-NFNP", argc, argv) != -1)
+        this->nofnop = 1;
+    else
+        this->nofnop = 0;
+
+    if(this->getarg("-NFER",argc, argv) != -1)
+        this->ignore_fermata = 1;
+    else
+        this->ignore_fermata = 0;
+
+    if(this->getarg("-NGRA",argc, argv) != -1)
+        this->ignore_gracenotes = 1;
+    else
+        this->ignore_gracenotes = 0;
+
+    if(this->getarg("-NGUI",argc, argv) != -1)
+        this->ignore_guitarchords = 1;
+    else
+        this->ignore_guitarchords = 0;
+  
+    if(this->getarg("-NCOM", argc, argv) != -1) 
+        this->nocom = 1;
+    else
+        this->nocom = 0;
+
+    if(this->getarg("-STFW",argc,argv) != -1)
+        this->separate_tracks_for_words = 1;
+    else
+        this->separate_tracks_for_words = 0;
+
+    if(this->getarg("-HARP",argc,argv) != -1)
+        this->harpmode = 1;
+    else 
+        this->harpmode = 0;
+
+    if(this->getarg("-EA",argc,argv) != -1)
+        this->easyabcmode = 1;
+    else
+        this->easyabcmode = 0;
+
+    arg = getarg("-BF",argc,argv);
+    if(arg != -1)  
+    { 
+        if(argc > arg) 
+        {
+            n = sscanf(argv[arg],"%d",&m);
+            if(n > 0) 
+                this->genMidi.stressmodel = m;
+        } 
+        else 
+            this->genMidi.stressmodel = 2;
+    } 
+    else 
+        this->genMidi.stressmodel = 0;
+    this->genMidi.barflymode = this->genMidi.stressmodel;
+
+    arg = getarg("-TT",argc,argv); /* [SS] 2012-04-01 */
+    if(arg != -1) 
+    {
+        float afreq, semitone_shift;
+        n = 0;
+        if(argc > arg) 
+        {
+            n = sscanf(argv[arg],"%f", &afreq);
+        }
+        if(n < 1) 
+        {
+            this->error("expecting float between 415.30 and 466.16 after -TT\n");
+        } 
+        else 
+        {
+            char msg[100];
+            this->retuning = 1;
+            semitone_shift = (float) (12.0 * log10(afreq/440.0f)/log10(2.0f));
+            snprintf(msg, 100, "afreq = %f semitone_shift = %f\n", 
+                    afreq, semitone_shift);
+            this->log(msg);
+            if(semitone_shift >= 1.001) 
+            {
+                snprintf(msg, 100, "frequency %f must be less than 466.16\n",
+                    afreq);
+                this->warning(msg);
+                this->retuning = 0;
+            }
+            else
+            if(semitone_shift <= -1.015) 
+            {
+                printf("frequency %f must be greater than 415.0\n", afreq);
+                this->retuning = 0;
+            }             
+            if(this->retuning) 
+            {
+                this->bend = (int) (8192.0 * semitone_shift) + 8192;
+                if(bend > 16383) bend=16383;
+                if(bend < 0) bend = 0;
+                printf("bend = %d\n",bend);
+            }
+        }
+    } 
+    if(this->getarg("-OCC",argc,argv) != -1) 
+        this->parser->oldchordconvention = 1;
+    if(this->getarg("-silent",argc,argv) != -1) 
+        this->silent = 1;
+
+    /* allocate space for notes, we'll grow it as needed */
+    this->maxFeatures = 500;
+    this->featurelist.resize(this->maxFeatures);
+    /* and for text */
+    this->atext.resize(this->maxtexts);
+    this->wordlist.clear();
+
+    for(j=0;j<Abc::DECSIZE;j++)  
+        this->dummydecorator[j] = 0;
+
+    if((this->getarg("-h", argc, argv) != -1) || (argc < 2)) 
+    {
+        char msg[100];
+        snprintf(msg, 100, "abc2midi_cpp version %s", this->version);
+        this->log(msg);
+        this->log(
+        "Usage : abc2midi <abc file> [reference number] [-c] [-v] "
+        "[-o filename]\n"
+        "        [-t] [-n <value>] [-CS] [-NFNP] [-NCOM] [-NFER] [-NGRA] [-NGUI] [-HARP]\n"
+        "        [reference number] selects a tune\n"
+        "        -c  selects checking only\n"
+        "        -v  selects verbose option\n"
+        "        -ver prints version number and exits\n"
+        "        -o <filename>  selects output filename\n"
+        "        -t selects filenames derived from tune titles\n"
+        "        -n <limit> set limit for length of filename stem\n"
+        "        -CS use 2:1 instead of 3:1 for broken rhythms\n"
+        "        -quiet suppress some common warnings\n"
+        "        -silent suppresses most messages\n"
+        "        -Q default tempo (quarter notes/minute)\n"
+        "        -NFNP don't process !p! or !f!-like fields\n"
+        "        -NCOM suppress comments in output MIDI file\n"
+        "        -NFER ignore all fermata markings\n"
+        "        -NGRA ignore grace notes\n"
+        "        -NGUI ignore guitar chord indications\n"
+        "        -STFW separate tracks for words (lyrics)\n"
+        "        -HARP ornaments=roll for harpist (same pitch)\n"
+        "        -BF Barfly mode: invokes a stress model if possible\n"
+        "        -OCC old chord convention (eg. +CE+)\n"
+        "        -TT tune to A =  <frequency>\n"
+        "        -CSM <filename> load custom stress models from file\n"
+        " The default action is to write a MIDI file for each abc tune\n"
+        " with the filename <stem>N.mid, where <stem> is the filestem\n"
+        " of the abc file and N is the tune reference number. If the -o\n"
+        " option is used, only one file is written. This is the tune\n"
+        " specified by the reference number or, if no reference number\n"
+        " is given, the first tune in the file.\n"
+        );
+        return;
+    } 
+    else 
+    {
+        xmatch = 0;
+        if((argc >= 3) && (isdigit(*argv[2]))) 
+        {
+            xmatch = this->parser->readnumf(argv[2]);
+        }
+        *filename = argv[1];
+        this->outbase = argv[1];
+        std::string::size_type s = this->outbase.find_last_of('.');
+        if(s != std::string::npos)
+            this->outbase.assign(this->outbase.substr(0, s-1));
+    }
+  
+    /* look for filename stem limit */
+    j = this->getarg("-n", argc, argv);
+    if(j != -1) 
+    {
+        if(argc >= j+1) 
+        {
+            namelimit = 0;
+            sscanf(argv[j], "%d", &namelimit);
+            if((namelimit < 3) || (namelimit > 252)) 
+            {
+                this->error("filename stem limit must be in the range 3 - 252");
+                return;
+            }
+        }
+    } 
+    else 
+        this->warning("No number given, ignoring -n option");
+
+    /* look for default tempo */
+    j = getarg("-Q", argc, argv);
+    if(j != -1) 
+    {
+        if(argc >= j+1) 
+        {
+            sscanf(argv[j], "%d", &default_tempo);
+            if(default_tempo < 3) 
+            {
+                this->error("Q parameter is too small\nEnter -Q 240 not -Q 1/4=240");
+                return;
+            }
+        } 
+        else 
+            this->warning("No number given, ignoring -Q option");
+    }
+       
+    /* look for user-supplied output filename */
+    j = getarg("-o", argc, argv);
+    if(j != -1)
+    {
+        if(argc >= j+1)
+        {
+            this->outname = argv[j];
+            this->userfilename = 1;
+            if(this->xmatch == 0) 
+            {
+                this->xmatch = -1;
+            }
+            if(this->titlenames == 1) 
+            {
+                this->warning("-o option overrides -t option");
+                this->titlenames = 0;
+            }
+        } 
+        else 
+        {
+            this->warning("No filename given, ignoring -o option");
+        }
+    }
+
+    j = this->getarg("-CSM", argc, argv);
+    if(j != -1)
+    {
+        if(argc >= j+1)
+        {
+            this->csmfilename = argv[j];
+            if(this->csmfilename[0] == '-') 
+            {
+                this->warning("csmfilename confused with options");
+                this->csmfilename.clear();
+            }
+        } 
+        else 
+            this->warning("Filename required after -CSM option");
+    }
+
+    this->ratio_standard = this->getarg("-CS", argc, argv); /* [SS] 2016-01-02 */
+    this->quiet  = this->getarg("-quiet", argc, argv);
+    this->dotune = 0;
+    this->parser->parserOff();
+    this->setup_chordnames();
+
+    /* [SS] 2016-01-02 */
+    if(this->getarg("-RS",argc,argv) != -1) 
+        this->warning("use -CS to get Celtic broken rhythm");
+  
+    /* XXX: 
+    if(this->barflymode) 
+        this->init_stresspat();
+    */
+}
 
 /* look for argument 'option' in command line */
 int
@@ -453,7 +758,7 @@ AbcStore::sync_voice(voicecontext *vv, int sync_to, int ignorecurrentbar)
         case Abc::REST:
             /*if(insidechord < 2) addfract(&snum,&sdenom,num[j],denom[j]);*/
             if(insidechord < 2 && !this->gracenotes) 
-                this->addfract(&snum, &sdenom, fd.num, fd.denom); 
+                AbcMusic::addFraction(&snum, &sdenom, fd.num, fd.denom); 
             if(insidechord) 
                 insidechord++;
             begin = 1;
@@ -800,16 +1105,16 @@ void
 AbcStore::dump_trackdescriptor()
 {
     char msg[80];
-    this->info("tracks {");
+    this->log("tracks {");
     for(int i=0;i<this->ntracks;i++) 
     {
         snprintf(msg, 80, " %d %d %d",   
             i, 
             this->genMidi.trackdescriptor[i].tracktype,
             this->genMidi.trackdescriptor[i].voicenum);
-        this->info(msg);
+        this->log(msg);
     }
-    this->info("tracks }");
+    this->log("tracks }");
 }
 
 void 
@@ -836,7 +1141,7 @@ AbcStore::setup_trackstructure()
                 p->voiceno, p->indexno, p->nbars,
                 p->hasgchords, p->haswords, p->hasdrums,
                 p->hasdrone, p->tosplitno, p->fromsplitno);
-            this->info(msg);
+            this->log(msg);
         }
         if(this->ntracks > 39) 
         {
@@ -1086,7 +1391,7 @@ AbcStore::midi(char const *s)
         this->parser->skipspace(&p);
         if(strcmp(p,"comma53") == 0) 
         {
-            this->info(p);
+            this->log(p);
             this->comma53 = 1;
             this->init_p48toc53();
             done = 1;
@@ -1271,7 +1576,7 @@ AbcStore::midi(char const *s)
                 char buf[100];
                 snprintf(buf, 100, "temperamentlinear:\n"
                     "\targs: %lf %lf\n", octave_cents, fifth_cents);
-                this->info(buf);
+                this->log(buf);
                 snprintf(buf, 100, "\toctave_size = %.3f (%.3lf cents)\n"
                     "\tfifth_size = %.3f (%.3lf cents)\n"
                     "\twhole-tone size = %.3f (%.3lf cents)\n"
@@ -1279,7 +1584,7 @@ AbcStore::midi(char const *s)
                     octave_size, octave_size, fifth_size, fifth_size,
                     2*fifth_size - octave_size, 2.0*fifth_size-octave_size,
                     sharp_size,sharp_size);
-                this->info(buf);
+                this->log(buf);
             }
         }
         else
@@ -1344,12 +1649,12 @@ AbcStore::midi(char const *s)
         {
             char msg[100];
             snprintf(msg, 100, "temperamentequal:\n\targs (%d):", narg);
-            this->info(msg);
+            this->log(msg);
             if(narg>=1) snprintf(msg, 100, " %d\n", ndiv);
             if(narg>=2) snprintf(msg, 100, " %.3lf", octave_cents);
             if(narg>=3) snprintf(msg, 100, " %d", fifth_index);
             if(narg>=4) snprintf(msg, 100, " %d", sharp_steps);
-            this->info(msg);
+            this->log(msg);
             snprintf(msg, 100, 
                 "\tndiv = %d\n"
                 "\toctave_size = %.3lf cents\n"
@@ -1363,10 +1668,10 @@ AbcStore::midi(char const *s)
                 acc_size,
                 (int) ((acc_size*ndiv/octave_size) + 0.5)
              );
-            this->info(msg);
+            this->log(msg);
             snprintf(msg, 100, "\tmicrostep_size = %.3lf cents (1 step)\n",
                 microstep_size); /* [HL] 2020-06-20*/
-            this->info(msg);
+            this->log(msg);
         }
         if(acc_size < 0)
             this->warning("temperamentequal <ndiv> [octave_in_cents] [fifth_in_steps] [sharp_in_steps]\n"
@@ -1455,7 +1760,7 @@ AbcStore::midi(char const *s)
         {
             char msg[300];
             snprintf(msg, 300, "ptstress file = %s\n", inputfile);
-            this->info(msg);
+            this->log(msg);
         }
         if(this->genMidi.parse_stress_params(inputfile) == -1) 
             this->genMidi.readstressfile(inputfile);
@@ -2234,7 +2539,7 @@ AbcStore::dograce()
         j = j + 1;
     };
     if (this->verbose >3) 
-        this->info("dograce finished\n");
+        this->log("dograce finished\n");
 }
 
 void
@@ -2977,7 +3282,7 @@ AbcStore::scan_for_missing_repeats()
     if(num2add > 0) 
         this->add_missing_repeats(num2add, add_leftrepeat_at); 
     if(this->verbose > 3) 
-        this->info("scan_for_missing_repeats finished");
+        this->log("scan_for_missing_repeats finished");
 }
 
 void 
@@ -3092,7 +3397,7 @@ AbcStore::tiefix()
         }
     }
     if(this->verbose >3) 
-        this->info("tiefix finished");
+        this->log("tiefix finished");
 }
 
 /* called in preprocessing stage to handle ties */
@@ -3197,11 +3502,11 @@ AbcStore::dotie(int j, int xinchord, int voiceno)
                         this->featurelist[tienote].pitch; 
                     /* in case accidentals did not propagate                   */
                     /* add time to tied time */
-                    this->addfract(&tied_num, &tied_denom, 
+                    AbcMusic::addFraction(&tied_num, &tied_denom, 
                         this->featurelist[place].num, 
                         this->featurelist[place].denom);
                     /* add time to tied note */
-                    this->addfract(
+                    AbcMusic::addFraction(
                         &this->featurelist[tienote].num, 
                         &this->featurelist[tienote].denom, 
                         this->featurelist[place].num, 
@@ -3215,7 +3520,7 @@ AbcStore::dotie(int j, int xinchord, int voiceno)
                 if(inchord == 0) 
                 {
                     /* subtract time from tied time */
-                    this->addfract(&tied_num, &tied_denom, 
+                    AbcMusic::addFraction(&tied_num, &tied_denom, 
                         -this->featurelist[place].num, 
                         this->featurelist[place].denom);
                 }
@@ -3229,7 +3534,7 @@ AbcStore::dotie(int j, int xinchord, int voiceno)
                 if(inchord == 0) 
                 {
                     /* subtract time from tied time */
-                    this->addfract(&tied_num, &tied_denom, 
+                    AbcMusic::addFraction(&tied_num, &tied_denom, 
                         -this->featurelist[place].num, 
                         this->featurelist[place].denom);
                 }
@@ -3264,7 +3569,7 @@ AbcStore::dotie(int j, int xinchord, int voiceno)
                     break;
                 inchord = 0;
                 /* subtract time from tied time */
-                this->addfract(&tied_num, &tied_denom, 
+                AbcMusic::addFraction(&tied_num, &tied_denom, 
                     -this->featurelist[place].num, 
                     this->featurelist[place].denom);
                 break;
@@ -3281,4 +3586,295 @@ AbcStore::dotie(int j, int xinchord, int voiceno)
             this->error("Could not find note to be tied");
     }
     /*if (verbose > 3) printf("dotie finished\n"); */
+}
+
+
+void
+AbcStore::dumpfeat(int from, int to)
+{
+    char msg[80];
+    for(int i=from;i<=to;i++)
+    {
+        FeatureDesc &fd = this->featurelist[i];
+        int j = fd.feature;
+        if(j<0 || j >= Abc::NUM_FEATURES) 
+        {
+            snprintf(msg, 80, "illegal feature[%d] = %d", i, j); 
+            this->error(msg);
+        }
+        else 
+        {
+            snprintf(msg, 80, "%d %s   %d %d %d %d %d %d",
+                i, Abc::featname(fd.feature),
+                fd.pitch, fd.bentpitch, fd.decotype,  
+                fd.num, fd.denom, fd.charloc);
+        }
+    }
+}
+
+/* find and correct missing repeats in music */
+/* abc2midi places an extra || at the start of the music */
+/* This can be converted to |: if necessary. */
+void
+AbcStore::fixreps()
+{
+    int expect_repeat = 0;   /* = 1 after |: or ::  otherwise 0*/
+    int use_next = 0; /* if 1 set next bar line as ref_point */
+    int nplays = 0; /* counts PLAY_ON_REP associated with a BAR_REP*/
+    int rep_point = 0; /* where to assume a repeat starts */
+    int j = 0;
+    while(j < this->nextFeature) 
+    {
+        FeatureDesc &fd = this->featurelist[j];
+        switch(fd.feature) 
+        {
+        case Abc::SINGLE_BAR:           /*  |  */
+            if(use_next)
+            {
+                rep_point = j;
+                use_next = 0;
+            }
+            break;
+            case Abc::DOUBLE_BAR:           /*  || */
+                rep_point = j;
+                use_next = 0;
+                break;
+            case Abc::BAR_REP:              /* |:  */
+                /* if |:  .. |: encountered. Report error and change second |: to :: */
+                if(expect_repeat) 
+                {
+                    if(this->quiet == -1) 
+                        this->error(" found another |: after a |:");
+                    this->placeendrep(j);
+                }
+                expect_repeat = 1;
+                use_next = 0;
+                break;
+            case Abc::REP_BAR:                /* :| */
+                /* if :| encountered before |: place  "|:" at reference point */
+                if((!expect_repeat) && (nplays < 1)) 
+                {
+                    this->placestartrep(rep_point);
+                }
+                expect_repeat = 0; 
+                rep_point = j;
+                use_next = 0;
+                break;
+            case Abc::PLAY_ON_REP: /*  [1 or [2 or [1,3 etc  */
+                if(nplays == 0 && !expect_repeat) 
+                {
+                    if(this->quiet == -1) 
+                        this->error(" found [1 or like before |:");
+                    this->placestartrep(rep_point);
+                }
+                nplays++;
+                break;
+            case Abc::DOUBLE_REP:           /*  ::  */
+                if(!expect_repeat) 
+                {
+                    if(this->quiet == -1) 
+                        this->error(" found :: before |:");
+                    this->placestartrep(rep_point);
+                }
+                expect_repeat = 1;
+                break;
+            default:
+                break;
+        }
+        j = j + 1;
+    }
+}
+
+/* patch up missing repeat */
+void 
+AbcStore::placestartrep(int j)
+{
+    if(this->quiet == -1) 
+        this->warning("Assuming repeat");
+    FeatureDesc &fd = this->featurelist[j];
+    switch(fd.feature) 
+    {
+    case Abc::DOUBLE_BAR:
+        fd.feature = Abc::BAR_REP;
+        break;
+    case Abc::SINGLE_BAR:
+        fd.feature = Abc::BAR_REP;
+        break;
+    case Abc::REP_BAR:
+        if(this->quiet == -1) 
+            this->warning("replacing |: with double repeat (::)");
+        fd.feature = Abc::DOUBLE_REP;
+        break;
+    case Abc::BAR_REP:
+        if(this->quiet == -1) 
+            this->error("Too many end repeats");
+        break;
+    case Abc::DOUBLE_REP:
+        if(this->quiet == -1) 
+            this->error("Too many end repeats");
+        break;
+    default:
+        this->error("Internal error - please report");
+        break;
+    }
+}
+
+/* patch up missing repeat */
+void 
+AbcStore::placeendrep(int j)
+{
+    if(this->quiet == -1) 
+        this->warning("Assuming repeat");
+
+    FeatureDesc &fd = this->featurelist[j];
+    switch(fd.feature) 
+    {
+    case Abc::DOUBLE_BAR:
+        fd.feature = Abc::REP_BAR;
+        break;
+    case Abc::SINGLE_BAR:
+        fd.feature = Abc::REP_BAR;
+        break;
+    case Abc::BAR_REP:
+        fd.feature = Abc::DOUBLE_REP;
+        this->warning("replacing with double repeat (::)");
+        break;
+    default:
+        this->error("Internal error - please report");
+        break;
+    }
+}
+
+
+void 
+AbcStore::expand_ornaments() 
+{
+    char msg[80];
+    for(int i=0; i<this->nextFeature; i++) 
+    {
+        FeatureDesc &fd = this->featurelist[i];
+        if(fd.decotype != 0)
+        {
+            if(fd.feature == Abc::TNOTE) 
+                this->convert_tnote_to_note(i);
+            else
+            if(fd.feature == Abc::NOTE) 
+            {
+                int deco_index = fd.decotype;
+                notestruct *s =  this->noteaddr[deco_index];
+                int notetype = s->notetype;
+                switch(notetype) 
+                {
+                case Abc::TRILL:
+                    dotrill_output(i);
+                    break;
+                case Abc::ROLL:
+                    doroll_output(i);
+                    break;
+                default: 
+                    snprintf(msg, 80, "no such decoration %d/%d", 
+                        fd.decotype, notetype);
+                    this->error(msg);
+                    break;
+                }
+            }
+        }
+    }
+/*dump_notestruct();*/
+    if(this->verbose> 3) 
+        this->log("expand_ornaments finished");
+}
+
+/* tied notes TNOTE are handled in a different
+ *  manner by genmidi so we need to change it
+ *  to NOTE so it expand_ornament can process
+ *  it. We change TNOTE to NOTE and eliminate the
+ *  RESTS associated with TNOTE
+ */
+void 
+AbcStore::convert_tnote_to_note(int loc)
+{
+    FeatureDesc &fd = this->featurelist[loc];
+    fd.feature = Abc::NOTE;
+    /* Look ahead and remove the REST associated with TNOTE    */
+    /* The last REST in the TNOTE sequence has a nonzero pitch */
+    int j = loc;
+    for(int i=0;i<6;i++) 
+    {
+        fd = this->featurelist[j];
+        if(fd.feature == Abc::REST) 
+        {
+            int pitchflag = fd.pitch;
+            this->removefeature(j);
+            if (pitchflag != 0) 
+                break;
+        } 
+        else 
+            j++; 
+    }
+}
+
+/* The time signature placed before the next measure can
+ * effect the current measure and result in warnings.
+ */
+void 
+AbcStore::check_for_timesig_preceding_bar_line() 
+{
+    for(int i=4;i<this->nextFeature;i++) 
+    {
+        if(this->featurelist[i].feature == Abc::TIME && 
+           this->featurelist[i+1].feature == Abc::SINGLE_BAR)
+        {
+            this->interchange_features(i, i+1);
+        }
+    }
+}
+
+/* update part_start array in case things have moved around */
+void 
+AbcStore::fix_part_start() 
+{
+    for(int i=0;i<this->nextFeature;i++) 
+    {
+        FeatureDesc &fd = this->featurelist[i];
+        if(fd.feature == Abc::PART) 
+        {
+            /*printf("%d PART %d\n",i,pitch[i]); */
+            int partnum = fd.pitch - 65;
+            if (partnum >= 0 && partnum < 26) 
+                this->genMidi.part_start[partnum] = i;
+        }
+    }
+}
+
+/* in event that the chord length was set outside [],
+ * we must go back and adjust the note length of each note
+ * inside the chord.
+ */
+void 
+AbcStore::fix_enclosed_note_lengths(int from, int end) 
+{
+    FeatureDesc &fd = this->featurelist[end];
+    if(this->apply_fermata_to_chord && !this->ignore_fermata)
+    {
+        if(this->fermata_fixed) 
+            AbcMusic::addFraction(&fd.num, &fd.denom, 1, 1);
+        else 
+            fd.num *= 2;
+    }
+    int endnum = fd.num;
+    int enddenom = fd.denom;
+    for(int j = from; j < end; j++)
+    {
+        /*  also include REST which occurs in STACCATO CHORD */
+        FeatureDesc &fd = this->featurelist[j];
+        if(fd.feature == Abc::NOTE || 
+           fd.feature == Abc::TNOTE || 
+           fd.feature == Abc::REST) 
+        {
+            fd.num = endnum;
+            fd.denom = enddenom; 
+        }
+    }
+    this->apply_fermata_to_chord = 0;
 }

@@ -7,7 +7,7 @@ AbcStore::startfile()
 {
     int j;
     if(this->verbose)
-        this->info("scanning tune\n");
+        this->log("scanning tune\n");
 
     /* set up defaults */
     this->keySharps = 0;
@@ -94,7 +94,7 @@ AbcStore::finishfile()
             this->error("P: field in header should go after K: field");
 
         if(this->verbose > 1)
-            this->info("handling grace notes\n");
+            this->log("handling grace notes\n");
 
         this->dograce(); // fixup _all_ gracenotes
         if(this->genMidi.barflymode) 
@@ -103,7 +103,7 @@ AbcStore::finishfile()
         if((this->genMidi.parts == -1) && (this->voicecount == 1)) 
         {
             if(verbose > 1) 
-                this->info("fixing repeats");
+                this->log("fixing repeats");
             this->fixreps();
         }
 
