@@ -23,10 +23,11 @@ AbcGenMidi::~AbcGenMidi()
 void
 AbcGenMidi::Init()
 {
-    this->barflymode = 1;
+    this->barflymode = 0; // overriden via -BF or "R:"
+    this->beatmodel = 0;
     this->stressmodel = 0;
     this->stress_pattern_loaded = 0;
-    this->parts = 0;
+    this->parts = -1;
     this->partspec.clear(); // string
     for(int j=0; j<26; j++)
         this->part_start[j] = -1;
@@ -38,14 +39,21 @@ int
 AbcGenMidi::writefile(char const *fpath, InitState const *initState)
 {
     FILE *fp = fopen(fpath, "wb");
-    if(!fp) return -1;
+    if(!fp) 
+    {
+        char msg[512];
+        snprintf(msg, 512, "Problem opening %s", fpath);
+        this->wctx.error(msg);
+        return -1;
+    }
     this->initState = initState;
     this->no_more_free_channels = 0;
     this->wctx.beginWriting(fp, initState);
     if(this->initState->ntracks == 1) 
-        this->wctx.mfile.write(this, 0, 1, this->wctx.division);
+        this->wctx.mfile.write(this, fp, 0, 1, this->wctx.division);
     else 
-        this->wctx.mfile.write(this, 1, ntracks, this->wctx.division);
+        this->wctx.mfile.write(this, fp, 1, this->initState->ntracks, 
+                            this->wctx.division);
     fclose(fp);
     return 0;
 }
@@ -53,7 +61,7 @@ AbcGenMidi::writefile(char const *fpath, InitState const *initState)
 /* this routine writes a MIDI track,
  * it's invoked as a callback from AbcMidiFile
  */
-int 
+long 
 AbcGenMidi::writetrack(int xtrack)
 {
     int timekey = 1;
@@ -76,6 +84,7 @@ AbcGenMidi::writetrack(int xtrack)
 
     this->wctx.tracklen = 0L;
     this->wctx.delta_time = 1L;
+    this->wctx.lineno = this->initState->lineno;
     this->wctx.initTrack(xtrack);
 
     if(this->initState->karaoke)
@@ -327,7 +336,7 @@ AbcGenMidi::writetrack(int xtrack)
             if(!inchord) 
             {
                 this->wctx.delay(fd.num, fd.denom, 0);
-                this->wctx.addunits(fd.num, fd.denom);
+                this->wctx.addBarUnits(fd.num, fd.denom);
                 this->wctx.notecount = 0;
                 this->wctx.totalnotedelay = 0;
             }
@@ -377,7 +386,7 @@ AbcGenMidi::writetrack(int xtrack)
             if(!inchord) 
             {
                 this->wctx.delay(fd.num, fd.denom, 0);
-                this->wctx.addunits(fd.num, fd.denom);
+                this->wctx.addBarUnits(fd.num, fd.denom);
             }
             break;
         case Abc::CHORDON:
@@ -395,7 +404,7 @@ AbcGenMidi::writetrack(int xtrack)
             this->wctx.chordattack = this->wctx.staticchordattack;
             note_num = fd.num;
             note_denom = fd.denom;
-            this->wctx.addunits(note_num, note_denom);
+            this->wctx.addBarUnits(note_num, note_denom);
             if(this->wctx.trim) 
             {
                 if(AbcMusic::gtFraction(note_num, note_denom,
@@ -832,6 +841,12 @@ AbcGenMidi::writetrack(int xtrack)
         }
     }
     return this->wctx.delta_time;
+}
+
+void
+AbcGenMidi::midierror(const char *msg)
+{
+    this->wctx.error(msg);
 }
 
 /* Write out a syllable. This routine must check that it has a line of 
@@ -1592,7 +1607,7 @@ AbcGenMidi::noteon_data(int pitch, int pitchbend, int chan, int vel)
 }
 
 void 
-AbcGenMidi::midi_noteon(long delta_time, int pitch, int chan, int vel, int pitchbend)
+AbcGenMidi::midi_noteon(long delta_time, int pitch, int pitchbend, int chan, int vel)
 {
     char data[2];
     if(this->wctx.channel >= MAXCHANS) 

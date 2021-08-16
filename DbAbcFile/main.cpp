@@ -42,7 +42,7 @@ t_CKINT abcFile_data_offset = 0; // required by chuck
 CK_DLL_QUERY(DbAbcFile)
 {
     QUERY->setname(QUERY, "DbAbcFile");
-    QUERY->begin_class(QUERY, "DbAbcFileIn", "Object");
+    QUERY->begin_class(QUERY, "DbAbcFile", "Object");
 
     QUERY->add_ctor(QUERY, abcFile_ctor);
     QUERY->add_dtor(QUERY, abcFile_dtor);

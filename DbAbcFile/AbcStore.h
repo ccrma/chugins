@@ -94,6 +94,7 @@ private:
     int propagate_accidentals;
 
     int active_pitchbend;
+    int bend; // only used when -TT arg is used
 
     float temperament_dt[12];
     #define TEMPERDT -1
@@ -117,7 +118,6 @@ private:
     int easyabcmode;
     char rhythmdesignator[32];
     int retuning;
-    int bend;
     int comma53;
     int silent;
     int no_more_free_channels;
@@ -200,9 +200,17 @@ private:
             this->octaveshift = global.octaveshift;
         }
 
+        void initmic()
+        {
+            // placeholder for debugging, now that fraction has
+            // proper constructor implicit initialization of 
+            // basemic and workmic seems to work.
+            // printf("initmic\n");
+        }
+
         char basemap[7], workmap[7][10];
         int basemul[7], workmul[7][10];
-        AbcMusic::fraction basemic[7],workmic[7][10];
+        AbcMusic::fraction basemic[7], workmic[7][10];
         int keyset; /* flag to indicate whether key signature set */
         int default_length;
         int active_meter_num; /* [SS] 2012-11-08 */
@@ -442,10 +450,10 @@ private:
 
     void hornp(int num, int denom);
     int barepitch(char note, char accidental, int mult, int octave);
-    int pitchof_b(char note, char accidental, int mult, int octave, 
-                int propagate_accs, int *pitchbend);
     int pitchof(char note, char accidental, int mult, int octave, 
                 int propagate_accs);
+    int pitchof_bend(char note, char accidental, int mult, int octave, 
+                int propagate_accs, int *pitchbend);
     
     void dograce();
     void applygrace(int); // offset into this->featurelist

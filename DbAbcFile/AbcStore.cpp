@@ -69,8 +69,8 @@ AbcStore::AbcStore(AbcParser *p) :
     this->number_of_abcm2ps_options = 1;
 
     this->userfilename = 0; // int/bool
-    this->outname = nullptr;
-    this->outbase = nullptr;
+    this->outname.clear();
+    this->outbase.clear();
 
     this->programbase = 0;
 
@@ -226,9 +226,9 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
             if(this->retuning) 
             {
                 this->bend = (int) (8192.0 * semitone_shift) + 8192;
-                if(bend > 16383) bend=16383;
-                if(bend < 0) bend = 0;
-                printf("bend = %d\n",bend);
+                if(this->bend > 16383) this->bend = 16383;
+                if(this->bend < 0) this->bend = 0;
+                printf("-TT: bend = %d\n", this->bend);
             }
         }
     } 
@@ -298,7 +298,7 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
         this->outbase = argv[1];
         std::string::size_type s = this->outbase.find_last_of('.');
         if(s != std::string::npos)
-            this->outbase.assign(this->outbase.substr(0, s-1));
+            this->outbase.assign(this->outbase.substr(0, s));
     }
   
     /* look for filename stem limit */
@@ -315,9 +315,9 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
                 return;
             }
         }
+        else 
+            this->warning("No number given, ignoring -n option");
     } 
-    else 
-        this->warning("No number given, ignoring -n option");
 
     /* look for default tempo */
     j = getarg("-Q", argc, argv);
@@ -942,8 +942,8 @@ AbcStore::recurse_back_to_original_voice()
         previous_voice = v->fromsplitno;
         this->splitdepth--;
     }
-    addfeature(Abc::VOICE, this->v->indexno, 0, 0);
-    copymap(this->v);
+    this->addfeature(Abc::VOICE, this->v->indexno, 0, 0);
+    this->copymap(this->v);
 }
 
 /* work out accidentals to be applied to each note */
@@ -1101,103 +1101,6 @@ AbcStore::headerprocess()
     this->voicesused = 0;
 }
 
-void 
-AbcStore::dump_trackdescriptor()
-{
-    char msg[80];
-    this->log("tracks {");
-    for(int i=0;i<this->ntracks;i++) 
-    {
-        snprintf(msg, 80, " %d %d %d",   
-            i, 
-            this->genMidi.trackdescriptor[i].tracktype,
-            this->genMidi.trackdescriptor[i].voicenum);
-        this->log(msg);
-    }
-    this->log("tracks }");
-}
-
-void 
-AbcStore::setup_trackstructure() 
-{
-    AbcGenMidi::Track *td = this->genMidi.trackdescriptor;
-    td[0].tracktype = AbcGenMidi::Tracktype::NOTES;
-    td[0].voicenum = 1;
-    td[0].midichannel = -1;
-
-    voicecontext *p = this->head;
-    voicecontext *q;
-
-    this->ntracks = 1;
-    while (p != nullptr) 
-    {
-        if(this->verbose) 
-        {
-            char msg[100];
-            snprintf(msg, 100, 
-                "num %d index %d bars %d "
-                "gchords %d words %d drums %d "
-                "drone %d tosplit %d fromsplit %d ",
-                p->voiceno, p->indexno, p->nbars,
-                p->hasgchords, p->haswords, p->hasdrums,
-                p->hasdrone, p->tosplitno, p->fromsplitno);
-            this->log(msg);
-        }
-        if(this->ntracks > 39) 
-        {
-           this->error("Too many tracks"); /* [SS] 2015-03-26 */
-           return;
-        }
-        td[ntracks].tracktype = AbcGenMidi::Tracktype::NOTES;
-        td[ntracks].voicenum = p->indexno;
-        td[ntracks].midichannel = p->midichannel;
-        if(p->haswords)
-        {
-            if(!this->separate_tracks_for_words) 
-            {
-                td[ntracks].tracktype = AbcGenMidi::Tracktype::NOTEWORDS;
-                td[ntracks].voicenum = p->indexno;
-            } 
-            else 
-            {
-                this->ntracks++;
-                td[ntracks].tracktype = AbcGenMidi::Tracktype::WORDS;
-                td[ntracks].voicenum = td[ntracks-1].voicenum;
-            }
-        }
-        if(p->hasgchords)
-        {
-            this->ntracks++;
-            td[ntracks].tracktype = AbcGenMidi::Tracktype::GCHORDS;
-            td[ntracks].voicenum = p->indexno;
-        }
-        if(p->hasdrums)
-        {
-            this->ntracks++;
-            td[ntracks].tracktype = AbcGenMidi::Tracktype::DRUMS;
-            td[ntracks].voicenum = p->indexno;
-        }
-        if(p->hasdrone) 
-        {
-            this->ntracks++;  
-            td[ntracks].tracktype = AbcGenMidi::Tracktype::DRONE;
-            td[ntracks].voicenum = p->indexno;
-        }
-        this->ntracks++;
-        q = p->next;
-        p = q;
-    }
-
-    /* does the tune need any gchord, drum, drone or word track */
-    if((this->voicesused == 0) && (!this->karaoke) && 
-       (this->gchordvoice == 0) && (this->drumvoice == 0) && (this->dronevoice==0)) 
-    {
-        this->ntracks = 1;
-    } 
-
-    if(this->verbose > 1)
-        this->dump_trackdescriptor();
-}
 
 void 
 AbcStore::dump_notestruct () 
@@ -2301,7 +2204,7 @@ AbcStore::barepitch(char note, char accidental, int mult, int octave)
    notes in the bar.
 */
 int 
-AbcStore::pitchof_b(char note, char accidental, int mult, int octave, 
+AbcStore::pitchof_bend(char note, char accidental, int mult, int octave, 
     int propagate_accs, int *pitchbend)
 {
     const float accidental_size = this->sharp_size/100.0;
@@ -2325,10 +2228,10 @@ AbcStore::pitchof_b(char note, char accidental, int mult, int octave,
     if(acc == ' ' && !this->parser->microtone) 
     {  
         /* no accidentals, apply current state */
-        acc = v->workmap[noteno][octave+4];
-        mul = v->workmul[noteno][octave+4];
-        a = v->workmic[noteno][octave+4].num;   /* 2014-01-26 */
-        b = v->workmic[noteno][octave+4].denom;
+        acc = this->v->workmap[noteno][octave+4];
+        mul = this->v->workmul[noteno][octave+4];
+        a = this->v->workmic[noteno][octave+4].num;
+        b = this->v->workmic[noteno][octave+4].denom;
         this->microtone(1, a, b);
     } 
     else 
@@ -2339,21 +2242,20 @@ AbcStore::pitchof_b(char note, char accidental, int mult, int octave,
             if(propagate_accs == 1) 
             {  
                 /* accidentals applies to only current octave */
-                v->workmap[noteno][octave+4] = acc;
-                v->workmul[noteno][octave+4] = mul;
-                /* [SS] 2014-01-26 */
-                v->workmic[noteno][octave+4].num = this->parser->setmicrotone.num;
-                v->workmic[noteno][octave+4].denom = this->parser->setmicrotone.denom;
+                this->v->workmap[noteno][octave+4] = acc;
+                this->v->workmul[noteno][octave+4] = mul;
+                this->v->workmic[noteno][octave+4].num = this->parser->setmicrotone.num;
+                this->v->workmic[noteno][octave+4].denom = this->parser->setmicrotone.denom;
             } 
             else 
             { 
                 for(j=0;j<10;j++) 
                 { 
                     /* accidentals apply to all octaves */
-                    v->workmap[noteno][j] = acc;
-                    v->workmul[noteno][j] = mul;
-                    v->workmic[noteno][j].num = this->parser->setmicrotone.num;
-                    v->workmic[noteno][j].denom = this->parser->setmicrotone.denom;
+                    this->v->workmap[noteno][j] = acc;
+                    this->v->workmul[noteno][j] = mul;
+                    this->v->workmic[noteno][j].num = this->parser->setmicrotone.num;
+                    this->v->workmic[noteno][j].denom = this->parser->setmicrotone.denom;
                 }
             }
         }
@@ -2409,7 +2311,7 @@ AbcStore::pitchof_b(char note, char accidental, int mult, int octave,
         pitch =  (int) (pitchvalue + 0.5);
         bend = (int) (0.5 + 8192.0 + 4096.0 * (pitchvalue - (float) pitch));
         bend = bend<0?0:(bend>16383?16383:bend);
-    } 
+    }
     else 
     { 
         /* TEMPERNORMAL / TEMPERDT */
@@ -2521,7 +2423,8 @@ void
 AbcStore::dograce()
 {
     int j = 0;
-    while (j < this->nextFeature) 
+    this->gfact_method = 0; // new
+    while(j < this->nextFeature) 
     {
         FeatureDesc &fd = this->featurelist[j];
         if(fd.feature == Abc::GRACEON)
@@ -2545,7 +2448,7 @@ AbcStore::dograce()
 void
 AbcStore::applygrace(int place)
 {
-    if(this->gfact_method)
+    if(this->gfact_method) // default is 0
         this->applygrace_orig(place);
     else
         this->applygrace_new(place);
@@ -2567,10 +2470,7 @@ AbcStore::applygrace_orig(int place)
     {
         FeatureDesc &fd = this->featurelist[j];
         if(fd.feature == Abc::GRACEON) 
-        {
-            start = j;
-            break;
-        }
+            start = j; // no break
         else
         if(fd.feature == Abc::GRACEOFF) 
             this->error("} with no matching {");
@@ -2582,10 +2482,7 @@ AbcStore::applygrace_orig(int place)
     {
         FeatureDesc &fd = this->featurelist[j];
         if(fd.feature == Abc::GRACEOFF) 
-        {
-            end = j;
-            break;
-        }
+            end = j; // no break;
         if(fd.feature == Abc::GRACEON && (j != start - 1)) 
             this->error("nested { not allowed"); // } match
         j = j + 1;
@@ -2605,15 +2502,10 @@ AbcStore::applygrace_orig(int place)
         }      
         else
         if((fd.feature == Abc::NOTE) || (fd.feature == Abc::REST)) 
-        {
-            hostnotestart = j;
-            break;
-        }
+            hostnotestart = j; // no break
         else
         if(fd.feature == Abc::GRACEON) 
-        {
             this->error("Intervening note needed between grace notes");
-        }
         else
         if(fd.feature == Abc::CHORDON) 
             nextinchord = 1;
@@ -2629,7 +2521,6 @@ AbcStore::applygrace_orig(int place)
                fd.feature == Abc::CHORDOFFEX) 
             {
                 hostnoteend = j;
-                break;
             }
             j = j + 1;
         }
@@ -2703,14 +2594,11 @@ AbcStore::applygrace_new(int place)
 {
     int j = place;
     int start = -1;
-    while ((j < this->nextFeature) && (start == -1)) 
+    while((j < this->nextFeature) && (start == -1)) 
     {
         FeatureDesc &fd = this->featurelist[j];
         if(fd.feature == Abc::GRACEON) 
-        {
-            start = j;
-            break;
-        }
+            start = j; // don't break here
         else
         if(fd.feature == Abc::GRACEOFF) 
             this->error("} with no matching {");
@@ -2719,19 +2607,14 @@ AbcStore::applygrace_new(int place)
 
     /* now find end of grace notes */
     int end = -1;
-    while ((j < this->nextFeature) && (end == -1)) 
+    while((j < this->nextFeature) && (end == -1)) 
     {
         FeatureDesc &fd = this->featurelist[j];
         if(fd.feature == Abc::GRACEOFF) 
-        {
-            end = j;
-            break;
-        }
+            end = j; // don't break here
         else
-        if ((fd.feature == Abc::GRACEON) && (j != start - 1)) 
-        {
+        if((fd.feature == Abc::GRACEON) && (j != start - 1)) 
             this->error("nested { not allowed"); // } match
-        }
         j = j + 1;
     }
     /* now find following note */
@@ -2748,20 +2631,15 @@ AbcStore::applygrace_new(int place)
         } 
         else
         if((fd.feature == Abc::NOTE) || (fd.feature == Abc::REST)) 
-        {
-            hostnotestart = j;
-            break;
-        }
+            hostnotestart = j; // don't break
         else
         if(fd.feature == Abc::GRACEON) 
-        {
             this->error("Intervening note needed between grace notes");
-        }
         else
         if(fd.feature == Abc::CHORDON) 
             nextinchord = 1;
         j = j + 1;
-    };
+    }
     int hostnoteend = -1;
     if(nextinchord) 
     {
@@ -2771,8 +2649,7 @@ AbcStore::applygrace_new(int place)
             if(fd.feature == Abc::CHORDOFF || 
                fd.feature == Abc::CHORDOFFEX) 
             {
-                hostnoteend = j;
-                break;
+                hostnoteend = j; // don't break
             }
             j = j + 1;
         }
@@ -2885,8 +2762,8 @@ AbcStore::doroll(char note, int octave, int n, int m, int pitch)
         upoct = upoct + 1;
     if(down == 'b') 
         downoct = downoct - 1;
-    int pitchup = this->pitchof_b(up, v->basemap[(int)up - 'a'], 1, upoct, 0,&bend_up);
-    int pitchdown = this->pitchof_b(down, v->basemap[(int)down - 'a'], 1, downoct, 0,&bend_down);
+    int pitchup = this->pitchof_bend(up, v->basemap[(int)up - 'a'], 1, upoct, 0,&bend_up);
+    int pitchdown = this->pitchof_bend(down, v->basemap[(int)down - 'a'], 1, downoct, 0,&bend_down);
 
     FeatureDesc &fd = this->featurelist[this->nextFeature];
     fd.bentpitch = this->active_pitchbend;
@@ -2929,9 +2806,9 @@ AbcStore::doroll_setup(char note, int octave, int n, int m, int pitch)
         if(down == 'b') 
             downoct = downoct - 1;
         int bend_up,bend_down;
-        int pitchup = this->pitchof_b(up, v->basemap[(int)up - 'a'], 1, 
+        int pitchup = this->pitchof_bend(up, v->basemap[(int)up - 'a'], 1, 
                         upoct, 0, &bend_up);
-        int pitchdown = this->pitchof_b(down, v->basemap[(int)down - 'a'], 1, 
+        int pitchdown = this->pitchof_bend(down, v->basemap[(int)down - 'a'], 1, 
                         downoct, 0, &bend_down);
 
         notestruct *s = new notestruct();
@@ -2978,7 +2855,7 @@ AbcStore::doroll_output(int featureIndex)
     featureIndex++;
     this->insertfeature(Abc::NOTE, pitch, a, b, featureIndex);
     fd = this->featurelist[featureIndex];
-    fd.bentpitch = active_pitchbend;
+    fd.bentpitch = this->active_pitchbend;
 
     featureIndex++;
     this->insertfeature(Abc::NOTE, pitchdown, a, b, featureIndex);
@@ -2988,7 +2865,7 @@ AbcStore::doroll_output(int featureIndex)
     featureIndex++;
     this->insertfeature(Abc::NOTE, pitch, a, b, featureIndex);
     fd = this->featurelist[featureIndex];
-    fd.bentpitch = active_pitchbend;
+    fd.bentpitch = this->active_pitchbend;
 }
 
 void 
@@ -3000,7 +2877,7 @@ AbcStore::dotrill_setup(char note, int octave, int n, int m, int pitch)
     if(up == 'c') 
         upoct = upoct + 1;
     int bend;
-    int pitchup = this->pitchof_b(up, v->basemap[(int)up - 'a'], 1, 
+    int pitchup = this->pitchof_bend(up, v->basemap[(int)up - 'a'], 1, 
                                 upoct, 0, &bend);
 
     notestruct *s = new notestruct();
@@ -3011,7 +2888,7 @@ AbcStore::dotrill_setup(char note, int octave, int n, int m, int pitch)
     s->pitchdown = 0;
     s->default_length = global.default_length;
     s->bendup = bend;
-    s->benddown = active_pitchbend;
+    s->benddown = this->active_pitchbend;
     if(this->notesdefined < 0 || this->notesdefined>999)
     {
         char msg[64];
@@ -3036,6 +2913,7 @@ AbcStore::dotrill_output(int featureIndex)
     int pitchdown = s->pitchdown;
     int pitchup = s->pitchup;
     int default_length = s->default_length;
+    int bend = s->bendup;
 
     this->active_pitchbend = s->benddown;
     int n = fd.num * default_length;
@@ -3099,9 +2977,9 @@ AbcStore::doornament(char note, int octave, int n, int m, int pitch)
     }
     else
     {
-        pitchup = this->pitchof_b(up, v->basemap[(int)up - 'a'], 1, 
+        pitchup = this->pitchof_bend(up, v->basemap[(int)up - 'a'], 1, 
                         upoct, 0, &bend_up);
-        pitchdown = this->pitchof_b(down, v->basemap[(int)down - 'a'], 1, 
+        pitchdown = this->pitchof_bend(down, v->basemap[(int)down - 'a'], 1, 
                         downoct, 0, &bend_down);
     }
     this->marknotestart();
@@ -3144,32 +3022,33 @@ AbcStore::makecut(int mainpitch, int shortpitch,int mainbend,int shortbend,
     int n, int m)
 {
     this->addfeature(Abc::GRACEON, 0, 0, 0);
-    FeatureDesc &fd = this->featurelist[this->nextFeature];
-    fd.bentpitch = shortbend;
 
+    // for note
+    FeatureDesc &fd = this->featurelist[this->nextFeature];
+    fd.bentpitch = shortbend; 
     this->addfeature(Abc::NOTE, shortpitch, 4,v->default_length);
 
     this->addfeature(Abc::GRACEOFF, 0, 0, 0);
-    fd = this->featurelist[this->nextFeature];
-    fd.bentpitch = mainbend;
 
+    // for note
+    FeatureDesc &nfd = this->featurelist[this->nextFeature];
+    nfd.bentpitch = mainbend;
     this->addfeature(Abc::NOTE, mainpitch, 4*n,m*v->default_length);
 }
 
 void 
 AbcStore::makeharproll(int pitch, int bend, int n, int m)
 {
-    FeatureDesc &fd = this->featurelist[this->nextFeature];
-    fd.bentpitch = bend;
-
+    FeatureDesc &fd1 = this->featurelist[this->nextFeature];
+    fd1.bentpitch = bend;
     this->addfeature(Abc::NOTE, pitch, 4*n/2, m*2*v->default_length);
-    fd = this->featurelist[this->nextFeature];
-    fd.bentpitch = bend;
 
+    FeatureDesc &fd2 = this->featurelist[this->nextFeature];
+    fd2.bentpitch = bend;
     this->addfeature(Abc::NOTE, pitch, 4*n/2, m*2*v->default_length);
-    fd = this->featurelist[this->nextFeature];
-    fd.bentpitch = bend;
 
+    FeatureDesc &fd3 = this->featurelist[this->nextFeature];
+    fd3.bentpitch = bend;
     this->addfeature(Abc::NOTE, pitch, 4*n/2, m*v->default_length);
 }
 
@@ -3177,17 +3056,16 @@ void
 AbcStore::makeharproll3(int pitch, int bend, int n, int m)
 {
     int a = n-1;
-    FeatureDesc &fd = this->featurelist[this->nextFeature];
-    fd.bentpitch = bend;
-
+    FeatureDesc &fd1 = this->featurelist[this->nextFeature];
+    fd1.bentpitch = bend;
     this->addfeature(Abc::NOTE, pitch, 4*(a)/2, m*2*v->default_length);
-    fd = this->featurelist[this->nextFeature];
-    fd.bentpitch = bend;
 
+    FeatureDesc &fd2 = this->featurelist[this->nextFeature];
+    fd2.bentpitch = bend;
     this->addfeature(Abc::NOTE, pitch, 4*(a)/2, m*2*v->default_length);
-    fd = this->featurelist[this->nextFeature];
-    fd.bentpitch = bend;
 
+    FeatureDesc &fd3 = this->featurelist[this->nextFeature];
+    fd3.bentpitch = bend;
     this->addfeature(Abc::NOTE, pitch, 4*(n/2+1), m*v->default_length);
 }
 

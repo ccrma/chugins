@@ -8,7 +8,7 @@
 AbcParser::AbcParser() :
     abcversion("2.0"),
     lastfieldcmd(' '),
-    decorations(".MLRH~Tuv'OPS"),
+    decorations(".MLRH~Tuv'OPS"), // matches Abc::
     handler(nullptr)
 {
     this->modekeyshift = { 0, 5, 5, 5, 6, 0, 1, 2, 3, 4 };
@@ -16,6 +16,9 @@ AbcParser::AbcParser() :
     this->inputline.reserve(512);
     this->clear_abbreviations();
 }
+
+AbcParser::~AbcParser()
+{}
 
 int 
 AbcParser::Parse(char const *buf, IAbcParseClient *h, ParseMode m)
@@ -93,6 +96,8 @@ AbcParser::reset_parser_status()
     parserinchord = 0;
     ingrace = 0;
     slur = 0;
+    for(int i=0;i<Abc::DECSIZE;i++)
+        this->decorators_passback[i] = 0;
     this->voicecode.resize(1);
     this->voicecode[0].Init();
 }
@@ -246,10 +251,11 @@ AbcParser::parseline(char const *line)
         return;
     } 
 
-    this->inputline = line;
-    char const *linestart = this->inputline.c_str();
-    char const *p = linestart;
-    this->linestart = p;
+    this->inputline = line; // <--- copy line
+    // linestart: to measure intraline offset (lineposition)
+    this->linestart = this->inputline.c_str(); 
+    this->lineposition = 0;
+    char const *p = this->linestart;
     this->ingrace = 0;
     this->skipspace(&p);
     if(strlen(p) == 0)
@@ -352,9 +358,8 @@ AbcParser::parse_precomment(char const *s)
 }
 
 void
-AbcParser::parsemusic(char const *line) /* parse a line of abc notes */
+AbcParser::parsemusic(char const *line)
 {
-    std::string field(line); // so we can perform inline edits
     char endchar = ' ';
     int iscomment = 0;
     int starcount;
@@ -367,21 +372,21 @@ AbcParser::parsemusic(char const *line) /* parse a line of abc notes */
 
     this->handler->startmusicline();
 
-    char *comment = (char *) field.c_str();
+    char *comment = (char *) line;
     while((*comment != '\0') && (*comment != '%'))
         comment = comment + 1;
     if(*comment == '%')
     {
         iscomment = 1;
-        *comment = '\0';
+        *comment = '\0';  // <<------------------
         comment = comment + 1;
     };
 
-    char const *p = field.c_str();
+    char const *p = line;
     this->skipspace(&p);
     while(*p != '\0')
     {
-        lineposition = p - linestart;
+        this->lineposition = p - this->linestart;
         if(*p == '.' && *(p+1) == '(') 
         {  
             /* [SS] 2015-04-28 dotted slur */
@@ -535,7 +540,7 @@ AbcParser::parsemusic(char const *line) /* parse a line of abc notes */
                         }
                         else
                         {
-                            lineposition = p - linestart;	/* [SS] 2011-07-18 */
+                            this->lineposition = p - this->linestart;	/* [SS] 2011-07-18 */
                             /* [SS] 2012-03-30 */
                             for(i = 0; i < Abc::DECSIZE; i++)
                                 this->chorddecorators[i] = decorators[i] | decorators_passback[i];
@@ -686,7 +691,7 @@ AbcParser::parsemusic(char const *line) /* parse a line of abc notes */
             case '+':
                 if(this->oldchordconvention)
                 {
-                    lineposition = p - linestart;	/* [SS] 2011-07-18 */
+                    this->lineposition = p - this->linestart;	/* [SS] 2011-07-18 */
                     this->handler->chord();
                     parserinchord = 1 - parserinchord;
                     if(parserinchord == 0)
@@ -1264,7 +1269,7 @@ AbcParser::check_bar_repeats(int bar_type, char const *replist)
         if(cv.expect_repeat) 
         {
             this->handler->warning("Expecting repeat, found |:");
-        };
+        }
         cv.expect_repeat = 1;
         cv.repeat_count = cv.repeat_count + 1;
       break;
@@ -2216,8 +2221,8 @@ AbcParser::interpret_voice_label(char const *s, int num, int *is_new)
         if (num == this->num_voices + 1)
         {
             *is_new = 1;
+            this->num_voices++;
             voice_context vc;
-            num_voices = num_voices + 1;
             vc.label[0] = '\0';
             this->voicecode.push_back(vc); // <--------------------------
         } 
@@ -2263,7 +2268,10 @@ AbcParser::interpret_voice_label(char const *s, int num, int *is_new)
     if (has_voice_fields)
     {
         *is_new = 1;
-        num_voices++;
+        this->num_voices++;
+        voice_context vc;
+        vc.label[0] = '\0';
+        this->voicecode.push_back(vc); // <--------------------------
     } 
     else 
     {

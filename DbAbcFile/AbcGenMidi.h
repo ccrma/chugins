@@ -51,8 +51,26 @@ public:
     {
         FeatureDesc()
         {
-            this->bentpitch = 0;
+            this->bentpitch = 8192;
             this->decotype = 0;
+            this->stressvelocity = -1;
+            this->pitchline = -1;
+            this->charloc = 0;
+        }
+
+        // copy constructor for debugging
+        //  (currently never implicitly invoked)
+        FeatureDesc(FeatureDesc const &rhs)
+        {
+            this->feature = rhs.feature;
+            this->pitch = rhs.pitch;
+            this->num = rhs.num;
+            this->denom = rhs.denom;
+            this->bentpitch = rhs.bentpitch;
+            this->stressvelocity = rhs.stressvelocity;
+            this->decotype = rhs.decotype;
+            this->pitchline = rhs.pitchline;
+            this->charloc = rhs.charloc;
         }
 
         Abc::FeatureType feature;
@@ -61,8 +79,8 @@ public:
         int denom;
         int bentpitch; // microtones
         int stressvelocity;
-        int pitchline; // file location
         int decotype; // ROLLS, TRILLS, etc
+        int pitchline; // file location when ties are in play
         int charloc; // character position in abctune
     };
 
@@ -112,6 +130,7 @@ public:
         int bend;
         int *dependent_voice; /* flag to indicate type of voice (len 64) */
         int barchecking;
+        int lineno; // at the end of parsing this subfile.
     };
 
     int writefile(char const *filepath, InitState const *init);
@@ -177,8 +196,9 @@ public:
     void drum_map(int midipitch, int mapto);
 
 public:
-    // primary callback from AbcMidiFile
-    int writetrack(int xtrack) override; 
+    // callbacks from AbcMidiFile
+    long writetrack(int xtrack) override; 
+    void midierror(char const *) override;
 
 private:
     void parse_drummap(char const **);
@@ -203,8 +223,8 @@ private:
     int inlist(int place, int passno);
 
     void noteon(int, FeatureDesc &);
-    void noteon_data(int pitch,  int bentpitch, int chan, int vel);
-    void midi_noteon(long delta_time, int pitch, int chan, int vel, int pitchbend);
+    void noteon_data(int pitch, int pitchbend, int chan, int vel);
+    void midi_noteon(long delta_time, int pitch, int pitchbed, int chan, int vel);
     void midi_noteoff(long delta_time, int pitch, int chan);
     void midi_re_tune(int channel);
     void note_beat(int n, int *vel);
@@ -274,7 +294,6 @@ private:
         void initTrack(int xtrack);
         void set_meter(int n, int m);
         void setbeat();
-        void addunits(int a, int b);
 
         void addtoQ(int num, int denom, int pitch, int chan, 
                 int effect, int d);

@@ -54,6 +54,11 @@ namespace AbcMusic
 
     struct fraction
     {
+        fraction()
+        {
+            num = 0;
+            denom = 0;
+        }
         int num;
         int denom;
     };

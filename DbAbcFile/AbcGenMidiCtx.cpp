@@ -15,6 +15,9 @@ AbcGenMidi::WriteContext::beginWriting(FILE *fp,
     this->tempo = initState->tempo;
     this->header_time_num = initState->time_num;
     this->header_time_denom = initState->time_denom;
+    this->global_transpose = 0; // may be overridden by feature
+
+    // etc... all fields are member vars 
     velocity_increment = 10;
     drone = {1, 0, 70, 45, 80, 33, 80}; /* bassoon a# */
     notecount = 0;
@@ -182,15 +185,6 @@ AbcGenMidi::WriteContext::setbeat()
         this->set_gchords("fzcfzcfzcfzc");
 }
 
-/* add a/b to the count of units in the bar */
-void
-AbcGenMidi::WriteContext::addunits(int a, int b)
-{
-    this->bar_num = (this->bar_num * b * this->b_denom) + 
-                    (this->bar_num * a * this->b_num);
-    this->bar_denom = this->bar_denom * b * this->b_denom;
-    AbcMusic::reduceFraction(&bar_num, &bar_denom);
-}
 
 /* wait for time a/b */
 void
@@ -262,6 +256,18 @@ AbcGenMidi::WriteContext::addBarUnits(int a, int b)
     AbcMusic::reduceFraction(&this->bar_num, &this->bar_denom);
     /*printf("position = %d/%d\n",bar_num,bar_denom);*/
 }
+
+#if 0
+/* add a/b to the count of units in the bar */
+void
+AbcGenMidi::WriteContext::addunits(int a, int b)
+{
+    this->bar_num = (this->bar_num * b * this->b_denom) + 
+                    (this->bar_num * a * this->b_num);
+    this->bar_denom = this->bar_denom * b * this->b_denom;
+    AbcMusic::reduceFraction(&bar_num, &bar_denom);
+}
+#endif
 
 void
 AbcGenMidi::WriteContext::zerobar()

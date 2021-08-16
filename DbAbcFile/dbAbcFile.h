@@ -1,14 +1,9 @@
-#ifndef dbABCFile_h
-#define dbABCFile_h
+#ifndef dbAbcFile_h
+#define dbAbcFile_h
 
 #include <string>
 #include <fstream>
 #include <vector>
-
-// OBJECTS_ABC2MIDI:
-//
-// parseabc.o store.o genmidi.o midifile.o queues.o parser2.o stresspat.o music_utils.o
-// depends: abc.h parseabc.h config.h
 
 class dbABCFile
 {
@@ -21,7 +16,7 @@ public:
 
     int GetNumTracks() { return this->m_numTracks; }
     
-    int Read(int track1); // called in loop
+    int Read(int track1); // called in loop, XXX: return/fill MidiMsg
     int Rewind();
 
 private:

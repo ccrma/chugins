@@ -12,6 +12,7 @@ AbcStore::startfile()
     /* set up defaults */
     this->keySharps = 0;
     this->keyMinor = 0;
+    this->global.initmic();
     this->setmap(0, this->global.basemap, this->global.basemul);
     this->copymap(&global);
     this->global.octaveshift = 0;
@@ -31,8 +32,10 @@ AbcStore::startfile()
     this->global.default_length = -1;
     this->tempo(this->default_tempo, 1, 4, 0, nullptr, nullptr);
     this->nextFeature = 0;
-    this->wordlist.clear();
+    // this->atext is currently sized to this->maxtexts, do not clear!
     this->ntexts = 0;
+    
+    this->wordlist.clear();
     this->gfact_num = 1;
     this->gfact_denom = 4;
     this->hornpipe = 0;
@@ -64,6 +67,7 @@ AbcStore::startfile()
 
     this->gchordvoice = 0;
     this->drumvoice = 0;
+    this->dronevoice = 0;
     this->wordvoice = 0;
     this->notesdefined = 0;
     this->rhythmdesignator[0] = '\0';
@@ -139,6 +143,7 @@ AbcStore::finishfile()
         initState.bend = this->bend;
         initState.dependent_voice = this->dependent_voice;
         initState.barchecking = this->barchecking;
+        initState.lineno = this->parser->lineno;
 
         this->genMidi.writefile(this->outname.c_str(), &initState);
 
@@ -148,5 +153,103 @@ AbcStore::finishfile()
         this->chords.clear();
         this->free_notestructs();
     }
+}
+
+void 
+AbcStore::dump_trackdescriptor()
+{
+    char msg[80];
+    this->log("tracks {");
+    for(int i=0;i<this->ntracks;i++) 
+    {
+        snprintf(msg, 80, " %d %d %d",   
+            i, 
+            this->genMidi.trackdescriptor[i].tracktype,
+            this->genMidi.trackdescriptor[i].voicenum);
+        this->log(msg);
+    }
+    this->log("tracks }");
+}
+
+void 
+AbcStore::setup_trackstructure() 
+{
+    AbcGenMidi::Track *td = this->genMidi.trackdescriptor;
+    td[0].tracktype = AbcGenMidi::Tracktype::NOTES;
+    td[0].voicenum = 1;
+    td[0].midichannel = -1;
+
+    voicecontext *p = this->head;
+    voicecontext *q;
+
+    this->ntracks = 1;
+    while (p != nullptr) 
+    {
+        if(this->verbose) 
+        {
+            char msg[100];
+            snprintf(msg, 100, 
+                "num %d index %d bars %d "
+                "gchords %d words %d drums %d "
+                "drone %d tosplit %d fromsplit %d ",
+                p->voiceno, p->indexno, p->nbars,
+                p->hasgchords, p->haswords, p->hasdrums,
+                p->hasdrone, p->tosplitno, p->fromsplitno);
+            this->log(msg);
+        }
+        if(this->ntracks > 39) 
+        {
+           this->error("Too many tracks"); /* [SS] 2015-03-26 */
+           return;
+        }
+        td[ntracks].tracktype = AbcGenMidi::Tracktype::NOTES;
+        td[ntracks].voicenum = p->indexno;
+        td[ntracks].midichannel = p->midichannel;
+        if(p->haswords)
+        {
+            if(!this->separate_tracks_for_words) 
+            {
+                td[ntracks].tracktype = AbcGenMidi::Tracktype::NOTEWORDS;
+                td[ntracks].voicenum = p->indexno;
+            } 
+            else 
+            {
+                this->ntracks++;
+                td[ntracks].tracktype = AbcGenMidi::Tracktype::WORDS;
+                td[ntracks].voicenum = td[ntracks-1].voicenum;
+            }
+        }
+        if(p->hasgchords)
+        {
+            this->ntracks++;
+            td[ntracks].tracktype = AbcGenMidi::Tracktype::GCHORDS;
+            td[ntracks].voicenum = p->indexno;
+        }
+        if(p->hasdrums)
+        {
+            this->ntracks++;
+            td[ntracks].tracktype = AbcGenMidi::Tracktype::DRUMS;
+            td[ntracks].voicenum = p->indexno;
+        }
+        if(p->hasdrone) 
+        {
+            this->ntracks++;  
+            td[ntracks].tracktype = AbcGenMidi::Tracktype::DRONE;
+            td[ntracks].voicenum = p->indexno;
+        }
+        this->ntracks++;
+        q = p->next;
+        p = q;
+    }
+
+    /* does the tune need any gchord, drum, drone or word track */
+    if((this->voicesused == 0) && (!this->karaoke) && 
+       (this->gchordvoice == 0) && (this->drumvoice == 0) && (this->dronevoice==0)) 
+    {
+        this->ntracks = 1;
+    } 
+
+    if(this->verbose > 1)
+        this->dump_trackdescriptor();
 }
 

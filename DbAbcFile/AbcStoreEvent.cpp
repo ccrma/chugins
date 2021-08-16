@@ -1199,9 +1199,12 @@ AbcStore::note(int decorators[Abc::DECSIZE],
     int pitch, dummy, pitch_noacc;
     if(v->drumchannel) 
         pitch = this->barepitch(note, accidental, mult, octave);
-
-    pitch = this->pitchof_b(note, accidental, mult, octave, propagate_accidentals,&active_pitchbend);
-    pitch_noacc = this->pitchof_b(note, 0, 0, octave, 0, &dummy);
+    // XXX: else here?
+    pitch = this->pitchof_bend(note, accidental, mult, octave, 
+                            this->propagate_accidentals, 
+                            &this->active_pitchbend);
+    // NB: this updates this->active_pitchbend internally:
+    pitch_noacc = this->pitchof_bend(note, 0, 0, octave, 0, &dummy);
     if(decorators[Abc::FERMATA] && !this->ignore_fermata) 
     {
         if(this->fermata_fixed) 
@@ -1222,7 +1225,7 @@ AbcStore::note(int decorators[Abc::DECSIZE],
         {
             this->error("Rolls and trills not supported in chords");
             fd.pitchline = pitch_noacc; /* [SS] 2013-03-26 */
-            fd.bentpitch = active_pitchbend; /* [SS] 2013-03-26 */
+            fd.bentpitch = this->active_pitchbend; /* [SS] 2013-03-26 */
             this->addfeature(Abc::NOTE, pitch, num*4, denom*2*(v->default_length)); /* [SS] */
         } 
         else 
@@ -1246,7 +1249,7 @@ AbcStore::note(int decorators[Abc::DECSIZE],
                 // ROLL
                 fd.decotype = notesdefined; 
                 this->doroll_setup(note, octave, num, denom, pitch);
-                fd.bentpitch = active_pitchbend;
+                fd.bentpitch = this->active_pitchbend;
                 this->addfeature(Abc::NOTE, pitch, num*4, denom*(v->default_length));
             }
             this->marknote();
@@ -1261,7 +1264,7 @@ AbcStore::note(int decorators[Abc::DECSIZE],
                 if(v->chordcount == 1) 
                     this->addfeature(Abc::REST, pitch, num*4, denom*(v->default_length));
                 fd.pitchline = pitch_noacc;
-                fd.bentpitch = active_pitchbend;
+                fd.bentpitch = this->active_pitchbend;
                 this->addfeature(Abc::NOTE, pitch, num*4, denom*2*(v->default_length));
             } 
             else 
@@ -1272,7 +1275,7 @@ AbcStore::note(int decorators[Abc::DECSIZE],
                     this->addfeature(Abc::META, 0, this->parser->lineno, 
                         this->parser->lineposition);
                 }
-                fd.bentpitch = active_pitchbend;
+                fd.bentpitch = this->active_pitchbend;
                 this->addfeature(Abc::NOTE, pitch, num*4, denom*2*(v->default_length));
                 this->marknotestart();
                 this->addfeature(Abc::REST, pitch, num*4, denom*2*(v->default_length));
@@ -1287,7 +1290,7 @@ AbcStore::note(int decorators[Abc::DECSIZE],
                 this->addfeature(Abc::META, 0, this->parser->lineno,
                     this->parser->lineposition);
             }
-            fd.bentpitch = active_pitchbend;
+            fd.bentpitch = this->active_pitchbend;
             this->addfeature(Abc::NOTE, pitch, num*4, denom*(v->default_length));
             if(!v->inchord)
                 this->marknote();
@@ -1492,7 +1495,7 @@ AbcStore::refno(int n)
     if(this->userfilename == 0) 
     {
         char numstr[23]; /* Big enough for a 64-bit int! */
-        char newname[256];
+        char newname[512];
         snprintf(numstr, 23, "%d", n);
         if((this->outbase.size() + strlen(numstr)) > this->namelimit) 
         {
@@ -1502,7 +1505,7 @@ AbcStore::refno(int n)
             strcpy(&newname[strlen(newname)], ".mid");
         } 
         else 
-            sprintf(newname, "%s%s.mid", outbase, numstr);
+            snprintf(newname, 512, "%s%s.mid", outbase.c_str(), numstr);
         this->outname = newname;
     }
     this->startfile(); // <---------- GO!

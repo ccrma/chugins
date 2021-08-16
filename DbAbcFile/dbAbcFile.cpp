@@ -1,4 +1,5 @@
 #include "dbABCFile.h"
+#include "AbcStore.h"
 
 #include <cstring>
 #include <iostream>
@@ -13,6 +14,23 @@ dbABCFile::~dbABCFile()
 int
 dbABCFile::Open(std::string const &fp)
 {
+    AbcParser parser;
+    AbcStore store(&parser);
+    std::string filename;
+    char const *argv[] = {"dbABCFile", fp.c_str()};
+    store.Init(2, argv, &filename);
+
+    std::ifstream istr(fp.c_str());
+    if(istr.good())
+    {
+        // Currently, if successful, this results in the creation
+        // of a midi file.  Next step is to leave the Store+GenMidi 
+        // in suspended animation (after patterns and repeats have 
+        // been executed)
+        parser.Parse(&istr, &store, AbcParser::k_AbcToMidi);
+    }
+    else
+        std::cerr << filename.c_str() << " not found\n";
     return 0;
 }
 

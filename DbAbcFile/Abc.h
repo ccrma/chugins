@@ -133,22 +133,25 @@ namespace Abc
     char const *featname(FeatureType f);
 
     /* note decorations */
+    // .MLRH~Tuv'OPS matches AbcParser::decorations
     enum NoteDecorations
     {
-        STACCATO = 0,
-        TENUTO,
-        LOUD,
-        ROLL,
-        FERMATA,
-        ORNAMENT,
-        TRILL,
-        BOWUP,
-        BOWDOWN,
-        BREATH,
-        CODA,
-        UPPERMORDENT,
-        SEGNO,
-        DECSIZE
+        STACCATO = 0, // .
+        TENUTO,       // M
+        LOUD,         // L
+        ROLL,         // R
+        FERMATA,      // H
+        ORNAMENT,     // ~
+        TRILL,        // T
+        BOWUP,        // u
+        BOWDOWN,      // v
+        BREATH,       // '
+        CODA,         // O
+        UPPERMORDENT, // P
+        SEGNO,        // S
+
+
+        DECSIZE      
     };
 };
 
