@@ -232,8 +232,9 @@ AbcMidiFile::writeTrackChunk(int track)
         this->writer->midierror("error seeking during final stage of write");
 
     /* Re-mf_write the track chunk header with right length */
+    long trackBytes = this->trackBytesWritten;
     this->write32bit(trkhdr); // <--- not actually necessary
-    this->write32bit(this->trackBytesWritten);
+    this->write32bit(trackBytes);
 
     fseek(this->fp, place_marker, 0);
 }

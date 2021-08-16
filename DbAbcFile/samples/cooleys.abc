@@ -5,7 +5,7 @@ L: 1/8
 K: Emin 
 %%MIDI program 48
 % violin
-|:D2|EB{c}BA B2 EB|~B2 AB dBAG|FDAD BDAD|FDAD dAFD|
+|:D2|EB{c}BA B2 EB|~B2 AB dBAG|~FDAD BDAD|~FDAD dAFD|
 EBBA B2 EB|B2 AB defg|afe^c dBAF|DEFD E2:|
 |:gf|eB B2 efge|eB B2 gedB|A2 FA DAFA|A2 FA defg|
-eB B2 eBgB|eB B2 defg|afe^c dBAF|DEFD E2:|
+eB B2 eBgB|eB B2 defg|afe^c dBAF|DEFD E2:|z4|~E4|
