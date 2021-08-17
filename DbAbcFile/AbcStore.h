@@ -306,7 +306,7 @@ private:
     int fermata_fixed; /* flag on how to process fermata */
     int apply_fermata_to_chord; 
 
-    int voicesused;
+    bool voicesused;
 
     /* Tempo handling (Q: field) */
     int time_num, time_denom;
@@ -333,7 +333,6 @@ private:
     int check;
     int nofnop; /* for suppressing dynamics (ff, pp etc) */
     int nocom;  /* for suppressing comments in MIDI file */
-    int ntracks; /* manages GenMidi.trackdesciptor[] */
 
     /* bar length checking */
     int barchecking;

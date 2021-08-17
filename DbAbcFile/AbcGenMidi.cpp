@@ -49,10 +49,10 @@ AbcGenMidi::writefile(char const *fpath, InitState const *initState)
     this->initState = initState;
     this->no_more_free_channels = 0;
     this->wctx.beginWriting(fp, initState);
-    if(this->initState->ntracks == 1) 
+    if(this->ntracks == 1) 
         this->wctx.mfile.write(this, fp, 0, 1, this->wctx.division);
     else 
-        this->wctx.mfile.write(this, fp, 1, this->initState->ntracks, 
+        this->wctx.mfile.write(this, fp, 1, this->ntracks, 
                             this->wctx.division);
     fclose(fp);
     return 0;
@@ -1548,7 +1548,6 @@ AbcGenMidi::findchannel()
 int 
 AbcGenMidi::findvoice(int initplace, int voice, int xtrack)
 {
-    int foundvoice = 0;
     int j = initplace;
     while((j < this->initState->nfeatures) && (foundvoice == 0)) 
     {
@@ -1560,19 +1559,16 @@ AbcGenMidi::findvoice(int initplace, int voice, int xtrack)
         {
             j = this->partbreak(xtrack, voice, j);
             if (voice == 1) 
-                foundvoice = 1;
-            else
-                j++;
+                return j; // <--- found
         } 
         else 
         {
             if((fd.feature == Abc::VOICE) && (fd.pitch == voice)) 
-                foundvoice = 1;
-            else 
-                j++;
+                return j; // <--- found
         }
+        j++;
     }
-    return j;
+    return j; // <--- not found
 }
 
 /* compute note data and call noteon_data to write MIDI note event */

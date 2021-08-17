@@ -12,6 +12,9 @@ AbcStore::startfile()
     /* set up defaults */
     this->keySharps = 0;
     this->keyMinor = 0;
+    this->tuplecount = 0;
+    this->specialtuple = 0;
+
     this->global.initmic();
     this->setmap(0, this->global.basemap, this->global.basemul);
     this->copymap(&global);
@@ -117,7 +120,7 @@ AbcStore::finishfile()
         if(this->genMidi.parts >= 0) 
             this->fix_part_start();
         if(this->verbose > 5) 
-            this->dumpfeat(0, this->nextFeature);
+            this->dumpfeat(0, this->nextFeature-1);
 
         AbcGenMidi::InitState initState(this->nextFeature, 
                                         this->featurelist,
@@ -128,7 +131,6 @@ AbcStore::finishfile()
         initState.silent = this->silent;
         initState.quiet = this->quiet;
         initState.programbase = this->programbase;
-        initState.ntracks = this->ntracks;
         initState.voicesused = this->voicesused;
         initState.tempo = this->current_tempo;
         initState.time_num = this->time_num;
@@ -160,7 +162,7 @@ AbcStore::dump_trackdescriptor()
 {
     char msg[80];
     this->log("tracks {");
-    for(int i=0;i<this->ntracks;i++) 
+    for(int i=0;i<this->genMidi.ntracks;i++) 
     {
         snprintf(msg, 80, " %d %d %d",   
             i, 
@@ -182,7 +184,7 @@ AbcStore::setup_trackstructure()
     voicecontext *p = this->head;
     voicecontext *q;
 
-    this->ntracks = 1;
+    this->genMidi.ntracks = 1;
     while (p != nullptr) 
     {
         if(this->verbose) 
@@ -197,47 +199,47 @@ AbcStore::setup_trackstructure()
                 p->hasdrone, p->tosplitno, p->fromsplitno);
             this->log(msg);
         }
-        if(this->ntracks > 39) 
+        if(this->genMidi.ntracks > 39) 
         {
            this->error("Too many tracks"); /* [SS] 2015-03-26 */
            return;
         }
-        td[ntracks].tracktype = AbcGenMidi::Tracktype::NOTES;
-        td[ntracks].voicenum = p->indexno;
-        td[ntracks].midichannel = p->midichannel;
+        td[this->genMidi.ntracks].tracktype = AbcGenMidi::Tracktype::NOTES;
+        td[this->genMidi.ntracks].voicenum = p->indexno;
+        td[this->genMidi.ntracks].midichannel = p->midichannel;
         if(p->haswords)
         {
             if(!this->separate_tracks_for_words) 
             {
-                td[ntracks].tracktype = AbcGenMidi::Tracktype::NOTEWORDS;
-                td[ntracks].voicenum = p->indexno;
+                td[this->genMidi.ntracks].tracktype = AbcGenMidi::Tracktype::NOTEWORDS;
+                td[this->genMidi.ntracks].voicenum = p->indexno;
             } 
             else 
             {
-                this->ntracks++;
-                td[ntracks].tracktype = AbcGenMidi::Tracktype::WORDS;
-                td[ntracks].voicenum = td[ntracks-1].voicenum;
+                this->genMidi.ntracks++;
+                td[this->genMidi.ntracks].tracktype = AbcGenMidi::Tracktype::WORDS;
+                td[this->genMidi.ntracks].voicenum = td[this->genMidi.ntracks-1].voicenum;
             }
         }
         if(p->hasgchords)
         {
-            this->ntracks++;
-            td[ntracks].tracktype = AbcGenMidi::Tracktype::GCHORDS;
-            td[ntracks].voicenum = p->indexno;
+            this->genMidi.ntracks++;
+            td[this->genMidi.ntracks].tracktype = AbcGenMidi::Tracktype::GCHORDS;
+            td[this->genMidi.ntracks].voicenum = p->indexno;
         }
         if(p->hasdrums)
         {
-            this->ntracks++;
-            td[ntracks].tracktype = AbcGenMidi::Tracktype::DRUMS;
-            td[ntracks].voicenum = p->indexno;
+            this->genMidi.ntracks++;
+            td[this->genMidi.ntracks].tracktype = AbcGenMidi::Tracktype::DRUMS;
+            td[this->genMidi.ntracks].voicenum = p->indexno;
         }
         if(p->hasdrone) 
         {
-            this->ntracks++;  
-            td[ntracks].tracktype = AbcGenMidi::Tracktype::DRONE;
-            td[ntracks].voicenum = p->indexno;
+            this->genMidi.ntracks++;  
+            td[this->genMidi.ntracks].tracktype = AbcGenMidi::Tracktype::DRONE;
+            td[this->genMidi.ntracks].voicenum = p->indexno;
         }
-        this->ntracks++;
+        this->genMidi.ntracks++;
         q = p->next;
         p = q;
     }
@@ -246,7 +248,7 @@ AbcStore::setup_trackstructure()
     if((this->voicesused == 0) && (!this->karaoke) && 
        (this->gchordvoice == 0) && (this->drumvoice == 0) && (this->dronevoice==0)) 
     {
-        this->ntracks = 1;
+        this->genMidi.ntracks = 1;
     } 
 
     if(this->verbose > 1)

@@ -51,7 +51,7 @@ public:
     {
         FeatureDesc()
         {
-            this->bentpitch = 8192;
+            this->bentpitch = 0; // 8192 is a good default only for NOTES
             this->decotype = 0;
             this->stressvelocity = -1;
             this->pitchline = -1;
@@ -115,8 +115,7 @@ public:
         int silent;
         int quiet;
         int programbase;
-        int voicesused;
-        int ntracks;
+        bool voicesused;
         int tempo;
         int time_num;
         int time_denom;

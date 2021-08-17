@@ -2174,7 +2174,8 @@ AbcParser::print_voicecodes()
     this->handler->info("voice mapping:");
     for(int i = 0; i < this->num_voices; i++)
     {
-        snprintf(msg, 80, "%s  %d   ", this->voicecode[i].label, i + 1);
+        snprintf(msg, 80, "%d %s", 
+            i+1, this->voicecode[i].label);
         this->handler->info(msg);
     }
 }

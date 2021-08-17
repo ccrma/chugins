@@ -257,18 +257,6 @@ AbcGenMidi::WriteContext::addBarUnits(int a, int b)
     /*printf("position = %d/%d\n",bar_num,bar_denom);*/
 }
 
-#if 0
-/* add a/b to the count of units in the bar */
-void
-AbcGenMidi::WriteContext::addunits(int a, int b)
-{
-    this->bar_num = (this->bar_num * b * this->b_denom) + 
-                    (this->bar_num * a * this->b_num);
-    this->bar_denom = this->bar_denom * b * this->b_denom;
-    AbcMusic::reduceFraction(&bar_num, &bar_denom);
-}
-#endif
-
 void
 AbcGenMidi::WriteContext::zerobar()
 {

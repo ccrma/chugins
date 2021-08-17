@@ -90,7 +90,6 @@ public:
     virtual void timesig(Abc::TimeSigDetails *timesig) {}
     virtual void octave(int num, int local) {}
     virtual void info_key(char const *key, char const *value) {}
-    virtual void info(char const *s) {}
     virtual void key(int sharps, char const *s, int modeindex, 
                 char modmap[7], int modmul[7], AbcMusic::fraction modmicro[7],
                 int gotkey, int gotclef, char const *clefname, AbcMusic::ClefType *new_clef,
@@ -129,9 +128,11 @@ public:
     virtual void stop_extended_overlay() {}
     virtual void split_voice() {}
     virtual void temperament(char const *line) {}
+
     virtual void warning(char const *msg) { fprintf(stderr, "warning: %s\n", msg); }
     virtual void error(char const *msg) { fprintf(stderr, "error: %s\n", msg); }
-    virtual void log(char const *msg) { fprintf(stderr, "info: %s\n", msg); }
+    virtual void log(char const *msg) { fprintf(stderr, "note: %s\n", msg); }
+    virtual void info(char const *msg) { fprintf(stderr, "info: %s\n", msg); }
 }; 
 
 /* --------------------------------------------------------------------*/
