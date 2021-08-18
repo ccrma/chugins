@@ -1,15 +1,15 @@
+#include "AbcMidiTrackCtx.h"
+
 #include "AbcGenMidi.h"
 #include "AbcMusic.h"
 #include "AbcParser.h"
 
-/* WriteContext -------------------------------------------*/
-
 void
-AbcGenMidi::WriteContext::beginWriting(FILE *fp, 
-    InitState const *initState)
+AbcMidiTrackCtx::beginWriting(Abc::InitState const *initState, IMidiWriter *mh)
 {
-    this->fp = fp;
     this->initState = initState;
+    this->midi = mh; // mh may be null and provided eg during getNextEvent/
+
     this->barchecking = initState->barchecking;
 
     this->tempo = initState->tempo;
@@ -53,59 +53,72 @@ AbcGenMidi::WriteContext::beginWriting(FILE *fp,
 }
 
 void
-AbcGenMidi::WriteContext::error(char const *msg)
+AbcMidiTrackCtx::error(char const *msg)
 {
     printf("error: %s\n", msg);
 }
 
 void
-AbcGenMidi::WriteContext::warning(char const *msg)
+AbcMidiTrackCtx::warning(char const *msg)
 {
     printf("warning: %s\n", msg);
 }
 
 void
-AbcGenMidi::WriteContext::log(char const *msg)
+AbcMidiTrackCtx::log(char const *msg)
 {
     printf("info: %s\n", msg);
 }
 
 void
-AbcGenMidi::WriteContext::initTrack(int xtrack)
+AbcMidiTrackCtx::initTrack(int xtrack, 
+            int featureIndexStart, int featureIndexEnd)
 {
     this->tracknumber = xtrack;
-    tracklen = 0L;
-    delta_time = 1L;
-    delta_time_track0 = 0L;
-    wordson = 0;
-    noteson = 1;
-    gchordson = 0;
-    temposon = 0;
-    drumson = 0;
-    droneon = 0;
-    notedelay = staticnotedelay;
-    chordattack = staticchordattack;
-    trim_num = 0;
-    trim_denom = 1;
+    this->trackvoice = xtrack;
+    this->featureIndexStart = featureIndexStart;
+    this->featureIndexEnd = featureIndexEnd;
+    this->lineno = this->initState->lineno;
+
+    this->timekey = 1;
+    this->in_varend = 0;
+    this->maxpass = 2;
+    this->graceflag = 0;
+    this->inchord = 0;
+    this->tracklen = 0L;
+    this->delta_time = 1L;
+    this->delta_time_track0 = 0L;
+    this->texton = 1;
+    this->wordson = 0;
+    this->noteson = 1;
+    this->effecton = 0;
+    this->gchordson = 0;
+    this->temposon = 0;
+    this->drumson = 0;
+    this->droneon = 0;
+    this->notedelay = staticnotedelay;
+    this->chordattack = staticchordattack;
+    this->trim_num = 0;
+    this->trim_denom = 1;
     /* ensure that the percussion channel is not selected by findchannel() */
-    channel_in_use[9] = 1; 
-    drumbars = 1;
-    gchordbars = 1;
+    this->channel_in_use[9] = 1; 
+    this->drumbars = 1;
+    this->gchordbars = 1;
 
-    bendtype = 1;
-    single_velocity_inc = 0;
-    single_velocity = -1;
+    this->bendtype = 1;
+    this->single_velocity_inc = 0;
+    this->single_velocity = -1;
 
-    bendstate = 8192;
+    this->bendstate = 8192;
     for(int i=0;i<16; i++) 
-        benddata[i] = 0;
-    bendnvals = 0;
+        this->benddata[i] = 0;
+    this->bendnvals = 0;
     for(int i=0;i<MAXLAYERS;i++) 
-        controlnvals[i] = 0;
+        this->controlnvals[i] = 0;
 }
 
 void
-AbcGenMidi::WriteContext::set_meter(int n, int m)
+AbcMidiTrackCtx::set_meter(int n, int m)
 {
     this->mtime_num = n;
     this->mtime_denom = m;
@@ -139,7 +152,7 @@ AbcGenMidi::WriteContext::set_meter(int n, int m)
 }
 
 void
-AbcGenMidi::WriteContext::resetBar()
+AbcMidiTrackCtx::resetBar()
 {
     barno = 0;
     bar_num = 0;
@@ -150,7 +163,7 @@ AbcGenMidi::WriteContext::resetBar()
 
 /* set up chord/fundamental sequence if not already set */
 void
-AbcGenMidi::WriteContext::setbeat()
+AbcMidiTrackCtx::setbeat()
 {
     if((time_num == 2) && (time_denom == 2))
         this->set_gchords("fzczfzcz");
@@ -188,14 +201,14 @@ AbcGenMidi::WriteContext::setbeat()
 
 /* wait for time a/b */
 void
-AbcGenMidi::WriteContext::delay(int a, int b, int c)
+AbcMidiTrackCtx::delay(int a, int b, int c)
 {
     int dt = (this->div_factor * a) / b + c;
     this->err_num = this->err_num * b + 
                     ((this->div_factor*a)%b)*this->err_denom;
     this->err_denom = this->err_denom * b;
     AbcMusic::reduceFraction(&this->err_num, &this->err_denom);
-    dt = dt + (this->err_num/this->err_denom);
+    dt += (this->err_num/this->err_denom);
     this->err_num = this->err_num%this->err_denom;
     this->queue.timestep(dt, 0, 
         this->delta_time, 
@@ -209,7 +222,7 @@ AbcGenMidi::WriteContext::delay(int a, int b, int c)
 /* guitar chords (i.e. "A", "G" in abc). */
 /* called from dodeferred(), startfile() and setbeat() */
 void
-AbcGenMidi::WriteContext::set_gchords(char const *s)
+AbcMidiTrackCtx::set_gchords(char const *s)
 {
     char const *p = s;
     int j = 0;
@@ -247,7 +260,7 @@ AbcGenMidi::WriteContext::set_gchords(char const *s)
 
 // adds a/b to count of units in bar
 void
-AbcGenMidi::WriteContext::addBarUnits(int a, int b)
+AbcMidiTrackCtx::addBarUnits(int a, int b)
 {
     this->bar_num = this->bar_num * (b * this->b_denom) + 
                     this->bar_denom * (a * this->b_num) ;
@@ -258,21 +271,21 @@ AbcGenMidi::WriteContext::addBarUnits(int a, int b)
 }
 
 void
-AbcGenMidi::WriteContext::zerobar()
+AbcMidiTrackCtx::zerobar()
 {
     this->bar_num = 0;
     this->bar_denom = 1;
 }
 
 void
-AbcGenMidi::WriteContext::getBarUnits(int *a, int *b)
+AbcMidiTrackCtx::getBarUnits(int *a, int *b)
 {
     *a = this->bar_num;
     *b = this->bar_denom;
 }
 
 void
-AbcGenMidi::WriteContext::set_drums(const char *s)
+AbcMidiTrackCtx::set_drums(const char *s)
 {
     char const* p = s;
     int count = 0;
@@ -354,17 +367,17 @@ AbcGenMidi::WriteContext::set_drums(const char *s)
 }
 
 void 
-AbcGenMidi::WriteContext::write_keysig(int keySharps, int keyMinor)
+AbcMidiTrackCtx::write_keysig(int keySharps, int keyMinor)
 {
     char data[2];
     data[0] = (char) (0xff & keySharps);
     data[1] = (char) keyMinor;
-    this->mfile.writeMetaEvent(0L, AbcMidiFile::key_signature, data, 2);
+    this->midi->writeMetaEvent(0L, MidiEvent::key_signature, data, 2);
 }
 
 /* write meter to MIDI file --- */
 void 
-AbcGenMidi::WriteContext::write_meter(int n, int m)
+AbcMidiTrackCtx::write_meter(int n, int m)
 {
     this->set_meter(n, m);
     int dd = 0;
@@ -382,14 +395,14 @@ AbcGenMidi::WriteContext::write_meter(int n, int m)
     else
         data[2] = (char)(24*n/m);
     data[3] = 8;
-    this->mfile.writeMetaEvent(0L, AbcMidiFile::time_signature, data, 4);
+    this->midi->writeMetaEvent(0L, MidiEvent::time_signature, data, 4);
 }
 
 /* called at the start of each MIDI track. Sets up all 
  * necessary default and initial values 
  */
 void
-AbcGenMidi::WriteContext::starttrack(int tracknum)
+AbcMidiTrackCtx::starttrack(int tracknum)
 {
     char msg[100];
 
@@ -412,7 +425,7 @@ AbcGenMidi::WriteContext::starttrack(int tracknum)
     this->g_ptr = 0;
     this->drum_ptr = 0;
 
-    Track &currentTrack = this->genMidi->trackdescriptor[tracknum];
+    AbcGenMidi::Track &currentTrack = this->genMidi->trackdescriptor[tracknum];
 
     this->queue.init();
 
@@ -519,7 +532,7 @@ AbcGenMidi::WriteContext::starttrack(int tracknum)
 
 /* header information for karaoke track based on w: fields */
 void
-AbcGenMidi::WriteContext::karaokestarttrack(int track)
+AbcMidiTrackCtx::karaokestarttrack(int track)
 {
     /*
     *  Print Karaoke file headers in track 0.
@@ -541,7 +554,7 @@ AbcGenMidi::WriteContext::karaokestarttrack(int track)
     char atitle[200];
     if(track == 2)
     {
-        this->mfile.writeMetaEvent(0L, AbcMidiFile::sequence_name, "Words", 5);
+        this->midi->writeMetaEvent(0L, MidiEvent::sequence_name, "Words", 5);
         this->kspace = 0;
         this->genMidi->text_data("@LENGL");
         strcpy(atitle, "@T");
@@ -563,13 +576,13 @@ AbcGenMidi::WriteContext::karaokestarttrack(int track)
     {
         j = j+1;
 
-        FeatureDesc &fd = this->initState->featurelist[j];
+        Abc::FeatureDesc &fd = this->initState->featurelist[j];
         if(fd.feature == Abc::TITLE) 
         {
             if(track != 2)
             {
-                this->mfile.writeMetaEvent(0L, 
-                    AbcMidiFile::sequence_name, 
+                this->midi->writeMetaEvent(0L, 
+                    MidiEvent::sequence_name, 
                     atext[fd.pitch].c_str(), 
                     atext[fd.pitch].size());
             }
@@ -596,32 +609,32 @@ AbcGenMidi::WriteContext::karaokestarttrack(int track)
 
 // j, barno, div_factor, transpose, channel, lineno
 void
-AbcGenMidi::WriteContext::saveRepeatState(int voiceno, int state[6])
+AbcMidiTrackCtx::saveRepeatState(int voiceno)
 {
-    state[0] = voiceno;
-    state[1] = this->barno;
-    state[2] = this->div_factor;
-    state[3] = this->transpose;
-    state[4] = this->channel;
-    state[5] = this->lineno;  // it's in featurelist
+    this->state[0] = voiceno;
+    this->state[1] = this->barno;
+    this->state[2] = this->div_factor;
+    this->state[3] = this->transpose;
+    this->state[4] = this->channel;
+    this->state[5] = this->lineno;  // it's in featurelist
 }
 
 // &j, &barno, &div_factor, &transpose, &channel, &lineno
 void
-AbcGenMidi::WriteContext::restoreRepeatState(int *voiceno, int state[6])
+AbcMidiTrackCtx::restoreRepeatState(int *voiceno)
 {
-    *voiceno = state[0];
-    this->barno = state[1];
-    this->div_factor = state[2];
-    this->transpose = state[3];
-    this->channel = state[4];
-    this->lineno = state[5];
+    *voiceno = this->state[0];
+    this->barno = this->state[1];
+    this->div_factor = this->state[2];
+    this->transpose = this->state[3];
+    this->channel = this->state[4];
+    this->lineno = this->state[5];
 }
 
 /* generate accompaniment notes */
 /* note no microtone or linear temperament support ! */
 void 
-AbcGenMidi::WriteContext::dogchords(int i)
+AbcMidiTrackCtx::dogchords(int i)
 {
     if (g_ptr >= (int) strlen(gchord_seq)) 
         g_ptr = 0;
@@ -747,7 +760,7 @@ AbcGenMidi::WriteContext::dogchords(int i)
 
 /* generate drum notes */
 void 
-AbcGenMidi::WriteContext::dodrums(int i)
+AbcMidiTrackCtx::dodrums(int i)
 {
     if(this->drum_ptr >= (int) strlen(this->drum_seq))
         this->drum_ptr = 0;
@@ -780,7 +793,7 @@ AbcGenMidi::WriteContext::dodrums(int i)
 }
 
 void
-AbcGenMidi::WriteContext::addtoQ(int num, int denom, int pitch, int chan, 
+AbcMidiTrackCtx::addtoQ(int num, int denom, int pitch, int chan, 
     int effect, int dur)
 {
     this->queue.append(num, denom, pitch, chan, effect, dur,
@@ -789,7 +802,7 @@ AbcGenMidi::WriteContext::addtoQ(int num, int denom, int pitch, int chan,
 
 /* output 'note on' queue up 'note off' for later */
 void 
-AbcGenMidi::WriteContext::save_note(int num, int denom, 
+AbcMidiTrackCtx::save_note(int num, int denom, 
     int pitch, int pitchbend, int chan, int vel)
 {
     if(chan == 9) 
@@ -809,7 +822,7 @@ AbcGenMidi::WriteContext::save_note(int num, int denom,
 
 /* AbcQueue client methods --------------------------------------------*/
 void 
-AbcGenMidi::WriteContext::progress_sequence(int chan)
+AbcMidiTrackCtx::progress_sequence(int chan)
 {
     if(this->gchordson)
         this->dogchords(chan);
@@ -818,28 +831,28 @@ AbcGenMidi::WriteContext::progress_sequence(int chan)
 }
 
 void 
-AbcGenMidi::WriteContext::midi_noteoff(long delta_time, int pitch, int chan)
+AbcMidiTrackCtx::midi_noteoff(long delta_time, int pitch, int chan)
 {
     this->genMidi->midi_noteoff(delta_time, pitch, chan);
 }
 
 void 
-AbcGenMidi::WriteContext::midi_event(long delta_time, int evt, int chan, 
+AbcMidiTrackCtx::midi_event(long delta_time, int evt, int chan, 
     char data[], int len)
 {
     // usually delta_time is 0 (so note 'delayed')
-    this->mfile.writeMidiEvent(delta_time, evt, chan, data, len);
+    this->midi->writeMidiEvent(delta_time, evt, chan, data, len);
 }
 
 void 
-AbcGenMidi::WriteContext::midi_event_with_delay(long delta_time, 
+AbcMidiTrackCtx::midi_event_with_delay(long delta_time, 
     int evt, int chan, char data[], int len)
 {
-    this->mfile.writeMidiEvent(delta_time, evt, chan, data, len);
+    this->midi->writeMidiEvent(delta_time, evt, chan, data, len);
 }
 
 void 
-AbcGenMidi::WriteContext::getEffectsState(long **delta_time, 
+AbcMidiTrackCtx::getEffectsState(long **delta_time, 
     int *bendstate, int *bendvelocity, int *bendacceleration)
 {
    *delta_time = &this->delta_time; 
@@ -849,7 +862,7 @@ AbcGenMidi::WriteContext::getEffectsState(long **delta_time,
 }
 
 void 
-AbcGenMidi::WriteContext::getEffectsState(long **delta_time, 
+AbcMidiTrackCtx::getEffectsState(long **delta_time, 
     int *bendstate, int *bendnvals, int **benddata)
 {
    *delta_time = &this->delta_time; 
@@ -859,7 +872,7 @@ AbcGenMidi::WriteContext::getEffectsState(long **delta_time,
 }
 
 void 
-AbcGenMidi::WriteContext::getEffectsState(long **delta_time, 
+AbcMidiTrackCtx::getEffectsState(long **delta_time, 
     int *bendstate, int *bendnvals, int **benddata,
     int *nlayers, int **controlnvals,  int **controldefaults,
     int **controldata)

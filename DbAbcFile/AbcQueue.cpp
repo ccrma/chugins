@@ -136,7 +136,7 @@ AbcQueue::remove(int i)
 
 /* timestep is called by delay() in AbcGenMidi typically at the 
  * end of a note, chord or rest. It is also called by clearQ in
- * this file. Timestep, is not only responsible for sending the
+ * this file. Timestep is not only responsible for sending the
  * midi_noteoff command for any expired notes in the Q structure
  * but also maintains the delta_time global variable which is
  * shared with genmidi.c. Timestep also calls advanceQ() in
@@ -330,7 +330,7 @@ AbcQueue::note_effect()
             pitchbend = 0;
         data[0] = (char) (pitchbend&0x7f);
         data[1] = (char) ((pitchbend>>7)&0x7f);
-        this->client->midi_event(delta8, AbcMidiFile::pitch_wheel, qh.chan, 
+        this->client->midi_event(delta8, MidiEvent::pitch_wheel, qh.chan, 
             data, 2);
         *delta_time -= delta8;
     }
@@ -338,7 +338,7 @@ AbcQueue::note_effect()
     pitchbend = bendstate; /* [SS] 2014-09-22 */
     data[0] = (char) (pitchbend&0x7f);
     data[1] = (char) ((pitchbend>>7)&0x7f);
-    this->client->midi_event(*delta_time, AbcMidiFile::pitch_wheel, qh.chan, 
+    this->client->midi_event(*delta_time, MidiEvent::pitch_wheel, qh.chan, 
         data, 2);
 }
 
@@ -373,12 +373,12 @@ AbcQueue::note_effect2()
         data[1] = (char) ((pitchbend>>7)&0x7f);
         if (i == 0) /* [SS] 2014-09-24 */
         {
-            this->client->midi_event(0, AbcMidiFile::pitch_wheel,
+            this->client->midi_event(0, MidiEvent::pitch_wheel,
                 qh.chan,data, 2);
         }
         else 
         {
-            this->client->midi_event(delta, AbcMidiFile::pitch_wheel,  
+            this->client->midi_event(delta, MidiEvent::pitch_wheel,  
                 qh.chan,data,2 );
 
             *delta_time -= delta;
@@ -389,7 +389,7 @@ AbcQueue::note_effect2()
     pitchbend = bendstate;
     data[0] = (char) (pitchbend&0x7f);
     data[1] = (char) ((pitchbend>>7)&0x7f);
-    this->client->midi_event(*delta_time, AbcMidiFile::pitch_wheel,
+    this->client->midi_event(*delta_time, MidiEvent::pitch_wheel,
         qh.chan, data, 2);
 }
 
@@ -419,13 +419,13 @@ AbcQueue::note_effect3()
     data[1] = (char) ((pitchbend>>7)&0x7f);
 
     Qitem &qh = this->queue[this->head];
-    this->client->midi_event(delta, AbcMidiFile::pitch_wheel, qh.chan, data, 2);
+    this->client->midi_event(delta, MidiEvent::pitch_wheel, qh.chan, data, 2);
     this->client->midi_noteoff(*delta_time, qh.pitch, qh.chan);
 
     pitchbend = bendstate;
     data[0] = (char) (pitchbend&0x7f);
     data[1] = (char) ((pitchbend>>7)&0x7f);
-    this->client->midi_event(delta, AbcMidiFile::pitch_wheel, qh.chan, data, 2);
+    this->client->midi_event(delta, MidiEvent::pitch_wheel, qh.chan, data, 2);
 }
 
 /* This procedure merges the controlstring with the
@@ -477,7 +477,7 @@ AbcQueue::note_effect5(int chan)
                pitchbend = 0;
             }
             eventlist[j].time = notetime;
-            eventlist[j].cmd = (char) AbcMidiFile::pitch_wheel;
+            eventlist[j].cmd = (char) MidiEvent::pitch_wheel;
             eventlist[j].data1 = pitchbend & 0x7f;
             eventlist[j].data2 = (pitchbend >> 7) & 0x7f;
             notetime += delta;
@@ -511,7 +511,7 @@ AbcQueue::note_effect5(int chan)
                     controlval = 127;
                 }
                 eventlist[j].time = notetime;
-                eventlist[j].cmd  = (char) AbcMidiFile::control_change;
+                eventlist[j].cmd  = (char) MidiEvent::control_change;
                 eventlist[j].data1 = controltype;
                 eventlist[j].data2 = controlval;
                 notetime += delta;
@@ -540,7 +540,7 @@ AbcQueue::note_effect5(int chan)
         data[0] = (char) controltype;
         data[1] = (char) controldefaults[controltype];
         this->client->midi_event_with_delay(0, 
-            AbcMidiFile::control_change, chan, data, 2);
+            MidiEvent::control_change, chan, data, 2);
     }
     if(bendnvals > 0)
     {
@@ -549,7 +549,7 @@ AbcQueue::note_effect5(int chan)
         data[0] = (char) (pitchbend&0x7f);
         data[1] = (char) ((pitchbend>>7)&0x7f);
         this->client->midi_event_with_delay(0, 
-            AbcMidiFile::pitch_wheel, chan, data, 2);
+            MidiEvent::pitch_wheel, chan, data, 2);
     }
 }
 
@@ -582,14 +582,14 @@ AbcQueue::output_eventlist(event *list, int nsize, int chan)
         if(cmd == -80) 
         {
             this->client->midi_event_with_delay(delta, 
-                AbcMidiFile::control_change,
+                MidiEvent::control_change,
                 chan, data, 2);
         }
         else
         if(cmd == -32) 
         {
             this->client->midi_event(delta, 
-                AbcMidiFile::pitch_wheel,
+                MidiEvent::pitch_wheel,
                 this->queue[this->head].chan, data, 2);
         }
     }

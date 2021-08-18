@@ -1,15 +1,18 @@
 #ifndef dbAbcFile_h
 #define dbAbcFile_h
 
+#include "AbcMidiFile.h"
+
 #include <string>
 #include <fstream>
 #include <vector>
 
-class dbABCFile
+/* IMidiWriter: we intercept midi events after abc parsing completes */
+class dbAbcFile : public IMidiWriter 
 {
 public:
-    dbABCFile();
-    ~dbABCFile();
+    dbAbcFile();
+    ~dbAbcFile();
 
     int Open(std::string const &filepath);
     int Close();
@@ -19,8 +22,14 @@ public:
     int Read(int track1); // called in loop, XXX: return/fill MidiMsg
     int Rewind();
 
+    int writeMetaEvent(long delta_time, int type, char const *data, int size) override;
+    int writeMidiEvent(long delta_time, int type, int chan, char const *data, int size) override;
+    int writeTempo(long tempo) override;
+
 private:
     int m_numTracks;
+    class AbcParser *m_parser;
+    class AbcStore *m_store;
 };
 
 #endif

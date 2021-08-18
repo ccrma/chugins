@@ -10,19 +10,22 @@ static int sScale[7] = {0, 2, 4, 5, 7, 9, 11}; // diatonic 'major' mode
 AbcStore::AbcStore(AbcParser *p) :
     IAbcParseClient(p),
     temperament_dt {0.0,0.0,0.0,0.0, 0.0,0.0,0.0,0.0, 0.0,0.0,0.0,0.0},
-    temponame {
+    temponame 
+    {
         "larghissimo" , "adagissimo", "lentissimo",
         "largo", "adagio", "lento", "larghetto", "adagietto", "andante",
         "andantino", "moderato", "allegretto", "allegro", "vivace",
         "vivo", "presto", "allegrissimo", "vivacissimo", "prestissimo"
     },
-    temporate {
+    temporate 
+    {
         40, 44, 48,
         56, 59, 62, 66, 76, 88,
         96, 104, 112, 120, 168,
         180, 192, 208, 220, 240
     },
-    abcm2psoptions {"setbarnb"}
+    abcm2psoptions {"setbarnb"},
+    initState(nullptr)
 {
     this->done_with_barloc = 0;
     this->velocitychange = 15;
@@ -85,7 +88,9 @@ AbcStore::AbcStore(AbcParser *p) :
 }
 
 AbcStore::~AbcStore()
-{}
+{
+    this->Cleanup();
+}
 
 void
 AbcStore::Init(int argc, char const*argv[], std::string *filename)
@@ -234,6 +239,7 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
     } 
     if(this->getarg("-OCC",argc,argv) != -1) 
         this->parser->oldchordconvention = 1;
+
     if(this->getarg("-silent",argc,argv) != -1) 
         this->silent = 1;
 
@@ -249,18 +255,18 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
 
     if((this->getarg("-h", argc, argv) != -1) || (argc < 2)) 
     {
-        char msg[100];
-        snprintf(msg, 100, "abc2midi_cpp version %s", this->version);
+        char msg[1000];
+        snprintf(msg, 1000, "abc2midi_cpp version %s", this->version);
         this->log(msg);
-        this->log(
-        "Usage : abc2midi <abc file> [reference number] [-c] [-v] "
+        snprintf(msg, 1000, 
+        "Usage : %s <abc file> [reference number] [-c] [-v] "
         "[-o filename]\n"
         "        [-t] [-n <value>] [-CS] [-NFNP] [-NCOM] [-NFER] [-NGRA] [-NGUI] [-HARP]\n"
         "        [reference number] selects a tune\n"
         "        -c  selects checking only\n"
         "        -v  selects verbose option\n"
         "        -ver prints version number and exits\n"
-        "        -o <filename>  selects output filename\n"
+        "        -o <filename> selects output filename (or _perform_)\n"
         "        -t selects filenames derived from tune titles\n"
         "        -n <limit> set limit for length of filename stem\n"
         "        -CS use 2:1 instead of 3:1 for broken rhythms\n"
@@ -283,8 +289,10 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
         " of the abc file and N is the tune reference number. If the -o\n"
         " option is used, only one file is written. This is the tune\n"
         " specified by the reference number or, if no reference number\n"
-        " is given, the first tune in the file.\n"
+        " is given, the first tune in the file.\n",
+        argv[0]
         );
+        this->log(msg);
         return;
     } 
     else 
@@ -378,11 +386,12 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
 
     this->ratio_standard = this->getarg("-CS", argc, argv); /* [SS] 2016-01-02 */
     this->quiet  = this->getarg("-quiet", argc, argv);
+
+
     this->dotune = 0;
     this->parser->parserOff();
     this->setup_chordnames();
 
-    /* [SS] 2016-01-02 */
     if(this->getarg("-RS",argc,argv) != -1) 
         this->warning("use -CS to get Celtic broken rhythm");
   
@@ -554,7 +563,7 @@ AbcStore::addchordname(char const *s, int len, int notes[])
     }
     int done = 0;
     //  check for chord-update
-    for(AbcGenMidi::Chord &c : this->chords)
+    for(Abc::Chord &c : this->chords)
     {
         if(c.name == s)
         {
@@ -567,7 +576,7 @@ AbcStore::addchordname(char const *s, int len, int notes[])
     }
     if(!done)
     {
-        AbcGenMidi::Chord c; // <-- new chord
+        Abc::Chord c; // <-- new chord
         c.name = s;
         for(int i=0;i<len;i++)
             c.notes.push_back(notes[i]);

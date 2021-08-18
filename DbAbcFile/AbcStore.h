@@ -20,7 +20,11 @@ public:
     AbcStore(AbcParser *);
     virtual ~AbcStore();
 
-    void Init(int argc, char const *argv[], std::string *filename);
+    // (see -h for usage)  (-o _perform_ for no midifile-output)
+    void Init(int argc, char const *argv[], std::string *abcfile);
+    void Cleanup();
+
+    AbcGenMidi genMidi;
 
     /**
      * @Override intercept parser's eventhandler methods
@@ -126,16 +130,18 @@ private:
     void convert_to_comma53(char acc, int *midipitch, int* midibend);  
     int p48toc53[50];
 
-    AbcGenMidi genMidi;
 
+    // A voicecontext can imply multiple midi tracks since words, drums, 
+    // etc may be implied within a voicecontext.
+    /* Not to be confused with: 
+     *  struct voice defined in struct.h and used only by yaps.
+     * -nor
+     *  voice_context used within the parser.
+     * -nor
+     *  Track used by GenMidi
+     */
     struct voicecontext 
     {
-        /* not to be confused with: 
-        *  struct voice defined in struct.h and used only by yaps.
-        *  nor
-        *  voice_context used within the parser.
-        */
-
         // default constructor is for global context.
         voicecontext()
         {
@@ -284,11 +290,11 @@ private:
     int ntexts;
 
     /* Named guitar chords */
-    std::vector<AbcGenMidi::Chord> chords;
+    std::vector<Abc::Chord> chords;
 
     int maxFeatures;
     int nextFeature; // index into following...
-    typedef AbcGenMidi::FeatureDesc FeatureDesc;
+    typedef Abc::FeatureDesc FeatureDesc;
     std::vector<FeatureDesc> featurelist;
 
     int verbose;
@@ -496,6 +502,8 @@ private:
     void calculate_stress_parameters();
 
     /* driver -------------------------------------------- */
+    Abc::InitState *initState;
+
     void startfile();
     void finishfile();
 

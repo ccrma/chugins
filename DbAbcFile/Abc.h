@@ -1,20 +1,14 @@
 #ifndef Abc_h
 #define Abc_h
 
+#include <vector>
+
 /* Abc.h - .cpp version of abc.h */
 /* Copyright Dana Batali 2021 */
 /* Copyright James Allwright 2000 */
 /* may be copied under the terms of the GNU public license */
 namespace Abc
 {
-    enum ProgramName
-    {
-        ABC2MIDI,
-        ABC2ABC,
-        YAPS,
-        ABCMATCH
-    };
-
     enum TimeSig
     {
         TIMESIG_NORMAL,
@@ -152,6 +146,96 @@ namespace Abc
 
 
         DECSIZE      
+    };
+
+    /* general purpose storage structure. A collection of i
+     * features cross boundaries between tracks, 
+     * ie: it contains notes for all channels.
+     */
+    struct FeatureDesc
+    {
+        FeatureDesc()
+        {
+            this->bentpitch = 0; // 8192 is a good default only for NOTES
+            this->decotype = 0;
+            this->stressvelocity = -1;
+            this->pitchline = -1;
+            this->charloc = 0;
+        }
+
+        // copy constructor for debugging
+        //  (currently never implicitly invoked)
+        FeatureDesc(FeatureDesc const &rhs)
+        {
+            this->feature = rhs.feature;
+            this->pitch = rhs.pitch;
+            this->num = rhs.num;
+            this->denom = rhs.denom;
+            this->bentpitch = rhs.bentpitch;
+            this->stressvelocity = rhs.stressvelocity;
+            this->decotype = rhs.decotype;
+            this->pitchline = rhs.pitchline;
+            this->charloc = rhs.charloc;
+        }
+
+        FeatureType feature;
+        int pitch;
+        int num;
+        int denom;
+        int bentpitch; // microtones
+        int stressvelocity;
+        int decotype; // ROLLS, TRILLS, etc
+        int pitchline; // file location when ties are in play
+        int charloc; // character position in abctune
+    };
+
+    struct Chord // used by AbcGenMidi
+    {
+        std::string name;
+        std::vector<int> notes;
+    };
+
+    struct InitState
+    {
+        InitState(
+            int nfeat, 
+            std::vector<FeatureDesc> &fdlist,
+            std::vector<std::string> &atxt,
+            std::vector<Chord> &gchords,
+            std::vector<std::string> &wrds
+        ) :
+            nfeatures(nfeat),
+            featurelist(fdlist),
+            atext(atxt),
+            chords(gchords),
+            words(wrds)
+        {}
+
+        int nfeatures; // currently featurelist.size() >= nfeatures
+        std::vector<FeatureDesc> &featurelist;
+
+        std::vector<std::string> &atext;
+        std::vector<Chord> &chords;
+        std::vector<std::string> &words;
+        int verbose;
+        int silent;
+        int quiet;
+        int programbase;
+        bool voicesused;
+        int tempo;
+        int time_num;
+        int time_denom;
+        int mtime_num;
+        int mtime_denom;
+        int keySharps;
+        int keyMinor;
+        int karaoke;
+        int wcount;
+        int retuning;
+        int bend;
+        int *dependent_voice; /* flag to indicate type of voice (len 64) */
+        int barchecking;
+        int lineno; // at the end of parsing this subfile.
     };
 };
 

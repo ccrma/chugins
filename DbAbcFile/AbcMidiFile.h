@@ -3,18 +3,107 @@
 
 #include <cstdio>
 
-class AbcMidiFile
+struct MidiEvent
+{
+    int evt;
+    long dur;
+    int size; // 0 means no event - ie: a feature didn't map to an event
+    char data[10]; // most events, size:2-3
+
+    enum Codes
+    {
+        note_off =         	0x80,
+        note_on =          	0x90,
+        poly_aftertouch =  	0xa0,
+        control_change =   	0xb0,
+        program_chng =     	0xc0,
+        channel_aftertouch =0xd0,
+        pitch_wheel =     	0xe0,
+        system_exclusive =  0xf0,
+    };
+
+    enum Controllers
+    {
+        damper_pedal =      0x40,
+        portamento =	    0x41,
+        sostenuto =	        0x42,
+        soft_pedal =	    0x43,
+        general_4 =         0x44,
+        hold_2 =		    0x45,
+        general_5 =	        0x50,
+        general_6 =	        0x51,
+        general_7 =	        0x52,
+        general_8 =	        0x53,
+        tremolo_depth =     0x5c,
+        chorus_depth =	    0x5d,
+        detune =		    0x5e,
+        phaser_depth =      0x5f,
+    };
+
+    enum Params
+    {
+        /* parameter values */
+        data_inc =	        0x60,
+        data_dec =	        0x61,
+
+        /* parameter selection */
+        non_reg_lsb =	    0x62,
+        non_reg_msb =       0x63,
+        reg_lsb =           0x64,
+        reg_msb =		    0x65,
+    };
+
+    /* Standard MIDI Files meta event definitions */
+    enum Event
+    {
+        meta_event =		0xFF,
+        sequence_number = 	0x00,
+        text_event =		0x01,
+        copyright_notice = 	0x02,
+        sequence_name =    	0x03,
+        instrument_name = 	0x04,
+        lyric =	        	0x05,
+        marker =			0x06,
+        cue_point =		    0x07,
+        channel_prefix =	0x20,
+        end_of_track =		0x2f,
+        set_tempo =		    0x51,
+        smpte_offset =		0x54,
+        time_signature =	0x58,
+        key_signature =		0x59,
+        sequencer_specific = 0x74,
+    };
+};
+
+class IMidiWriter
+{
+public:
+    virtual ~IMidiWriter() {}
+
+    virtual int writeMetaEvent(long delta_time, int type, char const *data, int size) = 0;
+    virtual int writeMidiEvent(long delta_time, int type, int chan, char const *data, int size) = 0;
+    virtual int writeTempo(long tempo) = 0;
+    virtual void singleNoteTuningChange(int key, float midipitch) {}
+    /* Write tempo */
+    /* all tempos are written as 120 beats/minute, */
+    /* expressed in microseconds/quarter note     */
+
+};
+
+class AbcMidiFile : public IMidiWriter
 {
 public:
     AbcMidiFile();
     ~AbcMidiFile();
 
-    class IMidiWriter
+    class IFileHelper
     {
     public:
-        virtual ~IMidiWriter() {};
-        virtual void midierror(char const *) = 0;
-        virtual long writetrack(int xtrack) = 0; // required returns delta_time
+        virtual ~IFileHelper() {};
+
+        /* invoked by AbcMidiFile via write --- */
+        virtual void midierror(char const *) = 0; 
+        virtual long writetrack(int xtrack) = 0;
         virtual void writetempotrack() {}; // optional - for format: 1
     };
 
@@ -40,80 +129,17 @@ public:
     //      consisting  of  bits 7 through 0 corresponds the the
     //      resolution within a frame.  Refer the Standard MIDI
     //      Files 1.0 spec for more details.
-    int write(IMidiWriter *, FILE *fp, int format, int ntracks, int division);
+    int write(IFileHelper *, FILE *fp, int format, int ntracks, int division);
 
     // methods available for calling during writetrack callback.
-    int writeTempo(long tempo);
-    int writeMetaEvent(long delta_time, int type, char const *data, int size);
-    int writeMidiEvent(long delta_time, int type, int chan, char const *data, int size);
-    void singleNoteTuningChange(int key, float midipitch);
+    int writeTempo(long tempo) override;
+    int writeMetaEvent(long delta_time, int type, char const *data, int size) override;
+    int writeMidiEvent(long delta_time, int type, int chan, char const *data, int size) override;
+    void singleNoteTuningChange(int key, float midipitch) override;
 
-    enum MidiCodes
-    {
-        note_off =         	0x80,
-        note_on =          	0x90,
-        poly_aftertouch =  	0xa0,
-        control_change =   	0xb0,
-        program_chng =     	0xc0,
-        channel_aftertouch =0xd0,
-        pitch_wheel =     	0xe0,
-        system_exclusive =  0xf0,
-    };
-
-    enum MidiControllers
-    {
-        damper_pedal =      0x40,
-        portamento =	    0x41,
-        sostenuto =	        0x42,
-        soft_pedal =	    0x43,
-        general_4 =         0x44,
-        hold_2 =		    0x45,
-        general_5 =	        0x50,
-        general_6 =	        0x51,
-        general_7 =	        0x52,
-        general_8 =	        0x53,
-        tremolo_depth =     0x5c,
-        chorus_depth =	    0x5d,
-        detune =		    0x5e,
-        phaser_depth =      0x5f,
-    };
-
-    enum MidiParams
-    {
-        /* parameter values */
-        data_inc =	        0x60,
-        data_dec =	        0x61,
-
-        /* parameter selection */
-        non_reg_lsb =	    0x62,
-        non_reg_msb =       0x63,
-        reg_lsb =           0x64,
-        reg_msb =		    0x65,
-    };
-
-    /* Standard MIDI Files meta event definitions */
-    enum MidiEvent
-    {
-        meta_event =		0xFF,
-        sequence_number = 	0x00,
-        text_event =		0x01,
-        copyright_notice = 	0x02,
-        sequence_name =    	0x03,
-        instrument_name = 	0x04,
-        lyric =	        	0x05,
-        marker =			0x06,
-        cue_point =		    0x07,
-        channel_prefix =	0x20,
-        end_of_track =		0x2f,
-        set_tempo =		    0x51,
-        smpte_offset =		0x54,
-        time_signature =	0x58,
-        key_signature =		0x59,
-        sequencer_specific = 0x74,
-    };
 
 private:
-    IMidiWriter *writer;
+    IFileHelper *helper;
     FILE *fp;
 
     unsigned char lowerbyte(int x) 

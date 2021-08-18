@@ -404,7 +404,7 @@ AbcStore::apply_bf_stress_factors()
     int barnumber = 0;
     while(j < this->nextFeature) 
     {
-        FeatureDesc &fd = this->featurelist[j];
+        Abc::FeatureDesc &fd = this->featurelist[j];
         switch(fd.feature) 
         {
         case Abc::SINGLE_BAR:           /*  |  */
@@ -855,24 +855,25 @@ AbcStore::beat_modifier(int i)
 
     i++;
 
-    AbcGenMidi::FeatureDesc &fd = this->featurelist[i];
-    while(fd.feature != Abc::SINGLE_BAR) 
+    Abc::FeatureType ft;
+    do
     {
-        fd = this->featurelist[i];
-        if(fd.feature == Abc::DOUBLE_BAR ||
-           fd.feature == Abc::BAR_REP ||
-           fd.feature == Abc::DOUBLE_REP ||
-           fd.feature == Abc::REP_BAR) 
+        Abc::FeatureDesc &fd = this->featurelist[i];
+        ft = fd.feature;
+        if(ft == Abc::DOUBLE_BAR ||
+           ft == Abc::BAR_REP ||
+           ft == Abc::DOUBLE_REP ||
+           ft == Abc::REP_BAR) 
            break;
-        if(fd.feature == Abc::CHORDON) 
+        if(ft == Abc::CHORDON) 
         {
             inchord = 1;
             notecount = 0;
             i++;
             continue;
         }
-        if(fd.feature == Abc::CHORDOFF ||
-           fd.feature == Abc::CHORDOFFEX) 
+        if(ft == Abc::CHORDOFF ||
+           ft == Abc::CHORDOFFEX) 
         {
             inchord = 0;
             notecount = 0;
@@ -881,8 +882,8 @@ AbcStore::beat_modifier(int i)
             i++;
             continue;
         }
-        if(fd.feature == Abc::NOTE || fd.feature == Abc::TNOTE ||
-           (fd.feature == Abc::REST && fd.pitch == 0)) 
+        if(ft == Abc::NOTE || ft == Abc::TNOTE ||
+           (ft == Abc::REST && fd.pitch == 0)) 
         {
             /* Care is needed for tied notes; they appear as TNOTE followed by*/
             /* two REST. We want to ignore those two rests.*/
@@ -951,7 +952,7 @@ AbcStore::beat_modifier(int i)
                 i++; /*skip following rest */
         }
         i++;
-    } // end while
+    } while(ft != Abc::SINGLE_BAR);
 }
 
 void 

@@ -22,7 +22,7 @@ U.S.A.
 #include "chuck_dl.h"
 #include "chuck_def.h"
 
-#include "dbABCFile.h"
+#include "dbAbcFile.h"
 
 #include <stdio.h>
 #include <limits.h>
@@ -71,13 +71,13 @@ CK_DLL_QUERY(DbAbcFile)
 CK_DLL_CTOR(abcFile_ctor)
 {
     OBJ_MEMBER_INT(SELF, abcFile_data_offset) = 0;
-    dbABCFile *c = new dbABCFile();
+    dbAbcFile *c = new dbAbcFile();
     OBJ_MEMBER_INT(SELF, abcFile_data_offset) = (t_CKINT) c;
 }
 
 CK_DLL_DTOR(abcFile_dtor)
 {
-    dbABCFile *c = (dbABCFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
+    dbAbcFile *c = (dbAbcFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
     if(c)
     {
         delete c;
@@ -88,7 +88,7 @@ CK_DLL_DTOR(abcFile_dtor)
 
 CK_DLL_MFUN(abcFile_open)
 {
-    dbABCFile * c = (dbABCFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
+    dbAbcFile * c = (dbAbcFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
     std::string filename = GET_NEXT_STRING_SAFE(ARGS);
     int err = c->Open(filename);
     RETURN->v_int = err ? 0 : 1; // following midifilein return conventions
@@ -96,20 +96,20 @@ CK_DLL_MFUN(abcFile_open)
 
 CK_DLL_MFUN(abcFile_close)
 {
-    dbABCFile *c = (dbABCFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
+    dbAbcFile *c = (dbAbcFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
     int err = c->Close();
     RETURN->v_int = err ? 0 : 1;
 }
 
 CK_DLL_MFUN(abcFile_numTracks)
 {
-    dbABCFile * c = (dbABCFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
+    dbAbcFile * c = (dbAbcFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
     RETURN->v_int = c->GetNumTracks();
 }
 
 CK_DLL_MFUN(abcFile_read)
 {
-    dbABCFile *c = (dbABCFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
+    dbAbcFile *c = (dbAbcFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
     t_CKINT track = GET_NEXT_INT(ARGS);
 
     RETURN->v_int = 0; // means error, nothing to read
@@ -132,7 +132,7 @@ CK_DLL_MFUN(abcFile_read)
 
 CK_DLL_MFUN(abcFile_rewind)
 {
-    dbABCFile *c = (dbABCFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
+    dbAbcFile *c = (dbAbcFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
     c->Rewind();
     // no return atm
 }

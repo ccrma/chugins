@@ -122,52 +122,68 @@ AbcStore::finishfile()
         if(this->verbose > 5) 
             this->dumpfeat(0, this->nextFeature-1);
 
-        AbcGenMidi::InitState initState(this->nextFeature, 
-                                        this->featurelist,
-                                        this->atext,
-                                        this->chords,
-                                        this->wordlist);
-        initState.verbose = this->verbose;
-        initState.silent = this->silent;
-        initState.quiet = this->quiet;
-        initState.programbase = this->programbase;
-        initState.voicesused = this->voicesused;
-        initState.tempo = this->current_tempo;
-        initState.time_num = this->time_num;
-        initState.time_denom = this->time_denom;
-        initState.mtime_num = this->mtime_num;
-        initState.mtime_denom = this->mtime_denom;
-        initState.keySharps = this->keySharps;
-        initState.keyMinor = this->keyMinor;
-        initState.karaoke = this->karaoke;
-        initState.wcount = this->wcount;
-        initState.retuning = this->retuning;
-        initState.bend = this->bend;
-        initState.dependent_voice = this->dependent_voice;
-        initState.barchecking = this->barchecking;
-        initState.lineno = this->parser->lineno;
+        this->initState = new Abc::InitState(this->nextFeature, 
+                                this->featurelist,
+                                this->atext,
+                                this->chords,
+                                this->wordlist);
+        this->initState->verbose = this->verbose;
+        this->initState->silent = this->silent;
+        this->initState->quiet = this->quiet;
+        this->initState->programbase = this->programbase;
+        this->initState->voicesused = this->voicesused;
+        this->initState->tempo = this->current_tempo;
+        this->initState->time_num = this->time_num;
+        this->initState->time_denom = this->time_denom;
+        this->initState->mtime_num = this->mtime_num;
+        this->initState->mtime_denom = this->mtime_denom;
+        this->initState->keySharps = this->keySharps;
+        this->initState->keyMinor = this->keyMinor;
+        this->initState->karaoke = this->karaoke;
+        this->initState->wcount = this->wcount;
+        this->initState->retuning = this->retuning;
+        this->initState->bend = this->bend;
+        this->initState->dependent_voice = this->dependent_voice;
+        this->initState->barchecking = this->barchecking;
+        this->initState->lineno = this->parser->lineno;
 
-        this->genMidi.writefile(this->outname.c_str(), &initState);
-
-        this->atext.clear();
-        this->wordlist.clear();
-        this->genMidi.partspec.clear();
-        this->chords.clear();
-        this->free_notestructs();
+        if(this->outname == "_perform_")
+        {
+            this->info("Ready to perform");
+            this->genMidi.beginPerformance(this->initState);
+            // client must call Cleanup
+        }
+        else
+        {
+            this->genMidi.writefile(this->outname.c_str(), this->initState);
+            this->Cleanup();
+        }
     }
+}
+
+void
+AbcStore::Cleanup()
+{
+    this->atext.clear();
+    this->wordlist.clear();
+    this->genMidi.partspec.clear();
+    this->chords.clear();
+    this->free_notestructs();
+    delete this->initState;
+    this->initState = nullptr;
 }
 
 void 
 AbcStore::dump_trackdescriptor()
 {
-    char msg[80];
+    char msg[100];
     this->log("tracks {");
     for(int i=0;i<this->genMidi.ntracks;i++) 
     {
-        snprintf(msg, 80, " %d %d %d",   
-            i, 
-            this->genMidi.trackdescriptor[i].tracktype,
-            this->genMidi.trackdescriptor[i].voicenum);
+        AbcGenMidi::Track &track = this->genMidi.trackdescriptor[i];
+        snprintf(msg, 100, " %d %d %d @ %d->%d",
+            i, track.tracktype, track.voicenum,
+            track.featureIndexBegin, track.featureIndexEnd);
         this->log(msg);
     }
     this->log("tracks }");
@@ -245,11 +261,19 @@ AbcStore::setup_trackstructure()
     }
 
     /* does the tune need any gchord, drum, drone or word track */
-    if((this->voicesused == 0) && (!this->karaoke) && 
+    if((this->voicesused == false) && (!this->karaoke) && 
        (this->gchordvoice == 0) && (this->drumvoice == 0) && (this->dronevoice==0)) 
     {
         this->genMidi.ntracks = 1;
     } 
+
+    for(int i=0; i<this->genMidi.ntracks; i++)
+    {
+        AbcGenMidi::Track &track = td[i];
+        track.featureIndexBegin = this->genMidi.findvoice(0, track.voicenum, i);
+        track.featureIndexEnd = this->genMidi.findvoiceEnd(track.featureIndexBegin, 
+                                                        track.voicenum, i);
+    }
 
     if(this->verbose > 1)
         this->dump_trackdescriptor();

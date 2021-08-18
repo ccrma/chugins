@@ -25,7 +25,7 @@ static const int sMagicTRK = 0x4d54726b;
 
 AbcMidiFile::AbcMidiFile()
 {
-    this->writer = nullptr;
+    this->helper = nullptr;
 }
 
 AbcMidiFile::~AbcMidiFile()
@@ -33,10 +33,10 @@ AbcMidiFile::~AbcMidiFile()
 }
 
 int
-AbcMidiFile::write(IMidiWriter *w, FILE *fp, int format, int ntracks, int division)
+AbcMidiFile::write(IFileHelper *w, FILE *fp, int format, int ntracks, int division)
 {
     int err = 0;
-    this->writer = w;
+    this->helper = w;
     this->fp = fp;
     this->numBytesWritten = 0;
 
@@ -45,7 +45,7 @@ AbcMidiFile::write(IMidiWriter *w, FILE *fp, int format, int ntracks, int divisi
 
     /* In format 1 files, the first track is a tempo map */
     if(format == 1)
-        this->writer->writetempotrack();
+        this->helper->writetempotrack();
 
     /* The rest of the file is a series of tracks */
     for(int i = 0; i < ntracks; i++)
@@ -78,7 +78,7 @@ AbcMidiFile::writeMidiEvent(long delta_time, int type, int chan,
     char const *data, int size)
 {
     if(chan > 15) 
-        this->writer->midierror("error: MIDI channel greater than 16");
+        this->helper->midierror("error: MIDI channel greater than 16");
 
     this->writeVarLen(delta_time);
 
@@ -113,7 +113,7 @@ AbcMidiFile::writeMetaEvent(long delta_time, int type, char const *data, int siz
     this->writeVarLen(delta_time);
     
     /* This marks the fact we're writing a meta-event */
-    this->writeByte(meta_event);
+    this->writeByte(MidiEvent::meta_event);
 
     /* The type of meta event */
     this->writeByte(type);
@@ -137,8 +137,8 @@ int
 AbcMidiFile::writeTempo(long tempo)
 {
     this->writeByte(0);
-    this->writeByte(meta_event);
-    this->writeByte(set_tempo);
+    this->writeByte(MidiEvent::meta_event);
+    this->writeByte(MidiEvent::set_tempo);
     this->writeByte(3);
     this->writeByte((char)(0xff & (tempo >> 16)));
     this->writeByte((char)(0xff & (tempo >> 8)));
@@ -209,13 +209,13 @@ AbcMidiFile::writeTrackChunk(int track)
 
     this->trackBytesWritten = 0L; /* the header's length doesn't count */
 
-    long endspace = this->writer->writetrack(track);
+    long endspace = this->helper->writetrack(track);
 
     /* mf_write End of track meta event */
     this->writeVarLen(endspace);
 
-    this->writeByte(meta_event);
-    this->writeByte(end_of_track);
+    this->writeByte(MidiEvent::meta_event);
+    this->writeByte(MidiEvent::end_of_track);
     this->writeByte(0);
     
     /* It's impossible to know how long the track chunk will be beforehand,
@@ -229,7 +229,7 @@ AbcMidiFile::writeTrackChunk(int track)
     /* track.length = place_marker - offset - (long) sizeof(track); */
 
     if(fseek(this->fp, offset, 0) < 0)
-        this->writer->midierror("error seeking during final stage of write");
+        this->helper->midierror("error seeking during final stage of write");
 
     /* Re-mf_write the track chunk header with right length */
     long trackBytes = this->trackBytesWritten;

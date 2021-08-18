@@ -1185,7 +1185,7 @@ AbcStore::tempo(int n, int a, int b, int rel,
                 int tempo_h = new_tempo >> 16;
 
                 float frac = new_tempo/(float)this->current_tempo;
-                int new_div = (int) (.5f + AbcGenMidi::DIV*frac);
+                int new_div = (int) (.5f + AbcMidiTrackCtx::DIV*frac);
                 this->addfeature(Abc::TEMPO, new_div, tempo_h, tempo_l);
             } 
             else 
