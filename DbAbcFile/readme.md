@@ -3,14 +3,14 @@
 ## Intro
 
 The goal of this project is to bring to ChucK an easy-to-author
-text representation of musical material.  The digital music landscape 
+text representation of musical material. The digital music landscape 
 is littered with attempts to deliver something like this.  
 [abcnotation](https://abcnotation.com/) is one such attempt and
 has an ecosystem of supporting tools to interactively edit, preview 
 and print abc scores.
 
 DbABCFile is a parser for abc files for ChucK.  We combine the
-design of the built-in StkMidiFileIn with the abcMIDI toolset
+design of the built-in StkMidiFileIn with the abcmidi toolset
 created by James Allwright in the early 1990 and presently 
 [found here](https://github.com/sshlien/abcmidi).  Many files in 
 abcmidi claim GPL2 licensing status.  Guess that's a good thing 
@@ -20,24 +20,26 @@ since this source (and ChucK) is also under that scheme.
 
 Because this implementation is not targeting the _creation_ of
 MIDI files, this codebase diverged significantly from the original 
-system.  Here, the goal is to build up a "complete" characterization of
+system. Here, the goal is to build up a "complete" characterization of
 the abc score such that it can be "performed" by repeated calls
-to the `read` method.  Perhaps the most significant code divergence
+to a `read` method.  Perhaps the most significant code divergence
 is due to the re-entrancy requirements associated with the goal 
-to support multiple abc files in a single ChucK process.  Converting
-the 25 year-old C codebase to C++ made it easier to ensure that
-parser and store contexts were fully encapsulated. Needless to say,
+to support multiple abc files+tracks in a single ChucK process.  
+
+Converting the 25 year-old C codebase to C++ made it easier to ensure 
+that parser and store contexts were fully encapsulated. Needless to say,
 this was a great deal of code-jockeying and so the current state
 of affairs is far from ideal. Part of this is due to the divergence
 of requirements.  Specifically, the line between AbcStore and 
-AbcGenMidi is awkward and subject to reworking.
+AbcGenMidi is awkward and subject to reworking. There are many 1990's era
+"warts" that could be removed.
 
 ## ChucK usage
 
 In the context of ChucK, a single voice within a score can be 
 performed by a single instrument in a single shred.  Following 
 the design of Chuck's MidiFile UGen,  you can create multiple 
-shreds to perform the entire score. We employ the MidiMsg datatype 
+shreds to perform a multitrack score. We employ the MidiMsg datatype 
 to convey the current state of the performance to the client. It's 
 up to you to "act" upon the MidiMsg.  Again, following MidiFile, a 
 non-zero `when` field indicates that there is nothing to do 
@@ -49,14 +51,12 @@ time to the next composition event in the requested track.
 `int DbABCFile.open(string filenm);`  
 `int DbABCFile.close();`  
 `int DbABCFile.numTracks();`  
-`string DbABCFile.trackInfo(int track);`   
 `int DbABCFile.read(MidiMsg msg, int track);` // returns 0 when done
 `int DbABCFile.rewind();`                   // returns 1 if successful
 
+### to do
 
-trackInfo can be used to retrieve track metadata:
-
-- track
+`string DbABCFile.trackInfo(int track);`   
 
 ## Example
 

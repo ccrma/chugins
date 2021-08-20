@@ -6,6 +6,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <deque>
 
 /* IMidiWriter: we intercept midi events after abc parsing completes */
 class dbAbcFile : public IMidiWriter 
@@ -19,7 +20,7 @@ public:
 
     int GetNumTracks() { return this->m_numTracks; }
     
-    int Read(int track1); // called in loop, XXX: return/fill MidiMsg
+    int Read(int track1, MidiEvent *); // called in loop, XXX: return/fill MidiMsg
     int Rewind();
 
     int writeMetaEvent(long delta_time, int type, char const *data, int size) override;
@@ -30,6 +31,7 @@ private:
     int m_numTracks;
     class AbcParser *m_parser;
     class AbcStore *m_store;
+    std::vector<std::deque<MidiEvent>> m_pendingEvents; // indexed by track
 };
 
 #endif

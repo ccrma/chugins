@@ -20,7 +20,7 @@ public:
     AbcStore(AbcParser *);
     virtual ~AbcStore();
 
-    // (see -h for usage)  (-o _perform_ for no midifile-output)
+    // (see -h for usage)  (-perform_ for no midifile-output)
     void Init(int argc, char const *argv[], std::string *abcfile);
     void Cleanup();
 
@@ -333,6 +333,7 @@ private:
     int number_of_abcm2ps_options;
 
     /* output file generation */
+    bool performing; // bypass output, suspend featurelist 'til Cleanup
     int userfilename;
     std::string outname;
     std::string outbase;

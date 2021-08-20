@@ -60,7 +60,7 @@ AbcStore::startfile()
         this->ratio_b = 4;
     }
     this->wcount = 0;
-    this->genMidi.Init();
+    this->genMidi.Init(this->performing);
     this->genMidi.set_gchords("x");
     this->genMidi.set_drums("z");
 
@@ -83,6 +83,8 @@ AbcStore::finishfile()
     this->complete_all_split_voices();
 
     /* dump_voicecontexts(); for debugging*/
+    // cbb: trackdescriptors reside in GenMidi, setup_trackstructure
+    // resides in AbcStore and needs GenMidi::findvoice
     this->setup_trackstructure(); // from voice contexts
     this->clearvoicecontexts();
 
@@ -147,11 +149,11 @@ AbcStore::finishfile()
         this->initState->barchecking = this->barchecking;
         this->initState->lineno = this->parser->lineno;
 
-        if(this->outname == "_perform_")
+        if(this->performing)
         {
             this->info("Ready to perform");
             this->genMidi.beginPerformance(this->initState);
-            // client must call Cleanup
+            // client must call Cleanup or destroy AbcStore
         }
         else
         {
@@ -266,15 +268,6 @@ AbcStore::setup_trackstructure()
     {
         this->genMidi.ntracks = 1;
     } 
-
-    for(int i=0; i<this->genMidi.ntracks; i++)
-    {
-        AbcGenMidi::Track &track = td[i];
-        track.featureIndexBegin = this->genMidi.findvoice(0, track.voicenum, i);
-        track.featureIndexEnd = this->genMidi.findvoiceEnd(track.featureIndexBegin, 
-                                                        track.voicenum, i);
-    }
-
     if(this->verbose > 1)
         this->dump_trackdescriptor();
 }

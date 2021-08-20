@@ -28,6 +28,7 @@ U.S.A.
 #include <limits.h>
 #include <math.h>
 
+
 CK_DLL_CTOR( abcFile_ctor );
 CK_DLL_DTOR( abcFile_dtor );
 CK_DLL_MFUN( abcFile_open );
@@ -36,7 +37,23 @@ CK_DLL_MFUN( abcFile_read );
 CK_DLL_MFUN( abcFile_numTracks );
 CK_DLL_MFUN( abcFile_rewind );
 
-t_CKINT abcFile_data_offset = 0; // required by chuck
+// required by chuck
+t_CKINT abcFile_data_offset = 0;
+
+// hack alert:
+// we'd like to use standard MidiMsg for communicating with
+// outside world.  To do that we need access to MidiMsg field
+// offsets.  But the chugin interface doesn't expose these and
+// we'd need to link against libchuck.  But we don't want to link
+// the static library, rather we'd need to link the .dll and the
+// .dll would need to export these symbols.  Our hack is to 
+// determine these offset values by nefarious means and hard-code
+// them here.  NB: these values are likely to be valid for
+// all 64 bit builds. Unclear/unlikely valid for 32-bit builds.
+static t_CKINT midiMsg_offset_data1 = 8;
+static t_CKINT midiMsg_offset_data2 = 16;
+static t_CKINT midiMsg_offset_data3 = 24;
+static t_CKINT midiMsg_offset_when = 32;
 
 /* ----------------------------------------------------------- */
 CK_DLL_QUERY(DbAbcFile)
@@ -55,7 +72,7 @@ CK_DLL_QUERY(DbAbcFile)
 
     QUERY->add_mfun(QUERY, abcFile_read, "int", "read");
     QUERY->add_arg(QUERY, "int", "track");
-    QUERY->add_arg(QUERY, "MidiMsg", "msg");
+    QUERY->add_arg(QUERY, "DbAbcMsg", "msg");
 
     QUERY->add_mfun(QUERY, abcFile_numTracks, "int", "numTracks");
     // no params
@@ -110,23 +127,24 @@ CK_DLL_MFUN(abcFile_numTracks)
 CK_DLL_MFUN(abcFile_read)
 {
     dbAbcFile *c = (dbAbcFile *) OBJ_MEMBER_INT(SELF, abcFile_data_offset);
-    t_CKINT track = GET_NEXT_INT(ARGS);
 
-    RETURN->v_int = 0; // means error, nothing to read
+    // MidiFileIn::readTrack(MidiMsg m, int track)
+    Chuck_Object *msg = GET_NEXT_OBJECT(ARGS);
+    t_CKINT track = GET_NEXT_INT(ARGS);
+    RETURN->v_int = 0; // means error or nothing left to read
     if(track >= 0 && track < c->GetNumTracks())
     {
-        #if 0
-        std::vector<unsigned char> event;
-        t_CKDUR dur = c->GetNextMidiEvent(event, track);
-        if(event.size())
+        MidiEvent mevt;
+        int active = c->Read(track, &mevt);
+        if(active)
         {
-            OBJ_MEMBER_INT(msg, MidiMsg_offset_data1) = event[0];
-            OBJ_MEMBER_INT(msg, MidiMsg_offset_data2) = event.size() >= 2 ? event[1] : 0;
-            OBJ_MEMBER_INT(msg, MidiMsg_offset_data3) = event.size() >= 3 ? event[2] : 0;
-            OBJ_MEMBER_DUR(msg, MidiMsg_offset_when) = dur;
+            OBJ_MEMBER_INT(msg, midiMsg_offset_data1) = mevt.evt;
+            OBJ_MEMBER_INT(msg, midiMsg_offset_data2) = mevt.size >= 2 ? mevt.data[1] : 0;
+            OBJ_MEMBER_INT(msg, midiMsg_offset_data3) = mevt.size >= 3 ? mevt.data[2] : 0;
+            OBJ_MEMBER_DUR(msg, midiMsg_offset_when) = mevt.dur;
             RETURN->v_int = 1; 
         }
-        #endif
+        // else nothing left to do
     }
 }
 

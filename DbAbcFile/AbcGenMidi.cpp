@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <algorithm>
-
+#include <cassert>
 
 /* ------------------------------------------------------------ */
 AbcGenMidi::AbcGenMidi() :
@@ -21,7 +21,7 @@ AbcGenMidi::~AbcGenMidi()
 {}
 
 void
-AbcGenMidi::Init()
+AbcGenMidi::Init(bool forPerformance)
 {
     this->barflymode = 0; // overriden via -BF or "R:"
     this->beatmodel = 0;
@@ -33,30 +33,33 @@ AbcGenMidi::Init()
         this->part_start[j] = -1;
     for(int j=0; j<16; j++)
         this->channel_in_use[j] = 0; // xxx: it's actually len:19
+    this->trackPool.clear();
+    this->trackPool.push_back(AbcMidiTrackCtx(this));
+    this->wctx = &this->trackPool[0];
 }
 
 /* -------------------------------------------------------------------------- */
 // beginPerform is called during AbcStore::finishfile when
-// the output file name is "_perform_".  In other cases we progress
+// the argv includes "-perform".  In midi-out case we proceed
 // to writefile(below) and perform standard .mid file conversion. 
-// This call occurs *after* tracks are setup and ince we wish to "perform" 
+// This call occurs *after* tracks are setup and since we wish to "perform" 
 // multiple tracks simultaneously, we create and init a wctx for each track.
 // 
 int
 AbcGenMidi::beginPerformance(Abc::InitState const *initState)
 {
     this->initState = initState;
+    this->assignVoiceBounds();
     this->midi = nullptr; // filled at getNextEvent
     this->no_more_free_channels = 0; // XXX?
-    this->performTracks.clear();
+    this->trackPool.clear();
     for(int i=0;i<this->ntracks;i++)
     {
         Track &track = this->trackdescriptor[i];
-        this->performTracks.push_back(AbcMidiTrackCtx(this));
-        this->performTracks[i].beginWriting(initState, nullptr);
-        this->performTracks[i].initTrack(i, 
-            track.featureIndexBegin, track.featureIndexEnd);
+        this->trackPool.push_back(AbcMidiTrackCtx(this));
+        this->trackPool[i].beginWriting(initState, nullptr); 
     }
+    this->wctx = &this->trackPool[0];
     return 0;
 }
 
@@ -67,15 +70,55 @@ AbcGenMidi::rewindPerformance()
 }
 
 int
-AbcGenMidi::getNextPerformanceEvent(int track, IMidiWriter *)
+AbcGenMidi::getNextPerformanceEvents(int track, IMidiWriter *m)
 {
-    return 0;
+    int active;
+    this->midi = m;
+    assert(this->wctx == nullptr); // we're not currently multithreadable
+    this->wctx = &this->trackPool[track];
+    
+    // intiTrack and processFeature may generate callbacks to IMidiWriter
+    // it's up to caller to serialize those for output.
+    if(this->wctx->featureIndexCurrent == -1)
+    {
+        this->wctx->initTrack(track, 
+            this->trackdescriptor[track].featureIndexBegin,
+            this->trackdescriptor[track].featureIndexEnd);
+    }
+
+    if(this->wctx->noteson && 
+        this->wctx->featureIndexBegin >= 0 &&
+        this->wctx->featureIndexCurrent <= this->wctx->featureIndexEnd)
+    {
+        this->wctx->featureIndexCurrent = 
+            this->processFeature(this->wctx->featureIndexCurrent, track);
+        active = 1;
+    }
+    else
+        active = 0;
+    this->wctx = nullptr;
+    return active;
+}
+
+
+void
+AbcGenMidi::assignVoiceBounds()
+{
+    assert(this->initState);
+    for(int i=0; i<this->ntracks; i++)
+    {
+        Track &track = this->trackdescriptor[i];
+        track.featureIndexBegin = this->findvoice(0, track.voicenum, i);
+        track.featureIndexEnd = this->findvoiceEnd(track.featureIndexBegin, 
+                                                        track.voicenum, i);
+    }
 }
 
 /* -------------------------------------------------------------------------- */
 int
 AbcGenMidi::writefile(char const *fpath, Abc::InitState const *initState)
 {
+    assert(this->wctx && this->trackPool.size() == 1);
     FILE *fp = fopen(fpath, "wb");
     if(!fp) 
     {
@@ -85,11 +128,10 @@ AbcGenMidi::writefile(char const *fpath, Abc::InitState const *initState)
         return -1;
     }
     AbcMidiFile mfile;
-    AbcMidiTrackCtx mctx(this);
     this->midi = &mfile;
-    this->wctx = &mctx;
     this->initState = initState;
     this->no_more_free_channels = 0;
+    this->assignVoiceBounds();
     this->wctx->beginWriting(initState, this->midi);
     if(this->ntracks == 1) 
         mfile.write(this, fp, 0, 1, this->wctx->division);
@@ -108,134 +150,6 @@ long
 AbcGenMidi::writetrack(int xtrack)
 {
     this->wctx->initTrack(xtrack);
-
-    char const *annotation;
-    if(this->initState->karaoke)
-    {
-        if(xtrack == 0)                  
-            this->wctx->karaokestarttrack(xtrack);
-    }
-    switch(trackdescriptor[xtrack].tracktype)
-    {
-    case NOTES:
-        this->wctx->kspace = 0;
-        this->wctx->noteson = 1;
-        this->wctx->wordson = 0;
-        annotation = "note track";
-        this->midi->writeMetaEvent(0L, 
-            MidiEvent::text_event, 
-            annotation, strlen(annotation));
-        this->wctx->trackvoice = this->trackdescriptor[xtrack].voicenum;
-        break;
-    case WORDS:
-        this->wctx->kspace = 0;
-        this->wctx->noteson = 0;
-        this->wctx->wordson = 1;
-        /*
-        *  Turn text off for H:, A: and other fields.
-        *  Putting it in Karaoke Words track (track 2) can throw off some Karaoke players.
-        */   
-        this->wctx->texton = 0;
-        this->wctx->gchordson = 0;
-        annotation = "lyric track";
-        this->midi->writeMetaEvent(0L, 
-            MidiEvent::text_event, 
-            annotation, strlen(annotation));
-        this->wctx->trackvoice = trackdescriptor[xtrack].voicenum;
-        break;
-    case NOTEWORDS:
-        this->wctx->kspace = 0;
-        this->wctx->noteson = 1;
-        this->wctx->wordson = 1;
-        annotation = "notes/lyric track"; /* [SS] 2015-06-22 */
-        this->midi->writeMetaEvent(0L, 
-            MidiEvent::text_event, 
-            annotation, strlen(annotation));
-        this->wctx->trackvoice = trackdescriptor[xtrack].voicenum;
-        break;
-    case GCHORDS:
-        this->wctx->noteson = 0; 
-        this->wctx->gchordson = 1;
-        this->wctx->drumson = 0;
-        this->wctx->droneon = 0;
-        this->wctx->temposon = 0;
-        annotation = "gchord track"; /* [SS] 2015-06-22 */
-        this->midi->writeMetaEvent(0L, 
-            MidiEvent::text_event, 
-            annotation, 
-            strlen(annotation));
-        this->wctx->trackvoice = trackdescriptor[xtrack].voicenum;
-        /* be sure set_meter is called before setbeat even if we
-         * have to call it more than once at the start of the track */
-        this->wctx->set_meter(this->wctx->header_time_num, 
-                             this->wctx->header_time_denom);
-        /*    printf("calling setbeat for accompaniment track\n"); */
-        this->wctx->setbeat();
-        break;
-    case DRUMS: /* is this drum track ? */
-        this->wctx->noteson = 0;
-        this->wctx->gchordson = 0;
-        this->wctx->drumson = 1;
-        this->wctx->droneon =0;
-        this->wctx->temposon = 0;
-        annotation = "drum track"; /* [SS] 2015-06-22 */
-        this->midi->writeMetaEvent(0L, 
-            MidiEvent::text_event, 
-            annotation, 
-            strlen(annotation));
-        this->wctx->trackvoice = trackdescriptor[xtrack].voicenum;
-        break;
-    case DRONE: /* is this drone track ? */
-        this->wctx->noteson = 0;
-        this->wctx->gchordson = 0;
-        this->wctx->drumson = 0;
-        this->wctx->droneon = 1;
-        this->wctx->temposon = 0;
-        annotation = "drone track"; /* [SS] 2015-06-22 */
-        this->midi->writeMetaEvent(0L, 
-            MidiEvent::text_event, 
-            annotation, 
-            strlen(annotation));
-        this->wctx->trackvoice = trackdescriptor[xtrack].voicenum;
-        break;
-    } // end switch tracktype
-        
-    this->wctx->nchordchannels = 0;
-    if(xtrack == 0) 
-    {
-        this->midi->writeTempo(this->wctx->tempo);
-
-        this->wctx->write_keysig(this->initState->keySharps, 
-                                this->initState->keyMinor);
-        this->wctx->write_meter(this->initState->time_num, 
-                                this->initState->time_denom);
-        this->wctx->gchordson = 0;
-        this->wctx->temposon = 1;
-        if(this->ntracks > 1) 
-        {
-            /* type 1 files have no notes in first track */
-            this->wctx->noteson = 0;
-            this->wctx->texton = 0;
-            this->wctx->trackvoice = 1;
-            this->wctx->timekey = 0;
-            /* return(0L); */
-        }
-    }
-
-    this->wctx->starttrack(xtrack);
-
-    if(this->initState->verbose) 
-    {
-        printf("trackvoice = %d track = %d", this->wctx->trackvoice, xtrack);
-        if(this->wctx->noteson) printf("  noteson");
-        if(this->wctx->wordson) printf("  wordson");
-        if(this->wctx->gchordson) printf(" gchordson");
-        if(this->wctx->drumson) printf(" drumson");
-        if(this->wctx->droneon) printf(" droneon");
-        if(this->wctx->temposon) printf(" temposon");
-        printf("\n");
-    }
-    this->wctx->inchord = 0;
 
     /* write notes */
     int j = 0;
@@ -283,10 +197,11 @@ AbcGenMidi::writetrack(int xtrack)
     return this->wctx->delta_time;
 }
 
+/* ------------------------------------------------------------------------- */
 int
 AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
 {
-    /* if (verbose >4) printf("%d %s\n",j,featname[feature[j]]);  [SS] 2012-11-21*/
+    /* if (verbose >4) printf("%d %s\n",j,featname[feature[j]]);  */
     Abc::FeatureDesc &fd = this->initState->featurelist[j];
     if(this->initState->verbose > 4) 
     {

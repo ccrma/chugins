@@ -50,6 +50,10 @@ AbcMidiTrackCtx::beginWriting(Abc::InitState const *initState, IMidiWriter *mh)
     onemorenote = 0;
 
     nchordchannels = 0;
+
+    this->featureIndexBegin = 
+    this->featureIndexEnd = 
+    this->featureIndexCurrent = -1;
 }
 
 void
@@ -70,13 +74,19 @@ AbcMidiTrackCtx::log(char const *msg)
     printf("info: %s\n", msg);
 }
 
+/* called at the start of each MIDI track. Sets up all 
+ * necessary default and initial values 
+ */
 void
 AbcMidiTrackCtx::initTrack(int xtrack, 
-            int featureIndexStart, int featureIndexEnd)
+            int featureIndexBegin, int featureIndexEnd)
 {
+    char const *annotation;
+
     this->tracknumber = xtrack;
     this->trackvoice = xtrack;
-    this->featureIndexStart = featureIndexStart;
+    this->featureIndexCurrent = featureIndexBegin;
+    this->featureIndexBegin = featureIndexBegin;
     this->featureIndexEnd = featureIndexEnd;
     this->lineno = this->initState->lineno;
 
@@ -115,6 +125,255 @@ AbcMidiTrackCtx::initTrack(int xtrack,
     this->bendnvals = 0;
     for(int i=0;i<MAXLAYERS;i++) 
         this->controlnvals[i] = 0;
+
+    if(this->initState->karaoke)
+    {
+        if(xtrack == 0)                  
+            this->karaokestarttrack(xtrack);
+    }
+    switch(this->genMidi->trackdescriptor[xtrack].tracktype)
+    {
+    case AbcGenMidi::NOTES:
+        this->kspace = 0;
+        this->noteson = 1;
+        this->wordson = 0;
+        annotation = "note track";
+        this->midi->writeMetaEvent(0L, 
+            MidiEvent::text_event, 
+            annotation, strlen(annotation));
+        this->trackvoice = this->genMidi->trackdescriptor[xtrack].voicenum;
+        break;
+    case AbcGenMidi::WORDS:
+        this->kspace = 0;
+        this->noteson = 0;
+        this->wordson = 1;
+        /*
+        *  Turn text off for H:, A: and other fields.
+        *  Putting it in Karaoke Words track (track 2) can throw off some Karaoke players.
+        */   
+        this->texton = 0;
+        this->gchordson = 0;
+        annotation = "lyric track";
+        this->midi->writeMetaEvent(0L, 
+            MidiEvent::text_event, 
+            annotation, strlen(annotation));
+        this->trackvoice = this->genMidi->trackdescriptor[xtrack].voicenum;
+        break;
+    case AbcGenMidi::NOTEWORDS:
+        this->kspace = 0;
+        this->noteson = 1;
+        this->wordson = 1;
+        annotation = "notes/lyric track"; /* [SS] 2015-06-22 */
+        this->midi->writeMetaEvent(0L, 
+            MidiEvent::text_event, 
+            annotation, strlen(annotation));
+        this->trackvoice = this->genMidi->trackdescriptor[xtrack].voicenum;
+        break;
+    case AbcGenMidi::GCHORDS:
+        this->noteson = 0; 
+        this->gchordson = 1;
+        this->drumson = 0;
+        this->droneon = 0;
+        this->temposon = 0;
+        annotation = "gchord track"; /* [SS] 2015-06-22 */
+        this->midi->writeMetaEvent(0L, 
+            MidiEvent::text_event, 
+            annotation, 
+            strlen(annotation));
+        this->trackvoice = this->genMidi->trackdescriptor[xtrack].voicenum;
+        /* be sure set_meter is called before setbeat even if we
+         * have to call it more than once at the start of the track */
+        this->set_meter(this->header_time_num, 
+                             this->header_time_denom);
+        /*    printf("calling setbeat for accompaniment track\n"); */
+        this->setbeat();
+        break;
+    case AbcGenMidi::DRUMS: /* is this drum track ? */
+        this->noteson = 0;
+        this->gchordson = 0;
+        this->drumson = 1;
+        this->droneon =0;
+        this->temposon = 0;
+        annotation = "drum track"; /* [SS] 2015-06-22 */
+        this->midi->writeMetaEvent(0L, 
+            MidiEvent::text_event, 
+            annotation, 
+            strlen(annotation));
+        this->trackvoice = this->genMidi->trackdescriptor[xtrack].voicenum;
+        break;
+    case AbcGenMidi::DRONE: /* is this drone track ? */
+        this->noteson = 0;
+        this->gchordson = 0;
+        this->drumson = 0;
+        this->droneon = 1;
+        this->temposon = 0;
+        annotation = "drone track"; /* [SS] 2015-06-22 */
+        this->midi->writeMetaEvent(0L, 
+            MidiEvent::text_event, 
+            annotation, 
+            strlen(annotation));
+        this->trackvoice = this->genMidi->trackdescriptor[xtrack].voicenum;
+        break;
+    } // end switch tracktype
+        
+    this->nchordchannels = 0;
+    if(xtrack == 0) 
+    {
+        this->midi->writeTempo(this->tempo);
+
+        this->write_keysig(this->initState->keySharps, 
+                                this->initState->keyMinor);
+        this->write_meter(this->initState->time_num, 
+                                this->initState->time_denom);
+        this->gchordson = 0;
+        this->temposon = 1;
+        if(this->genMidi->ntracks > 1) 
+        {
+            /* type 1 files have no notes in first track */
+            this->noteson = 0;
+            this->texton = 0;
+            this->trackvoice = 1;
+            this->timekey = 0;
+            /* return(0L); */
+        }
+    }
+
+    if(this->initState->verbose) 
+    {
+        printf("trackvoice = %d track = %d", this->trackvoice, xtrack);
+        if(this->noteson) printf("  noteson");
+        if(this->wordson) printf("  wordson");
+        if(this->gchordson) printf(" gchordson");
+        if(this->drumson) printf(" drumson");
+        if(this->droneon) printf(" droneon");
+        if(this->temposon) printf(" temposon");
+        printf("\n");
+    }
+
+    this->inchord = 0;
+
+    char msg[100];
+    this->loudnote = 105;
+    this->mednote = 95;
+    this->softnote = 80;
+    this->beatstring[0] = '\0';
+    this->beataccents = 1;
+    this->nbeats = 0;
+    this->transpose = 0;
+
+    /* make sure meter is reinitialized for every track
+    * in case it was changed in the middle of the last track */
+    this->set_meter(header_time_num, header_time_denom);
+    this->div_factor = this->division;
+    this->gchords = 1;
+    this->partno = -1;
+    this->partlabel = -1;
+    this->g_started = 0;
+    this->g_ptr = 0;
+    this->drum_ptr = 0;
+
+    // was: startTrack
+    AbcGenMidi::Track &currentTrack = this->genMidi->trackdescriptor[xtrack];
+    this->queue.init();
+    if(this->noteson) 
+    {
+        this->channel = currentTrack.midichannel;
+        if(this->channel == -1) 
+        {
+            this->channel = this->genMidi->findchannel();
+            currentTrack.midichannel = this->channel;
+            if(this->initState->verbose) 
+            {
+                snprintf(msg, 100, 
+                    "assigning channel %d to track %d",
+                    this->channel, xtrack);
+                this->log(msg);
+            }
+            this->channel_in_use[this->channel] = 1;
+        }
+        else
+            this->channel_in_use[this->channel] = 1;
+        if(this->initState->retuning) 
+            this->genMidi->midi_re_tune(this->channel);
+    } 
+    else 
+    {
+        /* set to valid value just in case - should never be used */
+        this->channel = 0;
+    }
+    if(this->gchordson) 
+    {
+        this->addtoQ(0, this->g_denom, -1, this->g_ptr,0, 0);
+        this->fun.base = 36;
+        this->fun.vel = 80;
+        this->gchord.base = 48;
+        this->gchord.vel = 75;
+        this->fun.chan = this->genMidi->findchannel();
+        this->channel_in_use[fun.chan] = 1;
+        if(this->initState->verbose) 
+        {
+            snprintf(msg, 100, "assigning channel %d to bass voice\n", this->fun.chan);
+            this->log(msg);
+        }
+        this->gchord.chan = this->genMidi->findchannel();
+        this->channel_in_use[this->gchord.chan] = 1;
+        if(this->initState->verbose) 
+        {
+            snprintf(msg, 100, 
+                "assigning channel %d to chordal accompaniment\n",
+                gchord.chan);
+            this->log(msg);
+        }
+        if (this->initState->retuning) 
+        {
+            this->genMidi->midi_re_tune(this->fun.chan);
+            this->genMidi->midi_re_tune(this->gchord.chan);
+        }
+    }
+    if(this->drumson) 
+    { 
+        this->drum_ptr = 0;
+        addtoQ(0, this->drum_denom, -1, this->drum_ptr,0, 0);
+    }
+    if(this->droneon) 
+    {
+        this->drone.event =0;
+        this->drone.chan = this->genMidi->findchannel();
+        this->channel_in_use[this->drone.chan] = 1;
+        if(this->initState->verbose) 
+        {
+            snprintf(msg, 100, 
+                "assigning channel %d to drone", 
+                this->drone.chan);
+            this->log(msg);
+        }
+        if(this->initState->retuning) 
+            this->genMidi->midi_re_tune(this->drone.chan);
+    }
+
+    this->g_next = 0;
+    this->partrepno = 0;
+    /*  thismline = -1; [SS] july 28 2006 */
+    /* This disables the message 
+    First lyrics line must come after first music line 
+    When a new voice is started with an inline voice command
+    eg [V:1] abcd| etc. Unfortunately this  is part of the 
+    abc2-draft.html standard. See canzonetta.abc in
+    abc.sourceforge.net/standard/abc2-draft.html 
+    */
+    this->thiswline = -1;
+    this->nowordline = 0;
+    this->waitforbar = 0;
+    this->musicsyllables = 0;
+    this->lyricsyllables = 0;
+    for(int i=0; i<26; i++) 
+        this->part_count[i] = 0;
+
+    for(int i=0;i<MAXCHANS;i++) 
+    {
+        this->current_pitchbend[i] = 8192; /* neutral */
+        this->current_program[i] = 0; /* acoustic piano */
+    }
 }
 
 void
@@ -398,137 +657,6 @@ AbcMidiTrackCtx::write_meter(int n, int m)
     this->midi->writeMetaEvent(0L, MidiEvent::time_signature, data, 4);
 }
 
-/* called at the start of each MIDI track. Sets up all 
- * necessary default and initial values 
- */
-void
-AbcMidiTrackCtx::starttrack(int tracknum)
-{
-    char msg[100];
-
-    this->loudnote = 105;
-    this->mednote = 95;
-    this->softnote = 80;
-    this->beatstring[0] = '\0';
-    this->beataccents = 1;
-    this->nbeats = 0;
-    this->transpose = 0;
-
-    /* make sure meter is reinitialized for every track
-    * in case it was changed in the middle of the last track */
-    this->set_meter(header_time_num, header_time_denom);
-    this->div_factor = this->division;
-    this->gchords = 1;
-    this->partno = -1;
-    this->partlabel = -1;
-    this->g_started = 0;
-    this->g_ptr = 0;
-    this->drum_ptr = 0;
-
-    AbcGenMidi::Track &currentTrack = this->genMidi->trackdescriptor[tracknum];
-
-    this->queue.init();
-
-    if(this->noteson) 
-    {
-        this->channel = currentTrack.midichannel;
-        if(this->channel == -1) 
-        {
-            this->channel = this->genMidi->findchannel();
-            currentTrack.midichannel = this->channel;
-            if(this->initState->verbose) 
-            {
-                snprintf(msg, 100, 
-                    "assigning channel %d to track %d",
-                    this->channel, tracknum);
-                this->log(msg);
-            }
-            this->channel_in_use[this->channel] = 1;
-        }
-        else
-            this->channel_in_use[this->channel] = 1;
-        if(this->initState->retuning) 
-            this->genMidi->midi_re_tune(this->channel);
-    } 
-    else 
-    {
-        /* set to valid value just in case - should never be used */
-        this->channel = 0;
-    }
-    if(this->gchordson) 
-    {
-        this->addtoQ(0, this->g_denom, -1, this->g_ptr,0, 0);
-        this->fun.base = 36;
-        this->fun.vel = 80;
-        this->gchord.base = 48;
-        this->gchord.vel = 75;
-        this->fun.chan = this->genMidi->findchannel();
-        this->channel_in_use[fun.chan] = 1;
-        if(this->initState->verbose) 
-        {
-            snprintf(msg, 100, "assigning channel %d to bass voice\n", this->fun.chan);
-            this->log(msg);
-        }
-        this->gchord.chan = this->genMidi->findchannel();
-        this->channel_in_use[this->gchord.chan] = 1;
-        if(this->initState->verbose) 
-        {
-            snprintf(msg, 100, 
-                "assigning channel %d to chordal accompaniment\n",
-                gchord.chan);
-            this->log(msg);
-        }
-        if (this->initState->retuning) 
-        {
-            this->genMidi->midi_re_tune(this->fun.chan);
-            this->genMidi->midi_re_tune(this->gchord.chan);
-        }
-    }
-    if(this->drumson) 
-    { 
-        this->drum_ptr = 0;
-        addtoQ(0, this->drum_denom, -1, this->drum_ptr,0, 0);
-    }
-    if(this->droneon) 
-    {
-        this->drone.event =0;
-        this->drone.chan = this->genMidi->findchannel();
-        this->channel_in_use[this->drone.chan] = 1;
-        if(this->initState->verbose) 
-        {
-            snprintf(msg, 100, 
-                "assigning channel %d to drone", 
-                this->drone.chan);
-            this->log(msg);
-        }
-        if(this->initState->retuning) 
-            this->genMidi->midi_re_tune(this->drone.chan);
-    }
-
-    this->g_next = 0;
-    this->partrepno = 0;
-    /*  thismline = -1; [SS] july 28 2006 */
-    /* This disables the message 
-    First lyrics line must come after first music line 
-    When a new voice is started with an inline voice command
-    eg [V:1] abcd| etc. Unfortunately this  is part of the 
-    abc2-draft.html standard. See canzonetta.abc in
-    abc.sourceforge.net/standard/abc2-draft.html 
-    */
-    this->thiswline = -1;
-    this->nowordline = 0;
-    this->waitforbar = 0;
-    this->musicsyllables = 0;
-    this->lyricsyllables = 0;
-    for(int i=0; i<26; i++) 
-        this->part_count[i] = 0;
-
-    for(int i=0;i<MAXCHANS;i++) 
-    {
-        this->current_pitchbend[i] = 8192; /* neutral */
-        this->current_program[i] = 0; /* acoustic piano */
-    }
-}
 
 /* header information for karaoke track based on w: fields */
 void

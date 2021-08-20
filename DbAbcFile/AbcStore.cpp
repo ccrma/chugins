@@ -42,6 +42,7 @@ AbcStore::AbcStore(AbcParser *p) :
     this->ignore_guitarchords = 0;
     this->separate_tracks_for_words = 0;
 
+    this->performing = false;
     this->bodystarted = 0;
     this->harpmode = 0;
     this->easyabcmode = 1;
@@ -266,7 +267,8 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
         "        -c  selects checking only\n"
         "        -v  selects verbose option\n"
         "        -ver prints version number and exits\n"
-        "        -o <filename> selects output filename (or _perform_)\n"
+        "        -o <filename> selects output filename\n"
+        "        -perform places system in perform mode, no midi file is output\n"
         "        -t selects filenames derived from tune titles\n"
         "        -n <limit> set limit for length of filename stem\n"
         "        -CS use 2:1 instead of 3:1 for broken rhythms\n"
@@ -367,6 +369,10 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
             this->warning("No filename given, ignoring -o option");
         }
     }
+    
+    j = this->getarg("-perform", argc, argv);
+    if(j != -1)
+            this->performing = true;
 
     j = this->getarg("-CSM", argc, argv);
     if(j != -1)

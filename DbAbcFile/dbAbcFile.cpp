@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <iostream>
+#include <cassert>
 
 dbAbcFile::dbAbcFile() :
     m_parser(nullptr),
@@ -20,10 +21,11 @@ dbAbcFile::Open(std::string const &fp)
     this->Close();
     this->m_parser = new AbcParser();
     this->m_store = new AbcStore(this->m_parser);
-    char const *argv[] = {"dbAbcFile", fp.c_str(), "-o", "_perform_"};
+    char const *argv[] = {"dbAbcFile", fp.c_str(), "-perform"};
 
     std::string filename;
-    this->m_store->Init(2, argv, &filename);
+    const int argc = 3; // set to 2 to output file (debugging)
+    this->m_store->Init(argc, argv, &filename); // 
     std::ifstream istr(fp.c_str());
     if(istr.good())
     {
@@ -31,6 +33,12 @@ dbAbcFile::Open(std::string const &fp)
         // is left "hanging" within AbcStore+AbcGenMidi. Now we're read
         // for calls to getNextEvent
         this->m_parser->Parse(&istr, this->m_store, AbcParser::k_AbcToMidi);
+        this->m_numTracks = this->m_store->genMidi.ntracks;
+        // NB: not all have "tracks", in multitrack files first track is
+        // tempo-only. 
+        //  - Is Tempo information important to client?
+        //  - Should we collapse to NOTE tracks?
+        this->m_pendingEvents.resize(this->m_numTracks); 
     }
     else
         std::cerr << "dbAbcFile: " << filename.c_str() << " not found\n";
@@ -58,20 +66,26 @@ dbAbcFile::Rewind()
 {
     int r = 0;
     if(this->m_store)
-    {
         r = this->m_store->genMidi.rewindPerformance();
-    }
     return r;
 }
 
 int
-dbAbcFile::Read(int track)
+dbAbcFile::Read(int track, MidiEvent *evt)
 {
+    assert(this->m_pendingEvents.size() > track);
+    std::deque<MidiEvent> &equeue = this->m_pendingEvents[track];
+    if(equeue.size())
+    {
+        MidiEvent &e = equeue.front();
+        equeue.pop_front();
+        *evt = e;
+        return 1;
+    }
+
     int r = 0;
     if(this->m_store)
-    {
-        r = this->m_store->genMidi.getNextPerformanceEvent(track, this);
-    }
+        r = this->m_store->genMidi.getNextPerformanceEvents(track, this);
     return r;
 }
 

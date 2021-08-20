@@ -28,13 +28,15 @@ public:
         this->initState = nullptr;
     }
 
-    void beginWriting(Abc::InitState const *initState, class IMidiWriter *);
+    void beginWriting(Abc::InitState const *initState, 
+                    class IMidiWriter *);
 
     void error(char const *msg);
     void warning(char const *msg);
     void log(char const *msg);
 
     void initTrack(int xtrack, int featureIndexBegin=0, int featureIndexEnd=0);
+
     void set_meter(int n, int m);
     void setbeat();
 
@@ -52,9 +54,6 @@ public:
 
     void write_keysig(int keySharps, int keyMinor);
     void write_meter(int t_num, int t_denom);
-
-    void starttrack(int xtrack);
-    void karaokestarttrack(int xtrack);
 
     void saveRepeatState(int voice);
     void restoreRepeatState(int *voice);
@@ -131,7 +130,7 @@ public:
     long delta_time_track0;
     long tracklen, tracklen1;
     long barloc[1024];
-    int featureIndexStart, featureIndexEnd;
+    int featureIndexCurrent, featureIndexBegin, featureIndexEnd;
 
     int beat;
     int loudnote, mednote, softnote;
@@ -242,6 +241,10 @@ public:
     int partno, partlabel;
 
     int state[6];
+
+private: // XXX: migrate more state to private for better encapsulation
+    void karaokestarttrack(int xtrack);
+
 };
 
 #endif

@@ -86,7 +86,7 @@ public:
     int beatmodel; /* flag selecting standard or Phil's model */
 
 public:
-    void Init();
+    void Init(bool forPerformance); // false means write file
 
     // public methods invokedb y AbcStore during abcfile parsing...
     // TODO: inprove distinction between abcparse-time and midigen-time state.
@@ -125,10 +125,17 @@ public: // called from AbcMidiTrackCtx (XXX: refactor)
     int writefile(char const *filepath, Abc::InitState const *init);
 
     int beginPerformance(Abc::InitState const *init);
+
+    // When peforming (and after parsing/storing is complete) the
+    // client may invoke these routines to trigger event generation
+    // through the MidiWriter interface.
+    //
+    // getNextPerformanceEvents: ret: 1 active, 0 inactive
+    int getNextPerformanceEvents(int track, class IMidiWriter *); 
     int rewindPerformance();
-    int getNextPerformanceEvent(int track, class IMidiWriter *); // returns 0 on complete
 
 private:
+    void assignVoiceBounds();
     int processFeature(int j, int xtrack, MidiEvent *mevt=nullptr);
 
     void parse_drummap(char const **);
@@ -177,7 +184,7 @@ private:
     FILE *fp;
     IMidiWriter *midi;
     AbcMidiTrackCtx *wctx; // for write-file where we write tracks sequentially
-    std::vector<AbcMidiTrackCtx> performTracks; // for beginPerform tracks progress in parallel
+    std::vector<AbcMidiTrackCtx> trackPool; // >1 when performing, 1 when writing a file
 };
 
 #endif
