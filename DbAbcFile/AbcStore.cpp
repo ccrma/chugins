@@ -124,7 +124,7 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
     {
         if(argc > arg)
         {
-            n = sscanf(argv[arg],"%d", &m);
+            n = sscanf(argv[arg], "%d", &m);
             if(n > 0) 
                 this->verbose = m; 
             else 

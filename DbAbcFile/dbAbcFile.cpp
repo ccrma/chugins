@@ -16,16 +16,39 @@ dbAbcFile::~dbAbcFile()
     this->Close();
 }
 
+/*
+// Now locate the track offsets and lengths. If not using time
+    // code, we can initialize the "tick time" using a default tempo of
+    // 120 beats per minute. We will then check for tempo meta-events
+    // afterward.
+    unsigned int i;
+    for ( i=0; i<nTracks_; i++ ) {
+        if ( !file_.read( chunkType, 4 ) ) goto error;
+        if ( strncmp( chunkType, "MTrk", 4 ) ) goto error;
+        if ( !file_.read( buffer, 4 ) ) goto error;
+#ifdef __LITTLE_ENDIAN__
+        swap32((unsigned char *)&buffer);
+#endif
+        length = (SINT32 *) &buffer;
+        trackLengths_.push_back( *length );
+        trackOffsets_.push_back( (long) file_.tellg() );
+        trackPointers_.push_back( (long) file_.tellg() );
+        trackStatus_.push_back( 0 );
+        file_.seekg( *length, std::ios_base::cur );
+        if ( usingTimeCode_ ) tickSeconds_.push_back( (double) (1.0 / tickrate) );
+        else tickSeconds_.push_back( (double) (0.5 / tickrate) );
+ */
+
 int
 dbAbcFile::Open(std::string const &fp)
 {
     this->Close();
     this->m_parser = new AbcParser();
     this->m_store = new AbcStore(this->m_parser);
-    char const *argv[] = {"dbAbcFile", fp.c_str(), "-perform"};
+    char const *argv[] = {"dbAbcFile", fp.c_str(), "-perform", "-v", "6"};
 
     std::string filename;
-    const int argc = 3; // set to 2 to output file (debugging)
+    const int argc = 3; // set to 2 to output file, 3 for normal, 5 for verbose
     this->m_store->Init(argc, argv, &filename); // 
     std::ifstream istr(fp.c_str());
     if(istr.good())
@@ -36,7 +59,7 @@ dbAbcFile::Open(std::string const &fp)
         this->m_parser->Parse(&istr, this->m_store, AbcParser::k_AbcToMidi);
         this->m_numTracks = this->m_store->genMidi.ntracks;
         // NB: not all have "tracks", in multitrack files first track is
-        // tempo-only. 
+        // tempo-only. There, a tempo-map can trigger tempo changes. 
         //  - Is Tempo information important to client?
         //  - Should we collapse to NOTE tracks?
         this->m_pendingEvents.resize(this->m_numTracks); 
@@ -76,22 +99,30 @@ dbAbcFile::Read(int track, MidiEvent *evt)
 {
     assert(this->m_pendingEvents.size() > track);
 
+    // printf("Read track %d begin\n", track);
+
+    int r = 0;
     this->m_activeTrack = track;
     if(this->clearPending(track, evt))
-        return 1;
-    int r = 0;
-    // getNextPerfEvents returns active.  It doesn't necessarily
-    // mean that it produced any Midi in the process. Alternatively
-    // it may have produced multiple midi events.  We wish to ensure
-    // that until inactive we deliver caller a non-zero result which
-    // only occurs as a side-effect of clearPending.
-    while(this->m_store->genMidi.getNextPerformanceEvents(track, this))
+        r = 1;
+    else
     {
-        if(this->m_activePending)
-            break;
+        r = 0;
+        // getNextPerfEvents returns active.  It doesn't necessarily
+        // mean that it produced any Midi in the process. Alternatively
+        // it may have produced multiple midi events.  We wish to ensure
+        // that until inactive we deliver caller a non-zero result which
+        // only occurs as a side-effect of clearPending.
+        while(this->m_store->genMidi.getNextPerformanceEvents(track, this))
+        {
+            if(this->m_activePending)
+                break;
+        }
+        r = this->clearPending(track, evt);
+        this->m_activeTrack = -1;
     }
-    r = this->clearPending(track, evt);
-    this->m_activeTrack = -1;
+
+    // printf("Read track %d end\n", track);
     return r;
 }
 
@@ -124,7 +155,7 @@ int
 dbAbcFile::writeTempo(long tempo)
 {
     assert(this->m_activeTrack != -1);
-    printf("writeTempo: %ld\n", tempo);
+    // printf("writeTempo: %ld\n", tempo);
     return 0;
 }
 

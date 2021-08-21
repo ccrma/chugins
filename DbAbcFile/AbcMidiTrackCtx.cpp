@@ -113,6 +113,7 @@ AbcMidiTrackCtx::initTrack(int xtrack,
     this->chordattack = staticchordattack;
     this->trim_num = 0;
     this->trim_denom = 1;
+
     /* ensure that the percussion channel is not selected by findchannel() */
     this->channel_in_use[9] = 1; 
     this->drumbars = 1;
@@ -377,6 +378,14 @@ AbcMidiTrackCtx::initTrack(int xtrack,
         this->current_pitchbend[i] = 8192; /* neutral */
         this->current_program[i] = 0; /* acoustic piano */
     }
+
+    this->resetBar();
+    if(featureIndexBegin >= 0)
+        this->saveRepeatState(featureIndexBegin);
+    this->pass = 1;
+    this->slurring = 0;
+    this->was_slurring = 0;
+    this->expect_repeat = 0;
 }
 
 void
@@ -416,11 +425,11 @@ AbcMidiTrackCtx::set_meter(int n, int m)
 void
 AbcMidiTrackCtx::resetBar()
 {
-    barno = 0;
-    bar_num = 0;
-    bar_denom = 1;
-    err_num = 0;
-    err_denom = 1;
+    this->barno = 0;
+    this->bar_num = 0;
+    this->bar_denom = 1;
+    this->err_num = 0;
+    this->err_denom = 1;
 }
 
 /* set up chord/fundamental sequence if not already set */

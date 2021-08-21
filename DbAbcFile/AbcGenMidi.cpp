@@ -77,7 +77,7 @@ AbcGenMidi::getNextPerformanceEvents(int track, IMidiWriter *m)
     assert(track < this->trackPool.size());
     this->wctx = &this->trackPool[track];
     
-    // intiTrack and processFeature may generate callbacks to IMidiWriter
+    // initTrack and processFeature may generate callbacks to IMidiWriter
     // it's up to caller to serialize those for output.
     if(this->wctx->featureIndexCurrent == -1)
     {
@@ -158,12 +158,8 @@ AbcGenMidi::writetrack(int xtrack)
     if((this->initState->voicesused) && (this->wctx->trackvoice != 1)) 
         j = this->findvoice(j, this->wctx->trackvoice, xtrack);
 
-    this->wctx->resetBar();
     this->wctx->saveRepeatState(j);
-    this->wctx->pass = 1;
-    this->wctx->slurring = 0;
-    this->wctx->was_slurring = 0;
-    this->wctx->expect_repeat = 0;
+
     while(j < this->initState->nfeatures) 
     {
         j = this->processFeature(j, xtrack);
@@ -207,9 +203,10 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
     Abc::FeatureDesc &fd = this->initState->featurelist[j];
     if(this->initState->verbose > 4) 
     {
-        printf("%d %s %d %d/%d\n", j, 
-            Abc::featname((Abc::FeatureType) fd.feature), 
-            fd.pitch, fd.num,  fd.denom);
+        printf("%d: %d %s %d %d/%d\n",  
+            xtrack, 
+            j, Abc::featname((Abc::FeatureType) fd.feature), 
+            fd.pitch, fd.num, fd.denom);
     }
     this->wctx->lineposition = fd.charloc; 
     switch(fd.feature)

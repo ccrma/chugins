@@ -68,7 +68,6 @@ CK_DLL_QUERY(DbAbcFile)
     QUERY->add_arg(QUERY, "string", "path");
 
     QUERY->add_mfun(QUERY, abcFile_close, "void", "close");
-    QUERY->add_arg(QUERY, "string", "path");
 
     QUERY->add_mfun(QUERY, abcFile_read, "int", "read");
     QUERY->add_arg(QUERY, "MidiMsg", "msg");
