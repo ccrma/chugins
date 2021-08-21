@@ -28,7 +28,11 @@ public:
     int writeTempo(long tempo) override;
 
 private:
+    int clearPending(int track, MidiEvent *evt);
+
     int m_numTracks;
+    int m_activeTrack; // -1 when not active
+    int m_activePending;
     class AbcParser *m_parser;
     class AbcStore *m_store;
     std::vector<std::deque<MidiEvent>> m_pendingEvents; // indexed by track

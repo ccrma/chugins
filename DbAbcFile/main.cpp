@@ -71,8 +71,8 @@ CK_DLL_QUERY(DbAbcFile)
     QUERY->add_arg(QUERY, "string", "path");
 
     QUERY->add_mfun(QUERY, abcFile_read, "int", "read");
+    QUERY->add_arg(QUERY, "MidiMsg", "msg");
     QUERY->add_arg(QUERY, "int", "track");
-    QUERY->add_arg(QUERY, "DbAbcMsg", "msg");
 
     QUERY->add_mfun(QUERY, abcFile_numTracks, "int", "numTracks");
     // no params
@@ -139,8 +139,8 @@ CK_DLL_MFUN(abcFile_read)
         if(active)
         {
             OBJ_MEMBER_INT(msg, midiMsg_offset_data1) = mevt.evt;
-            OBJ_MEMBER_INT(msg, midiMsg_offset_data2) = mevt.size >= 2 ? mevt.data[1] : 0;
-            OBJ_MEMBER_INT(msg, midiMsg_offset_data3) = mevt.size >= 3 ? mevt.data[2] : 0;
+            OBJ_MEMBER_INT(msg, midiMsg_offset_data2) = mevt.size >= 1 ? mevt.data[0] : 0;
+            OBJ_MEMBER_INT(msg, midiMsg_offset_data3) = mevt.size >= 2 ? mevt.data[1] : 0;
             OBJ_MEMBER_DUR(msg, midiMsg_offset_when) = mevt.dur;
             RETURN->v_int = 1; 
         }

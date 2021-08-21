@@ -35,7 +35,9 @@ public:
     void warning(char const *msg);
     void log(char const *msg);
 
-    void initTrack(int xtrack, int featureIndexBegin=0, int featureIndexEnd=0);
+    void initTrack(int xtrack, 
+        int featureIndexBegin=0, int featureIndexEnd=0,
+        IMidiWriter *mw=nullptr);
 
     void set_meter(int n, int m);
     void setbeat();

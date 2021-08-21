@@ -74,7 +74,7 @@ AbcGenMidi::getNextPerformanceEvents(int track, IMidiWriter *m)
 {
     int active;
     this->midi = m;
-    assert(this->wctx == nullptr); // we're not currently multithreadable
+    assert(track < this->trackPool.size());
     this->wctx = &this->trackPool[track];
     
     // intiTrack and processFeature may generate callbacks to IMidiWriter
@@ -83,7 +83,8 @@ AbcGenMidi::getNextPerformanceEvents(int track, IMidiWriter *m)
     {
         this->wctx->initTrack(track, 
             this->trackdescriptor[track].featureIndexBegin,
-            this->trackdescriptor[track].featureIndexEnd);
+            this->trackdescriptor[track].featureIndexEnd,
+            this->midi);
     }
 
     if(this->wctx->noteson && 
@@ -92,6 +93,7 @@ AbcGenMidi::getNextPerformanceEvents(int track, IMidiWriter *m)
     {
         this->wctx->featureIndexCurrent = 
             this->processFeature(this->wctx->featureIndexCurrent, track);
+        this->wctx->featureIndexCurrent++;
         active = 1;
     }
     else

@@ -79,10 +79,13 @@ AbcMidiTrackCtx::log(char const *msg)
  */
 void
 AbcMidiTrackCtx::initTrack(int xtrack, 
-            int featureIndexBegin, int featureIndexEnd)
+            int featureIndexBegin, int featureIndexEnd, 
+            IMidiWriter *mw)
 {
     char const *annotation;
 
+    if(mw) this->midi = mw;
+    
     this->tracknumber = xtrack;
     this->trackvoice = xtrack;
     this->featureIndexCurrent = featureIndexBegin;

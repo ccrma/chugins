@@ -2,9 +2,37 @@
 #define AbcMidiFile_h
 
 #include <cstdio>
+#include <cstring> // memcpy
 
 struct MidiEvent
 {
+    MidiEvent()
+    {}
+
+    MidiEvent(const MidiEvent &rhs)
+    {
+        this->evt = rhs.evt;
+        this->dur = rhs.dur;
+        this->size = rhs.size;
+        memcpy(this->data, rhs.data, sizeof(rhs.data));
+    }
+
+    MidiEvent(long dt, int type, char const *data, int size)
+    {
+        this->dur = dt;
+        this->evt = type;
+        if(size < 10)
+        {
+            this->size = size;
+            memcpy(this->data, data, size);
+        }
+        else
+        {
+            printf("MidiEvent needs more data %d\n", size);
+            this->size = 10;
+            memcpy(this->data, data, 10);
+        }
+    }
     int evt;
     long dur;
     int size; // 0 means no event - ie: a feature didn't map to an event

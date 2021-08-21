@@ -2015,10 +2015,13 @@ AbcStore::eof()
     this->blankline();
     if(this->verbose) 
         this->log("End of File reached\n");
-    this->featurelist.clear();
-    this->wordlist.clear();
-    this->outname.clear();
-    this->outbase.clear();
+    if(!this->performing)
+    {
+        this->featurelist.clear();
+        this->wordlist.clear();
+        this->outname.clear();
+        this->outbase.clear();
+    }
 }
 
 /* handles bar lines of various types in the abc

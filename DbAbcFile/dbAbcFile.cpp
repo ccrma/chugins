@@ -7,7 +7,8 @@
 
 dbAbcFile::dbAbcFile() :
     m_parser(nullptr),
-    m_store(nullptr)
+    m_store(nullptr),
+    m_activeTrack(-1)
 {}
 
 dbAbcFile::~dbAbcFile()
@@ -74,38 +75,77 @@ int
 dbAbcFile::Read(int track, MidiEvent *evt)
 {
     assert(this->m_pendingEvents.size() > track);
+
+    this->m_activeTrack = track;
+    if(this->clearPending(track, evt))
+        return 1;
+    int r = 0;
+    // getNextPerfEvents returns active.  It doesn't necessarily
+    // mean that it produced any Midi in the process. Alternatively
+    // it may have produced multiple midi events.  We wish to ensure
+    // that until inactive we deliver caller a non-zero result which
+    // only occurs as a side-effect of clearPending.
+    while(this->m_store->genMidi.getNextPerformanceEvents(track, this))
+    {
+        if(this->m_activePending)
+            break;
+    }
+    r = this->clearPending(track, evt);
+    this->m_activeTrack = -1;
+    return r;
+}
+
+int
+dbAbcFile::clearPending(int track, MidiEvent *evt)
+{
     std::deque<MidiEvent> &equeue = this->m_pendingEvents[track];
     if(equeue.size())
     {
         MidiEvent &e = equeue.front();
         equeue.pop_front();
         *evt = e;
+        this->m_activePending = equeue.size();
         return 1;
     }
-
-    int r = 0;
-    if(this->m_store)
-        r = this->m_store->genMidi.getNextPerformanceEvents(track, this);
-    return r;
+    else
+        this->m_activePending = 0;
+    return 0;
 }
 
 /* -------------------------------------------------------------------- */
+/*
+ * ch 0 of multichan file:
+    writeMeta: 0 1 (10) ()  - annotation
+    writeTempo: 200000
+    writeMeta: 0 89 (2) (keysig: sharps, minor)
+    writeMeta: 0 88 (4) (meter: size:4)
+*/
 int
-dbAbcFile::writeTempo(long temp)
+dbAbcFile::writeTempo(long tempo)
 {
+    assert(this->m_activeTrack != -1);
+    printf("writeTempo: %ld\n", tempo);
     return 0;
 }
 
 int
 dbAbcFile::writeMetaEvent(long dt, int type, char const *data, int size)
 {
+    assert(this->m_activeTrack != -1);
+    std::deque<MidiEvent> &equeue = this->m_pendingEvents[this->m_activeTrack];
+    MidiEvent mevt(dt, type, data, size);
+    equeue.push_back(mevt);
+    this->m_activePending = equeue.size();
     return 0;
 }
 
 int
 dbAbcFile::writeMidiEvent(long dt, int type, int chan, char const *data, int size)
 {
+    assert(this->m_activeTrack != -1);
+    std::deque<MidiEvent> &equeue = this->m_pendingEvents[this->m_activeTrack];
+    MidiEvent mevt(dt, type, data, size);
+    equeue.push_back(mevt);
+    this->m_activePending = equeue.size();
     return 0;
 }
-
-
