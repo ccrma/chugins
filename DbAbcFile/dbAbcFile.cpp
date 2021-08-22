@@ -5,39 +5,17 @@
 #include <iostream>
 #include <cassert>
 
-dbAbcFile::dbAbcFile() :
+dbAbcFile::dbAbcFile(unsigned int sampleRate) :
     m_parser(nullptr),
     m_store(nullptr),
-    m_activeTrack(-1)
+    m_activeTrack(-1),
+    m_sampleRate(sampleRate)
 {}
 
 dbAbcFile::~dbAbcFile()
 {
     this->Close();
 }
-
-/*
-// Now locate the track offsets and lengths. If not using time
-    // code, we can initialize the "tick time" using a default tempo of
-    // 120 beats per minute. We will then check for tempo meta-events
-    // afterward.
-    unsigned int i;
-    for ( i=0; i<nTracks_; i++ ) {
-        if ( !file_.read( chunkType, 4 ) ) goto error;
-        if ( strncmp( chunkType, "MTrk", 4 ) ) goto error;
-        if ( !file_.read( buffer, 4 ) ) goto error;
-#ifdef __LITTLE_ENDIAN__
-        swap32((unsigned char *)&buffer);
-#endif
-        length = (SINT32 *) &buffer;
-        trackLengths_.push_back( *length );
-        trackOffsets_.push_back( (long) file_.tellg() );
-        trackPointers_.push_back( (long) file_.tellg() );
-        trackStatus_.push_back( 0 );
-        file_.seekg( *length, std::ios_base::cur );
-        if ( usingTimeCode_ ) tickSeconds_.push_back( (double) (1.0 / tickrate) );
-        else tickSeconds_.push_back( (double) (0.5 / tickrate) );
- */
 
 int
 dbAbcFile::Open(std::string const &fp)
@@ -63,6 +41,9 @@ dbAbcFile::Open(std::string const &fp)
         //  - Is Tempo information important to client?
         //  - Should we collapse to NOTE tracks?
         this->m_pendingEvents.resize(this->m_numTracks); 
+
+        // tempo changes (including init) are delivered through the midi handler
+        // and can occur as the composition progresses.
     }
     else
         std::cerr << "dbAbcFile: " << filename.c_str() << " not found\n";
@@ -90,7 +71,10 @@ dbAbcFile::Rewind()
 {
     int r = 0;
     if(this->m_store)
+    {
+        this->m_activeTrack = 0;
         r = this->m_store->genMidi.rewindPerformance();
+    }
     return r;
 }
 
@@ -146,6 +130,8 @@ dbAbcFile::clearPending(int track, MidiEvent *evt)
 /* -------------------------------------------------------------------- */
 /*
  * ch 0 of multichan file:
+    abc hardcodes a division of 480 in AbcMidiTrackCtx::DIV
+     this is the number of ticks per quarter note
     writeMeta: 0 1 (10) ()  - annotation
     writeTempo: 200000
     writeMeta: 0 89 (2) (keysig: sharps, minor)
@@ -155,7 +141,14 @@ int
 dbAbcFile::writeTempo(long tempo)
 {
     assert(this->m_activeTrack != -1);
-    // printf("writeTempo: %ld\n", tempo);
+
+    this->m_tempo;
+    this->m_tickSeconds = (double) (0.000001 * tempo / AbcMidiTrackCtx::DIV);
+    this->m_bpm = 60000000.0 / tempo;
+    this->m_samplesPerTick = this->m_tickSeconds * this->m_sampleRate;
+
+    //printf("writeTempo Track %d: %ld bpm: %g\n", 
+    //        this->m_activeTrack, tempo, this->m_bpm);
     return 0;
 }
 
@@ -164,7 +157,7 @@ dbAbcFile::writeMetaEvent(long dt, int type, char const *data, int size)
 {
     assert(this->m_activeTrack != -1);
     std::deque<MidiEvent> &equeue = this->m_pendingEvents[this->m_activeTrack];
-    MidiEvent mevt(dt, type, data, size);
+    MidiEvent mevt(this->convertDur(dt), type, data, size);
     equeue.push_back(mevt);
     this->m_activePending = equeue.size();
     return 0;
@@ -175,7 +168,7 @@ dbAbcFile::writeMidiEvent(long dt, int type, int chan, char const *data, int siz
 {
     assert(this->m_activeTrack != -1);
     std::deque<MidiEvent> &equeue = this->m_pendingEvents[this->m_activeTrack];
-    MidiEvent mevt(dt, type, data, size);
+    MidiEvent mevt(this->convertDur(dt), type, data, size);
     equeue.push_back(mevt);
     this->m_activePending = equeue.size();
     return 0;

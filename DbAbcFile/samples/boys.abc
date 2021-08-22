@@ -4,7 +4,7 @@ B: O'Neill's 210
 N: "Cheerful"
 N: "Collected by J.O'Neill"
 Z: 1997 by John Chambers <jc@eddie.mit.edu> http://eddie.mit.edu/~jc/music/abc/
-Q: 1/4=100
+Q: 1/4=100 % bpm
 M: 6/8
 L: 1/8 % <-----
 K: Am
@@ -12,6 +12,7 @@ V:1
 |:E \ % partial measure
 | A2E A>(Bc/d/) | e>de (A2B/A/) | G2D G>(AB/c/) | d>cd G2B |
 | A2E ABd | e2^f g>fg | edc Bcd | ecA A2 :|
+Q: 1/4=120 % bpm
 |: a \ % partial measure
 | a^ga A2a | a^ga A2g | g^fg G2=g | g^fg G2B |
 | c2c d2d | e^fg a3 | edc Bcd | ecA A2 :|

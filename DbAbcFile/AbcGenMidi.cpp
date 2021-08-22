@@ -14,8 +14,10 @@
 AbcGenMidi::AbcGenMidi() :
     wctx(nullptr),
     initState(nullptr),
-    midi(nullptr)
-{}
+    midi(nullptr),
+    performing(false)
+{
+}
 
 AbcGenMidi::~AbcGenMidi()
 {}
@@ -23,6 +25,7 @@ AbcGenMidi::~AbcGenMidi()
 void
 AbcGenMidi::Init(bool forPerformance)
 {
+    this->performing = forPerformance;
     this->barflymode = 0; // overriden via -BF or "R:"
     this->beatmodel = 0;
     this->stressmodel = 0;
@@ -66,6 +69,9 @@ AbcGenMidi::beginPerformance(Abc::InitState const *initState)
 int
 AbcGenMidi::rewindPerformance()
 {
+    for(int i=0;i<this->ntracks;i++)
+        this->trackPool[i].rewind();
+    this->midi->writeTempo(this->initState->tempo);
     return 0;
 }
 
@@ -675,8 +681,11 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
             this->wctx->setbeat(); 
         }
         break;
-    case Abc::TEMPO:
-        if(this->wctx->temposon) 
+    case Abc::TEMPO: // for intra-score tempo changes only...
+        if(this->performing)
+            this->midi->writeTempo(fd.pitch); // contains "new_tempo"
+        else
+        if(this->wctx->temposon)
         {
             char data[3];
 /*

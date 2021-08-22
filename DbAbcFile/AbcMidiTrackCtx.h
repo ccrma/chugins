@@ -38,6 +38,7 @@ public:
     void initTrack(int xtrack, 
         int featureIndexBegin=0, int featureIndexEnd=0,
         IMidiWriter *mw=nullptr);
+    void rewind();
 
     void set_meter(int n, int m);
     void setbeat();

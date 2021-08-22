@@ -87,7 +87,7 @@ CK_DLL_QUERY(DbAbcFile)
 CK_DLL_CTOR(abcFile_ctor)
 {
     OBJ_MEMBER_INT(SELF, abcFile_data_offset) = 0;
-    dbAbcFile *c = new dbAbcFile();
+    dbAbcFile *c = new dbAbcFile(API->vm->get_srate(API, SHRED));
     OBJ_MEMBER_INT(SELF, abcFile_data_offset) = (t_CKINT) c;
 }
 
@@ -137,10 +137,20 @@ CK_DLL_MFUN(abcFile_read)
         int active = c->Read(track, &mevt);
         if(active)
         {
-            OBJ_MEMBER_INT(msg, midiMsg_offset_data1) = mevt.evt;
-            OBJ_MEMBER_INT(msg, midiMsg_offset_data2) = mevt.size >= 1 ? mevt.data[0] : 0;
-            OBJ_MEMBER_INT(msg, midiMsg_offset_data3) = mevt.size >= 2 ? mevt.data[1] : 0;
             OBJ_MEMBER_DUR(msg, midiMsg_offset_when) = mevt.dur;
+            if(mevt.size <= 2)
+            {
+                OBJ_MEMBER_INT(msg, midiMsg_offset_data1) = mevt.evt;
+                OBJ_MEMBER_INT(msg, midiMsg_offset_data2) = mevt.size >= 1 ? mevt.data.d[0] : 0;
+                OBJ_MEMBER_INT(msg, midiMsg_offset_data3) = mevt.size >= 2 ? mevt.data.d[1] : 0;
+            }
+            else
+            {
+                // won't fit in MidiMsg (usually a label/annotation)
+                OBJ_MEMBER_INT(msg, midiMsg_offset_data1) = mevt.evt;
+                OBJ_MEMBER_INT(msg, midiMsg_offset_data2) = 0;
+                OBJ_MEMBER_INT(msg, midiMsg_offset_data3) =  0;
+            }
             RETURN->v_int = 1; 
         }
         // else nothing left to do

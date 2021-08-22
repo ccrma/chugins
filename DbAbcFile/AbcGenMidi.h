@@ -124,13 +124,13 @@ public: // called from AbcMidiTrackCtx (XXX: refactor)
     //  made by AbcStoreDriver.cpp
     int writefile(char const *filepath, Abc::InitState const *init);
 
-    int beginPerformance(Abc::InitState const *init);
 
     // When peforming (and after parsing/storing is complete) the
     // client may invoke these routines to trigger event generation
     // through the MidiWriter interface.
     //
     // getNextPerformanceEvents: ret: 1 active, 0 inactive
+    int beginPerformance(Abc::InitState const *init);
     int getNextPerformanceEvents(int track, class IMidiWriter *); 
     int rewindPerformance();
 
@@ -179,6 +179,7 @@ private:
 
 private:
     Abc::InitState const *initState;
+    bool performing;
 
 private:
     FILE *fp;

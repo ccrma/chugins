@@ -81,7 +81,25 @@ public:
     void refno(int n);
     void eof();
 
+    void warning(char const *msg) 
+    { 
+        fprintf(stderr, "%s warning: %s\n", this->appname.c_str(), msg); 
+    }
+    void error(char const *msg) 
+    { 
+        fprintf(stderr, "%s error: %s\n", this->appname.c_str(), msg); 
+    }
+    void log(char const *msg) 
+    { 
+        fprintf(stderr, "%s note: %s\n", this->appname.c_str(), msg); 
+    }
+    void info(char const *msg) 
+    { 
+        fprintf(stderr, "%s info: %s\n", this->appname.c_str(), msg); 
+    }
+
 private:
+    std::string appname;
     int done_with_barloc; /* [SS] 2019-03-21 */
 
     /* parsing stage */

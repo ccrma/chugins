@@ -12,7 +12,7 @@
 class dbAbcFile : public IMidiWriter 
 {
 public:
-    dbAbcFile();
+    dbAbcFile(unsigned int sampleRate);
     ~dbAbcFile();
 
     int Open(std::string const &filepath);
@@ -29,12 +29,25 @@ public:
 
 private:
     int clearPending(int track, MidiEvent *evt);
+    long convertDur(long dt)
+    {
+        // dt measured in ticks  ticks * seconds/tick * samples/second => samples
+        // chuck::dur is measured in samples
+        return .5 + dt * this->m_samplesPerTick;
+    }
 
+    class AbcParser *m_parser;
+    class AbcStore *m_store;
+
+    float m_bpm;
+    double m_tickSeconds;
+    double m_samplesPerTick;
+    int m_tempo;
+
+    unsigned int m_sampleRate;
     int m_numTracks;
     int m_activeTrack; // -1 when not active
     int m_activePending;
-    class AbcParser *m_parser;
-    class AbcStore *m_store;
     std::vector<std::deque<MidiEvent>> m_pendingEvents; // indexed by track
 };
 

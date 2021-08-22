@@ -129,10 +129,10 @@ public:
     virtual void split_voice() {}
     virtual void temperament(char const *line) {}
 
-    virtual void warning(char const *msg) { fprintf(stderr, "warning: %s\n", msg); }
-    virtual void error(char const *msg) { fprintf(stderr, "error: %s\n", msg); }
-    virtual void log(char const *msg) { fprintf(stderr, "note: %s\n", msg); }
-    virtual void info(char const *msg) { fprintf(stderr, "info: %s\n", msg); }
+    virtual void warning(char const *msg){ fprintf(stderr, "warning: %s\n", msg); }
+    virtual void error(char const *msg){ fprintf(stderr, "error: %s\n", msg); }
+    virtual void log(char const *msg){ fprintf(stderr, "note: %s\n", msg); }
+    virtual void info(char const *msg){ fprintf(stderr, "info: %s\n", msg); }
 }; 
 
 /* --------------------------------------------------------------------*/

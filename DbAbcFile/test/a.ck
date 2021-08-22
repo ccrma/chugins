@@ -30,12 +30,26 @@ w[3] => reverb;
 
 0 => int running;
 
+1 => float timeScale;
 for(0=>int t; t < dbf.numTracks(); t++)
 {
     running++;
-    spork ~ doTrack(t, 30); // t==1 ? s : f);
+    spork ~ doTrack(t, timeScale); // t==1 ? s : f);
 }
-// doTrack(1, 70);
+
+while(running > 0)
+    1::second => now;
+
+<<< "Rewind, speedup" >>>;
+dbf.rewind();
+
+0 => running;
+.5 => timeScale; // < 1 is faster, > 2 is slower
+for(0=>int t; t < dbf.numTracks(); t++)
+{
+    running++;
+    spork ~ doTrack(t, timeScale); // t==1 ? s : f);
+}
 
 while(running > 0)
     1::second => now;
@@ -80,26 +94,25 @@ fun void doTrack(int track, float speed)
         else
         if((msg.data1 & 0xF0) == 0x80)
         {
-            // NOTOFF - need to track which voice is associated with which
-            // note
+            // NOTEOFF - need to track which voice is associated with which
+            // note.  Many instruments force note-off when new note-on arrives.
         }
         else
         {
+            // MetaEvent..
             // log
-            <<<"Track", track, "unhandled", msg.data1>>>;
+            if(msg.data1 == 1) // text annotation (string doesn't fit in MidiMsg)
+                continue;
+            else
+            if(msg.data1 == 88)
+                continue; // <<<"Time Signature", track, msg.data2, msg.data3>>>;
+            else
+            if(msg.data1 == 89)
+                continue; // <<<"Key Signature", track, msg.data2, msg.data3>>>;
+            else
+                <<<"Track", track, "unhandled", msg.data1>>>;
+            
         }
     }
     running--;
 }
-
-
-// writeTempo: 200000
-// ----EVENT (unhandled) track:0 type:0 data2:110 data3:111
-// ----EVENT (unhandled) track:0 type:80 data2:0 data3:1
-// ----EVENT (unhandled) track:0 type:80 data2:6 data3:3
-// MidiEvent needs more data 10
-// ----EVENT (unhandled) track:1 type:0 data2:110 data3:111
-// warning: Track 1 Bar -858993460 has -858993460/-858993460 units instead of 6
-// MidiEvent needs more data 10
-// ----EVENT (unhandled) track:2 type:0 data2:110 data3:111
-// ----EVENT (unhandled) track:2 type:80 data2:6 data3:3

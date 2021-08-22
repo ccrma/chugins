@@ -389,6 +389,14 @@ AbcMidiTrackCtx::initTrack(int xtrack,
 }
 
 void
+AbcMidiTrackCtx::rewind()
+{
+    this->initTrack(this->tracknumber, 
+        this->featureIndexBegin, this->featureIndexEnd,
+        this->midi);
+}
+
+void
 AbcMidiTrackCtx::set_meter(int n, int m)
 {
     this->mtime_num = n;

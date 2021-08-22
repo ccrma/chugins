@@ -99,6 +99,8 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
     int j;
     int arg, m, n;
 
+    this->appname = argc > 0 ? argv[0] : "<AbcStore>";
+
     /* look for code checking option */
     if(this->getarg("-c", argc, argv) != -1) 
         this->check = 1;
@@ -135,7 +137,9 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
     }
     if(this->getarg("-ver", argc, argv) != -1) 
     {
-        printf("%s\n", this->version);
+        char msg[32];
+        snprintf(msg, 32, "version %s", this->version);
+        this->info(msg);
         return;
     }
     /* look for "no forte no piano" option */
@@ -226,9 +230,10 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
             else
             if(semitone_shift <= -1.015) 
             {
-                printf("frequency %f must be greater than 415.0\n", afreq);
+                snprintf(msg, 100, "frequency %f must be greater than 415.0\n", afreq);
+                this->warning(msg);
                 this->retuning = 0;
-            }             
+            }
             if(this->retuning) 
             {
                 this->bend = (int) (8192.0 * semitone_shift) + 8192;
@@ -622,13 +627,16 @@ AbcStore::dump_voicecontexts()
 {
     voicecontext *p;
     voicecontext *q;
+    char msg[100];
 
     p = this->head;
-    printf("dump_voicecontexts()\n");
+    this->info("dump_voicecontexts()");
     while(p != NULL) 
     {
-        printf("num %d index %d gchords %d words %d drums %d drone %d tosplit %d fromsplit %d\n",
+        snprintf(msg, 100, 
+            "  num %d index %d gchords %d words %d drums %d drone %d tosplit %d fromsplit %d",
             p->voiceno,p->indexno,p->hasgchords,p->haswords,p->hasdrums,p->hasdrone,p->tosplitno,p->fromsplitno);
+        this->info(msg);
         q = p->next;
         p = q;
     }
@@ -1120,16 +1128,15 @@ AbcStore::headerprocess()
 void 
 AbcStore::dump_notestruct () 
 {
-  notestruct *s;
-  for(int i=0;i<this->notesdefined; i++) 
-  {
+    notestruct *s;
+    char msg[100];
+    this->info("dump_notestruct");
+    for(int i=0;i<this->notesdefined; i++) 
+    {
         s = this->noteaddr[i];
-        printf("%d ",i);
-        printf("%d ",s->index);
-        printf("%d ",s->notetype);
-        printf("%d ",s->pitch);
-        printf("%d ",s->pitchup);
-        printf("%d\n",s->pitchdown);
+        snprintf(msg, 100, " %d %d %d %d %d %d",
+            i, s->index, s->notetype, s->pitch, s->pitchup, s->pitchdown);
+        this->info(msg);
     }
 } 
 
