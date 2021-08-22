@@ -1,10 +1,10 @@
 // to run: 
-//      chuck dotrack.ck b.ck
+//      chuck dotrack.ck d.ck
 DoTrack doit;
 DbAbcFile dbf;
 
-// demo1 has a single voice and demonstrates a key change.
-"../samples/demo1.abc" => string file;
+// demo3 - using ties to create non-standard length notes;
+"../samples/demo3.abc" => string file;
 file => dbf.open;
 <<< file, "nchan", dbf.numTracks() >>>;
 

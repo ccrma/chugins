@@ -131,14 +131,6 @@ fun void doTrack(int track, float speed)
 }
 ```
 
-### Dev+Test plan
-
-1. build standalone / main abc2midi converter to validate linkage and functions
-    - issue: AbcGenMidi::writetrack wants access to AbcStore
-2. develop alternate finishfile that keeps the AbcStore state accessible
-    - track per-track access pointer (so read can be implemented)
-    - implement rewind
-
 ### MidiFile anatomy
 
 * Chunk is 4-byte id plus 4byte length
@@ -571,3 +563,10 @@ This class can be used to read events from a standard MIDI file.
  Tempo changes are internally tracked by the class and reflected in
  the values returned by the function getTickSeconds().
 ```
+
+
+### issues, bugs
+
+* `c.ck` = 
+    * Track 0 Bar 8 has 22/3 units instead of 4 in repeat
+    * Track 0 Bar 17 has 7 units instead of 4 in repeat

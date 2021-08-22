@@ -1129,7 +1129,10 @@ AbcGenMidi::getword(int *place, int w)
         i = i + 1;
     }
     syllstatus = empty;
-    c = this->initState->words[w].at(*place);
+    if(*place < this->initState->words[w].size())
+        c = this->initState->words[w].at(*place);
+    else
+        c = '\0';
     int isBig5 = 0; /* boolean check for first byte of Big-5: 0xA140 ~ 0xF9FE */
     while((syllstatus != postword) && (syllstatus != failed)) 
     {
@@ -1162,7 +1165,8 @@ AbcGenMidi::getword(int *place, int w)
                 this->wctx->hyphenstate = 0;
                 break;
             case '\\':
-                if(this->initState->words[w].at(*place+1) == '-') 
+                if(this->initState->words[w].size() > (*place+1) &&
+                   this->initState->words[w].at(*place+1) == '-') 
                 {
                     syllable[i] = '-';
                     syllstatus = inword;
@@ -1258,7 +1262,10 @@ AbcGenMidi::getword(int *place, int w)
                 break;
             } // end switch
         } // end !isBig5
-        c = this->initState->words[w].at(*place);
+        if(*place < this->initState->words[w].size())
+            c = this->initState->words[w].at(*place);
+        else
+            c = '\0';
     } // end while
     syllable[i] = '\0';
     if(syllstatus == failed) 
@@ -1275,7 +1282,10 @@ AbcGenMidi::getword(int *place, int w)
     /* now deal with anything after the syllable */
     while((syllstatus != failed) && (syllstatus != foundnext))
     {
-        c = this->initState->words[w].at(*place);
+        if(*place < this->initState->words[w].size())
+            c = this->initState->words[w].at(*place);
+        else
+            c = '\0';
         /*printf("next character = %c\n",c);*/
         switch (c) 
         {

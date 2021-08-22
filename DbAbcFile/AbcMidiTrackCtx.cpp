@@ -26,6 +26,7 @@ AbcMidiTrackCtx::beginWriting(Abc::InitState const *initState, IMidiWriter *mh)
     staticnotedelay = 10;
     staticchordattack = 0;
     totalnotedelay = 0;
+    syllcount = 0;
 
     this->div_factor = this->division;
 

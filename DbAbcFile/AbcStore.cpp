@@ -1416,12 +1416,9 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
             ((*in >= '0') && (*in <= '9'))) 
         {
             if(*in == '.' || *in == ' ')  // for readability
-            {
                 in = in + 1;
-                continue; 
-            }
 
-            if(*in == '+' || *in == '-')  // no longer supported
+            if(*in == '+' || *in == '-')  // no longer supported, ignore
                 in = in + 1;
 
             if((*in >= 'A') && (*in <= 'Z')) 
@@ -1435,7 +1432,7 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
             {
                 if(stackptr < 10) 
                 {
-                    stack[stackptr] = partspec->size() - 1;
+                    stack[stackptr] = partspec->size();
                     stackptr = stackptr + 1;
                 } 
                 else 
@@ -1454,7 +1451,7 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
                         repeats = 1;
                     stackptr = stackptr - 1;
                     start = stack[stackptr];
-                    stop = partspec->size() - 1;
+                    stop = partspec->size();
                     for(i=1; i<repeats; i++) 
                     {
                         for(j=0; j<((int) (stop-start)); j++) 
