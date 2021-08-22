@@ -1,0 +1,20 @@
+X: 12
+T:Cuckoo's Nest
+% Nottingham Music Database
+% drum line added by Seymour
+S:Song
+M:4/4
+L:1/8
+R:Hornpipe
+Q:1/4=144
+K:Dm
+V:1
+"Dm"D2DE DCA,C|"Dm"DCDE F2"C7"FA|"F"c2cd A2GF|"C"ECCC C2"A7"FE|
+"Dm"D2DE DCA,C|"Dm"DCDE F2"C7"FG|"F"ABcA "A7"GFEF|"Dm"E2"Gm"D2 "Dm"D2||
+V:2
+%%MIDI channel 10
+%%MIDI chordattack 50
+[^F,,E,,]/[^F,,E,,]/[D,,^F,,]/[D,,^F,,]/ ^F,,F,, z4|^F,,E,,E,,^F,,z4|\
+[^F,,E,,]/[^F,,E,,]/[D,,^F,,]/[D,,^F,,]/ ^F,,F,, z4|D,,D,,D,,^F,,z4|
+[^F,,E,,]/[^F,,E,,]/[D,,^F,,]/[D,,^F,,]/ ^F,,F,, z4|^F,,D,,D,,^F,,z4|\
+[^F,,E,,]/[^F,,E,,]/[D,,^F,,]/[D,,^F,,]/ ^F,,E,, z4|E,,^F,,B,,,4|

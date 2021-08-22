@@ -1,0 +1,16 @@
+% Using extended gchord codes for playing arpeggios
+X: 8
+T:Roddy McCawley
+% Nottingham Music Database
+S:Saen Smith, via PR
+M:4/4
+L:1/4
+K:G
+%%MIDI program 73
+%%MIDI chordprog 0
+%%MIDI bassprog 1
+%%MIDI gchord ghhi
+GA |B2 AB|D2 GA|"G"B3/2c/2 BA|G2 D2|"C"E2 G2|G2 A2|"G"G4-|
+B2 Bc|"G"d2 d2|d2 Bd|"C"e2 e2|"G"d2 BA|"Em"G2 E2|"Am"c2 B2|"D"A4-|
+A2 Bc|"G"d2 d2|d2 Bd|"C"e2 e2|"G"d2 BA|"Em"G2 E2|"Am"c2 B2|"D"A4-|A2 GA|
+"G"B2 AB|D2 GA|"G"B3/2c/2 BA|G2 D2|"C"E2 G2|G2 A2|"G"G4-|G4||

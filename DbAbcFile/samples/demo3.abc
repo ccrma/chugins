@@ -1,0 +1,14 @@
+% Using ties to create non-standard length notes.
+%
+X:3
+T:Smash the Windows
+T:Roaring Jelly
+S:One Thousand English Country Dance Tunes, Michael Raven
+C:Trad
+M:6/8
+L:1/8
+Q:1/8=400
+K:D
+|:A|DED F2A|d2f ecA|G2B F2A|E2F GFE|DED F2A|d2f ecA|Bgf edc|d3-d2:|
+a|a2f d2f|A2a agf|g2e c2e|A2g gfe|f2d g2e|a2f bag|fed edc|d3-d2a|
+agf fed|Adf agf|gfe ecA|Ace gfe|fed gfe|agf bag|fed edc|d3-d2z||

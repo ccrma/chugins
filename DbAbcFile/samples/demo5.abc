@@ -1,0 +1,28 @@
+% Using the w: field and part notation to create a karaoke file.
+% There are a lot more verses to this song than the 3 shown here.
+%
+X: 5
+T: Oh You New York Girls
+C:Trad
+M: 4/4
+L: 1/8
+Q:1/4=200
+P:(AB)3
+K:C % 0 sharps
+%%MIDI gchord fz
+%%MIDI chordvol 90
+P:A
+g2|e2g2g3g|f2a2a3a|g2g2f2g2|e6 
+w:As I walked out on So-uth Street, a fair maid I did meet
+w:I said, "My dear young la-dy, I'm a stran-ger here in town
+w:I took her out to Tiff-an-y's, I spared her no ex-pense
+g2|c'3c'c'2g2|b2 a2a3a|g3 gf2d2|c4
+w:Who asked me please to see her home, she lived on Blee-cker Street
+w:I left my ship just yes-ter-day, from Liver-pool I was bound."
+w:I bought her two gold ea-r-rings, they cost me fif-teen cents.
+P:B
+e2f2|g6e2|f2 a6|b4 a4|a2g4 z2|
+w:And a-way, you John-ny, my dear hon-ey
+c'6b2|b2a2 a4|g3g f2B2|d2c4
+w:Oh you New York girls, can you dance the pol-ka?
+

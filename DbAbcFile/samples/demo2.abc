@@ -1,0 +1,19 @@
+% A hornpipe using triplets, accidentals and broken rhythm 
+%
+X: 2
+T:Trumpet Hornpipe 
+T:Captain Pugwash Theme
+C: Trad
+M:4/4
+L:1/8
+Q:1/4=140
+R:hornpipe
+K:G
+|: (3GGG G2 (3GGG G>d|B>GB>d g>dB>G|\
+(3DDD D2 (3DDD D>A|F>DF>A c>AF>A|
+  (3GGG G2 (3GGG G>d|B>G B>d g2 g2|\
+f>ag>f e>gf>e |1 d>^cd>e d>=cB>A :|2 d>^cd>e d2 B>=c |:
+ (3ddd d2 (3ddd d2|e>fg>f e>dc>B|\
+c>de>d c>BA>G|F>GA>G F>DE>F|
+(3GGG G2 (3=FFF F2|(3EEE E2 (3^DDD D2| \
+=D>gf>e d>cB>A|1 G2B2G2 B>c :|2 G2B2G4 ||

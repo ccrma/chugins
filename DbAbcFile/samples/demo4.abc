@@ -1,0 +1,43 @@
+% Four-part arrangement using V: for multiple voices
+%
+X: 4
+T: Candlemas Eve
+S: Hymn 126 Arr. R. Herrick from an old church-gallery book
+M:4/4
+L:1/8
+Q:1/8=400
+N:from an old church-gallery book
+H:The old church-gallery book was discovered by the Rev. L.J.T. Darwall.
+H:The source has a 4-part harmony.
+O:English
+R:Reel
+K:G
+V: 1
+% soprano
+D2 |\
+G2  G2  B2  G2  | E2  F2  G2  Bd  | c2  B2   A2  G2  | A6  Bc  |
+d2  B2  G2  AB  | c2  A2  F2  GA  | B2  G2   E2  F2  | G6  Bc  |
+d2  d2  d2  B2  | e2  c2  A2  Bd  | c2  B2   A2  G2  | d6  B2  |
+e2  d2  c2  B2  | A2  G2  F2  GA  | B2  G2   E2  F2  | G6  z2  ||
+V: 2
+% alto
+D2 |\
+D2  C2  B,2 D2  | C2  C2  D2  D2  | G2  G2   E2  E2  | F6  G2  |
+G2  F2  E2  D2  | C2  E2  D2  E2  | D2  D2   C2  C2  | D6  G2 |
+G2  G2  G2  G2  | G2  G2  F2  D2  | G2  G2   E2  G2  | F6  D2  |
+C2  D2  EF  G2  | E2  E2  D2  E2  | D2  B,2  C2  D2  | D6  z2  ||
+V: 3
+% tenor
+D,2 |\
+G,2 G,2 G,2 G,2 | G,2 A,2 B,2 B,2 | E2  D2   C2  B,2 | D6  D2  |
+D2  D2  B,2 G,2 | E,2 A,2 A,2 C2  | G,2 G,2  G,2 A,2 | B,6  DC |
+B,2 D2  B,2 D2  | C2  E2  D2  B,2 | C2  D2   C2  G,2 | A,6 G,2 |
+G,2 G,2 C2  D2  | CD  CB, A,2 C2  | G,2 G,2  A,2 A,2 | B,6 z2  ||
+V: 4
+% bass up one octave
+D2  |\
+B,2 A,2 G,2 B,2 | C2  A,2 G,2 G2  | E2  G2   A2  E2  | D6  GA  |
+B,2 D2  E2  E2  | A,2 C2  D2  C2  | B,2 A,B, C2  A,2 | G,6 G,2 |
+G2  B2  G2  G2  | c2  C2  D2  G2  | E2  G2   C2  E2  | D6   G2 |
+C2  B,2 A,2 G,2 | A,2 C2  D2  C2  | B,2 E2   A,2 D2  | G,6  z2 ||
+

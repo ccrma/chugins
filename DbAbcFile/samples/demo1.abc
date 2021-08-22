@@ -1,0 +1,17 @@
+% French tune using an in-body key change
+X:1
+T:Horses Branle
+M:4/4
+L:1/8
+Q:1/4=127
+C:Trad
+K:G
+P:A
+|: G>A BB cBAc|BAGF E2D2|G>A BB cBAc|BGAF G2 G2
+P:B
+:: d c/2B/2 AB c B/2A/2 GB|AGFG A>B A2|\
+   d c/2B/2 AB c B/2A/2 GB|AGGF G2 G2 ::
+P:C
+K:F
+B/2A/2 G B/2A/2 G FG A2|DEFG ABAG | \
+B/2A/2 G B/2A/2 G FG A2|DEFG GF G2 :|

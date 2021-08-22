@@ -117,6 +117,11 @@ AbcGenMidi::assignVoiceBounds()
     {
         Track &track = this->trackdescriptor[i];
         track.featureIndexBegin = this->findvoice(0, track.voicenum, i);
+        if(track.featureIndexBegin == this->initState->nfeatures)
+        {
+            assert(this->ntracks == 1);
+            track.featureIndexBegin = 0;
+        }
         track.featureIndexEnd = this->findvoiceEnd(track.featureIndexBegin, 
                                                         track.voicenum, i);
     }

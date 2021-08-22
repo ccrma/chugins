@@ -27,6 +27,7 @@ AbcStore::AbcStore(AbcParser *p) :
     abcm2psoptions {"setbarnb"},
     initState(nullptr)
 {
+    this->nextFeature = 0;
     this->done_with_barloc = 0;
     this->velocitychange = 15;
     this->chordstart = 0;

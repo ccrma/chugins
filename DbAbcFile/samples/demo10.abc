@@ -1,0 +1,23 @@
+%using the %%MIDI trim command to distinguish slurs
+X:10 
+T:Heights of Alma
+% Nottingham Music Database
+S:KCC p3, via EF
+M:4/4
+L:1/4
+K:A
+%%MIDI trim 1/5
+%%MIDI program 74
+%%MIDI beat 89 79 69 4
+%%MIDI chordprog 45
+%%MIDI bassprog 45
+%%MIDI chordvol 77
+%%MIDI bassvol 73
+P:A
+(e/2d/2)|"A"cA AE|"A"(A/2B/2c/2d/2) e2|"A"(f/2e/2d/2c/2) eA|\
+"G"(d/2=c/2B/2A/2) =Ge/2d/2|
+"A"cA AE|"A"A/2B/2c/2d/2 e2|"A"(f/2e/2d/2c/2) "E7"(e/2f/2e/2d/2)|"A"cA A:|
+P:B
+c/2d/2|"A"ea ca|"A"e/2f/2e/2c/2 AB/2=c/2|"G"d=g Bg|"G"d/2e/2d/2B/2 =Gc/2d/2|
+"A"ea ca|"A"e/2f/2e/2c/2 AB/2c/2|"E7"(d/2c/2B/2A/2) (G/2B/2e/2d/2)|"A"cA A:|
+

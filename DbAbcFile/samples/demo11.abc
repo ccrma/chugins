@@ -1,0 +1,26 @@
+X:11
+T:Linear Temperament
+M:4/4
+L:1/4
+Q:1/4=35
+% %MIDI temperamentlinear 1200.0 694.736842    % 19-EDO
+% %MIDI temperamentlinear 1200.0 709.090909    % 22-EDO
+% %MIDI temperamentlinear 1200.0 696.774194    % 31-EDO
+% %MIDI temperamentlinear 1200.0 698.0         % fifth=698 cents
+% %MIDI temperamentlinear 1200.0 696.57843     % 1/4-comma meantone
+%%MIDI temperamentlinear 1200.0 701.955001    % Pythagorean
+% %MIDI temperamentnormal                      % 12-EDO
+K:C
+V:1
+%%MIDI program 16
+c2 B2 | c3/z/ ^A2 |
+V:2
+%%MIDI program 16
+G2 G2 | G3/z/ G2 |
+V:3
+%%MIDI program 16
+(3E_E^D (3=DF_F | =E3/z/ E2 |
+V:4
+%%MIDI program 16
+C2  G,2 | C3/z/ C2 |
+

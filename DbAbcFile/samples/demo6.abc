@@ -1,0 +1,18 @@
+% Using "guitar chords" to generate an accompaniment.
+% Also uses R:hornpipe to generate broken rhythm.
+%
+X:6
+T:The Friendly Visit
+R:hornpipe
+S:Nottingham Music Database
+M:4/4
+L:1/8
+Q:1/4=200
+K:G
+|: BA|\
+"G"(3GFG DG BGBd|"C"(3cBc AB "D7"cdef|"G"g2df "C"ecAG|"Am"FGAB "D7"cAFD|
+"G"(3GFG DG BGBd|"C"(3cBc AB "D7"cdef|"G"gdBG "D7"FAdc|"G"B2G2 G2::
+(3GBd|\
+"G"g2dB GBdg|"Am"e2cA FGAg|"D"f2ed "A7"^cdeg|"D7"(3fgf (3efe dcBA|
+"G"(3GFG DG BGBd|"C"(3cBc AB "D7"cdef|"G"gdBG "D7"FAdc|"G"B2G2 G2:|z2||
+
