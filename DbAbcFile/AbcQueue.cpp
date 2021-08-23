@@ -60,7 +60,9 @@ void
 AbcQueue::append(int num, int denom, int pitch, int chan, int effect, 
     int dur, int div_factor, int notedelay)
 {
-    /*printf("addtoQ: %d %d %d %d %d\n",num,denom,pitch,chan,dur); */
+
+    // printf("%d: addtoQ: %d %d %d %d %d\n",
+    //    this->client->getid(), num,denom,pitch,chan,dur);
     /* find free space */
     int i;
     if (this->freehead == -1) 
@@ -132,6 +134,7 @@ AbcQueue::remove(int i)
         this->queue[i].next = freehead;
         this->freehead = i;
     }
+    // printf("%d: removeQ: %d (%d)\n", this->client->getid(), i, this->freehead);
 }
 
 /* timestep is called by delay() in AbcGenMidi typically at the 
@@ -157,7 +160,7 @@ AbcQueue::timestep(int t, int atEnd,
 {
     int time = t;
     /* process any notes waiting to finish */
-    while ((this->head != -1) && (this->queue[this->head].delay < time)) 
+    while((this->head != -1) && (this->queue[this->head].delay < time)) 
     {
         int headtime = this->queue[this->head].delay;
         delta_time = delta_time + (long) headtime;

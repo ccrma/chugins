@@ -1857,6 +1857,16 @@ AbcStore::normal_tone()
     this->parser->microtone = 0;
 }
 
+/* handles guitar chords " ... " */
+void 
+AbcStore::gchord(char const *s)
+{
+    std::vector<std::string> chords;
+    this->parser->SplitString(s, ';', &chords);
+    for(int i=0;i<chords.size();i++)
+        this->handle_gchord(chords[i].c_str());
+}
+
 /* handler for the guitar chords */
 void 
 AbcStore::handle_gchord(char const *s)

@@ -56,11 +56,12 @@ AbcGenMidi::beginPerformance(Abc::InitState const *initState)
     this->midi = nullptr; // filled at getNextEvent
     this->no_more_free_channels = 0; // XXX?
     this->trackPool.clear();
+    this->trackPool.reserve(this->ntracks);
     for(int i=0;i<this->ntracks;i++)
     {
         Track &track = this->trackdescriptor[i];
         this->trackPool.push_back(AbcMidiTrackCtx(this));
-        this->trackPool[i].beginWriting(initState, nullptr); 
+        this->trackPool[i].beginWriting(i, initState, nullptr); 
     }
     this->wctx = &this->trackPool[0];
     return 0;
@@ -82,19 +83,20 @@ AbcGenMidi::getNextPerformanceEvents(int track, IMidiWriter *m)
     this->midi = m;
     assert(track < this->trackPool.size());
     this->wctx = &this->trackPool[track];
-    
+
     // initTrack and processFeature may generate callbacks to IMidiWriter
     // it's up to caller to serialize those for output.
     if(this->wctx->featureIndexCurrent == -1)
     {
+        // NB: initTrack 0 in multitrack settings causes notes, etc
+        // to be disabled - it's a tempomap track.
         this->wctx->initTrack(track, 
             this->trackdescriptor[track].featureIndexBegin,
             this->trackdescriptor[track].featureIndexEnd,
             this->midi);
     }
 
-    if(this->wctx->noteson && 
-        this->wctx->featureIndexBegin >= 0 &&
+    if( this->wctx->featureIndexBegin >= 0 &&
         this->wctx->featureIndexCurrent <= this->wctx->featureIndexEnd)
     {
         this->wctx->featureIndexCurrent = 
@@ -103,7 +105,16 @@ AbcGenMidi::getNextPerformanceEvents(int track, IMidiWriter *m)
         active = 1;
     }
     else
+    {
         active = 0;
+        if(this->initState->verbose)
+        {
+            char msg[32];
+            snprintf(msg, 32, "done processing track %d", this->wctx->tracknumber);
+            this->wctx->log(msg);
+        }
+    }
+
     this->wctx = nullptr;
     return active;
 }
@@ -119,10 +130,13 @@ AbcGenMidi::assignVoiceBounds()
         track.featureIndexBegin = this->findvoice(0, track.voicenum, i);
         if(track.featureIndexBegin == this->initState->nfeatures)
         {
-            assert(this->ntracks == 1);
+            // XXX: this can occur for, eg, guitar chords, drones, etc
+            // idea: a track may have chords interspersed
             track.featureIndexBegin = 0;
+            track.featureIndexEnd = this->initState->nfeatures - 1;
         }
-        track.featureIndexEnd = this->findvoiceEnd(track.featureIndexBegin, 
+        else
+            track.featureIndexEnd = this->findvoiceEnd(track.featureIndexBegin, 
                                                         track.voicenum, i);
     }
 }
@@ -145,7 +159,7 @@ AbcGenMidi::writefile(char const *fpath, Abc::InitState const *initState)
     this->initState = initState;
     this->no_more_free_channels = 0;
     this->assignVoiceBounds();
-    this->wctx->beginWriting(initState, this->midi);
+    this->wctx->beginWriting(0, initState, this->midi);
     if(this->ntracks == 1) 
         mfile.write(this, fp, 0, 1, this->wctx->division);
     else 
@@ -1947,9 +1961,9 @@ AbcGenMidi::checkbar(int pass)
     if(this->wctx->gchordson) 
     {
         if(this->wctx->gchordbars < 2) 
-            this->wctx->g_ptr = 0;
+            this->wctx->gchord_index = 0;
 
-        this->wctx->addtoQ(0, this->wctx->g_denom, -1, this->wctx->g_ptr, 0, 0);
+        this->wctx->addtoQ(0, this->wctx->g_denom, -1, this->wctx->gchord_index, 0, 0);
     }
     if(this->wctx->drumson) 
     {
@@ -2053,8 +2067,8 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
         if(this->wctx->gchordbars < 1 || this->wctx->gchordbars > 10)     
             this->wctx->gchordbars = 1;
         done = 1;
-        this->wctx->g_ptr = 0; /* [SS] 2018-06-23 */
-        this->wctx->addtoQ(0, this->wctx->g_denom, -1, this->wctx->g_ptr ,0, 0);
+        this->wctx->gchord_index = 0; /* [SS] 2018-06-23 */
+        this->wctx->addtoQ(0, this->wctx->g_denom, -1, this->wctx->gchord_index ,0, 0);
     }
     else 
     if((strcmp(command, "chordprog") == 0))  
@@ -2664,8 +2678,8 @@ void
 AbcGenMidi::configure_gchord()
 {
     int inchord = 0;
-
-    Abc::Chord &chord = this->initState->chords[this->wctx->chordnum];
+    int chordindex = this->wctx->chordnum-1; // chordnum isn't an index
+    Abc::Chord &chord = this->initState->chords[chordindex];
     if(this->wctx->inversion != -1) 
     {
         /* try to match inversion with basepitch+chordnotes.. */

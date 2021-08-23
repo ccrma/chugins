@@ -582,7 +582,7 @@ AbcStore::addchordname(char const *s, int len, int notes[])
             c.notes.clear();
             for(int i=0;i<len;i++)
                 c.notes.push_back(notes[i]);
-            done;
+            done = 1;
             break;
         }
     }

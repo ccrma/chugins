@@ -1,5 +1,6 @@
 #ifndef AbcQueue_h
 #define AbcQueue_h
+#include <cassert>
 
 /* a queue to track notes of varying duration 
  * and generate note-off events in the right order.
@@ -31,6 +32,7 @@ public:
     class Client
     {
     public:
+        virtual int getid() = 0;
         virtual void error(char const *) = 0;
         virtual void progress_sequence(int chan) = 0;
         virtual void midi_noteoff(long delta_time, int pitch, int chan) = 0;
@@ -50,10 +52,20 @@ public:
             int **controldata) = 0;
     };
 
-    AbcQueue(Client *c) : client(c) {};
+    AbcQueue(Client *c) : client(c) {}
 
     struct Qitem
     {
+        Qitem() { next = -1; }
+        Qitem(Qitem const &rhs)
+        {
+            this->delay = rhs.delay;
+            this->pitch = rhs.pitch;
+            this->chan = rhs.chan;
+            this->effect = rhs.effect;
+            this->next = rhs.next;
+        }
+
         int delay;
         int pitch;
         int chan;

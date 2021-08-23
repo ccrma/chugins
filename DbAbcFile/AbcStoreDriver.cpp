@@ -196,13 +196,15 @@ AbcStore::setup_trackstructure()
 {
     AbcGenMidi::Track *td = this->genMidi.trackdescriptor;
     td[0].tracktype = AbcGenMidi::Tracktype::NOTES;
-    td[0].voicenum = 1;
-    td[0].midichannel = -1;
+    td[0].voicenum = 1; // each voice can have gchords
+    td[0].midichannel = -1; // unspecified, 
 
     voicecontext *p = this->head;
     voicecontext *q;
 
-    this->genMidi.ntracks = 1;
+    // for multi-voice (including gchords, etc, the first track is for tempo)
+    // below we reset tracks to 1 in the special single track case.
+    this->genMidi.ntracks = 1; 
     while (p != nullptr) 
     {
         if(this->verbose) 
@@ -219,12 +221,12 @@ AbcStore::setup_trackstructure()
         }
         if(this->genMidi.ntracks > 39) 
         {
-           this->error("Too many tracks"); /* [SS] 2015-03-26 */
+           this->error("Too many tracks");
            return;
         }
         td[this->genMidi.ntracks].tracktype = AbcGenMidi::Tracktype::NOTES;
         td[this->genMidi.ntracks].voicenum = p->indexno;
-        td[this->genMidi.ntracks].midichannel = p->midichannel;
+        td[this->genMidi.ntracks].midichannel = p->midichannel; // -1 means unspecified (ok)
         if(p->haswords)
         {
             if(!this->separate_tracks_for_words) 

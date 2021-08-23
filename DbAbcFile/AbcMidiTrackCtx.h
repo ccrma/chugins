@@ -26,10 +26,17 @@ public:
         for(int j=0; j<256; j++)
             this->drum_map[j] = j;
         this->initState = nullptr;
+        this->featureIndexBegin = -1;
+        this->tracknumber = -1;
     }
 
-    void beginWriting(Abc::InitState const *initState, 
-                    class IMidiWriter *);
+    AbcMidiTrackCtx(AbcMidiTrackCtx const &rhs) :
+        AbcMidiTrackCtx(rhs.genMidi)
+    {
+    }
+
+    void beginWriting(int xtrack,
+        Abc::InitState const *initState, class IMidiWriter *);
 
     void error(char const *msg);
     void warning(char const *msg);
@@ -68,6 +75,7 @@ public:
 
 
     /* interface with AbcQueue -------------------------------------- */
+    int getid() { return this->tracknumber; }
     void progress_sequence(int chan) override;
     void midi_noteoff(long delta_time, int pitch, int chan) override;
     void midi_event(long delta_time, int evt, int chan, 
@@ -189,7 +197,7 @@ public:
     int g_next;
     char gchord_seq[40];
     int gchord_len[40];
-    int g_ptr;
+    int gchord_index;
     int gchordbars;
 
     int tracknumber; 

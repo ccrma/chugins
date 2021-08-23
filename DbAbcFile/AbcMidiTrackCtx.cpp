@@ -4,10 +4,18 @@
 #include "AbcMusic.h"
 #include "AbcParser.h"
 
+/* beginWriting is used to convey initState to newly minted MidiTrackCtx.
+ * we aren't yet ready to initialize fully because MidiWriter may be
+ * null.
+ */
 void
-AbcMidiTrackCtx::beginWriting(Abc::InitState const *initState, IMidiWriter *mh)
+AbcMidiTrackCtx::beginWriting(int xtrack, 
+    Abc::InitState const *initState, IMidiWriter *mh)
 {
     this->initState = initState;
+    this->tracknumber = xtrack;
+    this->trackvoice = xtrack; // XXX: a single "voice" can have multiple tracks
+
     this->midi = mh; // mh may be null and provided eg during getNextEvent/
 
     this->barchecking = initState->barchecking;
@@ -274,7 +282,7 @@ AbcMidiTrackCtx::initTrack(int xtrack,
     this->partno = -1;
     this->partlabel = -1;
     this->g_started = 0;
-    this->g_ptr = 0;
+    this->gchord_index = 0;
     this->drum_ptr = 0;
 
     // was: startTrack
@@ -308,7 +316,9 @@ AbcMidiTrackCtx::initTrack(int xtrack,
     }
     if(this->gchordson) 
     {
-        this->addtoQ(0, this->g_denom, -1, this->g_ptr,0, 0);
+        /* here, we set pitch to -1 to signal special behavior from the queue
+         */
+        this->addtoQ(0, this->g_denom, -1, this->gchord_index, 0, 0);
         this->fun.base = 36;
         this->fun.vel = 80;
         this->gchord.base = 48;
@@ -337,6 +347,8 @@ AbcMidiTrackCtx::initTrack(int xtrack,
     }
     if(this->drumson) 
     { 
+        /* here, we set pitch to -1 to signal special behavior from the queue
+         */
         this->drum_ptr = 0;
         addtoQ(0, this->drum_denom, -1, this->drum_ptr,0, 0);
     }
@@ -532,6 +544,7 @@ AbcMidiTrackCtx::set_gchords(char const *s)
         this->error("Sequence string too long");
 
     /* work out unit delay in 1/4 notes*/
+    this->gchord_index = 0;
     g_num = mtime_num * 4*gchordbars;
     g_denom = mtime_denom * seq_len;
     AbcMusic::reduceFraction(&g_num, &g_denom);
@@ -785,13 +798,13 @@ AbcMidiTrackCtx::restoreRepeatState(int *voiceno)
 void 
 AbcMidiTrackCtx::dogchords(int i)
 {
-    if (g_ptr >= (int) strlen(gchord_seq)) 
-        g_ptr = 0;
-    if(i != g_ptr) 
+    if(this->gchord_index >= (int) strlen(this->gchord_seq)) 
+        this->gchord_index = 0;
+    if(i != this->gchord_index) 
         return;
     int j;
-    char action = gchord_seq[g_ptr];
-    int len = gchord_len[g_ptr];
+    char action = this->gchord_seq[this->gchord_index];
+    int len = gchord_len[gchord_index];
     if((chordnum == -1) && (action == 'c')) 
         action = 'f';
 
@@ -898,13 +911,14 @@ AbcMidiTrackCtx::dogchords(int i)
         break;
 
     default:
-        printf("no such gchord code %c\n",action);
+        printf("no such gchord code %d (%c)\n", action, action);
+        return;
     }
 
-    g_ptr = g_ptr + 1; /* [SS] 2018-06-23 */
-    this->addtoQ(g_num*len, g_denom, -1, g_ptr, 0, 0);
-    if (g_ptr >= (int) 
-        strlen(gchord_seq)) g_ptr = 0; /* [SS] 2018-06-23 */
+    gchord_index++;
+    this->addtoQ(g_num*len, g_denom, -1, gchord_index, 0, 0);
+    if(gchord_index >= (int) strlen(gchord_seq)) 
+        gchord_index = 0;
 }
 
 /* generate drum notes */

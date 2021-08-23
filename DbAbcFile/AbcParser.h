@@ -160,6 +160,8 @@ public:
     static int Readsnump(char const **p);
     static void Skipspace(char const **p);
     static void Readstr(char *out, char const **in, int limit);
+    static void SplitString(char const *p, char sep, 
+                    std::vector<std::string> *);
 
     // following public vars accessible by IAbcParseClient
     char const *abcversion;

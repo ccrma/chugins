@@ -1408,6 +1408,26 @@ AbcParser::Skipspace(char const **p)
 }
 
 /*static*/ void
+AbcParser::SplitString(char const *s, char sep, std::vector<std::string> *result)
+{
+    char const *p = s;
+    int fieldcoming = 1;
+    while(fieldcoming) 
+    {
+        char const *start = p;
+        char const *end;
+        while ((*p != '\0') && (*p != sep)) 
+            p = p + 1;
+        end = p;
+        if(*p == sep) 
+            p++;
+        else 
+            fieldcoming = 0;
+        result->push_back(std::string(start, end-start));
+    }
+}
+
+/*static*/ void
 AbcParser::Readstr(char *out, char const **in, int limit)
 {
     int i = 0;
