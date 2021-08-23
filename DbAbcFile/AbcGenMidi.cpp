@@ -2200,6 +2200,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
     else 
     if(strcmp(command, "drone") == 0) 
     {
+        // %%MIDI drone 70 45 33 90 90
         AbcParser::Skipspace(&p);
         int val = AbcParser::Readnump(&p);
         if(val > 0) 

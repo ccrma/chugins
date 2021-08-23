@@ -28,6 +28,7 @@ public:
         this->initState = nullptr;
         this->featureIndexBegin = -1;
         this->tracknumber = -1;
+        this->gchordnotes_size = 0;
     }
 
     AbcMidiTrackCtx(AbcMidiTrackCtx const &rhs) :
