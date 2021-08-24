@@ -23,7 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
  *
  */
-#include <fstream>
+#include <istream>
 #include <vector>
 #include <cstdio>
 
@@ -150,7 +150,7 @@ public:
     };
 
     int Parse(char const *buf, class IAbcParseClient *, ParseMode m);
-    int Parse(std::ifstream *stream, class IAbcParseClient *, ParseMode m);
+    int Parse(std::istream *stream, class IAbcParseClient *, ParseMode m);
 
 
 public:

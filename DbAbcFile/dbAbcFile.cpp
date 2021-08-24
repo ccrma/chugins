@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <iostream>
+#include <sstream>
 #include <cassert>
 
 dbAbcFile::dbAbcFile(unsigned int sampleRate) :
@@ -10,7 +11,8 @@ dbAbcFile::dbAbcFile(unsigned int sampleRate) :
     m_store(nullptr),
     m_activeTrack(-1),
     m_sampleRate(sampleRate)
-{}
+{
+}
 
 dbAbcFile::~dbAbcFile()
 {
@@ -18,23 +20,76 @@ dbAbcFile::~dbAbcFile()
 }
 
 int
-dbAbcFile::Open(std::string const &fp)
+dbAbcFile::Open(std::string const &fp, int argc, char const **argv)
 {
     this->Close();
     this->m_parser = new AbcParser();
     this->m_store = new AbcStore(this->m_parser);
-    char const *argv[] = {"dbAbcFile", fp.c_str(), "-perform", "-v", "6"};
+
+    std::vector<char const *> largv;
+    largv.push_back("dbAbcFile"); // argv[0]
+
+    bool openFile = true;
+    std::string tmp;
+    if(fp.find("X:", 0) == 0)
+    {
+        if(fp.find("K:", 2) == std::string::npos)
+        {
+            this->m_store->error("abc requires a K: field");
+            return -1;
+        }
+        openFile = false;
+        size_t s = fp.find("T:");
+        if(s != std::string::npos)
+        {
+            size_t end = fp.find("\n", s);
+            tmp = fp.substr(s, end-s-1);
+            largv.push_back(tmp.c_str()); // argv[1]
+        }
+        else
+            largv.push_back("abcstring.abc"); // argv[1]
+    }
+    else
+        largv.push_back(fp.c_str()); // argv[1]
+    largv.push_back("-perform");
+    if(argc > 0)
+    {
+        for(int i=0;i<argc;i++)
+            largv.push_back(argv[i]);
+    }
+    else
+    {
+        // for debugging
+        #if 0
+        largv.push_back("-v");
+        largv.push_back("6");
+        #endif
+    }
 
     std::string filename;
-    const int argc = 3; // set to 2 to output file, 3 for normal, 5 for verbose
-    this->m_store->Init(argc, argv, &filename); // 
-    std::ifstream istr(fp.c_str());
-    if(istr.good())
+    this->m_store->Init(largv.size(), largv.data(), &filename); // 
+    std::ifstream fstr;
+    std::istringstream sstr;
+    std::istream *istr;
+    if(openFile)
+    {
+        fstr.open(fp.c_str());
+        istr = &fstr;
+    }
+    else
+    {
+        // we add a "K" - cuz without we get a crash
+        // user can override 
+        sstr.str(std::string("X:0\nK:C\n") + fp);
+        istr = &sstr;
+    }
+
+    if(istr->good())
     {
         // because we've requested "_perform_", the abc parse result 
         // is left "hanging" within AbcStore+AbcGenMidi. Now we're read
         // for calls to getNextEvent
-        this->m_parser->Parse(&istr, this->m_store, AbcParser::k_AbcToMidi);
+        this->m_parser->Parse(istr, this->m_store, AbcParser::k_AbcToMidi);
         this->m_numTracks = this->m_store->genMidi.ntracks;
         // NB: not all have "tracks", in multitrack files first track is
         // tempo-only. There, a tempo-map can trigger tempo changes. 

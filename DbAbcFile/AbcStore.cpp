@@ -1089,6 +1089,11 @@ AbcStore::headerprocess()
     this->gracenotes = 0; /* not in a grace notes section */
     if (!this->timesigset) 
         this->warning("No M: in header, using default");
+    if(!this->v)
+    {
+        this->error("No K: in header");
+        this->v = this->getvoicecontext(1);
+    }
 
     /* calculate time for a default length note */
     if(this->global.default_length == -1) 
@@ -1377,15 +1382,18 @@ AbcStore::checkbreak()
         this->error("Previous voice has an unfinished tuple");
         this->tuplecount = 0;
     }
-    if(this->v->inchord != 0) 
+    if(this->v) // to prevent crashes when missing K:
     {
-        this->error("Previous voice has incomplete chord");
-        this->chordoff(1, 1);
-    }
-    if(v->ingrace != 0)
-    {
-        this->error("Previous voice has unfinished grace notes");
-        this->v->ingrace = 0;
+        if(this->v->inchord != 0) 
+        {
+            this->error("Previous voice has incomplete chord");
+            this->chordoff(1, 1);
+        }
+        if(v->ingrace != 0)
+        {
+            this->error("Previous voice has unfinished grace notes");
+            this->v->ingrace = 0;
+        }
     }
 } 
 

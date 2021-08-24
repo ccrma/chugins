@@ -15,7 +15,8 @@ public:
     dbAbcFile(unsigned int sampleRate);
     ~dbAbcFile();
 
-    int Open(std::string const &filepath);
+    int Open(std::string const &filepathOrString,  // start with 'X:' for string
+            int argc=0, char const **argv=nullptr);
     int Close();
 
     int GetNumTracks() { return this->m_numTracks; }

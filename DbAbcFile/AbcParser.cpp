@@ -2,6 +2,7 @@
 
 #include <cstring> 
 #include <sstream>      // std::istringstream
+#include <fstream>
 
 #include "AbcPort.h"
 
@@ -29,7 +30,7 @@ AbcParser::Parse(char const *buf, IAbcParseClient *h, ParseMode m)
 }
 
 int 
-AbcParser::Parse(std::ifstream *s, IAbcParseClient *h, ParseMode m)
+AbcParser::Parse(std::istream *s, IAbcParseClient *h, ParseMode m)
 {
     return this->parse(s, h, m);
 }
