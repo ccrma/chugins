@@ -1,4 +1,4 @@
-// run: chuck _pre.ck a_str.ck
+// run: chuck _pre.ck str_a.ck
 // if a string starts with "X:#", we can pass it to DbAbcFile::open.
 // abc requires that the header portion terminate with K:<key>.
 "X:1\n" +

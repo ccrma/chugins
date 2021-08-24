@@ -51,8 +51,6 @@ time to the next composition event in the requested track.
 ```ck
 // if pathOrString starts with X: it's a abcstring, otherwise a file.
 int DbABCFile.open(string pathOrString);  
-
-int DbABCFile.addtrack(string abcstring); // returns new track number
 int DbABCFile.close();
 int DbABCFile.numTracks();
 int DbABCFile.read(MidiMsg msg, int track); // returns 0 when done

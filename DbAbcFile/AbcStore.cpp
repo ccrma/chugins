@@ -1089,11 +1089,6 @@ AbcStore::headerprocess()
     this->gracenotes = 0; /* not in a grace notes section */
     if (!this->timesigset) 
         this->warning("No M: in header, using default");
-    if(!this->v)
-    {
-        this->error("No K: in header");
-        this->v = this->getvoicecontext(1);
-    }
 
     /* calculate time for a default length note */
     if(this->global.default_length == -1) 

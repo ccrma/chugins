@@ -78,9 +78,7 @@ dbAbcFile::Open(std::string const &fp, int argc, char const **argv)
     }
     else
     {
-        // we add a "K" - cuz without we get a crash
-        // user can override 
-        sstr.str(std::string("X:0\nK:C\n") + fp);
+        sstr.str(fp);
         istr = &sstr;
     }
 
