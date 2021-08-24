@@ -70,6 +70,8 @@ AbcGenMidi::beginPerformance(Abc::InitState const *initState)
 int
 AbcGenMidi::rewindPerformance()
 {
+    if(!this->midi) return -1;
+
     for(int i=0;i<this->ntracks;i++)
         this->trackPool[i].rewind();
     this->midi->writeTempo(this->initState->tempo);
@@ -571,19 +573,19 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
                 /* changes. Usually a section end with a :|, but the last     */
                 /* last section could end with almost anything including a    */
                 /* PART change.                                               */
-                if(fd.feature == Abc::VOICE) 
+                if(this->initState->featurelist[j].feature == Abc::VOICE) 
                     j = this->findvoice(j, this->wctx->trackvoice, xtrack);
                 while(j<this->initState->nfeatures && 
-                    (fd.feature != Abc::REP_BAR) && 
-                    (fd.feature != Abc::BAR_REP) &&
-                    (fd.feature != Abc::PART) &&
-                    (fd.feature != Abc::DOUBLE_BAR) &&
-                    (fd.feature != Abc::THICK_THIN) &&
-                    (fd.feature != Abc::THIN_THICK) &&
-                    (fd.feature != Abc::PLAY_ON_REP)) 
+                    (this->initState->featurelist[j].feature != Abc::REP_BAR) && 
+                    (this->initState->featurelist[j].feature != Abc::BAR_REP) &&
+                    (this->initState->featurelist[j].feature != Abc::PART) &&
+                    (this->initState->featurelist[j].feature != Abc::DOUBLE_BAR) &&
+                    (this->initState->featurelist[j].feature != Abc::THICK_THIN) &&
+                    (this->initState->featurelist[j].feature != Abc::THIN_THICK) &&
+                    (this->initState->featurelist[j].feature != Abc::PLAY_ON_REP)) 
                 {
                     j = j + 1;
-                    if(fd.feature == Abc::VOICE) 
+                    if(this->initState->featurelist[j].feature == Abc::VOICE) 
                         j = this->findvoice(j, this->wctx->trackvoice, xtrack);
                 }
                 this->wctx->barno = this->wctx->barno + 1;
@@ -596,7 +598,7 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
                 } 
                 else 
                 {
-                    if(fd.feature == Abc::PART)
+                    if(this->initState->featurelist[j].feature == Abc::PART)
                         j = j - 1; 
                 }
             }

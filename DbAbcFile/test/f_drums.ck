@@ -1,10 +1,9 @@
 // to run: 
-//      chuck _pre.ck f.ck
+//      chuck _pre.ck f_chuck.ck
 DoTrack doit;
 DbAbcFile dbf;
 
-// demo5 - partspec (for repeats) plus w: for karaoke words
-"../samples/demo5.abc" => string file;
+"../samples/drums.abc" => string file;
 file => dbf.open;
 <<< file, "nchan", dbf.numTracks() >>>;
 

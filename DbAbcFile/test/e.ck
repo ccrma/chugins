@@ -1,5 +1,5 @@
 // to run: 
-//      chuck dotrack.ck e.ck
+//      chuck _pre.ck e.ck
 DoTrack doit;
 DbAbcFile dbf;
 

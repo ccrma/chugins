@@ -1,5 +1,6 @@
 public class DoTrack
 {
+    0 => int verbose;
     NRev reverb => dac;
     0.025 => reverb.mix;
     Wurley w[4];
@@ -28,7 +29,7 @@ public class DoTrack
             {
                 // NOTEON
                 // get the pitch and convert to frequencey; set
-                if(track == 2)
+                if(verbose)
                     <<<"Track", track, "note-on, pitch", msg.data2>>>;
                 msg.data2 => Std.mtof => w[v].freq;
                 // velocity data; note on
@@ -41,7 +42,7 @@ public class DoTrack
             {
                 // NOTEOFF - need to track which voice is associated with which
                 // note.  Many instruments force note-off when new note-on arrives.
-                if(track == 2)
+                if(verbose)
                     <<<"Track", track, "note-off, pitch", msg.data2>>>;
             }
             else
@@ -53,6 +54,12 @@ public class DoTrack
                 else
                 if(msg.data1 == 3) // sequence name
                     continue;
+                else
+                if(msg.data1 == 16)
+                {
+                    <<<"SysEx", track, msg.data2, msg.data3>>>;
+                    continue;
+                }
                 else
                 if(msg.data1 == 88)
                     continue; // <<<"Time Signature", track, msg.data2, msg.data3>>>;

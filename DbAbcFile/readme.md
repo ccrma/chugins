@@ -567,6 +567,3 @@ This class can be used to read events from a standard MIDI file.
 
 ### issues, bugs
 
-* `c.ck` = 
-    * Track 0 Bar 8 has 22/3 units instead of 4 in repeat
-    * Track 0 Bar 17 has 7 units instead of 4 in repeat

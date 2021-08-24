@@ -47,6 +47,7 @@ AbcParser::parse(std::istream *istream, IAbcParseClient *h, ParseMode m)
 void
 AbcParser::parseBegin(ParseMode m)
 {
+    this->parseMode = m;
     this->num_voices = 0;
     this->repcheck = (m == k_AbcToMidi) ? 0 : 1; 
     this->has_voice_fields = 0;

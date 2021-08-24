@@ -1,12 +1,11 @@
-// to run: 
-//      chuck dotrack.ck achord.ck
+// run: chuck _pre.ck f_detune.ck
+//   applies pitchbend to notes according to 
+//   a terperament control in abc comments.
+
 DoTrack doit;
 DbAbcFile dbf;
 
-// demo6 -
-// % Using "guitar chords" to generate an accompaniment.
-// % Also uses R:hornpipe to generate broken rhythm 
-"../samples/demo0.abc" => string file;
+"../samples/detune.abc" => string file;
 file => dbf.open;
 <<< file, "nchan", dbf.numTracks() >>>;
 
