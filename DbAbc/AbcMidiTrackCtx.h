@@ -13,9 +13,9 @@ class AbcMidiTrackCtx : public AbcQueue::Client
 public:
     static const int MAXCHORDNAMES = 80;
     static const int MAXPARTS = 100;
-    static const int MAXCHANS = 16;
+    static const int MAXCHANS = 16; // midi channels
     static const int DIV = 480;
-    static const int MAXTRACKS = 40;
+    static const int MAXTRACKS = 64; // voices in file
     static const int MAXLAYERS = 3;
 
 public:

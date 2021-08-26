@@ -1974,7 +1974,7 @@ AbcStore::blankline()
 {
     if(this->dotune) 
     {
-        if(!this->silent) 
+        if(this->verbose > 1) 
             this->parser->print_voicecodes();
         this->finishfile();
         this->parser->parserOff();

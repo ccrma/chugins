@@ -219,7 +219,7 @@ AbcStore::setup_trackstructure()
                 p->hasdrone, p->tosplitno, p->fromsplitno);
             this->log(msg);
         }
-        if(this->genMidi.ntracks > 39) 
+        if(this->genMidi.ntracks > AbcMidiTrackCtx::MAXTRACKS)
         {
            this->error("Too many tracks");
            return;
