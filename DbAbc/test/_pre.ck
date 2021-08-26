@@ -13,7 +13,7 @@ public class DoTrack
     .5 => w[3].gain;
     w[3] => reverb;
 
-    fun void go(DbAbcFile dbf, int track, float speed, int running[])
+    fun void go(DbAbc dbf, int track, float speed, int running[])
     {
         int v;
         MidiMsg msg;

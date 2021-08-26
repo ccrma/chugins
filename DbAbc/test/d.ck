@@ -1,10 +1,10 @@
 // to run: 
-//      chuck _pre.ck c.ck
+//      chuck _pre.ck d.ck
 DoTrack doit;
-DbAbcFile dbf;
+DbAbc dbf;
 
-// demo2 - A hornpipe using triplets, accidentals and broken rhythm 
-"../samples/demo2.abc" => string file;
+// demo3 - using ties to create non-standard length notes;
+"../samples/demo3.abc" => string file;
 file => dbf.open;
 <<< file, "nchan", dbf.numTracks() >>>;
 

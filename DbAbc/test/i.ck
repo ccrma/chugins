@@ -1,9 +1,12 @@
 // to run: 
-//      chuck _pre.ck f_chuck.ck
+//      chuck _pre.ck i.ck
 DoTrack doit;
-DbAbcFile dbf;
+DbAbc dbf;
 
-"../samples/drums.abc" => string file;
+// demo8 -
+//  % Using extended gchord codes for playing arpeggios
+
+"../samples/demo8.abc" => string file;
 file => dbf.open;
 <<< file, "nchan", dbf.numTracks() >>>;
 

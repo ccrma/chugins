@@ -1,12 +1,9 @@
-// to run: 
-//      chuck _pre.ck g.ck
+// run: chuck _pre.ck a.ck
+//      demo0 - very simple use of chords and scales.
 DoTrack doit;
-DbAbcFile dbf;
+DbAbc dbf;
 
-// demo6 -
-// % Using "guitar chords" to generate an accompaniment.
-// % Also uses R:hornpipe to generate broken rhythm 
-"../samples/demo6.abc" => string file;
+"../samples/demo0.abc" => string file;
 file => dbf.open;
 <<< file, "nchan", dbf.numTracks() >>>;
 

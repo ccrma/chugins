@@ -1,4 +1,4 @@
-#include "dbAbcFile.h"
+#include "dbAbc.h"
 #include "AbcStore.h"
 
 #include <cstring>
@@ -6,7 +6,7 @@
 #include <sstream>
 #include <cassert>
 
-dbAbcFile::dbAbcFile(unsigned int sampleRate) :
+dbAbc::dbAbc(unsigned int sampleRate) :
     m_parser(nullptr),
     m_store(nullptr),
     m_activeTrack(-1),
@@ -14,20 +14,20 @@ dbAbcFile::dbAbcFile(unsigned int sampleRate) :
 {
 }
 
-dbAbcFile::~dbAbcFile()
+dbAbc::~dbAbc()
 {
     this->Close();
 }
 
 int
-dbAbcFile::Open(std::string const &fp, int argc, char const **argv)
+dbAbc::Open(std::string const &fp, int argc, char const **argv)
 {
     this->Close();
     this->m_parser = new AbcParser();
     this->m_store = new AbcStore(this->m_parser);
 
     std::vector<char const *> largv;
-    largv.push_back("dbAbcFile"); // argv[0]
+    largv.push_back("dbAbc"); // argv[0]
 
     bool openFile = true;
     std::string tmp;
@@ -99,12 +99,12 @@ dbAbcFile::Open(std::string const &fp, int argc, char const **argv)
         // and can occur as the composition progresses.
     }
     else
-        std::cerr << "dbAbcFile: " << filename.c_str() << " not found\n";
+        std::cerr << "dbAbc: " << filename.c_str() << " not found\n";
     return 0;
 }
 
 int
-dbAbcFile::Close()
+dbAbc::Close()
 {
     if(this->m_parser)
     {
@@ -120,7 +120,7 @@ dbAbcFile::Close()
 }
 
 int
-dbAbcFile::Rewind()
+dbAbc::Rewind()
 {
     int r = 0;
     if(this->m_store)
@@ -132,7 +132,7 @@ dbAbcFile::Rewind()
 }
 
 int
-dbAbcFile::Read(int track, MidiEvent *evt)
+dbAbc::Read(int track, MidiEvent *evt)
 {
     assert(this->m_pendingEvents.size() > track);
 
@@ -164,7 +164,7 @@ dbAbcFile::Read(int track, MidiEvent *evt)
 }
 
 int
-dbAbcFile::clearPending(int track, MidiEvent *evt)
+dbAbc::clearPending(int track, MidiEvent *evt)
 {
     std::deque<MidiEvent> &equeue = this->m_pendingEvents[track];
     if(equeue.size())
@@ -191,7 +191,7 @@ dbAbcFile::clearPending(int track, MidiEvent *evt)
     writeMeta: 0 88 (4) (meter: size:4)
 */
 int
-dbAbcFile::writeTempo(long tempo)
+dbAbc::writeTempo(long tempo)
 {
     assert(this->m_activeTrack != -1);
 
@@ -206,7 +206,7 @@ dbAbcFile::writeTempo(long tempo)
 }
 
 int
-dbAbcFile::writeMetaEvent(long dt, int type, char const *data, int size)
+dbAbc::writeMetaEvent(long dt, int type, char const *data, int size)
 {
     assert(this->m_activeTrack != -1);
     std::deque<MidiEvent> &equeue = this->m_pendingEvents[this->m_activeTrack];
@@ -217,7 +217,7 @@ dbAbcFile::writeMetaEvent(long dt, int type, char const *data, int size)
 }
 
 int
-dbAbcFile::writeMidiEvent(long dt, int type, int chan, char const *data, int size)
+dbAbc::writeMidiEvent(long dt, int type, int chan, char const *data, int size)
 {
     assert(this->m_activeTrack != -1);
     std::deque<MidiEvent> &equeue = this->m_pendingEvents[this->m_activeTrack];

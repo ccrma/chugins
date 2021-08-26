@@ -136,6 +136,6 @@ fun void doTrack(int track, float speed)
 
 ### issues, bugs, debugging
 
-* debug by changing the verbosity level, currently in dbAbcFile.cpp argv
+* debug by changing the verbosity level, currently in dbAbc.cpp argv
 * 
 

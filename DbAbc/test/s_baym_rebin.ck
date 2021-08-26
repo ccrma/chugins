@@ -1,8 +1,8 @@
-DbAbcFile dbf;
+DbAbc dbf;
 NRev reverb => dac;
 0.025 => reverb.mix;
 
-"../samples/coleraine.abc" => dbf.open;
+"../samples/baym_rebin.abc" => dbf.open;
 
 FluidSynth f[2];
 f[0] => reverb;

@@ -1,9 +1,11 @@
-// run: chuck _pre.ck a.ck
-//      demo0 - very simple use of chords and scales.
+// to run: 
+//      chuck _pre.ck k.ck
 DoTrack doit;
-DbAbcFile dbf;
+DbAbc dbf;
 
-"../samples/demo0.abc" => string file;
+// demo10 - more midi controls
+
+"../samples/demo10.abc" => string file;
 file => dbf.open;
 <<< file, "nchan", dbf.numTracks() >>>;
 

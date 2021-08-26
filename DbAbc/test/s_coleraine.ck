@@ -1,16 +1,8 @@
-//
-// a validation of multi-voice, changing tempo and rewind.
-//
-// boys.abc produces 3 channels: 
-// 0 is tempo-channel (no notes)
-// 1 is tune
-// 2 is drums (two pitches)
-//
-DbAbcFile dbf;
+DbAbc dbf;
 NRev reverb => dac;
 0.025 => reverb.mix;
 
-"../samples/araber.abc" => dbf.open;
+"../samples/coleraine.abc" => dbf.open;
 
 FluidSynth f[2];
 f[0] => reverb;

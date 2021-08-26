@@ -1,5 +1,5 @@
 // run: chuck _pre.ck str_two.ck
-// if a string starts with "X:#", we can pass it to DbAbcFile::open.
+// if a string starts with "X:#", we can pass it to DbAbc::open.
 // abc requires that the header portion terminate with K:<key>.
 "X:1\n"+
 "M:4/4\n"+
@@ -27,8 +27,8 @@
 
 DoTrack doit1;
 DoTrack doit2;
-DbAbcFile dbf1;
-DbAbcFile dbf2;
+DbAbc dbf1;
+DbAbc dbf2;
 
 tune1 => dbf1.open => int success;
 if(success == 0)

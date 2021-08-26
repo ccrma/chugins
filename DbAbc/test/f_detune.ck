@@ -1,10 +1,11 @@
-// to run: 
-//      chuck _pre.ck f.ck
-DoTrack doit;
-DbAbcFile dbf;
+// run: chuck _pre.ck f_detune.ck
+//   applies pitchbend to notes according to 
+//   a terperament control in abc comments.
 
-// demo5 - partspec (for repeats) plus w: for karaoke words
-"../samples/demo5.abc" => string file;
+DoTrack doit;
+DbAbc dbf;
+
+"../samples/detune.abc" => string file;
 file => dbf.open;
 <<< file, "nchan", dbf.numTracks() >>>;
 

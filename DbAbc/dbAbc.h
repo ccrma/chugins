@@ -1,5 +1,5 @@
-#ifndef dbAbcFile_h
-#define dbAbcFile_h
+#ifndef dbAbc_h
+#define dbAbc_h
 
 #include "AbcMidiFile.h"
 
@@ -9,11 +9,11 @@
 #include <deque>
 
 /* IMidiWriter: we intercept midi events after abc parsing completes */
-class dbAbcFile : public IMidiWriter 
+class dbAbc : public IMidiWriter 
 {
 public:
-    dbAbcFile(unsigned int sampleRate);
-    ~dbAbcFile();
+    dbAbc(unsigned int sampleRate);
+    ~dbAbc();
 
     int Open(std::string const &filepathOrString,  // start with 'X:' for string
             int argc=0, char const **argv=nullptr);

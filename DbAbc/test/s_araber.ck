@@ -6,11 +6,11 @@
 // 1 is tune
 // 2 is drums (two pitches)
 //
-DbAbcFile dbf;
+DbAbc dbf;
 NRev reverb => dac;
 0.025 => reverb.mix;
 
-"../samples/boys.abc" => dbf.open;
+"../samples/araber.abc" => dbf.open;
 
 FluidSynth f[2];
 f[0] => reverb;
@@ -108,11 +108,17 @@ fun void doTrack(int track, float speed)
             if(msg.data1 == 1) // text annotation (string doesn't fit in MidiMsg)
                 continue;
             else
+            if(msg.data1 == 3) // sequence name
+                continue;
+            else
             if(msg.data1 == 88)
                 continue; // <<<"Time Signature", track, msg.data2, msg.data3>>>;
             else
             if(msg.data1 == 89)
                 continue; // <<<"Key Signature", track, msg.data2, msg.data3>>>;
+            else
+            if(msg.data1 == 192)
+                continue; // <<<"Program Change", track, msg.data2, msg.data3>>>;
             else
                 <<<"Track", track, "unhandled", msg.data1>>>;
             

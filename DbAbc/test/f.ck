@@ -1,12 +1,10 @@
 // to run: 
-//      chuck _pre.ck i.ck
+//      chuck _pre.ck f.ck
 DoTrack doit;
-DbAbcFile dbf;
+DbAbc dbf;
 
-// demo8 -
-//  % Using extended gchord codes for playing arpeggios
-
-"../samples/demo8.abc" => string file;
+// demo5 - partspec (for repeats) plus w: for karaoke words
+"../samples/demo5.abc" => string file;
 file => dbf.open;
 <<< file, "nchan", dbf.numTracks() >>>;
 

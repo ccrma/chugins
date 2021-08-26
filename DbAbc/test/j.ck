@@ -1,7 +1,7 @@
 // to run: 
 //      chuck _pre.ck j.ck
 DoTrack doit;
-DbAbcFile dbf;
+DbAbc dbf;
 
 // demo9 - Daramad of Shur - uses microtones (_/)
 

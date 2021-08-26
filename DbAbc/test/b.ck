@@ -1,11 +1,10 @@
 // to run: 
-//      chuck _pre.ck k.ck
+//      chuck _pre.ck b.ck
 DoTrack doit;
-DbAbcFile dbf;
+DbAbc dbf;
 
-// demo10 - more midi controls
-
-"../samples/demo10.abc" => string file;
+// demo1 has a single voice and demonstrates a key change.
+"../samples/demo1.abc" => string file;
 file => dbf.open;
 <<< file, "nchan", dbf.numTracks() >>>;
 

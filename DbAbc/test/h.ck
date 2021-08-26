@@ -1,10 +1,12 @@
 // to run: 
-//      chuck _pre.ck e.ck
+//      chuck _pre.ck h.ck
 DoTrack doit;
-DbAbcFile dbf;
+DbAbc dbf;
 
-// demo4 - 4 part arrangement
-"../samples/demo4.abc" => string file;
+// demo7 -
+// % Using drone commands for bagpipe music.
+
+"../samples/demo7.abc" => string file;
 file => dbf.open;
 <<< file, "nchan", dbf.numTracks() >>>;
 
