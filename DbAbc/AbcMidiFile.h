@@ -23,10 +23,26 @@ struct MidiEvent
         this->dur = dt;
         this->evt = type;
         this->size = size;
-        if(size <= 4)
+        if(size <= sizeof(this->data.d))
             memcpy(this->data.d, data, size);
         else
             this->data.strptr = data; // pointer assignment
+    }
+
+    MidiEvent(long dt, int meta, int type, char const *data, int size)
+    {
+        this->dur = dt;
+        this->evt = meta;
+        this->size = size+1;
+        if(size <= sizeof(this->data.d))
+        {
+            this->data.d[0] = type;
+            memcpy(this->data.d+1, data, size);
+        }
+        else
+        {
+            this->data.strptr = data; // pointer assignment
+        }
     }
 
     int evt;
@@ -34,7 +50,7 @@ struct MidiEvent
     int size; // 0 means no event - ie: a feature didn't map to an event
     union
     {
-        char d[4]; // most events, size:2-3
+        char d[16]; // most events, size:2-3
         char const *strptr; // we assume a pointer is at least as large as 4 chars
     } data;
 

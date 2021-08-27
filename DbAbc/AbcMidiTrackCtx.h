@@ -11,12 +11,12 @@
 class AbcMidiTrackCtx : public AbcQueue::Client
 {
 public:
-    static const int MAXCHORDNAMES = 80;
-    static const int MAXPARTS = 100;
-    static const int MAXCHANS = 16; // midi channels
-    static const int DIV = 480;
+    static const int MAXCHANS = 16; // midi channels, this is part of the spec
     static const int MAXTRACKS = 64; // voices in file
+    static const int MAXPARTS = 100; // via P:
+    static const int MAXCHORDNAMES = 80;
     static const int MAXLAYERS = 3;
+    static const int DIV = 480; // timing
 
 public:
     AbcMidiTrackCtx(class AbcGenMidi *g) :
@@ -151,7 +151,6 @@ public:
     char beatstring[100];
     int nbeats;
     int channel, program;
-    int channel_in_use[MAXCHANS];
     int current_pitchbend[MAXCHANS];
     int current_program[MAXCHANS];
     int transpose;

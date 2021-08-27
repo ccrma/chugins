@@ -95,8 +95,13 @@ dbAbc::Open(std::string const &fp, int argc, char const **argv)
         //  - Should we collapse to NOTE tracks?
         this->m_pendingEvents.resize(this->m_numTracks); 
 
-        // tempo changes (including init) are delivered through the midi handler
-        // and can occur as the composition progresses.
+        // default tempo, client should "perform" channel 0 if they
+        // want tempo changes. tempo changes (including init) are 
+        // delivered through the midi handler and can occur as the 
+        // performance progresses.
+        this->m_activeTrack = 0;
+        this->writeTempo(20000);
+        this->m_activeTrack = -1;
     }
     else
         std::cerr << "dbAbc: " << filename.c_str() << " not found\n";
@@ -210,7 +215,7 @@ dbAbc::writeMetaEvent(long dt, int type, char const *data, int size)
 {
     assert(this->m_activeTrack != -1);
     std::deque<MidiEvent> &equeue = this->m_pendingEvents[this->m_activeTrack];
-    MidiEvent mevt(this->convertDur(dt), type, data, size);
+    MidiEvent mevt(this->convertDur(dt), MidiEvent::meta_event, type, data, size);
     equeue.push_back(mevt);
     this->m_activePending = equeue.size();
     return 0;

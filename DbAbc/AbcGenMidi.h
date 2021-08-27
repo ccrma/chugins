@@ -72,7 +72,8 @@ public:
     int parts; 
     int part_start[26];
 
-    int channel_in_use[AbcMidiTrackCtx::MAXCHANS + 3]; 
+    // we overload (via modulo) MIDI channels when numTracks > MAXCHANS
+    int channel_in_use[AbcMidiTrackCtx::MAXTRACKS]; 
     int additive;
 
     /* for handling stress models */
@@ -140,7 +141,6 @@ private:
 
     void parse_drummap(char const **);
     void fillvoice(int partno, int xtrack, int voice);
-    int no_more_free_channels;
 
     int findpart(int place);
     int partbreak(int xtrack, int voice, int place);

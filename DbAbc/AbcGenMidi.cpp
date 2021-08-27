@@ -34,7 +34,7 @@ AbcGenMidi::Init(bool forPerformance)
     this->partspec.clear(); // string
     for(int j=0; j<26; j++)
         this->part_start[j] = -1;
-    for(int j=0; j<16; j++)
+    for(int j=0; j < sizeof(this->channel_in_use) / sizeof(int); j++) // yes MAXTRACKS, not MAXCHAN
         this->channel_in_use[j] = 0; // xxx: it's actually len:19
     this->trackPool.clear();
     this->trackPool.push_back(AbcMidiTrackCtx(this));
@@ -54,7 +54,6 @@ AbcGenMidi::beginPerformance(Abc::InitState const *initState)
     this->initState = initState;
     this->assignVoiceBounds();
     this->midi = nullptr; // filled at getNextEvent
-    this->no_more_free_channels = 0; // XXX?
     this->trackPool.clear();
     this->trackPool.reserve(this->ntracks);
     for(int i=0;i<this->ntracks;i++)
@@ -159,7 +158,6 @@ AbcGenMidi::writefile(char const *fpath, Abc::InitState const *initState)
     AbcMidiFile mfile;
     this->midi = &mfile;
     this->initState = initState;
-    this->no_more_free_channels = 0;
     this->assignVoiceBounds();
     this->wctx->beginWriting(0, initState, this->midi);
     if(this->ntracks == 1) 
@@ -1517,21 +1515,22 @@ AbcGenMidi::set_gchords(char const *s)
     this->wctx->set_gchords(s);
 }
 
-/* work out next available channel */
+/* Work out next available midi channel.  
+ * MIDI spec maxes out at 16 channels.
+ */
 int 
 AbcGenMidi::findchannel()
 {
-    int j = 0;
-    while((j<AbcMidiTrackCtx::MAXCHANS) && (this->channel_in_use[j] != 0)) 
-        j = j + 1;
-    if(j >= AbcMidiTrackCtx::MAXCHANS && !this->no_more_free_channels) 
+    int j;
+    for(j=0; j<AbcMidiTrackCtx::MAXTRACKS; j++) // eg: 64
     {
-        this->wctx->error("All 16 MIDI channels used up.");
-        this->no_more_free_channels = 1;
-        j = 0;
+        if(this->channel_in_use[j] == 0)
+            break;
     }
+    if(j == AbcMidiTrackCtx::MAXCHANS) // eg: 16
+        this->wctx->error("All 16 MIDI channels used up, recycling.");
     this->channel_in_use[j] = 1;
-    return j;
+    return (j % AbcMidiTrackCtx::MAXCHANS);
 }
 
 /* find where next occurrence of correct voice is */
@@ -1615,37 +1614,30 @@ void
 AbcGenMidi::midi_noteon(long delta_time, int pitch, int pitchbend, int chan, int vel)
 {
     char data[2];
-    if(this->wctx->channel >= AbcMidiTrackCtx::MAXCHANS) 
+    if(pitchbend < 0 || pitchbend > 16383) 
     {
-        this->wctx->error("Channel limit exceeded");
-    } 
-    else 
-    {
-        if(pitchbend < 0 || pitchbend > 16383) 
-        {
-            this->wctx->error("Internal error concerning pitch bend on note on.");
-        }
-
-        if(pitchbend != this->wctx->current_pitchbend[this->wctx->channel] && 
-            chan != 9) 
-        {
-            data[0] = (char) (pitchbend & 0x7f);
-            data[1] = (char) ((pitchbend>>7) & 0x7f);
-            this->wctx->bendstate = pitchbend;
-            this->midi->writeMidiEvent(delta_time, 
-                MidiEvent::pitch_wheel, chan, data, 2);
-            delta_time = 0;
-            this->wctx->current_pitchbend[this->wctx->channel] = pitchbend;
-        }
-
-        if(chan == 9) 
-            data[0] = (char) this->wctx->drum_map[pitch];
-        else
-            data[0] = (char) pitch;
-        data[1] = (char) vel;
-        this->midi->writeMidiEvent(delta_time, 
-            MidiEvent::note_on, chan, data, 2);
+        this->wctx->error("Internal error concerning pitch bend on note on.");
     }
+
+    if(pitchbend != this->wctx->current_pitchbend[this->wctx->channel] && 
+        chan != 9) 
+    {
+        data[0] = (char) (pitchbend & 0x7f);
+        data[1] = (char) ((pitchbend>>7) & 0x7f);
+        this->wctx->bendstate = pitchbend;
+        this->midi->writeMidiEvent(delta_time, 
+            MidiEvent::pitch_wheel, chan, data, 2);
+        delta_time = 0;
+        this->wctx->current_pitchbend[this->wctx->channel] = pitchbend;
+    }
+
+    if(chan == 9) 
+        data[0] = (char) this->wctx->drum_map[pitch];
+    else
+        data[0] = (char) pitch;
+    data[1] = (char) vel;
+    this->midi->writeMidiEvent(delta_time, 
+        MidiEvent::note_on, chan, data, 2);
 }
 
 /* write note off event to MIDI file */
@@ -1658,15 +1650,8 @@ AbcGenMidi::midi_noteoff(long delta_time, int pitch, int chan)
     else
         data[0] = (char) pitch;
     data[1] = (char) 0;
-    if(this->wctx->channel >= AbcMidiTrackCtx::MAXCHANS) 
-    {
-        this->wctx->error("Channel limit exceeded\n");
-    } 
-    else 
-    {
-        this->midi->writeMidiEvent(delta_time, 
+    this->midi->writeMidiEvent(delta_time, 
             MidiEvent::note_off, chan, data, 2);
-    }
 }
 
 /* changes the master coarse tuning and master fine tuning

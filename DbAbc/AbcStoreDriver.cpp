@@ -151,7 +151,8 @@ AbcStore::finishfile()
 
         if(this->performing)
         {
-            this->info("Ready to perform");
+            if(this->verbose)
+                this->info("Ready to perform");
             this->genMidi.beginPerformance(this->initState);
             // client must call Cleanup or destroy AbcStore
         }
@@ -183,8 +184,8 @@ AbcStore::dump_trackdescriptor()
     for(int i=0;i<this->genMidi.ntracks;i++) 
     {
         AbcGenMidi::Track &track = this->genMidi.trackdescriptor[i];
-        snprintf(msg, 100, " %d %d %d @ %d->%d",
-            i, track.tracktype, track.voicenum,
+        snprintf(msg, 100, " i:%d tt:%d v:%d midi:%d @ r:%d->%d",
+            i, track.tracktype, track.voicenum, track.midichannel,
             track.featureIndexBegin, track.featureIndexEnd);
         this->log(msg);
     }

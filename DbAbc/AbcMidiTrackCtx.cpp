@@ -124,7 +124,7 @@ AbcMidiTrackCtx::initTrack(int xtrack,
     this->trim_denom = 1;
 
     /* ensure that the percussion channel is not selected by findchannel() */
-    this->channel_in_use[9] = 1; 
+    this->genMidi->channel_in_use[9] = 1; 
     this->drumbars = 1;
     this->gchordbars = 1;
 
@@ -138,6 +138,11 @@ AbcMidiTrackCtx::initTrack(int xtrack,
     this->bendnvals = 0;
     for(int i=0;i<MAXLAYERS;i++) 
         this->controlnvals[i] = 0;
+    
+    // this case happens when we rewind-all but a client hasn't
+    // expressed interest (via getNextPerformanceEvent) yet.
+    if(!mw) 
+        return;
 
     if(this->initState->karaoke)
     {
@@ -302,10 +307,9 @@ AbcMidiTrackCtx::initTrack(int xtrack,
                     this->channel, xtrack);
                 this->log(msg);
             }
-            this->channel_in_use[this->channel] = 1;
         }
         else
-            this->channel_in_use[this->channel] = 1;
+            this->genMidi->channel_in_use[this->channel] = 1;
         if(this->initState->retuning) 
             this->genMidi->midi_re_tune(this->channel);
     } 
@@ -324,14 +328,12 @@ AbcMidiTrackCtx::initTrack(int xtrack,
         this->gchord.base = 48;
         this->gchord.vel = 75;
         this->fun.chan = this->genMidi->findchannel();
-        this->channel_in_use[fun.chan] = 1;
         if(this->initState->verbose) 
         {
             snprintf(msg, 100, "assigning channel %d to bass voice\n", this->fun.chan);
             this->log(msg);
         }
         this->gchord.chan = this->genMidi->findchannel();
-        this->channel_in_use[this->gchord.chan] = 1;
         if(this->initState->verbose) 
         {
             snprintf(msg, 100, 
@@ -356,7 +358,6 @@ AbcMidiTrackCtx::initTrack(int xtrack,
     {
         this->drone.event =0;
         this->drone.chan = this->genMidi->findchannel();
-        this->channel_in_use[this->drone.chan] = 1;
         if(this->initState->verbose) 
         {
             snprintf(msg, 100, 
