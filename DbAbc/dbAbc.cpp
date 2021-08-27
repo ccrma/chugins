@@ -10,7 +10,8 @@ dbAbc::dbAbc(unsigned int sampleRate) :
     m_parser(nullptr),
     m_store(nullptr),
     m_activeTrack(-1),
-    m_sampleRate(sampleRate)
+    m_sampleRate(sampleRate),
+    m_ignoreTempoUpdates(false)
 {
 }
 
@@ -100,7 +101,7 @@ dbAbc::Open(std::string const &fp, int argc, char const **argv)
         // delivered through the midi handler and can occur as the 
         // performance progresses.
         this->m_activeTrack = 0;
-        this->writeTempo(20000);
+        this->writeTempo(600000); // 100 bpm
         this->m_activeTrack = -1;
     }
     else
@@ -199,15 +200,44 @@ int
 dbAbc::writeTempo(long tempo)
 {
     assert(this->m_activeTrack != -1);
+    if(this->m_ignoreTempoUpdates)
+        return 0;
 
-    this->m_tempo;
+    this->m_tempo = tempo;
     this->m_tickSeconds = (double) (0.000001 * tempo / AbcMidiTrackCtx::DIV);
-    this->m_bpm = 60000000.0 / tempo;
+    this->m_bpm = 60000000.0f / tempo;
     this->m_samplesPerTick = this->m_tickSeconds * this->m_sampleRate;
 
-    //printf("writeTempo Track %d: %ld bpm: %g\n", 
-    //        this->m_activeTrack, tempo, this->m_bpm);
+    #if 0
+    printf("writeTempo Track %d: %ld bpm: %g\n", 
+            this->m_activeTrack, tempo, this->m_bpm);
+    #endif
     return 0;
+}
+
+void 
+dbAbc::SetBPM(float bpm)
+{
+    if(bpm > 0.f)
+    {
+        this->m_bpm = bpm;
+        this->m_tempo = 60000000.0f / bpm;
+        this->m_tickSeconds = (double) (0.000001 * this->m_tempo / AbcMidiTrackCtx::DIV);
+        this->m_samplesPerTick = this->m_tickSeconds * this->m_sampleRate;
+        this->m_ignoreTempoUpdates = true;
+
+        #if 0
+        printf("SetBPM %g %ld\n", bpm, this->m_tempo);
+        #endif
+    }
+    else
+        this->m_ignoreTempoUpdates = false;
+}
+
+float
+dbAbc::GetBPM()
+{
+    return this->m_bpm;
 }
 
 int

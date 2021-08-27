@@ -20,10 +20,12 @@ public:
     int Close();
 
     int GetNumTracks() { return this->m_numTracks; }
-    
     int Read(int track1, MidiEvent *); // called in loop, XXX: return/fill MidiMsg
     int Rewind();
+    void SetBPM(float bpm); // set to 0 or negative to defer to abc tempo
+    float GetBPM();
 
+    /* IMidiWriter --- */
     int writeMetaEvent(long delta_time, int type, char const *data, int size) override;
     int writeMidiEvent(long delta_time, int type, int chan, char const *data, int size) override;
     int writeTempo(long tempo) override;
@@ -40,6 +42,7 @@ private:
     class AbcParser *m_parser;
     class AbcStore *m_store;
 
+    bool m_ignoreTempoUpdates;
     float m_bpm;
     double m_tickSeconds;
     double m_samplesPerTick;

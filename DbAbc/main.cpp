@@ -33,6 +33,8 @@ CK_DLL_MFUN( abc_open );
 CK_DLL_MFUN( abc_close );
 CK_DLL_MFUN( abc_read );
 CK_DLL_MFUN( abc_numTracks );
+CK_DLL_MFUN( abc_setbpm );
+CK_DLL_MFUN( abc_getbpm );
 CK_DLL_MFUN( abc_rewind );
 
 // required by chuck
@@ -72,7 +74,13 @@ CK_DLL_QUERY(DbAbc)
     QUERY->add_arg(QUERY, "int", "track");
 
     QUERY->add_mfun(QUERY, abc_numTracks, "int", "numTracks");
+
+    QUERY->add_mfun(QUERY, abc_setbpm, "void", "setBPM");
+    QUERY->add_arg(QUERY, "float", "bpm");
+
+    QUERY->add_mfun(QUERY, abc_getbpm, "float", "getBPM");
     // no params
+
 
     QUERY->add_mfun(QUERY, abc_rewind, "void", "rewind");
     // no params
@@ -160,4 +168,16 @@ CK_DLL_MFUN(abc_rewind)
     dbAbc *c = (dbAbc *) OBJ_MEMBER_INT(SELF, abc_data_offset);
     c->Rewind();
     // no return atm
+}
+
+CK_DLL_MFUN(abc_setbpm)
+{
+    dbAbc * c = (dbAbc *) OBJ_MEMBER_INT(SELF, abc_data_offset);
+    c->SetBPM(GET_NEXT_FLOAT(ARGS));
+}
+
+CK_DLL_MFUN(abc_getbpm)
+{
+    dbAbc * c = (dbAbc *) OBJ_MEMBER_INT(SELF, abc_data_offset);
+    RETURN->v_float = c->GetBPM();
 }
