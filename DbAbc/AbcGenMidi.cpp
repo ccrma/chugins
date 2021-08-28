@@ -1528,7 +1528,7 @@ AbcGenMidi::findchannel()
             break;
     }
     if(j == AbcMidiTrackCtx::MAXCHANS) // eg: 16
-        this->wctx->error("All 16 MIDI channels used up, recycling.");
+        this->wctx->warning("All 16 abc channels used up, recycling.");
     this->channel_in_use[j] = 1;
     return (j % AbcMidiTrackCtx::MAXCHANS);
 }
