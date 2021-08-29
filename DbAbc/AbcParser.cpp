@@ -1045,7 +1045,7 @@ AbcParser::parsefield(char key, char const *f)
     switch (key)
     {
     case 'K':
-        if (inhead)
+        if(inhead)
         {
             /* First K: is the end of the header and the start of the body.
             * make sure we set up default for unit length
@@ -1053,13 +1053,13 @@ AbcParser::parsefield(char key, char const *f)
             */
             this->resolve_unitlen();
         }
-        foundkey = this->parsekey(place); /* [JA] 2021.05.21 parsekey called before set_voice_from_master(1) */
-        if (inhead) 
+        foundkey = this->parsekey(place); /* parsekey called before set_voice_from_master(1) */
+        if(inhead) 
         {
             /* set voice parameters using values from header */
             this->set_voice_from_master(1);
         }
-        if (inhead || inbody) 
+        if(inhead || inbody) 
         {
             if (foundkey)
             {
@@ -1548,7 +1548,6 @@ AbcParser::readlen(int *a, int *b, char const **p)
 /* part of parsekey, extracts word from input line */
 /* besides the space, the symbols _, ^, and = are used */
 /* as separators in order to handle key signature modifiers. */
-/* [SS] 2010-05-24 */
 const char *
 AbcParser::readword(char word[30], char const *s)
 {
