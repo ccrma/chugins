@@ -1,4 +1,4 @@
-# DbABCFile Chugin
+# DbAbc Chugin
 
 ## Intro
 
@@ -9,7 +9,7 @@ is littered with attempts to deliver something like this.
 has an ecosystem of supporting tools to interactively edit, preview 
 and print abc scores.
 
-DbABCFile is a parser for abc files for ChucK.  We combine the
+DbAbc is a parser for abc files for ChucK.  We combine the
 design of the built-in StkMidiFileIn with the abcmidi toolset
 created by James Allwright in the early 1990 and presently 
 [found here](https://github.com/sshlien/abcmidi).  Many files in 
@@ -50,14 +50,14 @@ time to the next composition event in the requested track.
 
 ```ck
 // if pathOrString starts with X: it's a abcstring, otherwise a file.
-int DbABCFile.open(string pathOrString);  
-int DbABCFile.close();
-int DbABCFile.numTracks();
-int DbABCFile.read(MidiMsg msg, int track); // returns 0 when done
-int DbABCFile.rewind();                     // returns 1 if successful
+int DbAbc.open(string pathOrString);  
+int DbAbc.close();
+int DbAbc.numTracks();
+int DbAbc.read(MidiMsg msg, int track); // returns 0 when done
+int DbAbc.rewind();                     // returns 1 if successful
 
 # to-do
-string DbABCFile.trackInfo(int track);
+string DbAbc.trackInfo(int track);
 
 ```
 
@@ -66,7 +66,7 @@ string DbABCFile.trackInfo(int track);
 ```ck
 
 "my.abc" => string abcfile;
-DbABCFile abcIn;
+DbAbc abcIn;
 abcIn.open(abcfile) => int err;
 <<< abcfile, "has", f.numTracks(), "tracks.">>>;
 

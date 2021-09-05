@@ -80,6 +80,32 @@ public class DoTrack
                     continue; 
                 }
                 else
+                if(msg.data1 == 255)
+                {
+                    if(msg.data2 == 0)
+                        <<<"MetaEvent sequence number", msg.data3, "track", track>>>;
+                    else
+                    if(msg.data2 == 1)
+                    {
+                        // value is string
+                        <<<"MetaEvent text event", msg.data3, "track", track>>>;
+                    }
+                    else
+                    if(msg.data2 == 88)
+                    {
+                        // 4 values numerator, denominator, XXX, 8
+                        <<<"MetaEvent time signature", msg.data3, "track", track>>>;
+                    }
+                    else
+                    if(msg.data2 == 89)
+                    {
+                        // data3 is #sharps, data4 is minor
+                        <<<"MetaEvent key signature", msg.data3, "track", track>>>;
+                    }
+                    else
+                        <<<"MetaEvent", msg.data2, msg.data3, "track", track>>>;
+                }
+                else
                     <<<"Track", track, "unhandled", msg.data1>>>;
                 
             }

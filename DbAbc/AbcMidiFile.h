@@ -2,7 +2,7 @@
 #define AbcMidiFile_h
 
 #include <cstdio>
-#include <cstring> // memcpy
+#include <vector>
 
 struct MidiEvent
 {
@@ -13,46 +13,30 @@ struct MidiEvent
     MidiEvent(const MidiEvent &rhs)
     {
         this->evt = rhs.evt;
+        this->metaType = rhs.metaType;
         this->dur = rhs.dur;
-        this->size = rhs.size;
-        this->data.strptr = rhs.data.strptr; // assert(sizeof(strptr) >= 4*sizeof(char)) 
+        this->data = rhs.data;
     }
 
     MidiEvent(long dt, int type, char const *data, int size)
     {
         this->dur = dt;
         this->evt = type;
-        this->size = size;
-        if(size <= sizeof(this->data.d))
-            memcpy(this->data.d, data, size);
-        else
-            this->data.strptr = data; // pointer assignment
+        this->metaType = -1;
+        this->data.assign(data, data+size);
     }
 
     MidiEvent(long dt, int meta, int type, char const *data, int size)
     {
         this->dur = dt;
         this->evt = meta;
-        this->size = size+1;
-        if(size <= sizeof(this->data.d))
-        {
-            this->data.d[0] = type;
-            memcpy(this->data.d+1, data, size);
-        }
-        else
-        {
-            this->data.strptr = data; // pointer assignment
-        }
+        this->metaType = type;
+        this->data.assign(data, data+size);
     }
 
-    int evt;
+    int evt, metaType;
     long dur;
-    int size; // 0 means no event - ie: a feature didn't map to an event
-    union
-    {
-        char d[16]; // most events, size:2-3
-        char const *strptr; // we assume a pointer is at least as large as 4 chars
-    } data;
+    std::vector<char> data; // 0 means no event - ie: a feature didn't map to an event
 
     enum Codes
     {

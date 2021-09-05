@@ -1,6 +1,10 @@
 // run: chuck _pre.ck str_two.ck
+//
+// this example shows the use of 2 instances of DbAbc.
+//
 // if a string starts with "X:#", we can pass it to DbAbc::open.
 // abc requires that the header portion terminate with K:<key>.
+
 "X:1\n"+
 "M:4/4\n"+
 "Q:1/4=200\n"+

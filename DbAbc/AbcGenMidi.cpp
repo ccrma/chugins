@@ -2232,7 +2232,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
         AbcParser::Skipspace(&p);
         this->wctx->beat = AbcParser::Readnump(&p);
         if(this->wctx->beat == 0)
-        this->wctx->beat = this->wctx->barsize;
+            this->wctx->beat = this->wctx->barsize;
         done = 1;
     }
     else 

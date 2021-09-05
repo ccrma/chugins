@@ -21,7 +21,7 @@ dbAbc::~dbAbc()
 }
 
 int
-dbAbc::Open(std::string const &fp, int argc, char const **argv)
+dbAbc::Open(std::string const &fp)
 {
     this->Close();
     this->m_parser = new AbcParser();
@@ -53,19 +53,14 @@ dbAbc::Open(std::string const &fp, int argc, char const **argv)
     else
         largv.push_back(fp.c_str()); // argv[1]
     largv.push_back("-perform");
-    if(argc > 0)
+    for(int i=0;i<this->m_argv.size();i++)
     {
-        for(int i=0;i<argc;i++)
-            largv.push_back(argv[i]);
+        largv.push_back(this->m_argv[i].c_str());
     }
-    else
-    {
-        // for debugging
-        #if 0
-        largv.push_back("-v");
-        largv.push_back("6");
-        #endif
-    }
+    #if 0 // debugging
+    largv.push_back("-v");
+    largv.push_back("6");
+    #endif
 
     std::string filename;
     this->m_store->Init(largv.size(), largv.data(), &filename); // 
@@ -176,8 +171,8 @@ dbAbc::clearPending(int track, MidiEvent *evt)
     if(equeue.size())
     {
         MidiEvent &e = equeue.front();
-        equeue.pop_front();
         *evt = e;
+        equeue.pop_front(); // pop after copy-out
         this->m_activePending = equeue.size();
         return 1;
     }

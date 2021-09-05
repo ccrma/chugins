@@ -71,6 +71,7 @@ public:
     void normal_tone();
     void gchord(char const *s);
     void handle_gchord(char const *s);
+    void instruction(char const *s);
     void handle_instruction(char const *s);
     void bar(int type, char const *replist);
     void key(int sharps, char const *s, int modeindex, 

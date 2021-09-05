@@ -15,8 +15,13 @@ public:
     dbAbc(unsigned int sampleRate);
     ~dbAbc();
 
-    int Open(std::string const &filepathOrString,  // start with 'X:' for string
-            int argc=0, char const **argv=nullptr);
+    void Configure(std::vector<std::string> &cfg)
+    {
+        this->m_argv = cfg;
+    }
+
+    // if string doesn't start with 'X:', it's a filepath.
+    int Open(std::string const &filepathOrString);
     int Close();
 
     int GetNumTracks() { return this->m_numTracks; }
@@ -38,6 +43,8 @@ private:
         // chuck::dur is measured in samples
         return .5 + dt * this->m_samplesPerTick;
     }
+
+    std::vector<std::string> m_argv;
 
     class AbcParser *m_parser;
     class AbcStore *m_store;

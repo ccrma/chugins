@@ -29,6 +29,7 @@ U.S.A.
 
 CK_DLL_CTOR( abc_ctor );
 CK_DLL_DTOR( abc_dtor );
+CK_DLL_MFUN( abc_configure );
 CK_DLL_MFUN( abc_open );
 CK_DLL_MFUN( abc_close );
 CK_DLL_MFUN( abc_read );
@@ -64,6 +65,9 @@ CK_DLL_QUERY(DbAbc)
     QUERY->add_ctor(QUERY, abc_ctor);
     QUERY->add_dtor(QUERY, abc_dtor);
 
+    QUERY->add_mfun(QUERY, abc_configure, "void", "configure");
+    QUERY->add_arg(QUERY, "string[]", "argv");
+
     QUERY->add_mfun(QUERY, abc_open, "int", "open");
     QUERY->add_arg(QUERY, "string", "path");
 
@@ -80,7 +84,6 @@ CK_DLL_QUERY(DbAbc)
 
     QUERY->add_mfun(QUERY, abc_getbpm, "float", "getBPM");
     // no params
-
 
     QUERY->add_mfun(QUERY, abc_rewind, "void", "rewind");
     // no params
@@ -105,6 +108,25 @@ CK_DLL_DTOR(abc_dtor)
         delete c;
         OBJ_MEMBER_INT(SELF, abc_data_offset) = 0;
         c = NULL;
+    }
+}
+
+CK_DLL_MFUN(abc_configure)
+{
+    dbAbc * c = (dbAbc *) OBJ_MEMBER_INT(SELF, abc_data_offset);
+    Chuck_Object *cfg = GET_NEXT_OBJECT(ARGS);
+    Chuck_Array4 *userArray = (Chuck_Array4 *) cfg; // 4 and 8 are the same on 64-bit
+
+    std::vector<std::string> argv;
+    for(int i=0;i<userArray->m_vector.size();i++)
+    {
+        Chuck_String **x = reinterpret_cast<Chuck_String **>(&userArray->m_vector[i]); 
+        // printf("%d %s\n", i, (*x)->str().c_str());
+        argv.push_back((*x)->str());
+    }
+    if(argv.size() > 0)
+    {
+        c->Configure(argv);
     }
 }
 
@@ -143,19 +165,25 @@ CK_DLL_MFUN(abc_read)
         int active = c->Read(track, &mevt);
         if(active)
         {
+            size_t sz = mevt.data.size();
             OBJ_MEMBER_DUR(msg, midiMsg_offset_when) = mevt.dur;
-            if(mevt.size <= 2)
+            if(mevt.metaType != -1)
             {
+                // often won't fit in MidiMsg (usually a label/annotation)
                 OBJ_MEMBER_INT(msg, midiMsg_offset_data1) = mevt.evt;
-                OBJ_MEMBER_INT(msg, midiMsg_offset_data2) = mevt.size >= 1 ? mevt.data.d[0] : 0;
-                OBJ_MEMBER_INT(msg, midiMsg_offset_data3) = mevt.size >= 2 ? mevt.data.d[1] : 0;
+                OBJ_MEMBER_INT(msg, midiMsg_offset_data2) = mevt.metaType;
+                OBJ_MEMBER_INT(msg, midiMsg_offset_data3) = sz > 0 ? mevt.data[0] : 0;
+                // here we are dropping data 'til we create AbcMsg
             }
             else
             {
-                // won't fit in MidiMsg (usually a label/annotation)
+                // keyup/down are
                 OBJ_MEMBER_INT(msg, midiMsg_offset_data1) = mevt.evt;
-                OBJ_MEMBER_INT(msg, midiMsg_offset_data2) = 0;
-                OBJ_MEMBER_INT(msg, midiMsg_offset_data3) =  0;
+                OBJ_MEMBER_INT(msg, midiMsg_offset_data2) = sz > 0 ? mevt.data[0] : 0;
+                OBJ_MEMBER_INT(msg, midiMsg_offset_data3) = sz > 1 ? mevt.data[1] : 0;
+                if(sz > 2)
+                    printf("DbAbc unexpected Midi duration! %ld > 2\n", sz);
+                // are we dropping data here?
             }
             RETURN->v_int = 1; 
         }

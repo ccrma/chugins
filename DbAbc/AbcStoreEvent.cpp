@@ -929,7 +929,9 @@ AbcStore::midi(char const *s)
 
     if(done == 0) 
     {
-        /* add as a command to be interpreted later */
+        /* add as a command to be interpreted later 
+         *  includes beat and beatmod
+         */
         this->textfeature(Abc::DYNAMIC, s);
     }
 }
@@ -1634,6 +1636,202 @@ AbcStore::chordoff(int chord_n, int chord_m)
         this->marknoteend();
         if(this->tuplecount > 0) 
             --this->tuplecount;
+    }
+}
+
+void
+AbcStore::instruction(char const *s)
+{
+    std::vector<std::string> instructions;
+    this->parser->SplitString(s, ';', &instructions);
+    for(int i=0;i<instructions.size();i++)
+        this->handle_instruction(instructions[i].c_str());
+}
+
+void
+AbcStore::handle_instruction(char const *s)
+{
+    char midimsg[40];
+    char buff[MAXLINE];
+
+    /* remove any leading spaces */
+    char const* p = s;
+    AbcParser::Skipspace(&p);
+    char *q = const_cast<char *>(p);  // we know we can overwrite since ::instruction owns
+    /* remove any trailing spaces */
+    while ((*q != '\0') && (*q != ' ')) 
+        q = q + 1;
+    if(*q == ' ') 
+        *q = '\0';
+    int done = 0;
+    if(this->nofnop == 0) 
+    {
+        /* dynamics have a commandline control --- */
+        if(strcmp(p, "ppp") == 0) 
+        {
+            this->specific("MIDI", "beat 30 20 10 1");
+            done = 1;
+        }
+        else
+        if(strcmp(p, "pp") == 0) 
+        {
+            this->specific("MIDI", "beat 45 35 20 1");
+            done = 1;
+        }
+        else
+        if(strcmp(p, "p") == 0) 
+        {
+            this->specific("MIDI", "beat 60 50 35 1");
+            done = 1;
+        }
+        else
+        if(strcmp(p, "mp") == 0)
+        {
+            this->specific("MIDI", "beat 75 65 50 1");
+            done = 1;
+        }
+        else
+        if(strcmp(p, "mf") == 0) 
+        {
+            this->specific("MIDI", "beat 90 80 65 1");
+            done = 1;
+        }
+        else
+        if(strcmp(p, "f") == 0) 
+        {
+            this->specific("MIDI", "beat 105 95 80 1");
+            done = 1;
+        }
+        else
+        if(strcmp(p, "ff") == 0) 
+        {
+            this->specific("MIDI", "beat 120 110 95 1");
+            done = 1;
+        }
+        else
+        if(strcmp(p, "fff") == 0) 
+        {
+            this->specific("MIDI", "beat 127 125 110 1");
+            done = 1;
+        }
+        else
+        if((strcmp(p,"crescendo(") == 0) || (strcmp(p,"<(") == 0) || 
+           (strcmp(p,"crescendo)") == 0) || (strcmp(p,"<)") == 0)) 
+        {
+            sprintf(midimsg,"beatmod %d", this->velocitychange);
+            this->specific("MIDI", midimsg);
+            done = 1;
+        }
+        else
+        if((strcmp(p,"diminuendo)") == 0) || (strcmp(p,">)") == 0) || 
+           (strcmp(p,"diminuendo(") == 0) || (strcmp(p,">(") == 0)) 
+        {
+            sprintf(midimsg, "beatmod -%d", this->velocitychange);
+            this->specific("MIDI", midimsg);
+            done = 1;
+        }
+    } /* end nofnop */
+    if(!done)
+    {
+        if(strcmp(p, "drum") == 0) 
+        {
+            this->addfeature(Abc::DRUMON, 0, 0, 0);
+            drumvoice = v->indexno;
+            done = 1;
+        }
+        else
+        if(strcmp(p, "nodrum") == 0) 
+        {
+            this->addfeature(Abc::DRUMOFF, 0, 0, 0);
+            done = 1;
+        }
+        else
+        if(strcmp(s, "fermata") == 0) 
+        {
+            this->parser->decorators_passback[Abc::FERMATA] =1;
+            done = 1;
+        }
+        else
+        if(strcmp(s, "trill") == 0) 
+        {
+            this->parser->decorators_passback[Abc::TRILL] =1;
+            done = 1;
+        }
+        else
+        if(strcmp(p, "arpeggio") == 0) 
+        {
+            addfeature(Abc::ARPEGGIO, 0, 0, 0);
+            done = 1;
+        }
+        else
+        if(strcmp(p, "ped") == 0) 
+        {
+            addfeature(Abc::PEDAL_ON, 0, 0, 0);
+            done = 1;
+        }
+        else
+        if(strcmp(p, "ped-end") == 0) 
+        {
+            addfeature(Abc::PEDAL_OFF, 0, 0, 0);
+            if(quiet == -1) 
+            {
+                snprintf(buff, sizeof(buff),
+                    "instruction !%s! is deprecated.\nUse !ped-up! instead", s);
+                this->warning(buff);
+            }
+            done = 1;
+        }
+        else
+        if(strcmp(p, "ped-up") == 0) 
+        {
+            addfeature(Abc::PEDAL_OFF, 0, 0, 0);
+            done = 1;
+        }
+        else
+        if(strcmp(s, "breath") == 0)
+        {
+            this->parser->decorators_passback[Abc::BREATH] =1;
+            done = 1;
+        }
+        else
+        if (strcmp(s, "bend") == 0) 
+        {
+            addfeature(Abc::EFFECT, 1, 0, 0);
+            done = 1;
+        }
+        else
+        if(strcmp(s, "shape") == 0) 
+        {
+            addfeature(Abc::EFFECT, 2, 0, 0);
+            done = 1;
+        }
+        else
+        /* The following instructions were added to avoid numerous
+        warnings if they appear in the abc file (in particular the
+        files derived from Craig Sapp's kern files using hum2abc).
+        Though most of these instructions are part of the abc
+        2.2 standard, I have yet to implement them.
+        */
+        if(strcmp(s,"accent") == 0) 
+            done = 1;
+        else
+        if(strcmp(s,"mordent") == 0)
+            done = 1;
+        else
+        if(strcmp(s,"sfz") == 0)
+            done = 1;
+        else
+        if(strcmp(s,"wedge") == 0)
+            done = 1;
+        else
+        if (strcmp(s,"turn") == 0)
+            done = 1;
+    }
+
+    if(done == 0 && quiet == -1)
+    {
+        snprintf(buff, sizeof(buff), "instruction !%s! ignored", s);
+        this->warning(buff);
     }
 }
 
