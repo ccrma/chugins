@@ -1,4 +1,5 @@
-/*---------------------------------------------------------------------------- DbAbc is a abc notation parser for chuck that produces MidiMsgs
+/*---------------------------------------------------------------------------- 
+ DbAbc is a abc notation parser for chuck that produces MidiMsgs
  that represent the file contents.
  Dana Batali Jun 2021 (same license as chuck (gpl2+)).
 
@@ -26,7 +27,19 @@ U.S.A.
 #include <limits.h>
 #include <math.h>
 
+/* ---------------------------------------------------------------------------*/
+CK_DLL_CTOR( abcMsg_ctor );
+CK_DLL_DTOR( abcMsg_dtor );
+static t_CKINT abcMsg_when_offset;
+static t_CKINT abcMsg_status_offset; 
+static t_CKINT abcMsg_meta_offset; 
+static t_CKINT abcMsg_data1_offset; // can't do arrays yet in chuck plugins
+static t_CKINT abcMsg_data2_offset;
+static t_CKINT abcMsg_data3_offset;
+static t_CKINT abcMsg_data4_offset;
+static t_CKINT abcMsg_datastr_offset;
 
+/* ---------------------------------------------------------------------------*/
 CK_DLL_CTOR( abc_ctor );
 CK_DLL_DTOR( abc_dtor );
 CK_DLL_MFUN( abc_configure );
@@ -37,29 +50,29 @@ CK_DLL_MFUN( abc_numTracks );
 CK_DLL_MFUN( abc_setbpm );
 CK_DLL_MFUN( abc_getbpm );
 CK_DLL_MFUN( abc_rewind );
-
-// required by chuck
-t_CKINT abc_data_offset = 0;
-
-// hack alert:
-// we'd like to use standard MidiMsg for communicating with
-// outside world.  To do that we need access to MidiMsg field
-// offsets.  But the chugin interface doesn't expose these and
-// we'd need to link against libchuck.  But we don't want to link
-// the static library, rather we'd need to link the .dll and the
-// .dll would need to export these symbols.  Our hack is to 
-// determine these offset values by nefarious means and hard-code
-// them here.  NB: these values are likely to be valid for
-// all 64 bit builds. Unclear/unlikely valid for 32-bit builds.
-static t_CKINT midiMsg_offset_data1 = 8;
-static t_CKINT midiMsg_offset_data2 = 16;
-static t_CKINT midiMsg_offset_data3 = 24;
-static t_CKINT midiMsg_offset_when = 32;
+static t_CKINT abc_data_offset = 0; // offset to instance of DbAbc
 
 /* ----------------------------------------------------------- */
 CK_DLL_QUERY(DbAbc)
 {
     QUERY->setname(QUERY, "DbAbc");
+
+    /* ------------------------------------------------------------- */
+    QUERY->begin_class(QUERY, "AbcMsg", "Object");
+    QUERY->add_ctor(QUERY, abcMsg_ctor); // unused atm (needed if we get array creation)
+    QUERY->add_dtor(QUERY, abcMsg_dtor); // unused atm
+
+    abcMsg_when_offset = QUERY->add_mvar(QUERY, "dur", "when", false);
+    abcMsg_status_offset = QUERY->add_mvar(QUERY, "int", "status", false);
+    abcMsg_meta_offset = QUERY->add_mvar(QUERY, "int", "meta", false);
+    abcMsg_data1_offset = QUERY->add_mvar(QUERY, "int", "data1", false);
+    abcMsg_data2_offset = QUERY->add_mvar(QUERY, "int", "data2", false);
+    abcMsg_data3_offset = QUERY->add_mvar(QUERY, "int", "data3", false);
+    abcMsg_data4_offset = QUERY->add_mvar(QUERY, "int", "data4", false);
+    abcMsg_datastr_offset = QUERY->add_mvar(QUERY, "string", "datastr", false);
+    QUERY->end_class(QUERY);
+
+    /* ------------------------------------------------------------- */
     QUERY->begin_class(QUERY, "DbAbc", "Object");
 
     QUERY->add_ctor(QUERY, abc_ctor);
@@ -74,7 +87,7 @@ CK_DLL_QUERY(DbAbc)
     QUERY->add_mfun(QUERY, abc_close, "void", "close");
 
     QUERY->add_mfun(QUERY, abc_read, "int", "read");
-    QUERY->add_arg(QUERY, "MidiMsg", "msg");
+    QUERY->add_arg(QUERY, "AbcMsg", "msg");
     QUERY->add_arg(QUERY, "int", "track");
 
     QUERY->add_mfun(QUERY, abc_numTracks, "int", "numTracks");
@@ -88,11 +101,31 @@ CK_DLL_QUERY(DbAbc)
     QUERY->add_mfun(QUERY, abc_rewind, "void", "rewind");
     // no params
 
+    // this reserves a variable in the ChucK internal class to store
+    // referene to the c++ class we defined above
     abc_data_offset = QUERY->add_mvar(QUERY, "int", "@abc_data", false);
     QUERY->end_class(QUERY);
     return TRUE;
 }
 
+
+/* ----------------------------------------------------------------------- */
+
+CK_DLL_CTOR(abcMsg_ctor)
+{
+    // only needed to construct dynamic members
+    std::string s; // empty
+    OBJ_MEMBER_STRING(SELF, abcMsg_datastr_offset) = (Chuck_String *)
+        API->object->create_string(API, SHRED, s);
+
+}
+
+CK_DLL_DTOR(abcMsg_dtor)
+{
+    // may not need to delete_string? (there's no api)
+}
+
+/* ----------------------------------------------------------------------- */
 CK_DLL_CTOR(abc_ctor)
 {
     OBJ_MEMBER_INT(SELF, abc_data_offset) = 0;
@@ -166,26 +199,19 @@ CK_DLL_MFUN(abc_read)
         if(active)
         {
             size_t sz = mevt.data.size();
-            OBJ_MEMBER_DUR(msg, midiMsg_offset_when) = mevt.dur;
-            if(mevt.metaType != -1)
+            OBJ_MEMBER_DUR(msg, abcMsg_when_offset) = mevt.dur;
+            OBJ_MEMBER_INT(msg, abcMsg_status_offset) = mevt.evt;
+            OBJ_MEMBER_INT(msg, abcMsg_meta_offset) = mevt.metaType;
+            OBJ_MEMBER_INT(msg, abcMsg_data1_offset) = sz > 0 ? mevt.data[0] : 0;
+            OBJ_MEMBER_INT(msg, abcMsg_data2_offset) = sz > 1 ? mevt.data[1] : 0;
+            OBJ_MEMBER_INT(msg, abcMsg_data3_offset) = sz > 2 ? mevt.data[2] : 0;
+            OBJ_MEMBER_INT(msg, abcMsg_data4_offset) = sz > 3 ? mevt.data[3] : 0;
+            if(sz > 4)
             {
-                // often won't fit in MidiMsg (usually a label/annotation)
-                OBJ_MEMBER_INT(msg, midiMsg_offset_data1) = mevt.evt;
-                OBJ_MEMBER_INT(msg, midiMsg_offset_data2) = mevt.metaType;
-                OBJ_MEMBER_INT(msg, midiMsg_offset_data3) = sz > 0 ? mevt.data[0] : 0;
-                // here we are dropping data 'til we create AbcMsg
+                Chuck_String *str = OBJ_MEMBER_STRING(msg, abcMsg_datastr_offset);
+                str->set(std::string(&mevt.data[0], &mevt.data[0] + mevt.data.size()));
             }
-            else
-            {
-                // keyup/down are
-                OBJ_MEMBER_INT(msg, midiMsg_offset_data1) = mevt.evt;
-                OBJ_MEMBER_INT(msg, midiMsg_offset_data2) = sz > 0 ? mevt.data[0] : 0;
-                OBJ_MEMBER_INT(msg, midiMsg_offset_data3) = sz > 1 ? mevt.data[1] : 0;
-                if(sz > 2)
-                    printf("DbAbc unexpected Midi duration! %ld > 2\n", sz);
-                // are we dropping data here?
-            }
-            RETURN->v_int = 1; 
+            RETURN->v_int = (int) sz; 
         }
         // else nothing left to do
     }

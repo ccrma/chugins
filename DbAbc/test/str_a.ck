@@ -2,6 +2,7 @@
 // if a string starts with "X:#", we can pass it to DbAbc::open.
 // abc requires that the header portion terminate with K:<key>.
 "X:1\n" +
+"M:4/4\n"+
 "K:G\n"+
 "P:A\n"+
 "|: G>A BB cBAc|BAGF E2D2|G>A BB cBAc|BGAF G2 G2\n"+

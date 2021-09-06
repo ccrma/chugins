@@ -66,7 +66,7 @@ dbf.close();
 fun void doTrack(int track, float speed)
 {
     int v;
-    MidiMsg msg;
+    AbcMsg msg;
     while(dbf.read(msg, track))
     {
         if(msg.when > 0::second)
@@ -105,7 +105,7 @@ fun void doTrack(int track, float speed)
         {
             // MetaEvent..
             // log
-            if(msg.data1 == 1) // text annotation (string doesn't fit in MidiMsg)
+            if(msg.data1 == 1) // text annotation (string doesn't fit in AbcMsg)
                 continue;
             else
             if(msg.data1 == 88)
