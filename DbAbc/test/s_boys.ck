@@ -75,47 +75,32 @@ fun void doTrack(int track, float speed)
             msg.when * speed => now; // speed of 1 is nominal
         }
             
-        if((msg.data1 & 0xF0) == 0x90)
+        msg.status & 0xF0 => int stat;
+        if(stat == 0x90)
         {
             // NOTEON
             // get the pitch and convert to frequencey; set
             // <<<"Track", track, "note-on, pitch", msg.data2>>>;
             if(track == 1)
             {
-                msg.data2 => Std.mtof => w[v].freq;
+                msg.data1 => Std.mtof => w[v].freq;
                 // velocity data; note on
-                msg.data3/127.0 => w[v].noteOn;
+                msg.data2/127.0 => w[v].noteOn;
                 // cycle the voices
                 (v+1)%w.size() => v;
             }
             else
             if(track == 2)
             {
-                f[v].noteOn(msg.data2, msg.data3, msg.data1 & 0x0F);
+                f[v].noteOn(msg.data1, msg.data1, msg.status & 0x0F);
                 (v+1)%f.size() => v;
             }
         }
         else
-        if((msg.data1 & 0xF0) == 0x80)
+        if(stat == 0x80)
         {
             // NOTEOFF - need to track which voice is associated with which
             // note.  Many instruments force note-off when new note-on arrives.
-        }
-        else
-        {
-            // MetaEvent..
-            // log
-            if(msg.data1 == 1) // text annotation (string doesn't fit in AbcMsg)
-                continue;
-            else
-            if(msg.data1 == 88)
-                continue; // <<<"Time Signature", track, msg.data2, msg.data3>>>;
-            else
-            if(msg.data1 == 89)
-                continue; // <<<"Key Signature", track, msg.data2, msg.data3>>>;
-            else
-                <<<"Track", track, "unhandled", msg.data1>>>;
-            
         }
     }
     running--;

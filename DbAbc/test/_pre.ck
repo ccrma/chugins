@@ -45,31 +45,31 @@ public class DoTrack
             else
             if(stat == 0xA0) // polyphonic aftertouch
             {
-                <<<"Unimplemented polyphonic aftertouch", msg.status, 
+                <<<"MIDI polyphonic aftertouch", msg.status, 
                     "track", track>>>;
             }
             else
             if(stat == 0xB0) // control/mode change
             {
-                <<<"Unimplemented control/mode polyphonic aftertouch", msg.status, 
+                <<<"MIDI control/mode polyphonic aftertouch", msg.status, 
                     msg.data1, msg.data2, "track", track>>>;
             }
             else
             if(stat == 0xC0) // program change
             {
-                <<<"Unimplemented program change", msg.status, 
+                <<<"MIDI program change", msg.status, 
                     msg.data1, msg.data2, "track", track>>>;
             }
             else
             if(stat == 0xD0) // channel aftertouch
             {
-                <<<"Unimplemented channel aftertouch", msg.status, 
+                <<<"MIDI channel aftertouch", msg.status, 
                     msg.data1, msg.data2, "track", track>>>;
             }
             else
             if(stat == 0xE0) // pitch wheel
             {
-                <<<"Unimplemented pitch wheel", msg.status, 
+                <<<"MIDI pitch wheel", msg.status, 
                     msg.data1, msg.data2, msg.data3, msg.data4,
                     "track", track>>>;
             }
@@ -85,7 +85,13 @@ public class DoTrack
                     else
                     if(msg.meta == 1)
                     {
-                        <<<"MetaEvent text event", 
+                        <<<"MetaEvent text", 
+                            "'", msg.datastr, "' track", track>>>;
+                    }
+                    else
+                    if(msg.meta == 3)
+                    {
+                        <<<"MetaEvent title", 
                             "'", msg.datastr, "' track", track>>>;
                     }
                     else
@@ -110,13 +116,13 @@ public class DoTrack
                             "track", track>>>;
                 }
                 else
-                    <<<"AbcEvent unexpected misc", msg.status,
+                    <<<"Abc unimplemented MIDI/misc", msg.status,
                         msg.data1, msg.data2, msg.data3, msg.data4,
                         "track", track >>>;
                 
             }
             else
-                <<<"Unexpected abc status", msg.status, "track", track>>>;
+                <<<"Abc unexpected status", msg.status, "track", track>>>;
         }
         1 -=> running[0];
     }

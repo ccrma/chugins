@@ -11,9 +11,8 @@
 "   d c/2B/2 AB c B/2A/2 GB|AGGF G2 G2 ::\n"+
 "K:F\n"+
 "!ppp!\n"+
-"!crescendo(\n"+
 "B/2A/2 G B/2A/2 G FG A2|DEFG ABAG | \\\n"+
-"B/2A/2 G B/2A/2 G FG A2|DEFG GF G2 !fff!:|\n" 
+"B/2A/2 G B/2A/2 G FG A2|DEFG GF G2 :\\n"
 => string tune;
 
 DoTrack doit;
