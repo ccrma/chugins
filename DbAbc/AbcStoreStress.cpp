@@ -375,7 +375,7 @@ AbcStore::apply_bf_stress_factors()
     {
         snprintf(msg, 64, "rhythmdesignator = %s\n",
             this->rhythmdesignator);
-        this->info(msg);
+        this->log(msg);
     }
     int j = 0;
     if(this->genMidi.stress_pattern_loaded == 0) 
@@ -396,7 +396,7 @@ AbcStore::apply_bf_stress_factors()
     {
         snprintf(msg, 64, "beat_modifer using segment size %d/%d",
             this->genMidi.segnum, this->genMidi.segden);
-        this->info(msg);
+        this->log(msg);
     }
     char inputfile[64];
     char command[40];
@@ -416,7 +416,7 @@ AbcStore::apply_bf_stress_factors()
             if(this->verbose>1) 
             {
                 snprintf(msg, 64, "bar %d", barnumber);
-                this->info(msg);
+                this->log(msg);
             }
             if(this->genMidi.beatmodel == 2) 
                 this->beat_modifier(j);
@@ -433,7 +433,7 @@ AbcStore::apply_bf_stress_factors()
                 if(this->verbose) 
                 {
                     snprintf(msg, 64, "%s %d", command, this->genMidi.beatmodel);
-                    this->info(msg);
+                    this->log(msg);
                 }
                 if (this->genMidi.beatmodel == 1)
                     return; /* do not apply beat_modifier */
@@ -446,7 +446,7 @@ AbcStore::apply_bf_stress_factors()
                 if(this->verbose) 
                 {
                     snprintf(msg, 64, "ptstress file = %s", inputfile);
-                    this->info(msg);
+                    this->log(msg);
                 }
                 if(this->parse_stress_params(inputfile) == -1) 
                     this->readstressfile(inputfile);
@@ -576,7 +576,7 @@ AbcStore::read_custom_stress_file (char *filename)
     if(this->verbose > 0) 
     {
         snprintf(msg, 100, "reading %s", filename);
-        this->info(msg);
+        this->log(msg);
     }
     char name[32];
     char meter[6];
@@ -596,14 +596,14 @@ AbcStore::read_custom_stress_file (char *filename)
         if(this->verbose > 1) 
         {
             snprintf(msg, 100, "%s %s index = %d\n", name, meter, index);
-            this->info(msg);
+            this->log(msg);
         }
         j = fscanf(inhandle, "%d %d", &nseg, &nval);
         if(this->verbose > 2) 
         {
             snprintf(msg, 100, "j = %d nseg = %d nval = %d\n", 
                     j, nseg, nval);
-            this->info(msg);
+            this->log(msg);
         }
         if(j != 2) 
         {
@@ -644,7 +644,7 @@ AbcStore::read_custom_stress_file (char *filename)
             if(this->verbose > 2) 
             {
                 snprintf(msg, 100, "%d %f", gain, expand);
-                this->info(msg);
+                this->log(msg);
             }
             if(j != 2) 
             {
@@ -667,7 +667,7 @@ int
 AbcStore::parse_stress_params(char const *input) 
 {
     if(this->verbose > 1) 
-        this->info("parsing stress parameters");
+        this->log("parsing stress parameters");
     char msg[100];
     int success = 0;
     char *next;
@@ -753,7 +753,7 @@ AbcStore::readstressfile(char const * filename)
             snprintf(msg, 100, "%d %f",
                 this->genMidi.ngain[n],
                 this->genMidi.fdur[n]);
-            this->info(msg);
+            this->log(msg);
         }
     }
     fclose(inputhandle);
@@ -776,7 +776,7 @@ AbcStore::calculate_stress_parameters()
         snprintf(msg, 100, "segment size set to %d/%d",
             this->genMidi.segnum,
             this->genMidi.segden);
-        this->info(msg);
+        this->log(msg);
     }
     for(int n=0; n<this->genMidi.nseg+1; n++) 
     {
@@ -807,13 +807,13 @@ AbcStore::calculate_stress_parameters()
         if(this->verbose > 1) 
         {
             snprintf(msg, 100, " %f", this->genMidi.fdursum[n]);
-            this->info(msg);
+            this->log(msg);
         }
     }
     if(this->verbose > 1) 
     {
         snprintf(msg, 100, " == fdursum");
-        this->info(msg);
+        this->log(msg);
     }
     /*printf("maxdur = %f\n",maxdur);*/
     /*if (fdursum[nseg] != (float) nseg) fdursum[nseg] = (float) nseg; [SS] 2011-09-06 */
@@ -933,9 +933,9 @@ AbcStore::beat_modifier(int i)
                     fd.pitch, start_num, start_denom, startseg_num, startseg_denom,
                     end_num, end_denom, endseg_num, endseg_denom,
                     mstart_num, mstart_denom, mend_num, mend_denom);
-                this->info(msg);
+                this->log(msg);
                 snprintf(msg, 100, " - %d/%d", delta_num, delta_denom);
-                this->info(msg);
+                this->log(msg);
             }
             fd.num = delta_num; 
             fd.denom = delta_denom;

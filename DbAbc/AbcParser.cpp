@@ -2192,12 +2192,12 @@ AbcParser::print_voicecodes()
     if(this->num_voices == 0)
         return;
     char msg[80];
-    this->handler->info("voice mapping:");
+    this->handler->log("voice mapping:");
     for(int i = 0; i < this->num_voices; i++)
     {
         snprintf(msg, 80, "%d %s", 
             i+1, this->voicecode[i].label);
-        this->handler->info(msg);
+        this->handler->log(msg);
     }
 }
 

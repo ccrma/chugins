@@ -140,7 +140,7 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
     {
         char msg[32];
         snprintf(msg, 32, "version %s", this->version);
-        this->info(msg);
+        this->log(msg);
         return;
     }
     /* look for "no forte no piano" option */
@@ -631,13 +631,13 @@ AbcStore::dump_voicecontexts()
     char msg[100];
 
     p = this->head;
-    this->info("dump_voicecontexts()");
+    this->log("dump_voicecontexts()");
     while(p != NULL) 
     {
         snprintf(msg, 100, 
             "  num %d index %d gchords %d words %d drums %d drone %d tosplit %d fromsplit %d",
             p->voiceno,p->indexno,p->hasgchords,p->haswords,p->hasdrums,p->hasdrone,p->tosplitno,p->fromsplitno);
-        this->info(msg);
+        this->log(msg);
         q = p->next;
         p = q;
     }
@@ -1131,13 +1131,13 @@ AbcStore::dump_notestruct ()
 {
     notestruct *s;
     char msg[100];
-    this->info("dump_notestruct");
+    this->log("dump_notestruct");
     for(int i=0;i<this->notesdefined; i++) 
     {
         s = this->noteaddr[i];
         snprintf(msg, 100, " %d %d %d %d %d %d",
             i, s->index, s->notetype, s->pitch, s->pitchup, s->pitchdown);
-        this->info(msg);
+        this->log(msg);
     }
 } 
 
@@ -3014,7 +3014,7 @@ AbcStore::dumpfeat(int from, int to)
                 i, Abc::featname(fd.feature),
                 fd.pitch, fd.bentpitch, fd.decotype,  
                 fd.num, fd.denom, fd.charloc);
-            this->info(msg);
+            this->log(msg);
         }
     }
 }

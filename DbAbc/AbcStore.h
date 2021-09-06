@@ -49,6 +49,7 @@ public:
     void timesig(Abc::TimeSigDetails *);
     void octave(int num, int local);
     void info_key(char const *key, char const *value);
+    void info(char const *str); // [I: ]
 
     void graceon();
     void graceoff();
@@ -94,10 +95,6 @@ public:
     void log(char const *msg) 
     { 
         fprintf(stderr, "%s note: %s\n", this->appname.c_str(), msg); 
-    }
-    void info(char const *msg) 
-    { 
-        fprintf(stderr, "%s info: %s\n", this->appname.c_str(), msg); 
     }
 
 private:

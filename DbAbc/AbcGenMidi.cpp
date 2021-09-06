@@ -1630,8 +1630,8 @@ AbcGenMidi::midi_noteon(long delta_time, int pitch, int pitchbend, int chan, int
     if(pitchbend != this->wctx->current_pitchbend[this->wctx->channel] && 
         chan != 9) 
     {
-        data[0] = (char) (pitchbend & 0x7f);
-        data[1] = (char) ((pitchbend>>7) & 0x7f);
+        data[0] = (unsigned char) (pitchbend & 0x7f);
+        data[1] = (unsigned char) ((pitchbend>>7) & 0x7f);
         this->wctx->bendstate = pitchbend;
         this->midi->writeMidiEvent(delta_time, 
             MidiEvent::pitch_wheel, chan, data, 2);

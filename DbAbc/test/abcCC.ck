@@ -1,4 +1,65 @@
-public class DoTrack
+// run: chuck abcCC.ck
+//  midi CC's can be expressed in-line with abcnotes and happen
+//  at the right time.
+"X:1\n" +
+"M:2/4\n" +
+"L:1/4\n" +
+"Q:1/4=80\n"+
+"K:C\n"+
+"|:\n"+
+"%%MIDI control 7 0\n"+
+"|C//\n" +
+"%%MIDI control 7 127\n"+
+"C//\n" +
+"%%MIDI control 7 0\n"+
+"C//\n" +
+"%%MIDI control 7 127\n"+
+"C//\n" +
+"%%MIDI control 7 0\n"+
+"C//\n" +
+"%%MIDI control 7 127\n"+
+"C//\n" +
+"%%MIDI control 7 0\n"+
+"C//\n" +
+"%%MIDI control 7 127\n"+
+"C//\n" +
+"|A A |A A :|\n" +
+"Q:1/4=75\n"+
+"K:C transpose=-2\n"+
+"|:\n"+
+"|[I:MIDI=control 7 0] C// [I:MIDI=control 7 127] C//\n" +
+" [I:MIDI=control 7 0] C// [I:MIDI=control 7 127] C//\n" +
+" [I:MIDI=control 7 0] C// [I:MIDI=control 7 127] C//\n" +
+" [I:MIDI=control 7 0] C// [I:MIDI=control 7 127] C//\n" +
+"|A A |A A :|\n"
+=> string tune;
+
+DoTrack doit;
+DbAbc abc;
+
+tune => abc.open => int success;
+if(success == 0)
+{
+    <<<"problem with abc string">>>;
+    me.exit();
+}
+
+<<< "abcstring", "nchan", abc.numTracks() >>>;
+
+[0] @=> int running[];
+1 => float timeScale;
+for(0=>int t; t < abc.numTracks(); t++)
+{
+    1 +=> running[0];
+    spork ~ doit.go(abc, t, timeScale, running); // t==1 ? s : f);
+}
+while(running[0] > 0)
+    1::second => now;
+abc.close();
+<<<"ring">>>;
+2::second => now;
+
+class DoTrack
 {
     0 => int verbose;
     NRev reverb => dac;
@@ -27,7 +88,7 @@ public class DoTrack
             msg.status & 0xF0 => int stat;
             if(stat == 0x90) // NOTEON
             {
-                // get the pitch and convert to frequencey; set
+                // get the pitch and convert to frequency; set
                 if(verbose)
                     <<<"Note-on, pitch", msg.data1, "track", track>>>;
                 msg.data1 => lastPitch => Std.mtof => w[v].freq;
@@ -70,6 +131,8 @@ public class DoTrack
             else
             if(stat == 0xE0) // pitch wheel
             {
+                // a more sophisticated multi-voice implementation would be
+                // need to support bending chords.
                 msg.data1  + (msg.data2 << 7) => int wheel; // numbers between 0 and 16383
                 (wheel - 8192) / 8192. => float pct;
                 lastPitch + 2 * pct => Std.mtof => w[lastVoice].freq;

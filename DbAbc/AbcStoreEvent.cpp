@@ -1287,6 +1287,95 @@ AbcStore::info_key(char const* key, char const* value)
     }
 }
 
+/* An I: field has been encountered. This routine scans the following 
+   text to extract items of the form key=value. The equal sign is optional
+   if only one key (eg MIDI, octave, vol, etc.) occurs in the I: field.
+   Otherwise we need to follow each key with an equal sign so that we
+   know that the preceding item was a key.
+*/
+void
+AbcStore::info(char const *s)
+{
+    std::string str(s); // copy so we can edit/tokenize
+    char *ptr = &str[0];
+    int doval = 0;
+    char *value, *endvalue=nullptr, *lastendvalue=nullptr;
+    char *key, *endkey;
+    char *newword, *lastnewword=nullptr;
+    while(*ptr != '\0') 
+    {
+        if(doval == 0) /* look for key */
+        {
+            this->parser->Skipspace((char const **) &ptr);
+            key = ptr;
+            while ((*ptr != '\0') && (*ptr != ' ') && (*ptr != '=')) 
+                ptr = ptr + 1;
+            endkey = ptr;
+
+            this->parser->Skipspace((char const **) &ptr);
+            if(*ptr == '=') 
+            {
+                doval = 1;
+                ptr = ptr + 1;
+                this->parser->Skipspace((char const **) &ptr);
+                value = ptr;
+                newword = ptr;
+                endvalue = nullptr;
+                lastendvalue = nullptr;
+            } 
+            else 
+            {
+                /* assume only one I: key occurs; grab the rest in value */
+                *endkey = '\0'; /* end the key ptr */
+                value = ptr;   /* start the value ptr here */
+                this->info_key(key, value);
+                return;
+            }
+        }
+        else /* look for value */
+        {
+            this->parser->Skipspace((char const **) &ptr);
+            while((*ptr != '\0') && (*ptr != ' ') && (*ptr != '='))
+                ptr = ptr + 1;
+            lastendvalue = endvalue;
+            endvalue = ptr;
+            this->parser->Skipspace((char const **) &ptr);
+            lastnewword = newword;
+            newword = ptr;
+            if(*ptr == '\0') 
+            {
+                *endkey = '\0';
+                *endvalue = '\0';
+                this->info_key(key, value);
+            } 
+            else 
+            {
+                if(*ptr == '=') 
+                {
+                    *endkey = '\0';
+                    if(lastendvalue == nullptr) 
+                    {
+                        this->error("missing key or value in I: field");
+                    } 
+                    else 
+                    {
+                        *lastendvalue = '\0';
+                        this->info_key(key, value);
+                    }
+                    key = lastnewword;
+                    endkey = endvalue; 
+                    doval = 1;
+                    ptr = ptr + 1;
+                    this->parser->Skipspace((char const **) &ptr);
+                    value = ptr;
+                    endvalue = nullptr;
+                    lastendvalue = nullptr;
+                }
+            }
+        }
+    } // end while
+}
+
 /* a { in the abc */
 void 
 AbcStore::graceon()

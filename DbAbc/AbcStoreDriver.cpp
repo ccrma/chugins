@@ -103,7 +103,7 @@ AbcStore::finishfile()
             this->error("P: field in header should go after K: field");
 
         if(this->verbose > 1)
-            this->log("handling grace notes\n");
+            this->log("handling grace notes");
 
         this->dograce(); // fixup _all_ gracenotes
         if(this->genMidi.barflymode) 
@@ -152,7 +152,7 @@ AbcStore::finishfile()
         if(this->performing)
         {
             if(this->verbose)
-                this->info("Ready to perform");
+                this->log("Ready to perform");
             this->genMidi.beginPerformance(this->initState);
             // client must call Cleanup or destroy AbcStore
         }
