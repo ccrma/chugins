@@ -75,7 +75,7 @@ AbcMidiFile::write(IFileHelper *w, FILE *fp, int format, int ntracks, int divisi
  */
 int
 AbcMidiFile::writeMidiEvent(long delta_time, int type, int chan, 
-    char const *data, int size)
+    unsigned char const *data, int size)
 {
     if(chan > 15) 
         this->helper->midierror("error: MIDI channel greater than 16");
@@ -84,7 +84,7 @@ AbcMidiFile::writeMidiEvent(long delta_time, int type, int chan,
 
     /* all MIDI events start with the type in the first four bits,
        and the channel in the lower four bits */
-    char c = (char) (type | chan);
+    unsigned char c = (unsigned char) (type | chan);
     this->writeByte(c);
 
     /* write out the data bytes */
@@ -108,7 +108,8 @@ AbcMidiFile::writeMidiEvent(long delta_time, int type, int chan,
  * returns number of bytes written or -1
  */
 int
-AbcMidiFile::writeMetaEvent(long delta_time, int type, char const *data, int size)
+AbcMidiFile::writeMetaEvent(long delta_time, int type, 
+    unsigned char const *data, int size)
 {
     this->writeVarLen(delta_time);
     
@@ -140,9 +141,9 @@ AbcMidiFile::writeTempo(long tempo)
     this->writeByte(MidiEvent::meta_event);
     this->writeByte(MidiEvent::set_tempo);
     this->writeByte(3);
-    this->writeByte((char)(0xff & (tempo >> 16)));
-    this->writeByte((char)(0xff & (tempo >> 8)));
-    this->writeByte((char)(0xff & tempo));
+    this->writeByte((unsigned char)(0xff & (tempo >> 16)));
+    this->writeByte((unsigned char)(0xff & (tempo >> 8)));
+    this->writeByte((unsigned char)(0xff & tempo));
     return 0;
 }
 

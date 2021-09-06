@@ -3,7 +3,7 @@
 // abc requires that the header portion terminate with K:<key>.
 "X:1\n" +
 "M:4/4\n" +
-"Q:1/4=100\n"+
+"Q:1/4=120\n"+
 "K:G\n" +
 "V:1\n" +
 "P:A\n"+
@@ -15,12 +15,13 @@
 "K:F\n"+
 "B/2A/2 G B/2A/2 G FG A2|DEFG ABAG | \\\n"+
 "B/2A/2 G B/2A/2 G FG A2|DEFG GF G2 :|\n"  +
-"V:2\n% voice to issue global tempo changes\n"+
-"|Z8|\nQ:1/4=70\n|Z8|\nQ:1/4=200\n"
+"V:2\n%voice to issue global tempo changes\n"+
+"|Z8|\nQ:1/4=100\n|Z8|\nQ:1/4=200\n"
 => string tune;
 
 DoTrack doit;
 DbAbc dbf;
+// dbf.configure(["-v", "6"]);
 
 tune => dbf.open => int success;
 if(success == 0)

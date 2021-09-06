@@ -158,7 +158,7 @@ AbcMidiTrackCtx::initTrack(int xtrack,
         annotation = "note track";
         this->midi->writeMetaEvent(0L, 
             MidiEvent::text_event, 
-            annotation, strlen(annotation));
+            (unsigned char *) annotation, strlen(annotation));
         this->trackvoice = this->genMidi->trackdescriptor[xtrack].voicenum;
         break;
     case AbcGenMidi::WORDS:
@@ -174,7 +174,7 @@ AbcMidiTrackCtx::initTrack(int xtrack,
         annotation = "lyric track";
         this->midi->writeMetaEvent(0L, 
             MidiEvent::text_event, 
-            annotation, strlen(annotation));
+            (unsigned char *) annotation, strlen(annotation));
         this->trackvoice = this->genMidi->trackdescriptor[xtrack].voicenum;
         break;
     case AbcGenMidi::NOTEWORDS:
@@ -184,7 +184,7 @@ AbcMidiTrackCtx::initTrack(int xtrack,
         annotation = "notes/lyric track"; /* [SS] 2015-06-22 */
         this->midi->writeMetaEvent(0L, 
             MidiEvent::text_event, 
-            annotation, strlen(annotation));
+            (unsigned char *) annotation, strlen(annotation));
         this->trackvoice = this->genMidi->trackdescriptor[xtrack].voicenum;
         break;
     case AbcGenMidi::GCHORDS:
@@ -196,7 +196,7 @@ AbcMidiTrackCtx::initTrack(int xtrack,
         annotation = "gchord track"; /* [SS] 2015-06-22 */
         this->midi->writeMetaEvent(0L, 
             MidiEvent::text_event, 
-            annotation, 
+            (unsigned char *) annotation, 
             strlen(annotation));
         this->trackvoice = this->genMidi->trackdescriptor[xtrack].voicenum;
         /* be sure set_meter is called before setbeat even if we
@@ -215,7 +215,7 @@ AbcMidiTrackCtx::initTrack(int xtrack,
         annotation = "drum track"; /* [SS] 2015-06-22 */
         this->midi->writeMetaEvent(0L, 
             MidiEvent::text_event, 
-            annotation, 
+            (unsigned char *) annotation, 
             strlen(annotation));
         this->trackvoice = this->genMidi->trackdescriptor[xtrack].voicenum;
         break;
@@ -228,7 +228,7 @@ AbcMidiTrackCtx::initTrack(int xtrack,
         annotation = "drone track"; /* [SS] 2015-06-22 */
         this->midi->writeMetaEvent(0L, 
             MidiEvent::text_event, 
-            annotation, 
+            (unsigned char *) annotation, 
             strlen(annotation));
         this->trackvoice = this->genMidi->trackdescriptor[xtrack].voicenum;
         break;
@@ -663,7 +663,7 @@ AbcMidiTrackCtx::set_drums(const char *s)
 void 
 AbcMidiTrackCtx::write_keysig(int keySharps, int keyMinor)
 {
-    char data[2];
+    unsigned char data[2];
     data[0] = (char) (0xff & keySharps);
     data[1] = (char) keyMinor;
     this->midi->writeMetaEvent(0L, MidiEvent::key_signature, data, 2);
@@ -681,7 +681,7 @@ AbcMidiTrackCtx::write_meter(int n, int m)
         dd = dd + 1;
         t = t/2;
     }
-    char data[4];
+    unsigned char data[4];
     data[0] = (char)n;
     data[1] = (char)dd;
     if (n%2 == 0) 
@@ -717,7 +717,8 @@ AbcMidiTrackCtx::karaokestarttrack(int track)
     char atitle[200];
     if(track == 2)
     {
-        this->midi->writeMetaEvent(0L, MidiEvent::sequence_name, "Words", 5);
+        this->midi->writeMetaEvent(0L, MidiEvent::sequence_name, 
+                                    (unsigned char *) "Words", 5);
         this->kspace = 0;
         this->genMidi->text_data("@LENGL");
         strcpy(atitle, "@T");
@@ -746,7 +747,7 @@ AbcMidiTrackCtx::karaokestarttrack(int track)
             {
                 this->midi->writeMetaEvent(0L, 
                     MidiEvent::sequence_name, 
-                    atext[fd.pitch].c_str(), 
+                    (unsigned char *) atext[fd.pitch].c_str(), 
                     atext[fd.pitch].size());
             }
             strcpy(atitle+2, atext[fd.pitch].c_str());
@@ -1002,7 +1003,7 @@ AbcMidiTrackCtx::midi_noteoff(long delta_time, int pitch, int chan)
 
 void 
 AbcMidiTrackCtx::midi_event(long delta_time, int evt, int chan, 
-    char data[], int len)
+    unsigned char data[], int len)
 {
     // usually delta_time is 0 (so note 'delayed')
     this->midi->writeMidiEvent(delta_time, evt, chan, data, len);
@@ -1010,7 +1011,7 @@ AbcMidiTrackCtx::midi_event(long delta_time, int evt, int chan,
 
 void 
 AbcMidiTrackCtx::midi_event_with_delay(long delta_time, 
-    int evt, int chan, char data[], int len)
+    int evt, int chan, unsigned char data[], int len)
 {
     this->midi->writeMidiEvent(delta_time, evt, chan, data, len);
 }

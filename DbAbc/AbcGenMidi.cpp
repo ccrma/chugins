@@ -441,8 +441,8 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
         j = this->partbreak(xtrack, this->wctx->trackvoice, j);
         if(parts == -1) 
         {
-            char msg[1];
-            msg[0] = (char) fd.pitch;
+            unsigned char msg[1];
+            msg[0] = (unsigned char) fd.pitch;
             this->midi->writeMetaEvent(0L, MidiEvent::marker, msg, 1);
         }
         break;
@@ -463,7 +463,7 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
         {
             std::string &s = this->initState->atext[fd.pitch];
             this->midi->writeMetaEvent(0L, 
-                MidiEvent::text_event, s.c_str(), s.size());
+                MidiEvent::text_event, (unsigned char *) s.c_str(), s.size());
         };
         break;
     case Abc::TITLE:
@@ -476,7 +476,7 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
                 std::string &t = this->initState->atext[fd.pitch];
                 this->midi->writeMetaEvent(0L, 
                     MidiEvent::sequence_name, 
-                    t.c_str(), t.size());
+                    (unsigned char *) t.c_str(), t.size());
             }
         }
         break;
@@ -701,23 +701,31 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
         }
         break;
     case Abc::TEMPO: // for intra-score tempo changes only...
-        if(this->performing)
-            this->midi->writeTempo(fd.pitch); // contains "new_tempo"
-        else
-        if(this->wctx->temposon)
+        #if 0
+        /* tempo-changes can't generally be applied instantly, they
+         * have delays
+         */
+        if(this->performing && this->wctx->delta_time == 0)
         {
-            char data[3];
+            this->midi->writeTempo(fd.pitch); // contains "new_tempo"
+        }
+        #endif
+        if(this->wctx->temposon || this->performing)
+        {
+            unsigned char data[3];
 /*
             long newtempo;
 
             newtempo = ((long)num[j]<<16) | ((long)denom[j] & 0xffff);
             printf("New tempo = %ld [%x %x]\n", newtempo, num[j], denom[j]);
 */
+            // The MIDI set tempo meta message sets the tempo of a MIDI 
+            // sequence in terms of microseconds per quarter note.
             data[0] = fd.num & 0xff;
             data[1] = (fd.denom>>8) & 0xff;
             data[2] = fd.denom & 0xff;
             /* delta_time_track0 */
-            if (ntracks != 1) 
+            if(ntracks != 1) 
             { 
                 this->midi->writeMetaEvent(this->wctx->delta_time_track0, 
                     MidiEvent::set_tempo, data, 3);
@@ -774,7 +782,7 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
             std::string &str = this->initState->atext[fd.pitch];
             this->midi->writeMetaEvent(
                 this->wctx->delta_time, MidiEvent::copyright_notice, 
-                str.c_str(), str.size());
+                (unsigned char *) str.c_str(), str.size());
         }
         break;
     case Abc::SETTRIM:
@@ -940,7 +948,7 @@ void
 AbcGenMidi::text_data(char const *s)
 {
     this->midi->writeMetaEvent(this->wctx->delta_time, 
-        MidiEvent::text_event, s, strlen(s));
+        MidiEvent::text_event, (unsigned char *) s, strlen(s));
     this->wctx->tracklen = this->wctx->tracklen + this->wctx->delta_time;
     this->wctx->delta_time = 0L;
 }
@@ -1613,7 +1621,7 @@ AbcGenMidi::noteon_data(int pitch, int pitchbend, int chan, int vel)
 void 
 AbcGenMidi::midi_noteon(long delta_time, int pitch, int pitchbend, int chan, int vel)
 {
-    char data[2];
+    unsigned char data[2];
     if(pitchbend < 0 || pitchbend > 16383) 
     {
         this->wctx->error("Internal error concerning pitch bend on note on.");
@@ -1644,7 +1652,7 @@ AbcGenMidi::midi_noteon(long delta_time, int pitch, int pitchbend, int chan, int
 void 
 AbcGenMidi::midi_noteoff(long delta_time, int pitch, int chan)
 {
-    char data[2];
+    unsigned char data[2];
     if (chan == 9) 
         data[0] = (char) this->wctx->drum_map[pitch];
     else
@@ -1663,7 +1671,7 @@ AbcGenMidi::midi_noteoff(long delta_time, int pitch, int chan)
 void 
 AbcGenMidi::midi_re_tune(int channel) 
 {
-    char data[2];
+    unsigned char data[2];
     #if 0 
     // XXX - unused
     data[0] = (char) (this->initState->bend & 0x7f); /* least significant bits */
@@ -2282,7 +2290,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
     if(strcmp(command, "control") == 0)
     {
         int chan;
-        char data[20];
+        unsigned char data[20];
         p = this->select_channel(&chan, p);
         int n = 0;
         while ((n<20) && (*p >= '0') && (*p <= '9')) 
@@ -2356,7 +2364,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
     if(strcmp(command,"portamento") == 0)
     {
         int chan, datum;
-        char data[2];
+        unsigned char data[2];
         p = this->select_channel(&chan, p);
         data[0] = 65;
         data[1] = 127;
@@ -2379,7 +2387,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
     if(strcmp(command,"noportamento") == 0) 
     {
         int chan;
-        char data[2];
+        unsigned char data[2];
         p = this->select_channel(&chan, p);
         data[0] = 65;
         data[1] = 0;
@@ -2392,7 +2400,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
     if(strcmp(command, "pitchbend") == 0) 
     {
         int chan;
-        char data[2];
+        unsigned char data[2];
         p = this->select_channel(&chan, p);
         int n = 0;
         data[0] = 0;
@@ -2703,7 +2711,7 @@ AbcGenMidi::configure_gchord()
 void 
 AbcGenMidi::write_program(int p, int channel)
 {
-    char data[1];
+    unsigned char data[1];
     p = p - this->initState->programbase;
     if (p <0) 
         p = 0;
@@ -2750,7 +2758,7 @@ AbcGenMidi::stop_drone()
 void
 AbcGenMidi::pedal_on()
 {
-    char data[2];
+    unsigned char data[2];
     data[0] = 64;
     data[1] = 127;
     this->midi->writeMidiEvent(0, MidiEvent::control_change, 
@@ -2760,7 +2768,7 @@ AbcGenMidi::pedal_on()
 void
 AbcGenMidi::pedal_off()
 {
-    char data[2];
+    unsigned char data[2];
     data[0] = 64;
     data[1] = 0;
     this->midi->writeMidiEvent(0, MidiEvent::control_change, 

@@ -317,7 +317,7 @@ AbcQueue::note_effect()
 
     int delta8 = *delta_time / 8;
     int pitchbend;
-    char data[2];
+    unsigned char data[2];
     int velocity;
     pitchbend = bendstate;  /* [SS] 2014-09-09 */
     velocity = bendvelocity;
@@ -361,7 +361,7 @@ AbcQueue::note_effect2()
         &bendstate, &bendnvals, &benddata);
     int delta = *delta_time/bendnvals;
     int pitchbend = bendstate;
-    char data[2];
+    unsigned char data[2];
     Qitem &qh = this->queue[this->head];
     for (int i=0;i<bendnvals;i++) 
     {
@@ -411,7 +411,7 @@ AbcQueue::note_effect3()
 
     int delta = 0;
     int pitchbend;
-    char data[2];
+    unsigned char data[2];
     pitchbend = bendstate; 
     pitchbend = pitchbend + benddata[0];
     if(pitchbend > 16383) 
@@ -456,7 +456,7 @@ AbcQueue::note_effect5(int chan)
     int delta=0, notetime;
     int last_delta;
     int controltype, controlval;
-    char data[2];
+    unsigned char data[2];
     int j = 0; 
     int pitchbend = bendstate;
     int initial_bend = bendstate;
@@ -573,7 +573,7 @@ AbcQueue::compare_events(const void *a, const void *b)
 void 
 AbcQueue::output_eventlist(event *list, int nsize, int chan) 
 {
-    char data[2];
+    unsigned char data[2];
     int miditime = 0;
     for(int i = 0; i<nsize; i++) 
     {

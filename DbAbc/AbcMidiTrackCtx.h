@@ -81,10 +81,10 @@ public:
     void progress_sequence(int chan) override;
     void midi_noteoff(long delta_time, int pitch, int chan) override;
     void midi_event(long delta_time, int evt, int chan, 
-                    char data[], int len) override;
+                    unsigned char data[], int len) override;
     void midi_event_with_delay(long delta_time, 
                     int evt, int chan, 
-                    char data[], int len) override;
+                    unsigned char data[], int len) override;
                     
     void getEffectsState(long **delta_time, 
         int *bendstate, int *bendvelocity, int *bendacceleration) override;

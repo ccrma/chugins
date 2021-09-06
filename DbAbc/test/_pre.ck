@@ -13,11 +13,11 @@ public class DoTrack
     .5 => w[3].gain;
     w[3] => reverb;
 
-    fun void go(DbAbc dbf, int track, float speed, int running[])
+    fun void go(DbAbc abc, int track, float speed, int running[])
     {
         int v;
         AbcMsg msg;
-        while(dbf.read(msg, track))
+        while(abc.read(msg, track))
         {
             if(msg.when > 0::second)
             {
@@ -93,6 +93,16 @@ public class DoTrack
                     {
                         <<<"MetaEvent title", 
                             "'", msg.datastr, "' track", track>>>;
+                    }
+                    else
+                    if(msg.meta == 81)
+                    {
+                        // MetaEvent tempochange 9 39 192 track 2 
+                        // The MIDI set tempo meta message sets the tempo of a MIDI 
+                        // sequence in terms of microseconds per quarter note.
+                        (msg.data1 <<16) + (msg.data2 << 8) + msg.data3 => int tempo;
+                        60 * 1000000.0 / tempo => float bpm; 
+                        abc.setBPM(bpm);
                     }
                     else
                     if(msg.meta == 88)

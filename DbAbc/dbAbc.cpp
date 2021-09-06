@@ -236,7 +236,7 @@ dbAbc::GetBPM()
 }
 
 int
-dbAbc::writeMetaEvent(long dt, int type, char const *data, int size)
+dbAbc::writeMetaEvent(long dt, int type, unsigned char const *data, int size)
 {
     assert(this->m_activeTrack != -1);
     std::deque<MidiEvent> &equeue = this->m_pendingEvents[this->m_activeTrack];
@@ -247,7 +247,7 @@ dbAbc::writeMetaEvent(long dt, int type, char const *data, int size)
 }
 
 int
-dbAbc::writeMidiEvent(long dt, int type, int chan, char const *data, int size)
+dbAbc::writeMidiEvent(long dt, int type, int chan, unsigned char const *data, int size)
 {
     assert(this->m_activeTrack != -1);
     std::deque<MidiEvent> &equeue = this->m_pendingEvents[this->m_activeTrack];

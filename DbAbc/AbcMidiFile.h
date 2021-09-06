@@ -18,7 +18,7 @@ struct MidiEvent
         this->data = rhs.data;
     }
 
-    MidiEvent(long dt, int type, char const *data, int size)
+    MidiEvent(long dt, int type, unsigned char const *data, int size)
     {
         this->dur = dt;
         this->evt = type;
@@ -26,7 +26,7 @@ struct MidiEvent
         this->data.assign(data, data+size);
     }
 
-    MidiEvent(long dt, int meta, int type, char const *data, int size)
+    MidiEvent(long dt, int meta, int type, unsigned char const *data, int size)
     {
         this->dur = dt;
         this->evt = meta;
@@ -36,7 +36,7 @@ struct MidiEvent
 
     int evt, metaType;
     long dur;
-    std::vector<char> data; // 0 means no event - ie: a feature didn't map to an event
+    std::vector<unsigned char> data; // 0 means no event - ie: a feature didn't map to an event
 
     enum Codes
     {
@@ -108,8 +108,8 @@ class IMidiWriter
 public:
     virtual ~IMidiWriter() {}
 
-    virtual int writeMetaEvent(long delta_time, int type, char const *data, int size) = 0;
-    virtual int writeMidiEvent(long delta_time, int type, int chan, char const *data, int size) = 0;
+    virtual int writeMetaEvent(long delta_time, int type, unsigned char const *data, int size) = 0;
+    virtual int writeMidiEvent(long delta_time, int type, int chan, unsigned char const *data, int size) = 0;
     virtual int writeTempo(long tempo) = 0;
     virtual void singleNoteTuningChange(int key, float midipitch) {}
     /* Write tempo */
@@ -161,8 +161,8 @@ public:
 
     // methods available for calling during writetrack callback.
     int writeTempo(long tempo) override;
-    int writeMetaEvent(long delta_time, int type, char const *data, int size) override;
-    int writeMidiEvent(long delta_time, int type, int chan, char const *data, int size) override;
+    int writeMetaEvent(long delta_time, int type, unsigned char const *data, int size) override;
+    int writeMidiEvent(long delta_time, int type, int chan, unsigned char const *data, int size) override;
     void singleNoteTuningChange(int key, float midipitch) override;
 
 

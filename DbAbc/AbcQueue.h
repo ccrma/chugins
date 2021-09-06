@@ -37,10 +37,10 @@ public:
         virtual void progress_sequence(int chan) = 0;
         virtual void midi_noteoff(long delta_time, int pitch, int chan) = 0;
         virtual void midi_event(long delta_time, int evt, int chan, 
-                        char data[], int len) = 0;
+                        unsigned char data[], int len) = 0;
         virtual void midi_event_with_delay(long delta_time, 
                         int evt, int chan, 
-                        char data[], int len) = 0;
+                        unsigned char data[], int len) = 0;
                         
         virtual void getEffectsState(long **delta_time, 
             int *bendstate, int *bendvelocity, int *bendacceleration) = 0;
