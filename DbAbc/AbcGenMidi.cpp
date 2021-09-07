@@ -439,7 +439,7 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
     case Abc::PART:
         this->wctx->in_varend = 0;
         j = this->partbreak(xtrack, this->wctx->trackvoice, j);
-        if(parts == -1) 
+        if(this->parts == -1) 
         {
             unsigned char msg[1];
             msg[0] = (unsigned char) fd.pitch;
@@ -1788,7 +1788,7 @@ AbcGenMidi::partbreak(int xtrack, int voice, int place)
         return newplace;
     if(xtrack > 0)
         this->fillvoice(this->wctx->partno, xtrack, voice);
-    if(parts != -1) 
+    if(this->parts != -1) 
     {
         /* go to next part label */
         newplace = this->findpart(newplace);
@@ -1834,9 +1834,9 @@ AbcGenMidi::findpart(int j)
         if(this->wctx->partno < this->parts) 
         {
             char buf[100];
-            snprintf(buf, 100, "Doing part %c number %d of %d\n", 
+            snprintf(buf, 100, "Playing part %c number %d of %d\n", 
                 this->partspec[this->wctx->partno], 
-                this->wctx->partno, 
+                this->wctx->partno+1, 
                 this->parts);
             this->wctx->log(buf);
         }

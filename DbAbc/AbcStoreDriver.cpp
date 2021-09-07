@@ -14,6 +14,8 @@ AbcStore::startfile()
     this->keyMinor = 0;
     this->tuplecount = 0;
     this->specialtuple = 0;
+    for(j=0; j<sizeof(this->dependent_voice)/sizeof(int); j++) 
+        this->dependent_voice[j] = 0;
 
     this->global.initmic();
     this->setmap(0, this->global.basemap, this->global.basemul);

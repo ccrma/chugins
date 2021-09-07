@@ -1503,6 +1503,9 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
         this->error("Too many ('s in part specification");
         return 0;
     }
+    #if 1
+    return partspec->size();
+    #else
     if(partspec->size() == 0)
         return 0;
     else
@@ -1515,6 +1518,7 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
         }
         return numparts;
     }
+    #endif
 }
 
 /* store away broken rhythm context on encountering grace notes */
