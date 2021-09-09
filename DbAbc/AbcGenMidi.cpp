@@ -1094,7 +1094,7 @@ AbcGenMidi::findwline(int startline)
             /* remember that we couldn't find lyrics */
             this->wctx->nowordline = 1;
             if(this->wctx->lyricsyllables == 0) 
-                this->wctx->warning("Line of music without lyrics");
+                this->wctx->warning("Line of abc music without lyrics");
         }
     }
     return newwordline;
@@ -1456,13 +1456,13 @@ AbcGenMidi::calculate_stress_parameters(int time_num, int time_denom)
                                 this->fdur[n-1] * qfrac;
         if (this->fdursum[n] > (float) this->nseg + 0.05) 
         {
-            printf("**error** bad stress file: sum of the expansion factors exceeds number of segments\nAborting stress model\n");
+            printf("**error** bad abc stress file: sum of the expansion factors exceeds number of segments\nAborting stress model\n");
             this->beatmodel = 0;
             return;
         }
         if (ngain[n] > 127 || ngain[n] < 0) 
         {  
-            printf("**error** bad stress file: note velocity not between 0 and 127\n Aborting the stress model\n");
+            printf("**error** bad abc stress file: note velocity not between 0 and 127\n Aborting the stress model\n");
             this->beatmodel = 0;
             return;
         }
@@ -1470,7 +1470,7 @@ AbcGenMidi::calculate_stress_parameters(int time_num, int time_denom)
         /* ensure fdursum[nseg] = lastsegvalue [SS] 2011-09-06 */
         if(this->fdursum[this->nseg] != lastsegvalue)
         {
-            printf("**warning** the sum of the expansion factors is not %d\n some adjustments are made.\n",
+            printf("**warning** the sum of the abc expansion factors is not %d\n some adjustments are made.\n",
                     nseg);
             this->fdursum[nseg] = lastsegvalue;
         }
@@ -1834,7 +1834,7 @@ AbcGenMidi::findpart(int j)
         if(this->wctx->partno < this->parts) 
         {
             char buf[100];
-            snprintf(buf, 100, "Playing part %c number %d of %d\n", 
+            snprintf(buf, 100, "Playing part abc %c number %d of %d\n", 
                 this->partspec[this->wctx->partno], 
                 this->wctx->partno+1, 
                 this->parts);
@@ -1934,7 +1934,7 @@ AbcGenMidi::checkbar(int pass)
                 ((pass == 2) || (this->wctx->barno != 0)) &&
                 this->initState->quiet == -1) 
             {
-                snprintf(msg, 100, "Track %d Bar %d has %d",
+                snprintf(msg, 100, "abc track %d bar %d has %d",
                     this->wctx->tracknumber, this->wctx->barno, this->wctx->bar_num);
                 if(this->wctx->bar_denom != 1) 
                     sprintf(msg+strlen(msg), "/%d", this->wctx->bar_denom);
