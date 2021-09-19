@@ -348,7 +348,7 @@ AbcParser::parse_precomment(char const *s)
 {
     char package[40];
     char const *p;
-    int success = sscanf(s, "%%%%abc-version %3s", abcversion);
+    sscanf(s, "%%%%abc-version %3s", abcversion);
     if(*s == '%')
     {
         p = s + 1;
@@ -1692,7 +1692,7 @@ AbcParser::parsekey(char *str)
     AbcMusic::fraction modmicrotone[7];
     int i, j;
     int cgotoctave, coctave;
-    char *key = "FCGDAEB";
+    char const *key = "FCGDAEB";
     int modeindex;
     AbcMusic::ClefType newclef; // auto-inits
 

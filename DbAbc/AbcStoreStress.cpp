@@ -509,8 +509,8 @@ AbcStore::load_stress_parameters(char const *rhythmdesignator)
         for(int i = 0; i < this->nmodels; i++)
         {
             snprintf(msg, 100, "  %s %s", 
-                this->stresspat[i].name, 
-                this->stresspat[i].meter);
+                this->stresspat[i].name.c_str(), 
+                this->stresspat[i].meter.c_str());
             this->warning(msg);
         }
         this->genMidi.beatmodel = 0;
@@ -669,7 +669,6 @@ AbcStore::parse_stress_params(char const *input)
     if(this->verbose > 1) 
         this->log("parsing stress parameters");
     char msg[100];
-    int success = 0;
     char *next;
     float f = (float) strtod(input, &next);
     input = next;

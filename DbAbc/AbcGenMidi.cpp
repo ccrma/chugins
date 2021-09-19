@@ -12,10 +12,10 @@
 
 /* ------------------------------------------------------------ */
 AbcGenMidi::AbcGenMidi() :
-    wctx(nullptr),
     initState(nullptr),
+    performing(false),
     midi(nullptr),
-    performing(false)
+    wctx(nullptr)
 {
 }
 
@@ -58,7 +58,6 @@ AbcGenMidi::beginPerformance(Abc::InitState const *initState)
     this->trackPool.reserve(this->ntracks);
     for(int i=0;i<this->ntracks;i++)
     {
-        Track &track = this->trackdescriptor[i];
         this->trackPool.push_back(AbcMidiTrackCtx(this));
         this->trackPool[i].beginWriting(i, initState, nullptr); 
     }
@@ -587,7 +586,7 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
                         j = this->findvoice(j, this->wctx->trackvoice, xtrack);
                 }
                 this->wctx->barno = this->wctx->barno + 1;
-                if ((j == this->initState->nfeatures) /* || (feature[j] == PLAY_ON_REP) */) 
+                if(j == this->initState->nfeatures /* || (feature[j] == PLAY_ON_REP) */) 
                 { 
                     /* end of tune was encountered before finding end of */
                     /* variant ending.  */
@@ -1349,7 +1348,6 @@ int
 AbcGenMidi::parse_stress_params(char *input) 
 {
     char *next;
-    int success = 0;
     float f = (float) strtod(input, &next);
     input = next;
     if(*input == '\0') 
@@ -2497,7 +2495,7 @@ AbcGenMidi::parse_drummap(char const **s)
     int midipitch;
     int mapto;
     char msg[80];
-    char *anoctave = "cdefgab";
+    char const *anoctave = "cdefgab";
     int scale[7] = {0, 2, 4, 5, 7, 9, 11};
 
     int mult = 1;
@@ -2557,7 +2555,7 @@ AbcGenMidi::parse_drummap(char const **s)
             }
             if(**s == ',') 
             {
-                snprintf(msg, 100, "Bad pitch specifier , after note %c", note);
+                snprintf(msg, sizeof(msg), "Bad pitch specifier , after note %c", note);
                 this->wctx->error(msg);
                 octave = octave - 1;
                 *s = *s + 1;
@@ -2580,7 +2578,7 @@ AbcGenMidi::parse_drummap(char const **s)
                 }
                 if(**s == '\'') 
                 {
-                    snprintf(msg, 100, "Bad pitch specifier ' after note %c", 
+                    snprintf(msg, sizeof(msg), "Bad pitch specifier ' after note %c", 
                         note + 'A' - 'a');
                     this->wctx->error(msg);
                     octave = octave + 1;
@@ -2898,7 +2896,7 @@ AbcGenMidi::articulated_stress_factors(int n,  int *vel)
             fd.pitch, begnum, begden, firstsegnum, firstsegden,
             endnum, endden, lastsegnum, lastsegden);
         this->wctx->log(msg);
-        snprintf(msg, 100, " dur gain = %f %d", dur, gain);
+        snprintf(msg, 100, " dur gain = %g %g", dur, gain);
         this->wctx->log(msg);
     }
     /* tnotenum and tnotedenom is used for debugging only.

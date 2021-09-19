@@ -182,7 +182,6 @@ private:
     bool performing;
 
 private:
-    FILE *fp;
     IMidiWriter *midi;
     AbcMidiTrackCtx *wctx; // for write-file where we write tracks sequentially
     std::vector<AbcMidiTrackCtx> trackPool; // >1 when performing, 1 when writing a file

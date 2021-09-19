@@ -32,6 +32,7 @@ public:
     class Client
     {
     public:
+        virtual ~Client() {};
         virtual int getid() = 0;
         virtual void error(char const *) = 0;
         virtual void progress_sequence(int chan) = 0;

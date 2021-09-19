@@ -9,9 +9,9 @@
 dbAbc::dbAbc(unsigned int sampleRate) :
     m_parser(nullptr),
     m_store(nullptr),
-    m_activeTrack(-1),
+    m_ignoreTempoUpdates(false),
     m_sampleRate(sampleRate),
-    m_ignoreTempoUpdates(false)
+    m_activeTrack(-1)
 {
 }
 

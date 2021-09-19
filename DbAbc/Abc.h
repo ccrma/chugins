@@ -1,6 +1,7 @@
 #ifndef Abc_h
 #define Abc_h
 
+#include <string>
 #include <vector>
 
 /* Abc.h - .cpp version of abc.h */

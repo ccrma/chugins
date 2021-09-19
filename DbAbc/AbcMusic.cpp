@@ -1,4 +1,5 @@
 #include "AbcMusic.h"
+#include <cmath>
 
 struct clef_item
 {

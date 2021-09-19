@@ -807,8 +807,6 @@ AbcStore::complete_all_split_voices()
         int splitno = v->tosplitno;
         if(splitno > -1) 
         {
-            int voiceno = v->voiceno;
-            int indexno = v->indexno;
             voicecontext *p = getvoicecontext(splitno);
             this->addfeature(Abc::VOICE, p->indexno, 0, 0);
             this->sync_voice(p, 0, 0);
@@ -1163,7 +1161,7 @@ AbcStore::parse_mididef(char const *s)
     }
     char const *p = s;
     this->parser->skipspace(&p);
-    int i = this->parser->readaln(this->midicmdname[nmidicmd], &p, 31);
+    this->parser->readaln(this->midicmdname[nmidicmd], &p, 31);
     this->parser->skipspace(&p);
     this->midicmd[nmidicmd].assign(p);
     nmidicmd++;
@@ -1460,7 +1458,7 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
                         for(j=0; j<((int) (stop-start)); j++) 
                         {
                             char c = partspec->at(start+j);
-                            hitmap[c = 'A'] = 1;
+                            hitmap[c - 'A'] = 1;
                             partspec->push_back(partspec->at(start+j));
                         }
                     }
@@ -2442,7 +2440,6 @@ AbcStore::dotrill_output(int featureIndex)
     int deco_index = fd.decotype;
     notestruct *s = this->noteaddr[deco_index];
     int pitch = s->pitch;
-    int pitchdown = s->pitchdown;
     int pitchup = s->pitchup;
     int default_length = s->default_length;
     int bend = s->bendup;

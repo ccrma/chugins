@@ -40,9 +40,9 @@ public:
     void beginWriting(int xtrack,
         Abc::InitState const *initState, class IMidiWriter *);
 
-    void error(char const *msg);
-    void warning(char const *msg);
-    void log(char const *msg);
+    void error(char const *msg) override; 
+    void warning(char const *msg); 
+    void log(char const *msg); 
 
     void initTrack(int xtrack, 
         int featureIndexBegin=0, int featureIndexEnd=0,
@@ -77,7 +77,7 @@ public:
 
 
     /* interface with AbcQueue -------------------------------------- */
-    int getid() { return this->tracknumber; }
+    int getid() override { return this->tracknumber; }
     void progress_sequence(int chan) override;
     void midi_noteoff(long delta_time, int pitch, int chan) override;
     void midi_event(long delta_time, int evt, int chan, 

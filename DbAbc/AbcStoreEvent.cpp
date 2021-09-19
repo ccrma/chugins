@@ -4,6 +4,7 @@
  */
 
 #include "AbcStore.h"
+#include <cmath>
 
 void
 AbcStore::text(char const *s)
@@ -42,7 +43,6 @@ AbcStore::x_reserved(char c)
 void 
 AbcStore::split_voice()
 {
-    int program = 0;
     int i;
     if(!this->voicesused) 
         this->insertfeature(Abc::VOICE, 1, 0, 0, this->v1index+1); 
@@ -55,7 +55,6 @@ AbcStore::split_voice()
     /* in case we need to change it */
     this->v->lastbarloc = this->nextFeature;  
     int voiceno = v->voiceno;
-    int indexno = v->indexno;
     int topvoiceno = v->topvoiceno;
     int topindexno = v->topindexno;
     int octaveshift = v->octaveshift;
@@ -2329,7 +2328,6 @@ AbcStore::eof()
 void
 AbcStore::bar(int type, char const *replist)
 {
-    int depth = this->splitdepth;
     if(this->splitdepth > 0 && this->extended_overlay_running == 0) 
     {
         /* we encountered the repeat while in a split voice;
@@ -2358,8 +2356,6 @@ AbcStore::bar(int type, char const *replist)
     by sync_voice() [SS] 2013-12-02.
     */
     {
-        int voiceno = v->voiceno;
-        int indexno = v->indexno;
         if (extended_overlay_running) 
             return;
         while(v->tosplitno != -1)
