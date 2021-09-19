@@ -28,8 +28,8 @@ public:
         rate(1.f),
         wobble(0.f),
         wobbleFreq(1.f),
-        nextWobbleUpdate(0),
         wobbleAmt(0.f),
+        nextWobbleUpdate(0),
         debug(0)
     {}
     ~dbPhasor() {};

@@ -32,14 +32,14 @@ public:
         grainRate(1.f),
         grainPeriod(.2f * sampleRate), // 200 ms
         currentGrainPeriod(.2f * sampleRate), // 200 ms
-        nextGrainPeriodRand(0),
         grainPeriodVariance(0.f),
         grainPeriodVarianceFreq(1.f),
         pan(0.f),
         panRange(1.f),
         fileChan(0),
+        debug(0),
         totalTicks(0),
-        debug(0)
+        nextGrainPeriodRand(0)
     {
     }
     ~dbGrainBuf() {}
@@ -323,6 +323,7 @@ public:
     int SetFileChan(int chan)
     {
         this->fileChan = chan;
+        return chan;
     }
 
     /* Bypass parameters --------------------------------------------- */

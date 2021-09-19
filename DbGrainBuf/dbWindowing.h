@@ -45,7 +45,7 @@ public:
 
         float fpos = pct * 8191;
         unsigned pos = fpos;
-        float alpha = fpos - pos;
+        // float alpha = fpos - pos;
         float s1 = this->window[pos];
         float s2 = this->window[pos+1];
         return s1 + pct * (s2-s1);
