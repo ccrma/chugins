@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <algorithm>
 #include <cassert>
+#include <cstring>
 
 /* ------------------------------------------------------------ */
 AbcGenMidi::AbcGenMidi() :

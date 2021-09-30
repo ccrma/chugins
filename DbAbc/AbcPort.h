@@ -9,6 +9,7 @@
 #define stricmp strcasecmp
 #elif __linux__
 #define strnicmp strncasecmp
+#define stricmp strcasecmp
 #else
     #error "Unknown platform"
 #endif

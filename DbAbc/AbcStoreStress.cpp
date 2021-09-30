@@ -1,5 +1,6 @@
 #include "AbcStore.h"
 #include <algorithm> // std::max
+#include <cstring>
 
 void
 AbcStore::init_stresspat()

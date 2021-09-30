@@ -1,6 +1,7 @@
 #include "AbcStore.h"
 #include "AbcPort.h"
 #include <cmath> // log10
+#include <cstring>
 
 char const *AbcStore::version = "4.59 June 27 2021 abc2midi";
 

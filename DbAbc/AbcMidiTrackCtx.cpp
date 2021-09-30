@@ -4,6 +4,8 @@
 #include "AbcMusic.h"
 #include "AbcParser.h"
 
+#include <cstring>
+
 /* beginWriting is used to convey initState to newly minted MidiTrackCtx.
  * we aren't yet ready to initialize fully because MidiWriter may be
  * null.

@@ -5,6 +5,7 @@
 
 #include "AbcStore.h"
 #include <cmath>
+#include <cstring>
 
 void
 AbcStore::text(char const *s)

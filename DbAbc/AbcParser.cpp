@@ -3,6 +3,7 @@
 #include <cstring> 
 #include <sstream>      // std::istringstream
 #include <fstream>
+#include <climits>
 
 #include "AbcPort.h"
 
