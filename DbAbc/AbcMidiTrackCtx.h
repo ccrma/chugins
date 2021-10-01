@@ -22,6 +22,10 @@ public:
     AbcMidiTrackCtx(class AbcGenMidi *g) :
         queue(this)
     {
+        this->mtime_num = 4;
+        this->mtime_denom = 4;
+        this->time_num = 4; 
+        this->time_denom = 4; 
         this->genMidi = g;
         for(int j=0; j<256; j++)
             this->drum_map[j] = j;
