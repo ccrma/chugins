@@ -6,6 +6,10 @@
 /* -------------------------------------------------------------------------- */
 class DbVST3ProcessData : public Steinberg::Vst::ProcessData
 {
+private:
+    Steinberg::Vst::ParameterChanges inPChanges;
+    // Steinberg::Vst::EventList inEvents;
+
 public:
     DbVST3ProcessData() 
     {
@@ -54,7 +58,27 @@ public:
                     this->outputs[i].channelBuffers32[j] = nullptr;
             }
         }
+        this->inputParameterChanges = &this->inPChanges;
+
+        #if 0
+        this->inputEvents = &this->inEvents;
+        #endif
     }
+
+    void prepareParamChange(int paramId, float value)
+    {
+        Steinberg::int32 queueIndex;
+        Steinberg::Vst::IParamValueQueue *q = 
+            this->inPChanges.addParameterData((Steinberg::Vst::ParamID)paramId, 
+                                              queueIndex);
+        #if 0
+        std::cout << "prepareParamChange " << paramId << " " << value 
+            << " len:" <<  q->getPointCount() <<  "\n";
+        #endif
+        Steinberg::int32 ptIndex;
+        q->addPoint(0, value, ptIndex);
+    }
+
     void prepare(float *in, float *out, int nframes)
     {
         this->numSamples = nframes;
@@ -62,7 +86,6 @@ public:
         {
             // for now we'll only fill the first in and out bus
             // this approach uses ChucK's buffers
-
             if(this->numInputs > 0)
             {
                 for(int i=0;i<this->inputs[0].numChannels;i++)
@@ -247,6 +270,25 @@ struct DbVST3ProcessingCtx
         this->vstPlug->setActive(true); 
     }
 
+    int SetParamValue(int index, float value)
+    {
+        // https://developer.steinberg.help/display/VST/Parameters+and+Automation
+        int err = 0;
+        if(this->controller)
+        {
+            #if 0
+            realvalue = controller->normalizedParamToPlain(index, value);
+            std::cout << "nval:" << value << " rval:" << realvalue << "\n";
+            controller->setParamNormalized(index, value);
+            #else
+            this->processData.prepareParamChange(index, value);
+            #endif
+        }
+        else
+            err = -1;
+        return err;
+    }
+
     int error;
     VST3App::ProviderPtr provider;
     Steinberg::Vst::IComponent* vstPlug;
@@ -309,7 +351,9 @@ struct DbVST3Module
             this->parameters[i].Print(i2, i);
         }
     }
-}; // end struct DBVST3Module
+}; // end struct DbVST3Module
+typedef std::shared_ptr<DbVST3Module> DbVST3ModulePtr;
+
 
 //  DbVST3Ctx is the primary handle that our clients have on a plugin file.
 //  Since a plugin can have multiple interfaces/modules, We require
@@ -320,19 +364,19 @@ struct DbVST3Ctx
     VST3App::Plugin plugin;
     std::string vendor;
     std::string filepath;
-    std::vector<DbVST3Module> modules;
-    DbVST3Module *activeModule;
+    std::vector<DbVST3ModulePtr> modules;
+    DbVST3ModulePtr activeModule;
 
     bool Ready()
     {
-        return this->activeModule != nullptr;
+        return this->activeModule.get() != nullptr;
     }
 
     int ActivateModule(int index, int inCh, int outCh, float sampleRate)
     {
         if(this->modules.size() > index)
         {
-            this->activeModule = &this->modules[index];
+            this->activeModule = this->modules[index];
             this->InitProcessing(inCh, outCh, sampleRate);
             return 0;
         }
@@ -366,21 +410,10 @@ struct DbVST3Ctx
     int GetParameterName(int index, std::string &nm)
     {
         int err = -1;
-        if(this->activeModule)
+        if(this->activeModule.get())
         {
             err = 0;
             nm = this->activeModule->parameters[index].name;
-        }
-        return err;
-    }
-
-    int SetParamValue(int index, float val)
-    {
-        int err = -1;
-        if(this->activeModule)
-        {
-            err = 0;
-            // nm = this->activeModule->parameters[index].name;
         }
         return err;
     }
@@ -390,7 +423,7 @@ struct DbVST3Ctx
         vendor = "";
         filepath = "";
         modules.clear();
-        activeModule = nullptr;
+        activeModule.reset();
         plugin.reset(); // must be last
     }
 
@@ -399,7 +432,7 @@ struct DbVST3Ctx
         if(this->modules.size() > 0)
         {
             // nominate a main interface, user can select (by name) alternate
-            this->activeModule = &this->modules[0];
+            this->activeModule = this->modules[0];
         }
     }
     void Print(bool detailed)
@@ -408,12 +441,12 @@ struct DbVST3Ctx
         std::cout << "vendor: " << this->vendor << "\n";
         std::cout << "nmodules: " << this->modules.size() << "\n";
         for(int i=0;i<this->modules.size();i++)
-            this->modules[i].Print("  ", i, detailed);
+            this->modules[i]->Print("  ", i, detailed);
     }
 
     DbVST3ProcessingCtx &getProcessingCtx()
     {
-        if(this->activeModule)
+        if(this->activeModule.get())
             return this->activeModule->processingCtx;
         else
         {
@@ -433,12 +466,27 @@ struct DbVST3Ctx
         return pctx.error;
     }
 
+    int SetParamValue(int index, float val)
+    {
+        int err = -1;
+        if(this->activeModule.get())
+        {
+            // processingCtx's job to add ithe parameter change
+            // to the automation setup.
+            err = this->getProcessingCtx().SetParamValue(index, val);
+        }
+        return err;
+    }
+
     void ProcessSamples(float *in, float *out, int nframes)
     {
         DbVST3ProcessingCtx &pctx = this->getProcessingCtx();
         if(pctx.error)
             return;
         
+        // midi-events and parameter value changes are applied to
+        // processData when they arrive, but don't get processed 
+        // 'til here.
         pctx.processData.prepare(in, out, nframes);
         pctx.audioEffect->setProcessing(true);
         VST3App::tresult result = pctx.audioEffect->process(pctx.processData);

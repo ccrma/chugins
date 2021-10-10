@@ -9,10 +9,8 @@ x.getNumModules() => int nmods;
 if(nmods > 1)
 {
     x.printModules();
-    //x.selectModule(24); // roundpanner
+    selectModule(31); // flanger
 }
-
-selectModule(31);
 
 SqrOsc n => x => dac; /* don't need pan 2 atm monoin is up-channed */
 .1 => n.gain;

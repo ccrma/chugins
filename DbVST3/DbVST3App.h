@@ -37,23 +37,23 @@ public:
         ctx.vendor = finfo.vendor();
 		for(auto& classInfo : factory.classInfos())
 		{
-            DbVST3Module imod;
-            imod.name = classInfo.name();
-            imod.category = classInfo.category();
-            imod.subCategories = classInfo.subCategoriesString();
-            imod.version = classInfo.version();
-            imod.sdkVersion = classInfo.sdkVersion();
             if(classInfo.category() == kVstAudioEffectClass)
             {
-                imod.processingCtx.provider = Steinberg::owned(new Provider(
+                DbVST3ModulePtr imod(new DbVST3Module());
+                imod->name = classInfo.name();
+                imod->category = classInfo.category();
+                imod->subCategories = classInfo.subCategoriesString();
+                imod->version = classInfo.version();
+                imod->sdkVersion = classInfo.sdkVersion();
+                imod->processingCtx.provider = Steinberg::owned(new Provider(
                                       factory, classInfo, 
                                       true/*useGlobalInstance*/));
-                if(imod.processingCtx.provider.get())
+                if(imod->processingCtx.provider.get())
                 {
-                    this->getProviderParams(imod.processingCtx.provider, 
-                                            imod.parameters);
+                    this->getProviderParams(imod->processingCtx.provider, 
+                                            imod->parameters);
                 }
-                ctx.modules.push_back(imod);
+                ctx.modules.emplace_back(imod);
             }
             else
             {
@@ -61,7 +61,7 @@ public:
                 // new Provider throws an error
                 #if 0
                     std::cout << "  (skipping params for module of type " 
-                        << imod.category << ")\n";
+                        << imod->category << ")\n";
                 #endif
             }
 		}

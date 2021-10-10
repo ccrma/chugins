@@ -11,7 +11,7 @@ fun void makeSound(int moduleIndex, dur d)
     d => now;
 }
 
-// spork ~ makeSound(12);
+// spork ~ makeSound(12); // an instrument and not a filter?
 spork ~ makeSound(22, 5::second);
 spork ~ makeSound(22, 2::second);
 spork ~ makeSound(24, 8::second);
