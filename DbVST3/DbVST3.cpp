@@ -19,6 +19,7 @@ CK_DLL_MFUN(dbvst3_loadPlugin);
 CK_DLL_MFUN(dbvst3_printModules);
 CK_DLL_MFUN(dbvst3_getNumModules);
 CK_DLL_MFUN(dbvst3_selectModule);
+CK_DLL_MFUN(dbvst3_getModuleName);
 CK_DLL_MFUN(dbvst3_getNumParameters);
 CK_DLL_MFUN(dbvst3_getParameterName);
 CK_DLL_MFUN(dbvst3_getParameter);
@@ -65,6 +66,7 @@ public:
     void printModules();
     int getNumModules();
     int selectModule(int index); // returns 0 on success
+    std::string getModuleName(); // of current module
 
     int getNumParameters();
     int getParameterName(int index, std::string &pnm);
@@ -79,63 +81,81 @@ private:
     t_CKINT m_nch;
     t_CKFLOAT m_sampleRate;
     std::string m_pluginPath;
-    Chuck_String *m_chuckString;
 
     DbVST3Ctx m_dbVST3Ctx;
 };
 
 bool DbVST3::loadPlugin(const std::string& filepath)
 {
-    return 0 == s_vstAppPtr->OpenPlugin(filepath, m_dbVST3Ctx);
+    int err = s_vstAppPtr->OpenPlugin(filepath, m_dbVST3Ctx);
+    if(!err)
+        err = m_dbVST3Ctx.InitProcessing(m_nch, m_nch, m_sampleRate);
+    return err == 0;
 }
 
-void DbVST3::printModules()
+void 
+DbVST3::printModules()
 {
     m_dbVST3Ctx.Print(false/*detailed*/);
 }
 
-int DbVST3::getNumModules()
+int 
+DbVST3::getNumModules()
 {
     return m_dbVST3Ctx.GetNumModules();
 }
 
-int DbVST3::selectModule(int m)
+int 
+DbVST3::selectModule(int m)
 {
-    return m_dbVST3Ctx.ActivateModule(m); // 0 == success, 
+    return m_dbVST3Ctx.ActivateModule(m, m_nch, m_nch, m_sampleRate); // 0 == success, 
 }
 
-int DbVST3::getNumParameters() 
+std::string 
+DbVST3::getModuleName()
+{
+    return m_dbVST3Ctx.GetModuleName();
+}
+
+int 
+DbVST3::getNumParameters() 
 {
     return m_dbVST3Ctx.GetNumParameters();
 }
 
-int DbVST3::getParameterName(int index, std::string &nm) 
+int 
+DbVST3::getParameterName(int index, std::string &nm) 
 {
     return m_dbVST3Ctx.GetParameterName(index, nm);
 }
 
-float DbVST3::getParameter(int index) 
+float 
+DbVST3::getParameter(int index) 
 {
     return 0.f;
 }
 
-bool DbVST3::setParameter(int index, float v) 
+bool 
+DbVST3::setParameter(int index, float v) 
 {
-    return false;
+    return m_dbVST3Ctx.SetParamValue(index, v);
 }
 
 /* --------------------------------------------------------------------- */
-bool DbVST3::noteOn(int noteNumber, float velocity) 
+bool 
+DbVST3::noteOn(int noteNumber, float velocity) 
 {
     return true;
 }
 
-bool DbVST3::noteOff(int noteNumber, float velocity) 
+bool 
+DbVST3::noteOff(int noteNumber, float velocity) 
 {
     return true;
 }
 
-void DbVST3::multitick(SAMPLE* in, SAMPLE* out, int nframes)
+void 
+DbVST3::multitick(SAMPLE* in, SAMPLE* out, int nframes)
 {
     if(!m_dbVST3Ctx.Ready())
     {
@@ -156,7 +176,7 @@ void DbVST3::multitick(SAMPLE* in, SAMPLE* out, int nframes)
     }
     else
     {
-        m_dbVST3Ctx.ProcessSamples(in, out, 2, 2, nframes, m_sampleRate);
+        m_dbVST3Ctx.ProcessSamples(in, out, nframes);
     }
 }
 
@@ -190,6 +210,8 @@ CK_DLL_QUERY( DbVST3 )
 
     QUERY->add_mfun(QUERY, dbvst3_selectModule, "int", "selectModule");
     QUERY->add_arg(QUERY, "int", "index");
+
+    QUERY->add_mfun(QUERY, dbvst3_getModuleName, "string", "getModuleName");
 
     QUERY->add_mfun(QUERY, dbvst3_getNumParameters, "int", "getNumParameters");
 
@@ -296,6 +318,15 @@ CK_DLL_TICKF(dbvst3_multitick)
 
     // yes
     return TRUE;
+}
+
+CK_DLL_MFUN(dbvst3_getModuleName)
+{
+    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    std::string s = b->getModuleName();
+    Chuck_String *ckstr = OBJ_MEMBER_STRING(SELF, dbvst3_datastr_offset);
+    ckstr->set(s);
+    RETURN->v_string = ckstr;
 }
 
 CK_DLL_MFUN(dbvst3_getNumParameters)

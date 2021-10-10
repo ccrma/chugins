@@ -4,20 +4,33 @@ DbVST3 x;
 //"examples/againsimple.vst3" => string pluginName;
 "examples/mda-vst3.vst3" => string pluginName;
 x.loadPlugin("C:/Program Files/Common Files/VST3/" + pluginName);
+<<< pluginName, "loaded">>>;
 x.getNumModules() => int nmods;
 if(nmods > 1)
 {
     x.printModules();
-    x.selectModule(24); // mda: 31 is flang, 24 is roundpanner
+    //x.selectModule(24); // roundpanner
 }
 
-<<< pluginName, "parameters:">>>;
-for(int i; i<x.getNumParameters();i++)
+selectModule(31);
+
+SqrOsc n => x => dac; /* don't need pan 2 atm monoin is up-channed */
+.1 => n.gain;
+5::second => now;
+
+if(nmods > 1)
 {
-    <<<i, x.getParameterName(i)>>>;
+    selectModule(24);
+    5::second => now;
 }
 
-/* filter test... seems like roundpanner isn't stereo? */
-SqrOsc n => Pan2 p => x => dac;
-.25 => n.gain;
-2::second => now;
+fun void selectModule(int i)
+{
+    if(i != -1)
+        x.selectModule(i); 
+    <<< "Set module:", x.getModuleName(), "----" >>>;
+    for(int i; i<x.getNumParameters();i++)
+    {
+        <<<"  ", i, x.getParameterName(i)>>>;
+    }
+}

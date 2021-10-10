@@ -90,14 +90,161 @@ struct DbVST3ProcessingCtx
     }
     ~DbVST3ProcessingCtx()
     {
-        if(this->vstPlug && this->controller)
-            this->provider->releasePlugIn(this->vstPlug, this->controller);
         if(this->audioEffect)
         {
             this->audioEffect->release();
             // buffers are freed in processData destructor
             // std::cout << "Unwinding!!!\n";
         }
+        if(this->vstPlug && this->controller)
+        {
+            this->vstPlug->setActive(false); 
+            this->provider->releasePlugIn(this->vstPlug, this->controller);
+        }
+    }
+
+    void 
+    initialize(int inNch, int outNch, float sampleRate)
+    {
+        this->controller = this->provider->getController();
+        this->vstPlug = this->provider->getComponent();
+        if(Steinberg::kResultTrue != this->vstPlug->queryInterface(
+                                        Steinberg::Vst::IAudioProcessor::iid, 
+                                        (void**)&this->audioEffect))
+        {
+            std::cerr << "oops: no audioeffect here\n";
+            this->error = 1;;
+        }
+        else
+        {
+            memset (&this->processSetup, 0, sizeof(Steinberg::Vst::ProcessSetup));
+            this->processSetup.processMode = Steinberg::Vst::kRealtime;
+                // from: kRealtime, kPrefetch, kOffline
+            this->processSetup.symbolicSampleSize = Steinberg::Vst::kSample32;
+                // from: kSample32, kSample64
+            this->processSetup.sampleRate = sampleRate; // a double
+            this->processSetup.maxSamplesPerBlock = 256; // usually 1
+
+            // Try to set (host => plug-in) a wanted arrangement for 
+            // inputs and outputs.  
+            //
+            // * an AudioEffect has input and/or output busses.
+            // * each bus is comprised of 1 or more channels according
+            //   to its speaker arrangement.
+            //
+            // ChucK configs we anticipate:
+            //   * mono => mono
+            //   * stereo => stereo
+            //   * zero => mono (instrument)
+            //   * zero => stereo (instrument)
+            //
+            // The host should always deliver the same number of input 
+            // and output busses that the plug-in needs (see IComponent::getBusCount). 
+            // The plug-in has 3 possibilities to react on this setBusArrangements 
+            // call:
+            //   * The plug-in accepts these arrangements, then it should modify, 
+            //     if needed, its busses to match these new arrangements (later 
+            //     on asked by the host with IComponent::getBusInfo () or 
+            //     IAudioProcessor::getBusArrangement ()) and then should 
+            //     return kResultTrue.
+            //  * The plug-in does not accept or support these requested 
+            //     arrangements for all inputs/outputs or just for some or 
+            //     only one bus, but the plug-in can try to adapt its 
+            //     current arrangements according to the requested ones 
+            //     (requested arrangements for kMain busses should be 
+            //     handled with more priority than the ones for kAux 
+            //     busses), then it should modify its busses arrangements 
+            //     and should return kResultFalse.
+            //  * Same as the point 2 above the plug-in does not support 
+            //    these requested arrangements but the plug-in cannot find 
+            //    corresponding arrangements, the plug-in could keep its 
+            //    current arrangement or fall back to a default arrangement 
+            //    by modifying its busses arrangements and should return 
+            //    kResultFalse.
+
+            // prepareProcessing
+            if(this->audioEffect->setupProcessing(this->processSetup) 
+                == Steinberg::kResultTrue)
+            {
+                this->initBusses(inNch, outNch);
+            }
+            else
+            {
+                std::cerr << "Problem setting up audioEffect\n";
+            }
+        }
+    }
+
+    void initBusses(int inNch, int outNch)
+    {
+        // 0 means we own/manage the channel buffers
+        // Each channel requires a separate array (can't be interleaved)
+        // which means that if nframes != 1, we must
+
+        // each bus can have an associated speaker arrangement.
+        // our job is to produce a call to setBusArrangement
+        using SA = Steinberg::Vst::SpeakerArrangement;
+        SA wantin, wantout;
+        if(inNch == 0)
+            wantin = 0;
+        else
+        if(inNch == 1)
+            wantin = Steinberg::Vst::SpeakerArr::kMono; // 0x01
+        else
+        if(inNch == 2)
+            wantin = Steinberg::Vst::SpeakerArr::kStereo; //0x11 
+
+        if(outNch == 1)
+            wantout = Steinberg::Vst::SpeakerArr::kMono;
+        else
+        if(outNch == 2)
+            wantout = Steinberg::Vst::SpeakerArr::kStereo;
+
+        int nin = this->vstPlug->getBusCount(Steinberg::Vst::kAudio,
+                                            Steinberg::Vst::kInput);
+        int nout = this->vstPlug->getBusCount(Steinberg::Vst::kAudio,
+                                            Steinberg::Vst::kOutput);
+
+        auto inSpArrs = nin ? new SA[nin] : nullptr; // can be 0
+        for(int i=0;i<nin;i++)
+            inSpArrs[i] = wantin;
+
+        auto outSpArrs = nout ? new SA[nout] : nullptr; // can be 0
+        for(int i=0;i<nout;i++)
+            outSpArrs[i] = wantout;
+        
+        if(this->audioEffect->setBusArrangements(inSpArrs, nin, 
+            outSpArrs, nout) != Steinberg::kResultTrue)
+        {
+            std::cerr << "Problem configuring bus arrangement.\n";
+            this->error = 1;
+        }
+        else
+        {
+            //std::cout << "Configuring vst3 plugs busses, in: " 
+            // << wantin << " out: " << wantout << "\n";
+            //  in: 3, out: 3 (means stereo i/o)
+            this->processData.initialize(this->processSetup, 
+                                nin, nout, inNch, outNch);
+            for(int i=0; i<nin;i++)
+            {
+                this->vstPlug->activateBus(Steinberg::Vst::kAudio,
+                                Steinberg::Vst::kInput, i, true);
+            }
+            for(int i=0; i<nout;i++)
+            {
+                this->vstPlug->activateBus(Steinberg::Vst::kAudio,
+                                Steinberg::Vst::kOutput, i, true);
+            }
+        }
+        if(inSpArrs)
+            delete [] inSpArrs;
+        if(outSpArrs)
+            delete [] outSpArrs;
+
+        // if our config is constant we can do this once 
+        // upon initialization 
+        this->vstPlug->setActive(true); 
     }
 
     int error;
@@ -181,11 +328,12 @@ struct DbVST3Ctx
         return this->activeModule != nullptr;
     }
 
-    int ActivateModule(int index)
+    int ActivateModule(int index, int inCh, int outCh, float sampleRate)
     {
         if(this->modules.size() > index)
         {
             this->activeModule = &this->modules[index];
+            this->InitProcessing(inCh, outCh, sampleRate);
             return 0;
         }
         else
@@ -195,6 +343,16 @@ struct DbVST3Ctx
     int GetNumModules()
     {
         return (int) this->modules.size();
+    }
+
+    std::string GetModuleName()
+    {
+        if(this->activeModule)
+        {
+            return this->activeModule->name;
+        }
+        else
+            return std::string();
     }
 
     int GetNumParameters()
@@ -212,6 +370,17 @@ struct DbVST3Ctx
         {
             err = 0;
             nm = this->activeModule->parameters[index].name;
+        }
+        return err;
+    }
+
+    int SetParamValue(int index, float val)
+    {
+        int err = -1;
+        if(this->activeModule)
+        {
+            err = 0;
+            // nm = this->activeModule->parameters[index].name;
         }
         return err;
     }
@@ -252,158 +421,32 @@ struct DbVST3Ctx
             return s_pctx;
         }
     }
-
-    void ProcessSamples(float *in, float *out, 
-        int inNch, int outNch, int nframes, float sampleRate)
+    
+    int InitProcessing(int inNch, int outNch, float sampleRate)
     {
         DbVST3ProcessingCtx &pctx = this->getProcessingCtx();
         if(!pctx.vstPlug && !pctx.error)
         {
-            pctx.controller = pctx.provider->getController();
-            pctx.vstPlug = pctx.provider->getComponent();
-		    if(Steinberg::kResultTrue != pctx.vstPlug->queryInterface(
-                                            Steinberg::Vst::IAudioProcessor::iid, 
-                                            (void**)&pctx.audioEffect))
-            {
-                std::cerr << "oops: no audioeffect here\n";
-                pctx.error = 1;;
-            }
-            else
-            {
-                memset (&pctx.processSetup, 0, sizeof(Steinberg::Vst::ProcessSetup));
-                pctx.processSetup.processMode = Steinberg::Vst::kRealtime;
-                    // from: kRealtime, kPrefetch, kOffline
-                pctx.processSetup.symbolicSampleSize = Steinberg::Vst::kSample32;
-                    // from: kSample32, kSample64
-                pctx.processSetup.sampleRate = sampleRate; // a double
-                pctx.processSetup.maxSamplesPerBlock = 256; // usually 1
-
-                // Try to set (host => plug-in) a wanted arrangement for 
-                // inputs and outputs.  
-                //
-                // * an AudioEffect has input and/or output busses.
-                // * each bus is comprised of 1 or more channels according
-                //   to its speaker arrangement.
-                //
-                // ChucK configs we anticipate:
-                //   * mono => mono
-                //   * stereo => stereo
-                //   * zero => mono (instrument)
-                //   * zero => stereo (instrument)
-                //
-                // The host should always deliver the same number of input 
-                // and output busses that the plug-in needs (see IComponent::getBusCount). 
-                // The plug-in has 3 possibilities to react on this setBusArrangements 
-                // call:
-                //   * The plug-in accepts these arrangements, then it should modify, 
-                //     if needed, its busses to match these new arrangements (later 
-                //     on asked by the host with IComponent::getBusInfo () or 
-                //     IAudioProcessor::getBusArrangement ()) and then should 
-                //     return kResultTrue.
-                //  * The plug-in does not accept or support these requested 
-                //     arrangements for all inputs/outputs or just for some or 
-                //     only one bus, but the plug-in can try to adapt its 
-                //     current arrangements according to the requested ones 
-                //     (requested arrangements for kMain busses should be 
-                //     handled with more priority than the ones for kAux 
-                //     busses), then it should modify its busses arrangements 
-                //     and should return kResultFalse.
-                //  * Same as the point 2 above the plug-in does not support 
-                //    these requested arrangements but the plug-in cannot find 
-                //    corresponding arrangements, the plug-in could keep its 
-                //    current arrangement or fall back to a default arrangement 
-                //    by modifying its busses arrangements and should return 
-                //    kResultFalse.
-
-                // prepareProcessing
-                if(pctx.audioEffect->setupProcessing(pctx.processSetup) 
-                    == Steinberg::kResultTrue)
-                {
-                    // 0 means we own/manage the channel buffers
-                    // Each channel requires a separate array (can't be interleaved)
-                    // which means that if nframes != 1, we must
-
-                    // each bus can have an associated speaker arrangement.
-                    // our job is to produce a call to setBusArrangement
-                    using SA = Steinberg::Vst::SpeakerArrangement;
-                    SA wantin, wantout;
-                    if(inNch == 0)
-                        wantin = 0;
-                    else
-                    if(inNch == 1)
-                        wantin = Steinberg::Vst::SpeakerArr::kMono; // 0x01
-                    else
-                    if(inNch == 2)
-                        wantin = Steinberg::Vst::SpeakerArr::kStereo; //0x11 
-
-                    if(outNch == 1)
-                        wantout = Steinberg::Vst::SpeakerArr::kMono;
-                    else
-                    if(outNch == 2)
-                        wantout = Steinberg::Vst::SpeakerArr::kStereo;
-
-                    int nin = pctx.vstPlug->getBusCount(Steinberg::Vst::kAudio,
-                                                        Steinberg::Vst::kInput);
-                    int nout = pctx.vstPlug->getBusCount(Steinberg::Vst::kAudio,
-                                                        Steinberg::Vst::kOutput);
-
-                    auto inSpArrs = nin ? new SA[nin] : nullptr; // can be 0
-                    for(int i=0;i<nin;i++)
-                        inSpArrs[i] = wantin;
-
-                    auto outSpArrs = nout ? new SA[nout] : nullptr; // can be 0
-                    for(int i=0;i<nout;i++)
-                        outSpArrs[i] = wantout;
-                    
-                    if(pctx.audioEffect->setBusArrangements(inSpArrs, nin, 
-                        outSpArrs, nout) != Steinberg::kResultTrue)
-                    {
-                        std::cerr << "Problem configuring bus arrangement.\n";
-                        pctx.error = 1;
-                    }
-                    else
-                    {
-                        //std::cout << "Configuring vst3 plugs busses, in: " 
-                        // << wantin << " out: " << wantout << "\n";
-                        //  in: 3, out: 3 (means stereo i/o)
-                        pctx.processData.initialize(pctx.processSetup, 
-                                            nin, nout, inNch, outNch);
-                        for(int i=0; i<nin;i++)
-                        {
-                            pctx.vstPlug->activateBus(Steinberg::Vst::kAudio,
-                                            Steinberg::Vst::kInput, i, true);
-                        }
-                        for(int i=0; i<nout;i++)
-                        {
-                            pctx.vstPlug->activateBus(Steinberg::Vst::kAudio,
-                                            Steinberg::Vst::kOutput, i, true);
-                        }
-                    }
-                    if(inSpArrs)
-                        delete [] inSpArrs;
-                    if(outSpArrs)
-                        delete [] outSpArrs;
-                }
-                else
-                {
-                    std::cerr << "Problem setting up audioEffect\n";
-                }
-            }
+            pctx.initialize(inNch, outNch, sampleRate);
             // ~ProcessingCtx handles teardown
         }
+        return pctx.error;
+    }
+
+    void ProcessSamples(float *in, float *out, int nframes)
+    {
+        DbVST3ProcessingCtx &pctx = this->getProcessingCtx();
         if(pctx.error)
             return;
         
         pctx.processData.prepare(in, out, nframes);
-        // pctx.vstPlug->setActive(true); // if our config is constant we can do this once upon initialization 
         pctx.audioEffect->setProcessing(true);
         VST3App::tresult result = pctx.audioEffect->process(pctx.processData);
         if(result != Steinberg::kResultOk)
         {
-            std::cerr << "Problem processing data...";
+            std::cerr << "Problem processing data...\n";
         }
         pctx.audioEffect->setProcessing(false);
-        // pctx.vstPlug->setActive(false); // see above
     }
 }; // end struct DbVST3Ctx
 
