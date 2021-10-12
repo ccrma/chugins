@@ -8,7 +8,7 @@ class DbVST3ProcessData : public Steinberg::Vst::ProcessData
 {
 private:
     Steinberg::Vst::ParameterChanges inPChanges;
-    // Steinberg::Vst::EventList inEvents;
+    Steinberg::Vst::EventList inEvents;
 
 public:
     DbVST3ProcessData() 
@@ -59,24 +59,101 @@ public:
             }
         }
         this->inputParameterChanges = &this->inPChanges;
-
-        #if 0
         this->inputEvents = &this->inEvents;
-        #endif
     }
 
-    void prepareParamChange(int paramId, float value)
+    void prepareParamChange(Steinberg::Vst::ParamID paramId, 
+                        Steinberg::Vst::ParamValue value)
     {
         Steinberg::int32 queueIndex;
         Steinberg::Vst::IParamValueQueue *q = 
-            this->inPChanges.addParameterData((Steinberg::Vst::ParamID)paramId, 
-                                              queueIndex);
+            this->inPChanges.addParameterData(paramId, queueIndex);
         #if 0
         std::cout << "prepareParamChange " << paramId << " " << value 
             << " len:" <<  q->getPointCount() <<  "\n";
         #endif
         Steinberg::int32 ptIndex;
         q->addPoint(0, value, ptIndex);
+    }
+
+    Steinberg::Vst::ParamValue  // (double)
+    midiParamValue(int status, int midiData1, int midiData2)
+    {
+        const int kNoteOff = 0x80; ///< note, off velocity
+        const int kNoteOn = 0x90; ///< note, on velocity
+        const int kPolyPressure = 0xA0; ///< note, pressure
+        const int kController = 0xB0; ///< controller, value
+        const int kProgramChangeStatus = 0xC0; ///< program change
+        const int kAfterTouchStatus = 0xD0; ///< channel pressure
+        const int kPitchBendStatus = 0xE0; ///< lsb, msb
+        const int kDataMask = 0x7F;
+        const float kMidiScaler = 1.f / 127.f;
+        const double kPitchWheelScaler = 1. / (double)0x3FFF;
+
+        double ret;
+        switch(status)
+        {
+        case kController:
+            ret = (double) midiData2 * kMidiScaler;
+            break;
+        case kPitchBendStatus:
+            {
+                int ctrl = (midiData1 & kDataMask) | 
+                           (midiData2 & kDataMask) << 7;
+			    ret = kPitchWheelScaler * (double)ctrl;
+            }
+            break;
+	    case kAfterTouchStatus:
+			ret = (midiData1 & kDataMask) * kMidiScaler;
+            break;
+        default:
+            std::cerr << "midi param value unhandled " << status << "\n";
+            break;
+        }
+        return ret;
+    }
+
+    void prepareMidiEvent(int status, int data0, int data1,
+            Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping> midiMap)
+    {
+        int ch = 0; // tbd
+        auto evt = Steinberg::Vst::midiToEvent(status, ch, data0, data1);
+        if(evt)
+        {
+            evt->busIndex = 0; // ??
+            if(this->inEvents.addEvent(*evt) != Steinberg::kResultOk)
+                std::cerr  << "Problem adding MIDI event to eventlist\n";
+            #if 0
+            std::cout << "midi event: " << status 
+                << " note: " << data0 << " vel: " << data1 
+                <<  " qlen: " << this->inEvents.getEventCount() << "\n";
+            #endif
+        }
+        else
+        if(midiMap)
+        {
+            // also want to pass CCs etc along 
+            int bus = 0; // some plugins support multiple Event busses?
+            Steinberg::int16 chan = 0;  // some plugins support multiple channels
+            Steinberg::Vst::ParamID tag;
+            if(Steinberg::kResultOk == 
+                midiMap->getMidiControllerAssignment(bus, chan, data0, tag))
+            {
+                this->prepareParamChange(tag, 
+                    this->midiParamValue(status, data0, data1));
+            }
+            else
+            {
+                std::cout << "no midi mapping for " 
+                    << status << "/" << data0 <<"\n";
+            }
+            #if 0
+            auto pchange = Steinberg::Vst::midiToParameter(status, ch, 
+                            data0, data1, ToParameterIdFunc)
+            #endif
+        }
+        else
+            std::cout << "no midimapping found\n";
     }
 
     void prepare(float *in, float *out, int nframes)
@@ -100,10 +177,18 @@ public:
         else
             std::cerr << "Need to copy in+out of allocated buffers";
     }
+
+    void postprocess()
+    {
+        this->inEvents.clear();
+        this->inPChanges.clearQueue();
+    }
 };
 
-struct DbVST3ProcessingCtx
+
+class DbVST3ProcessingCtx : public VST3ComponentHandler
 {
+public:
     DbVST3ProcessingCtx()
     {
         this->error = 0;
@@ -126,11 +211,45 @@ struct DbVST3ProcessingCtx
         }
     }
 
+    /* -------------------------------------------------------------------- */
+    using ParamID = Steinberg::Vst::ParamID;
+    using ParamValue = Steinberg::Vst::ParamValue;
+ 
+    /* -------------------------------------------------------------------- */
+	tresult PLUGIN_API 
+    restartComponent(int32 flags) override
+    {
+        std::cout << "Restart component!\n";
+        // Parameters have been changed by a program-change.
+        // not clear what restart-component means, here.
+        // one idea: we pull all known parameters and assign the new
+        // values to the next processing block.
+        this->controller = this->provider->getController();
+        std::cout << "initialize: " << this->controller->getParameterCount() << "\n";
+        for(int i=0;i<this->controller->getParameterCount();i++)
+        {
+            Steinberg::Vst::ParameterInfo info;
+            this->controller->getParameterInfo(i, info);
+            if(info.flags && Steinberg::Vst::ParameterInfo::kCanAutomate)
+            {
+                ParamValue val = this->controller->getParamNormalized(info.id);
+                this->SetParamValue(info.id, val, true);
+                // std::cout << i << " " << info.shortTitle << " "  <<
+            }
+        }
+		return Steinberg::kResultOk;
+    }
+
     void 
     initialize(int inNch, int outNch, float sampleRate)
     {
         this->controller = this->provider->getController();
-        this->vstPlug = this->provider->getComponent();
+        this->controller->setComponentHandler(this);
+        this->vstPlug = this->provider->getComponent();	
+        this->midiMapping = Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping>(this->controller);
+        // this->controllerEx1 = Steinberg::FUnknownPtr<Steinberg::Vst::EditControllerEx1>(this->controller);
+        std::cout << "initialize: " << this->controller->getParameterCount() << "\n";
+
         if(Steinberg::kResultTrue != this->vstPlug->queryInterface(
                                         Steinberg::Vst::IAudioProcessor::iid, 
                                         (void**)&this->audioEffect))
@@ -270,29 +389,43 @@ struct DbVST3ProcessingCtx
         this->vstPlug->setActive(true); 
     }
 
-    int SetParamValue(int index, float value)
+    // 'param id' it's paramID !== index
+    int SetParamValue(Steinberg::Vst::ParamID pid, float value, bool asAutomation)
     {
         // https://developer.steinberg.help/display/VST/Parameters+and+Automation
         int err = 0;
         if(this->controller)
         {
-            #if 0
-            realvalue = controller->normalizedParamToPlain(index, value);
-            std::cout << "nval:" << value << " rval:" << realvalue << "\n";
-            controller->setParamNormalized(index, value);
-            #else
-            this->processData.prepareParamChange(index, value);
-            #endif
+            if(asAutomation)
+                this->processData.prepareParamChange(pid, value);
+            else
+                this->controller->setParamNormalized(pid, value);
         }
         else
             err = -1;
         return err;
     }
 
+    int MidiEvent(int data1, int data2, int data3)
+    {
+       int err;
+        if(this->controller)
+        {
+            this->processData.prepareMidiEvent(data1, data2, data3, 
+                                            this->midiMapping);
+            err = 0;
+        }
+        else
+            err = -1;
+       return err; 
+    }
+
     int error;
     VST3App::ProviderPtr provider;
     Steinberg::Vst::IComponent* vstPlug;
     Steinberg::Vst::IEditController* controller;
+    // Steinberg::FUnknownPtr<Steinberg::Vst::EditControllerEx1> controllerEx1;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping> midiMapping;
     Steinberg::Vst::IAudioProcessor* audioEffect;
     Steinberg::Vst::ProcessSetup processSetup;
     //Steinberg::Vst::ProcessData processData; // constructor nulls out fields
@@ -306,7 +439,7 @@ struct DbVST3ParamInfo
 {
     std::string name;
     int stepCount; // 0: float, 1: toggle, 2: discreet
-    int id;
+    Steinberg::Vst::ParamID id;
     int flags;
     double defaultValue; // normalized, (double is the type of VST::ParamValue)
     std::string units; // XXX: two kinds of units (string and int)
@@ -333,6 +466,18 @@ struct DbVST3Module
     std::string sdkVersion;
     std::vector<DbVST3ParamInfo> parameters;
     DbVST3ProcessingCtx processingCtx;
+
+    Steinberg::Vst::ParamID
+    GetParamID(int index, int *flags)
+    {
+        if(index < this->parameters.size())
+        {
+            *flags = this->parameters[index].flags; 
+            return this->parameters[index].id;
+        }
+        else
+            return Steinberg::Vst::kNoParamId;
+    }
 
     void Print(char const *indent, int index, bool detailed)
     {
@@ -466,6 +611,7 @@ struct DbVST3Ctx
         return pctx.error;
     }
 
+    // input 'param id' from a user perspective is its index.
     int SetParamValue(int index, float val)
     {
         int err = -1;
@@ -473,7 +619,30 @@ struct DbVST3Ctx
         {
             // processingCtx's job to add ithe parameter change
             // to the automation setup.
-            err = this->getProcessingCtx().SetParamValue(index, val);
+            int flags;
+            auto id = this->activeModule->GetParamID(index, &flags);
+            if(flags & Steinberg::Vst::ParameterInfo::kCanAutomate)
+                err = this->getProcessingCtx().SetParamValue(id, val, true);
+            else
+            if(flags & Steinberg::Vst::ParameterInfo::kIsProgramChange)
+            {
+                err = this->getProcessingCtx().SetParamValue(id, val, false);
+            }
+            else
+            {
+                std::cerr << "parameter " << index << " can't be automated.\n";
+            }
+        }
+        return err;
+    }
+
+    int MidiEvent(int data1, int data2, int data3)
+    {
+        int err = -1;
+        if(this->activeModule.get())
+        {
+            // processingCtx's job to add the midi event to its eventslist
+            err = this->getProcessingCtx().MidiEvent(data1, data2, data3);
         }
         return err;
     }
@@ -490,6 +659,7 @@ struct DbVST3Ctx
         pctx.processData.prepare(in, out, nframes);
         pctx.audioEffect->setProcessing(true);
         VST3App::tresult result = pctx.audioEffect->process(pctx.processData);
+        pctx.processData.postprocess();
         if(result != Steinberg::kResultOk)
         {
             std::cerr << "Problem processing data...\n";

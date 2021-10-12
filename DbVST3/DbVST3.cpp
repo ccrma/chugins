@@ -15,6 +15,7 @@
 
 CK_DLL_CTOR(dbvst3_ctor);
 CK_DLL_DTOR(dbvst3_dtor);
+
 CK_DLL_MFUN(dbvst3_loadPlugin);
 CK_DLL_MFUN(dbvst3_printModules);
 CK_DLL_MFUN(dbvst3_getNumModules);
@@ -26,7 +27,10 @@ CK_DLL_MFUN(dbvst3_getParameter);
 CK_DLL_MFUN(dbvst3_setParameter);
 CK_DLL_MFUN(dbvst3_noteOn);
 CK_DLL_MFUN(dbvst3_noteOff);
+CK_DLL_MFUN(dbvst3_midiEvent);
+
 CK_DLL_TICKF(dbvst3_multitick);
+
 static t_CKINT dbvst3_data_offset = 0;
 static t_CKINT dbvst3_datastr_offset = 0;
 
@@ -75,6 +79,8 @@ public:
 
     bool noteOn(int note, float velocity);
     bool noteOff(int note, float velocity);
+    bool midiEvent(int data1, int data2, int data3, float when);
+
     void multitick(SAMPLE* in, SAMPLE* out, int nframes);
 
 private:
@@ -145,15 +151,29 @@ DbVST3::setParameter(int index, float v)
 bool 
 DbVST3::noteOn(int noteNumber, float velocity) 
 {
+    // 144 is channel 0
+    this->midiEvent(144, noteNumber,  int(velocity * 127), 0.);
     return true;
 }
 
 bool 
 DbVST3::noteOff(int noteNumber, float velocity) 
 {
+    // 128 is channel 0
+    this->midiEvent(128, noteNumber,  int(velocity * 127), 0.);
     return true;
 }
 
+bool
+DbVST3::midiEvent(int data1, int data2, int data3, float dur)
+{
+    //std::cout << "DbVST3::midiEvent " << data1 << " " << data2 
+    // << " " << data3 << " " << dur << "\n";
+    // dur is zero unless playing from file
+    return m_dbVST3Ctx.MidiEvent(data1, data2, data3); 
+}
+
+/* --------------------------------------------------------------------- */
 void 
 DbVST3::multitick(SAMPLE* in, SAMPLE* out, int nframes)
 {
@@ -232,6 +252,9 @@ CK_DLL_QUERY( DbVST3 )
     QUERY->add_mfun(QUERY, dbvst3_noteOff, "int", "noteOff");
     QUERY->add_arg(QUERY, "int", "noteNumber");
     QUERY->add_arg(QUERY, "float", "velocity");
+
+    QUERY->add_mfun(QUERY, dbvst3_midiEvent, "void", "midiEvent");
+    QUERY->add_arg(QUERY, "MidiMsg", "msg");
 
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
@@ -361,9 +384,7 @@ CK_DLL_MFUN(dbvst3_setParameter)
 {
     t_CKINT index = GET_NEXT_INT(ARGS);
     t_CKFLOAT val = GET_NEXT_FLOAT(ARGS);
-
     DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
-
     RETURN->v_int = b->setParameter(index, val);
 }
 
@@ -371,9 +392,7 @@ CK_DLL_MFUN(dbvst3_noteOn)
 {
     t_CKINT noteNumber = GET_NEXT_INT(ARGS);
     t_CKFLOAT velocity = GET_NEXT_FLOAT(ARGS);
-
     DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
-
     RETURN->v_int = b->noteOn(noteNumber, velocity);
 }
 
@@ -381,8 +400,23 @@ CK_DLL_MFUN(dbvst3_noteOff)
 {
     t_CKINT noteNumber = GET_NEXT_INT(ARGS);
     t_CKFLOAT velocity = GET_NEXT_FLOAT(ARGS);
-
     DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
-
     RETURN->v_int = b->noteOff(noteNumber, velocity);
 } 
+
+CK_DLL_MFUN(dbvst3_midiEvent)
+{
+    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    Chuck_Object *msg = GET_NEXT_OBJECT(ARGS);
+
+    /* object mvar offsets for MidiMsg not exported by chuck
+     * so we'll hard code values.  Here we assume we're in
+     * 64-bit land.
+     */
+    int data1 = OBJ_MEMBER_INT(msg, 8); // MidiMsg_offset_data1
+    int data2 = OBJ_MEMBER_INT(msg, 16); // MidiMsg_offset_data2
+    int data3 = OBJ_MEMBER_INT(msg, 24); // MidiMsg_offset_data3
+    t_CKDUR when = OBJ_MEMBER_DUR(msg, 32); // MidiMsg_offset_when);
+
+    RETURN->v_int = b->midiEvent(data1, data2, data3, when);
+}

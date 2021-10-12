@@ -20,9 +20,12 @@
 #include <public.sdk/source/vst/hosting/eventlist.h>
 #include <public.sdk/source/vst/hosting/parameterchanges.h>
 #include <public.sdk/source/vst/utility/stringconvert.h>
+#include <public.sdk/source/vst/vsteditcontroller.h>
+#include <public.sdk/samples/vst-hosting/audiohost/source/media/miditovst.h>
 
 #include <pluginterfaces/vst/ivstaudioprocessor.h>
 #include <pluginterfaces/vst/ivsteditcontroller.h>
+#include <pluginterfaces/vst/ivstmidicontrollers.h>
 #include <pluginterfaces/vst/ivstevents.h>
 #include <pluginterfaces/vst/vsttypes.h>
 #include <pluginterfaces/base/funknown.h>
@@ -137,6 +140,46 @@ protected: // --------------------------------------------------------------
 private:
     char const *m_name;
 	Steinberg::IPtr<Steinberg::Vst::PlugInterfaceSupport> m_plugInterfaceSupport;
+};
+
+class VST3ComponentHandler : public Steinberg::Vst::IComponentHandler
+{
+public:
+    using tresult = Steinberg::tresult;
+    using ParamID = Steinberg::Vst::ParamID;
+    using ParamValue = Steinberg::Vst::ParamValue;
+    using int32 = Steinberg::int32;
+    using uint32 = Steinberg::uint32;
+    using TUID = Steinberg::TUID;
+
+	tresult PLUGIN_API beginEdit(ParamID id) override
+	{
+		std::cout << "beginEdit called " << id << "\n";
+		return Steinberg::kNotImplemented;
+	}
+	tresult PLUGIN_API performEdit(ParamID id, ParamValue valueNormalized) override
+	{
+		std::cout << "performEdit called " << id << " " << valueNormalized << "\n";
+		return Steinberg::kNotImplemented;
+	}
+	tresult PLUGIN_API endEdit(ParamID id) override
+	{
+		std::cout << "endEdit called " << id << "\n";
+		return Steinberg::kNotImplemented;
+	}
+	tresult PLUGIN_API restartComponent(int32 flags) override
+	{
+		std::cout << "restartComponent called " << flags << "\n";
+		return Steinberg::kNotImplemented;
+	}
+
+private:
+	tresult PLUGIN_API queryInterface(const TUID /*_iid*/, void** /*obj*/) override
+	{
+		return Steinberg::kNoInterface;
+	}
+	uint32 PLUGIN_API addRef() override { return 1000; }
+	uint32 PLUGIN_API release() override { return 1000; }
 };
 
 #endif

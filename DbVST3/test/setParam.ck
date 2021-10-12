@@ -7,7 +7,10 @@ x.loadPlugin("C:/Program Files/Common Files/VST3/examples/mda-vst3.vst3");
 x.selectModule(31);  // Thru-zero flanger
 doAnim();
 
-x.selectModule(23);  // Round Panner
+x.selectModule(23);  // RingMod
+doAnim();
+
+x.selectModule(24);  // Round Panner
 doAnim();
 
 fun void doAnim()
