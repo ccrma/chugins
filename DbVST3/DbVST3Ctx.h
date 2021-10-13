@@ -224,8 +224,7 @@ public:
         // not clear what restart-component means, here.
         // one idea: we pull all known parameters and assign the new
         // values to the next processing block.
-        this->controller = this->provider->getController();
-        std::cout << "initialize: " << this->controller->getParameterCount() << "\n";
+        // std::cout << "initialize: " << this->controller->getParameterCount() << "\n";
         for(int i=0;i<this->controller->getParameterCount();i++)
         {
             Steinberg::Vst::ParameterInfo info;
