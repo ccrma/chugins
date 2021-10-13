@@ -21,14 +21,15 @@ fun void doit(int id, dur maxwait)
         min => now;
         while(min.recv(msg))
         {
+            // <<< "chuck midievent" , msg.data1 >>>;
             x.midiEvent(msg);
         }
     }
     <<< "shred", id, "done" >>>;
 }
 
-spork ~ doit(1,20::second);
+spork ~ doit(1, 45::second);
 
-20::second => now;
+45::second => now;
 
 <<< "Done" >>>;

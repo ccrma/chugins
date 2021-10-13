@@ -128,29 +128,35 @@ public:
                 << " note: " << data0 << " vel: " << data1 
                 <<  " qlen: " << this->inEvents.getEventCount() << "\n";
             #endif
+            return;
         }
-        else
+
         if(midiMap)
         {
-            // also want to pass CCs etc along 
             int bus = 0; // some plugins support multiple Event busses?
-            Steinberg::int16 chan = 0;  // some plugins support multiple channels
-            Steinberg::Vst::ParamID tag;
-            if(Steinberg::kResultOk == 
-                midiMap->getMidiControllerAssignment(bus, chan, data0, tag))
+            Steinberg::int16 ch = 0;  // some plugins support multiple channels
+
+            // Rirst look for non CCs like PitchBend and AfterTouch ---------
+            // these are converted to CC-format (since ParamValues are double)
+            auto callback = [bus, midiMap](Steinberg::int32 ch, 
+                                           uint8_t data0) -> Steinberg::Vst::ParamID 
             {
-                this->prepareParamChange(tag, 
-                    this->midiParamValue(status, data0, data1));
+                Steinberg::Vst::ParamID tag;
+                midiMap->getMidiControllerAssignment(bus, ch, data0, tag);
+                return tag;
+            };
+            auto optParamChange = Steinberg::Vst::midiToParameter(status, ch, 
+                                    data0, data1, callback);
+            if(optParamChange)
+            {
+                this->prepareParamChange(optParamChange->first, optParamChange->second);
+                return;
             }
             else
             {
                 std::cout << "no midi mapping for " 
                     << status << "/" << data0 <<"\n";
             }
-            #if 0
-            auto pchange = Steinberg::Vst::midiToParameter(status, ch, 
-                            data0, data1, ToParameterIdFunc)
-            #endif
         }
         else
             std::cout << "no midimapping found\n";
@@ -247,7 +253,7 @@ public:
         this->vstPlug = this->provider->getComponent();	
         this->midiMapping = Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping>(this->controller);
         // this->controllerEx1 = Steinberg::FUnknownPtr<Steinberg::Vst::EditControllerEx1>(this->controller);
-        std::cout << "initialize: " << this->controller->getParameterCount() << "\n";
+        // std::cout << "initialize: " << this->controller->getParameterCount() << "\n";
 
         if(Steinberg::kResultTrue != this->vstPlug->queryInterface(
                                         Steinberg::Vst::IAudioProcessor::iid, 
