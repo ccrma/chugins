@@ -76,43 +76,6 @@ public:
         q->addPoint(0, value, ptIndex);
     }
 
-    Steinberg::Vst::ParamValue  // (double)
-    midiParamValue(int status, int midiData1, int midiData2)
-    {
-        const int kNoteOff = 0x80; ///< note, off velocity
-        const int kNoteOn = 0x90; ///< note, on velocity
-        const int kPolyPressure = 0xA0; ///< note, pressure
-        const int kController = 0xB0; ///< controller, value
-        const int kProgramChangeStatus = 0xC0; ///< program change
-        const int kAfterTouchStatus = 0xD0; ///< channel pressure
-        const int kPitchBendStatus = 0xE0; ///< lsb, msb
-        const int kDataMask = 0x7F;
-        const float kMidiScaler = 1.f / 127.f;
-        const double kPitchWheelScaler = 1. / (double)0x3FFF;
-
-        double ret;
-        switch(status)
-        {
-        case kController:
-            ret = (double) midiData2 * kMidiScaler;
-            break;
-        case kPitchBendStatus:
-            {
-                int ctrl = (midiData1 & kDataMask) | 
-                           (midiData2 & kDataMask) << 7;
-			    ret = kPitchWheelScaler * (double)ctrl;
-            }
-            break;
-	    case kAfterTouchStatus:
-			ret = (midiData1 & kDataMask) * kMidiScaler;
-            break;
-        default:
-            std::cerr << "midi param value unhandled " << status << "\n";
-            break;
-        }
-        return ret;
-    }
-
     void prepareMidiEvent(int status, int data0, int data1,
             Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping> midiMap)
     {
@@ -225,7 +188,7 @@ public:
 	tresult PLUGIN_API 
     restartComponent(int32 flags) override
     {
-        std::cout << "Restart component!\n";
+        // std::cout << "Restart component!\n";
         // Parameters have been changed by a program-change.
         // not clear what restart-component means, here.
         // one idea: we pull all known parameters and assign the new
@@ -235,7 +198,7 @@ public:
         {
             Steinberg::Vst::ParameterInfo info;
             this->controller->getParameterInfo(i, info);
-            if(info.flags && Steinberg::Vst::ParameterInfo::kCanAutomate)
+            if(info.flags & Steinberg::Vst::ParameterInfo::kCanAutomate)
             {
                 ParamValue val = this->controller->getParamNormalized(info.id);
                 this->SetParamValue(info.id, val, true);

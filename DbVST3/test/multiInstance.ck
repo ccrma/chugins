@@ -5,7 +5,7 @@ fun void makeSound(int moduleIndex, dur d)
     SqrOsc s => DbVST3 x => dac;
     Math.random2f(100., 200.) => s.freq;
     .1 => s.gain;
-    x.loadPlugin("C:/Program Files/Common Files/VST3/examples/mda-vst3.vst3");
+    x.loadPlugin("mda-vst3.vst3");
     x.selectModule(moduleIndex); 
     <<<moduleIndex, x.getModuleName()>>>;
     d => now;

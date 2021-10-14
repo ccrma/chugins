@@ -13,7 +13,7 @@ fun void doit(int id, dur maxwait)
     <<< "Listening for midi events for", maxwait >>>;
 
     DbVST3 x => dac;
-    x.loadPlugin("C:/Program Files/Common Files/VST3/examples/mda-vst3.vst3");
+    x.loadPlugin("mda-vst3.vst3");
     x.selectModule(14); // JX 10 synth
     now => time start;
     while(now - start < maxwait)

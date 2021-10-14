@@ -2,7 +2,7 @@
 SawOsc s => DbVST3 x => dac;
 Math.random2f(250., 300.) => s.freq;
 .1 => s.gain;
-x.loadPlugin("C:/Program Files/Common Files/VST3/examples/mda-vst3.vst3");
+x.loadPlugin("mda-vst3.vst3");
 
 x.selectModule(31);  // Thru-zero flanger
 doAnim();

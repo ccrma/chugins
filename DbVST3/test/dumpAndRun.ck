@@ -1,9 +1,7 @@
 DbVST3 x;
 
-// "NA Black.vst3" => string pluginName;
-//"examples/againsimple.vst3" => string pluginName;
-"examples/mda-vst3.vst3" => string pluginName;
-x.loadPlugin("C:/Program Files/Common Files/VST3/" + pluginName);
+"mda-vst3.vst3" => string pluginName;
+x.loadPlugin(pluginName);
 <<< pluginName, "loaded">>>;
 x.getNumModules() => int nmods;
 if(nmods > 1)

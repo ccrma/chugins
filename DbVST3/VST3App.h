@@ -59,10 +59,32 @@ public:
 public:
     using Plugin = VST3::Hosting::Module::Ptr;
 
+    bool endsWith(std::string const &fullpath, std::string const &partpath)
+    {
+        if(partpath.size() > fullpath.size()) return false;
+        return (0 == fullpath.compare(fullpath.length() - partpath.length(), 
+                                        partpath.length(), partpath));
+    }
+
     Plugin
     LoadPlugin(std::string const &path, std::string &error)
     {
-        return VST3::Hosting::Module::create(path, error);
+        // first assume path is fully qualified
+        Plugin plugin = VST3::Hosting::Module::create(path, error); 
+        if(!plugin)
+        {
+            // see if it matches any installed plugins
+            auto paths = VST3::Hosting::Module::getModulePaths();
+            for(const auto& plug : paths)
+            {
+                if(this->endsWith(plug, path))
+                {
+                    plugin = VST3::Hosting::Module::create(plug, error);
+                    break;
+                }
+            }
+        }
+        return plugin;
     }
 
     char const *
@@ -108,7 +130,7 @@ protected: // --------------------------------------------------------------
     }
 
     tresult PLUGIN_API
-    queryInterface(const char* iid, void** obj)
+    queryInterface(const char* iid, void** obj) override
     {
         // std::cerr << "query call for " << _iid << "\n";
         QUERY_INTERFACE(iid, obj, Steinberg::Vst::IHostApplication::iid, 

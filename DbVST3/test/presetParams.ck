@@ -1,6 +1,6 @@
 DbVST3 x => dac;
 .1 => float timescale;
-x.loadPlugin("C:/Program Files/Common Files/VST3/examples/mda-vst3.vst3");
+x.loadPlugin("mda-vst3.vst3");
 
 // EPiano
 x.selectModule(12);  
