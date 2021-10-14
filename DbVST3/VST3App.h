@@ -59,11 +59,23 @@ public:
 public:
     using Plugin = VST3::Hosting::Module::Ptr;
 
-    bool endsWith(std::string const &fullpath, std::string const &partpath)
+    void 
+    PrintAllInstalledPlugins(std::ostream &ostr)
     {
-        if(partpath.size() > fullpath.size()) return false;
-        return (0 == fullpath.compare(fullpath.length() - partpath.length(), 
-                                        partpath.length(), partpath));
+        std::vector<std::string> knownPlugins;
+        this->GetKnownPlugins(knownPlugins);
+        if(knownPlugins.size() == 0)
+            ostr << "<no VST3 plugins found>\n";
+        else
+        for(const auto& path : knownPlugins)
+            ostr << path << "\n";
+    }
+
+    int
+    GetKnownPlugins(std::vector<std::string> &knownPlugins)
+    {
+        knownPlugins = VST3::Hosting::Module::getModulePaths();
+        return (knownPlugins.size() > 0) ? 0 : -1;
     }
 
     Plugin
@@ -142,21 +154,12 @@ protected: // --------------------------------------------------------------
         return Steinberg::kResultFalse;
     }
 
-    void 
-    printAllInstalledPlugins()
+private:
+    bool endsWith(std::string const &fullpath, std::string const &partpath)
     {
-        std::cout << "Searching installed Plug-ins...\n";
-        std::cout.flush();
-        auto paths = VST3::Hosting::Module::getModulePaths();
-        if(paths.empty())
-        {
-            std::cout << "No Plug-ins found.\n";
-            return;
-        }
-        for(const auto& path : paths)
-        {
-            std::cout << path << "\n";
-        }
+        if(partpath.size() > fullpath.size()) return false;
+        return (0 == fullpath.compare(fullpath.length() - partpath.length(), 
+                                        partpath.length(), partpath));
     }
 
 private:

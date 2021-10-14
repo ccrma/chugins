@@ -104,7 +104,7 @@ bool DbVST3::loadPlugin(const std::string& filepath)
 void 
 DbVST3::printModules()
 {
-    m_dbVST3Ctx.Print(false/*detailed*/);
+    m_dbVST3Ctx.Print(std::cout, false/*detailed*/);
 }
 
 int 

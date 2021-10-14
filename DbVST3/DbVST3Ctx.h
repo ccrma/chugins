@@ -413,13 +413,13 @@ struct DbVST3ParamInfo
     double defaultValue; // normalized, (double is the type of VST::ParamValue)
     std::string units; // XXX: two kinds of units (string and int)
 
-    void Print(char const *indent, int index)
+    void Print(std::ostream &ostr, char const *indent, int index)
     {
-        std::cout << indent << "- name: " << this->name << "\n";
-        std::cout << indent << "  id: " << this->id << "\n";
-        std::cout << indent << "  default: " << this->defaultValue << "\n";
+        ostr << indent << "- name: " << this->name << "\n";
+        ostr << indent << "  id: " << this->id << "\n";
+        ostr << indent << "  default: " << this->defaultValue << "\n";
         if(this->stepCount == 1)
-            std::cout << indent << "  editType: checkbox\n";
+            ostr << indent << "  editType: checkbox\n";
         else
         {
             float delta;
@@ -427,10 +427,10 @@ struct DbVST3ParamInfo
                 delta = .001;
             else
                 delta = 1.0f / this->stepCount;
-            std::cout << indent << "  range: [0, 1, " << delta << "]\n";
+            ostr << indent << "  range: [0, 1, " << delta << "]\n";
         }
-        std::cout << indent << "  vst3flags: " << this->flags << "\n";
-        std::cout << indent << "  vst3units: '" << this->units << "'\n";
+        ostr << indent << "  vst3flags: " << this->flags << "\n";
+        ostr << indent << "  vst3units: '" << this->units << "'\n";
     }
 };
 
@@ -476,37 +476,37 @@ struct DbVST3Module
             return Steinberg::Vst::kNoParamId;
     }
 
-    void Print(char const *indent, int index, bool detailed)
+    void Print(std::ostream &ostr, char const *indent, int index, bool detailed)
     {
         if(!detailed)
-            std::cout << indent << "- " << this->name << "\n";
+            ostr << indent << "- " << this->name << "\n";
         else
-            std::cout << indent << "- RegistryName: " << this->name << "\n";
+            ostr << indent << "- RegistryName: " << this->name << "\n";
         if(!detailed) return;
         // category is always "Audio Module Class"
-        std::cout << indent << "  Categories:\n";
+        ostr << indent << "  Categories:\n";
 
         // parse the subcategory on |
         std::string sc = this->subCategories;
         while(1)
         {
             size_t pos = sc.find("|");
-            std::cout << indent << "    - " << sc.substr(0, pos) << "\n";
+            ostr << indent << "    - " << sc.substr(0, pos) << "\n";
             if(pos != std::string::npos)
                 sc.erase(0, pos + 1);
             else
                 break;
         } 
         
-        std::cout << indent << "  Version: " << this->version << "\n";
-        std::cout << indent << "  SdkVersion: " << this->sdkVersion << "\n";
-        std::cout << indent << "  Inputs:\n";
+        ostr << indent << "  Version: " << this->version << "\n";
+        ostr << indent << "  SdkVersion: " << this->sdkVersion << "\n";
+        ostr << indent << "  Inputs:\n";
         std::string in(indent);
         in.append("  ");
         char const *i2 = in.c_str();
         for(int i=0; i<this->parameters.size();i++)
         {
-            this->parameters[i].Print(i2, i);
+            this->parameters[i].Print(ostr, i2, i);
         }
     }
 }; // end struct DbVST3Module
@@ -593,23 +593,23 @@ struct DbVST3Ctx
             this->activeModule = this->modules[0];
         }
     }
-    void Print(bool detailed)
+    void Print(std::ostream &ostr, bool detailed)
     {
         // output to yaml, as two objects:
         //   VST3Plugin:
         //      metainfo
         //   FiddleNodes:
         //      - array of modules with parameters, etc
-        std::cout << "VST3Plugin:\n";
-        std::cout << "  filepath: " << this->filepath << "\n";
-        std::cout << "  vendor: " << this->vendor << "\n";
-        std::cout << "  nmodules: " << this->modules.size() << "\n";
+        ostr << "VST3Plugin:\n";
+        ostr << "  filepath: " << this->filepath << "\n";
+        ostr << "  vendor: " << this->vendor << "\n";
+        ostr << "  nmodules: " << this->modules.size() << "\n";
         if(!detailed)
-            std::cout << "Modules:\n";
+            ostr << "Modules:\n";
         else
-            std::cout << "FiddleNodes:\n";
+            ostr << "FiddleNodes:\n";
         for(int i=0;i<this->modules.size();i++)
-            this->modules[i]->Print("  ", i, detailed);
+            this->modules[i]->Print(ostr, "  ", i, detailed);
     }
 
     DbVST3ProcessingCtx &getProcessingCtx()

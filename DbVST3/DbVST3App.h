@@ -69,7 +69,6 @@ public:
         return 0;
     }
 
-
     /* ------------------------------------------------------------------ */
     void
     getProviderParams(ProviderPtr provider, 
