@@ -12,7 +12,13 @@ if(nmods > 1)
 
 SqrOsc n => x => dac; /* don't need pan 2 atm monoin is up-channed */
 .1 => n.gain;
-5::second => now;
+3::second => now;
+<<<"Rate", .8>>>;
+x.setParameter("Rate", .8); // normalized values
+2::second => now;
+<<<"DepthMod", 1>>>;
+x.setParameter("DepthMod", 1); 
+2::second => now;
 
 if(nmods > 1)
 {

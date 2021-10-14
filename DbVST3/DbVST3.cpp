@@ -25,6 +25,7 @@ CK_DLL_MFUN(dbvst3_getNumParameters);
 CK_DLL_MFUN(dbvst3_getParameterName);
 CK_DLL_MFUN(dbvst3_getParameter);
 CK_DLL_MFUN(dbvst3_setParameter);
+CK_DLL_MFUN(dbvst3_setParameterByName);
 CK_DLL_MFUN(dbvst3_noteOn);
 CK_DLL_MFUN(dbvst3_noteOff);
 CK_DLL_MFUN(dbvst3_midiEvent);
@@ -76,6 +77,7 @@ public:
     int getParameterName(int index, std::string &pnm);
     float getParameter(int index);
     bool setParameter(int index, float v);
+    bool setParameter(std::string const &nm, float v);
 
     bool noteOn(int note, float velocity);
     bool noteOff(int note, float velocity);
@@ -145,6 +147,12 @@ bool
 DbVST3::setParameter(int index, float v) 
 {
     return m_dbVST3Ctx.SetParamValue(index, v);
+}
+
+bool 
+DbVST3::setParameter(std::string const &nm, float v) 
+{
+    return m_dbVST3Ctx.SetParamValue(nm, v);
 }
 
 /* --------------------------------------------------------------------- */
@@ -243,6 +251,10 @@ CK_DLL_QUERY( DbVST3 )
 
     QUERY->add_mfun(QUERY, dbvst3_setParameter, "int", "setParameter");
     QUERY->add_arg(QUERY, "int", "index");
+    QUERY->add_arg(QUERY, "float", "value");
+
+    QUERY->add_mfun(QUERY, dbvst3_setParameterByName, "int", "setParameter");
+    QUERY->add_arg(QUERY, "string", "nm");
     QUERY->add_arg(QUERY, "float", "value");
 
     QUERY->add_mfun(QUERY, dbvst3_noteOn, "int", "noteOn");
@@ -388,6 +400,14 @@ CK_DLL_MFUN(dbvst3_setParameter)
     t_CKFLOAT val = GET_NEXT_FLOAT(ARGS);
     DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     RETURN->v_int = b->setParameter(index, val);
+}
+
+CK_DLL_MFUN(dbvst3_setParameterByName)
+{
+    std::string nm = GET_NEXT_STRING_SAFE(ARGS);
+    t_CKFLOAT val = GET_NEXT_FLOAT(ARGS);
+    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    RETURN->v_int = b->setParameter(nm, val);
 }
 
 CK_DLL_MFUN(dbvst3_noteOn)

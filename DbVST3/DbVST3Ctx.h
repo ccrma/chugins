@@ -2,6 +2,7 @@
 #define DbVST3Ctx_h
 
 #include "VST3App.h"
+#include <unordered_map>
 
 /* -------------------------------------------------------------------------- */
 class DbVST3ProcessData : public Steinberg::Vst::ProcessData
@@ -444,6 +445,7 @@ struct DbVST3Module
     std::string sdkVersion;
     std::vector<DbVST3ParamInfo> parameters;
     DbVST3ProcessingCtx processingCtx;
+    std::unordered_map< std::string, Steinberg::Vst::ParamID > nameToID;
 
     Steinberg::Vst::ParamID
     GetParamID(int index, int *flags)
@@ -457,9 +459,29 @@ struct DbVST3Module
             return Steinberg::Vst::kNoParamId;
     }
 
+    Steinberg::Vst::ParamID
+    GetParamID(std::string const &nm, int *flags)
+    {
+        if(this->nameToID.size() == 0 && this->parameters.size() > 0)
+        {
+            for(int i=0;i<this->parameters.size();i++)
+            {
+                // std::cout << "Adding " << this->parameters[i].name << "\n";
+                this->nameToID[this->parameters[i].name] = this->parameters[i].id;
+            }
+        }
+        if(this->nameToID.count(nm))
+            return this->nameToID[nm];
+        else
+            return Steinberg::Vst::kNoParamId;
+    }
+
     void Print(char const *indent, int index, bool detailed)
     {
-        std::cout << indent << "- RegistryName: " << this->name << "\n";
+        if(!detailed)
+            std::cout << indent << "- " << this->name << "\n";
+        else
+            std::cout << indent << "- RegistryName: " << this->name << "\n";
         if(!detailed) return;
         // category is always "Audio Module Class"
         std::cout << indent << "  Categories:\n";
@@ -582,7 +604,10 @@ struct DbVST3Ctx
         std::cout << "  filepath: " << this->filepath << "\n";
         std::cout << "  vendor: " << this->vendor << "\n";
         std::cout << "  nmodules: " << this->modules.size() << "\n";
-        std::cout << "FiddleNodes:\n";
+        if(!detailed)
+            std::cout << "Modules:\n";
+        else
+            std::cout << "FiddleNodes:\n";
         for(int i=0;i<this->modules.size();i++)
             this->modules[i]->Print("  ", i, detailed);
     }
@@ -630,6 +655,35 @@ struct DbVST3Ctx
             {
                 std::cerr << "parameter " << index << " can't be automated.\n";
             }
+        }
+        return err;
+    }
+
+    int SetParamValue(std::string const &nm, float val)
+    {
+        int err = -1;
+        if(this->activeModule.get())
+        {
+            // processingCtx's job to add ithe parameter change
+            // to the automation setup.
+            int flags;
+            auto id = this->activeModule->GetParamID(nm, &flags);
+            if(id == Steinberg::Vst::kNoParamId)
+            {
+                std::cerr << "Parameter " << nm << " not found.\n";
+                return -1;
+            }
+            #if 0
+            else
+                std::cout << "Parameter " << nm << " found as id: " << id << "\n";
+            #endif
+            if(flags & Steinberg::Vst::ParameterInfo::kCanAutomate)
+                err = this->getProcessingCtx().SetParamValue(id, val, true);
+            else
+            if(flags & Steinberg::Vst::ParameterInfo::kIsProgramChange)
+                err = this->getProcessingCtx().SetParamValue(id, val, false);
+            else
+                std::cerr << "parameter " << nm << " can't be automated.\n";
         }
         return err;
     }
