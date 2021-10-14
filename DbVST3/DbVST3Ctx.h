@@ -323,8 +323,8 @@ public:
         for(int i=0;i<nout;i++)
             outSpArrs[i] = wantout;
         
-        if(this->audioEffect->setBusArrangements(inSpArrs, nin, 
-            outSpArrs, nout) != Steinberg::kResultTrue)
+        if(this->audioEffect->setBusArrangements(inSpArrs, nin, outSpArrs, nout) 
+            != Steinberg::kResultTrue)
         {
             std::cerr << "Problem configuring bus arrangement.\n";
             this->error = 1;
@@ -414,12 +414,22 @@ struct DbVST3ParamInfo
 
     void Print(char const *indent, int index)
     {
-        std::cout << indent << index << ": " << this->name << "\n";
-        std::cout << indent << " default: " << this->defaultValue << "\n";
-        std::cout << indent << " stepCount: " << this->stepCount << "\n";
-        std::cout << indent << " id: " << this->id << "\n";
-        std::cout << indent << " flags: " << this->flags << "\n";
-        std::cout << indent << " units: '" << this->units << "'\n";
+        std::cout << indent << "- name: " << this->name << "\n";
+        std::cout << indent << "  id: " << this->id << "\n";
+        std::cout << indent << "  default: " << this->defaultValue << "\n";
+        if(this->stepCount == 1)
+            std::cout << indent << "  editType: checkbox\n";
+        else
+        {
+            float delta;
+            if(this->stepCount == 0) //
+                delta = .001;
+            else
+                delta = 1.0f / this->stepCount;
+            std::cout << indent << "  range: [0, 1, " << delta << "]\n";
+        }
+        std::cout << indent << "  vst3flags: " << this->flags << "\n";
+        std::cout << indent << "  vst3units: '" << this->units << "'\n";
     }
 };
 
@@ -449,15 +459,28 @@ struct DbVST3Module
 
     void Print(char const *indent, int index, bool detailed)
     {
-        std::cout << "-- " << index << ": " << this->name << " --\n";
+        std::cout << indent << "- RegistryName: " << this->name << "\n";
         if(!detailed) return;
-        std::cout << indent << "category: " << this->category << "\n";
-        std::cout << indent << "subCategories: " << this->subCategories << "\n";
-        std::cout << indent << "version: " << this->version << "\n";
-        std::cout << indent << "sdkVersion: " << this->sdkVersion << "\n";
-        std::cout << indent << "nparams: " << this->parameters.size() << "\n";
+        // category is always "Audio Module Class"
+        std::cout << indent << "  Categories:\n";
+
+        // parse the subcategory on |
+        std::string sc = this->subCategories;
+        while(1)
+        {
+            size_t pos = sc.find("|");
+            std::cout << indent << "    - " << sc.substr(0, pos) << "\n";
+            if(pos != std::string::npos)
+                sc.erase(0, pos + 1);
+            else
+                break;
+        } 
+        
+        std::cout << indent << "  Version: " << this->version << "\n";
+        std::cout << indent << "  SdkVersion: " << this->sdkVersion << "\n";
+        std::cout << indent << "  Inputs:\n";
         std::string in(indent);
-        in.append(indent);
+        in.append("  ");
         char const *i2 = in.c_str();
         for(int i=0; i<this->parameters.size();i++)
         {
@@ -550,9 +573,16 @@ struct DbVST3Ctx
     }
     void Print(bool detailed)
     {
-        std::cout << "--- VST3 plugin: " << this->filepath << "\n";
-        std::cout << "vendor: " << this->vendor << "\n";
-        std::cout << "nmodules: " << this->modules.size() << "\n";
+        // output to yaml, as two objects:
+        //   VST3Plugin:
+        //      metainfo
+        //   FiddleNodes:
+        //      - array of modules with parameters, etc
+        std::cout << "VST3Plugin:\n";
+        std::cout << "  filepath: " << this->filepath << "\n";
+        std::cout << "  vendor: " << this->vendor << "\n";
+        std::cout << "  nmodules: " << this->modules.size() << "\n";
+        std::cout << "FiddleNodes:\n";
         for(int i=0;i<this->modules.size();i++)
             this->modules[i]->Print("  ", i, detailed);
     }
