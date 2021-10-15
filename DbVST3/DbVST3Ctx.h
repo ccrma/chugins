@@ -416,6 +416,7 @@ struct DbVST3ParamInfo
     void Print(std::ostream &ostr, char const *indent, int index)
     {
         ostr << indent << "- name: " << this->name << "\n";
+        ostr << indent << "  type: float\n"; // all vst3 params are floats
         ostr << indent << "  id: " << this->id << "\n";
         ostr << indent << "  default: " << this->defaultValue << "\n";
         if(this->stepCount == 1)
@@ -504,8 +505,11 @@ struct DbVST3Module
         std::string in(indent);
         in.append("  ");
         char const *i2 = in.c_str();
+        bool cull = this->parameters.size() > 100;
         for(int i=0; i<this->parameters.size();i++)
         {
+            if(cull && this->parameters[i].flags == 0)
+                continue;
             this->parameters[i].Print(ostr, i2, i);
         }
     }
