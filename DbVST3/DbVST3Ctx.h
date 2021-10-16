@@ -592,6 +592,7 @@ struct DbVST3Module
 
         // parse the subcategory on |
         std::string sc = this->subCategories;
+        ostr << indent << "    - vst3\n";
         while(1)
         {
             size_t pos = sc.find("|");

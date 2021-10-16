@@ -12,10 +12,16 @@ fun void doit(int id, dur maxwait)
     <<< "MIDI device:", min.num(), " -> ", min.name() >>>;
     <<< "Listening for midi events for", maxwait >>>;
 
-    DbVST3 x => dac;
-    x.loadPlugin("LABS (64 Bit).vst3");
-    // x.loadPlugin("LABS.vst3");
-    // x.setModule(0);
+    DbVST3 y;
+    DbVST3 x => y => dac;
+    // DbVST3 x => dac;
+
+    x.loadPlugin("mda-vst3.vst3");
+    // x.selectModule(14); // JX synth
+    x.selectModule(12); // EPiano
+    y.loadPlugin("ValhallaSupermassive.vst3");
+    y.setParameter("Bypass", 0);
+
     now => time start;
     while(now - start < maxwait)
     {
