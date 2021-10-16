@@ -150,7 +150,7 @@ protected: // --------------------------------------------------------------
         if (m_plugInterfaceSupport && 
             m_plugInterfaceSupport->queryInterface(iid, obj) == Steinberg::kResultTrue)
             return ::Steinberg::kResultOk;
-        std::cerr << "query went unanswered!!!\n";
+        std::cerr << "queryInterface went unanswered!!!\n";
         return Steinberg::kResultFalse;
     }
 
@@ -158,8 +158,8 @@ private:
     bool endsWith(std::string const &fullpath, std::string const &partpath)
     {
         if(partpath.size() > fullpath.size()) return false;
-        return (0 == fullpath.compare(fullpath.length() - partpath.length(), 
-                                        partpath.length(), partpath));
+        int dlen = fullpath.length() - partpath.length(); 
+        return (0 == fullpath.compare(dlen, partpath.length(), partpath));
     }
 
 private:

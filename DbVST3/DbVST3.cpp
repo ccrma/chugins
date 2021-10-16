@@ -173,15 +173,15 @@ DbVST3::noteOff(int noteNumber, float velocity)
 }
 
 bool
-DbVST3::midiEvent(int data1, int data2, int data3, float dur)
+DbVST3::midiEvent(int status, int data1, int data2, float dur)
 {
     //std::cout << "DbVST3::midiEvent " << data1 << " " << data2 
-    // << " " << data3 << " " << dur << "\n";
+    // << " " << data3 << " " << dur << "\n"; 
     // dur is zero unless playing from file
-    return m_dbVST3Ctx.MidiEvent(data1, data2, data3); 
+    return m_dbVST3Ctx.MidiEvent(status, data1, data2);
 }
 
-/* --------------------------------------------------------------------- */
+/* -------------------------------------------------------------------- */
 void 
 DbVST3::multitick(SAMPLE* in, SAMPLE* out, int nframes)
 {

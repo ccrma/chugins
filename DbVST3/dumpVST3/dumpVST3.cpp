@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <iomanip> // std::put_time
+#include <ctime>
 
 // produces a yaml dump of the requested plugin on stdout
 class Dumpit : public DbVST3App
@@ -90,7 +92,13 @@ int main(int argc, char* argv[])
                 std::filebuf fb;
                 if(fb.open(yamlfile, std::ios::out))
                 {
+                    std::time_t t = std::time(nullptr);
+                    std::tm *tm = std::localtime(&t);
                     std::ostream ostr(&fb);
+                    ostr << "# This file was written by dumpVST3 on "
+                         << std::put_time(tm, "%c") << "\n";
+                    ostr << "# Each time you re-scan plugins it may be overwritten.\n";
+                    ostr << "# Edit at your own risk.\n";
                     app.DumpOne(vst3file.c_str(), ostr);
                     fb.close();
                     std::cout << yamlfile << "\n";

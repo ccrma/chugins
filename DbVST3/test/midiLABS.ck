@@ -12,19 +12,8 @@ fun void doit(int id, dur maxwait)
     <<< "MIDI device:", min.num(), " -> ", min.name() >>>;
     <<< "Listening for midi events for", maxwait >>>;
 
-    //DbVST3 filt;
-    // filt.loadPlugin("ValhallaSupermassive.vst3");
-    // filt.loadPlugin("adelay.vst3");
-    //filt.loadPlugin("hostchecker.vst3");
-
-    DbVST3 inst;
-    // inst.loadPlugin("mda-vst3.vst3");
-    // inst.selectModule(10); // DX 10 synth
-    inst.loadPlugin("Movementron/Resources/Movementron.vst3");
-    inst.selectModule(0);
-
-    // inst => filt => dac;
-    inst => dac;
+    DbVST3 x => dac;
+    x.loadPlugin("LABS (64 Bit).vst3");
     now => time start;
     while(now - start < maxwait)
     {
@@ -32,7 +21,7 @@ fun void doit(int id, dur maxwait)
         while(min.recv(msg))
         {
             // <<< "chuck midievent" , msg.data1 >>>;
-            inst.midiEvent(msg);
+            x.midiEvent(msg);
         }
     }
     <<< "shred", id, "done" >>>;
