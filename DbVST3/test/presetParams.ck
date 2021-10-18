@@ -6,8 +6,6 @@ x.loadPlugin("mda-vst3.vst3");
 x.selectModule(12);  
 playNotes(5);
 
-me.exit();
-
 // JX10
 x.selectModule(14);  
 playNotes(31);

@@ -18,10 +18,10 @@ fun void doit(int id, dur maxwait)
     //filt.loadPlugin("hostchecker.vst3");
 
     DbVST3 inst;
-    inst.loadPlugin("mda-vst3.vst3");
-    inst.selectModule(10); // DX 10 synth
-    // inst.loadPlugin("Movementron/Resources/Movementron.vst3");
-    inst.selectModule(0);
+    //inst.loadPlugin("mda-vst3.vst3");
+    //inst.selectModule(10); // DX 10 synth
+    inst.loadPlugin("Movementron/Resources/Movementron.vst3");
+    //inst.selectModule(0);
 
     // inst => filt => dac;
     inst => dac;
