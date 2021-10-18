@@ -3,6 +3,7 @@
 
 #include <pluginterfaces/vst/ivstaudioprocessor.h>
 #include <vector>
+#include <algorithm>
 
 #ifndef VERBOSE
 #define VERBOSE 0
@@ -23,7 +24,7 @@
  *    outputParameterChanges (nullptr)
  *    inputEvents (nullptr)
  *    outputEvents (nullptr)
- *    processContext (nullptr)2
+ *    processContext (nullptr)
  * 
  */
 class DbVST3ProcessData : public Steinberg::Vst::ProcessData
@@ -74,6 +75,18 @@ public:
             this->numInputEventBuses = 0;
             this->numOutputEventBuses = 0;
         }
+
+        bool IsInputBusActive(int busI) const
+        {
+            return std::find(activeInputBuses.begin(), activeInputBuses.end(), busI)
+                  != activeInputBuses.end();
+        }
+
+        bool IsOutputBusActive(int busI) const
+        {
+            return std::find(activeOutputBuses.begin(), activeOutputBuses.end(), busI)
+                  != activeOutputBuses.end();
+        }
     };
 
     DbVST3ProcessData() 
@@ -96,6 +109,8 @@ public:
 
     void initialize(Steinberg::Vst::ProcessSetup &pd,  BusUsage const *u)
     {
+        static float x[10]; // testing
+
         this->busUsage = u;
         this->processMode = pd.processMode;
         this->symbolicSampleSize = pd.symbolicSampleSize;
@@ -107,6 +122,7 @@ public:
             this->inputs = new Steinberg::Vst::AudioBusBuffers[this->numInputs];
             for(int i=0;i<this->numInputs;i++) // foreach bus
             {
+                bool active = u->IsInputBusActive(i);
                 int nchan = u->GetNChan(u->inAudioChan[i]);
                 this->inputs[i].numChannels = nchan;
                 this->inputs[i].channelBuffers32 = new float*[nchan];
@@ -116,7 +132,7 @@ public:
                     // currently nullptr whether active or not, we play
                     // with pointers during process to read & write directly
                     // to chuck buffers;
-                    this->inputs[i].channelBuffers32[j] = nullptr;
+                    this->inputs[i].channelBuffers32[j] = active ? x : nullptr;
                 }
             }
         }
@@ -125,13 +141,14 @@ public:
             this->outputs = new Steinberg::Vst::AudioBusBuffers[this->numOutputs];
             for(int i=0;i<this->numOutputs;i++) // foreach bus
             {
+                bool active = u->IsOutputBusActive(i);
                 int nchan = u->GetNChan(u->outAudioChan[i]);
                 this->outputs[i].numChannels = nchan;
                 this->outputs[i].channelBuffers32 = new float*[nchan];
                 for(int j=0;j<nchan;j++)
                 {
                     // see #XYZ above
-                    this->outputs[i].channelBuffers32[j] = nullptr;
+                    this->outputs[i].channelBuffers32[j] = active ? x : nullptr;
                 }
             }
         }

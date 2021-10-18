@@ -322,7 +322,7 @@ public:
                 if(j==1 && !this->busUsage.IsAux(cinfo))
                     continue;
                 int busch = this->busUsage.GetNChan(cinfo);
-                inch += busch;
+                outch += busch;
                 if(outch <= 2)
                 {
                     int sa = 0;
@@ -342,12 +342,21 @@ public:
             }
         }
 
+        #if VERBOSE || 1
+        std::cerr << "Configuring audio buses, in:" << inSA.size()
+                  << " out:" << outSA.size() << "\n";
+        std::cerr << "Configure audio channels, in:" << inch
+                  << " out:" << outch << "\n";
+        #endif
         if(this->audioEffect->setBusArrangements(
             inSA.size() ? &inSA[0] : nullptr, inSA.size(),
             outSA.size() ? &outSA[0] : nullptr , outSA.size())
             != Steinberg::kResultTrue)
         {
+            #if VERBOSE
+            // some plugins return error but seem to act "okay".
             std::cerr << "Problem configuring bus arrangement.\n";
+            #endif
         }
 
         this->processData.initialize(this->processSetup,  &this->busUsage);
