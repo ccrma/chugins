@@ -4,7 +4,12 @@
 #include "VST3App.h"
 #include "DbVST3Ctx.h"
 
-/* -------------------------------------------------------------------------- */
+/* DbVST3App is used as a factory to construct a DbVST3Ctx from a plugin.
+ * A DbVST3Ctx holds one or more DbVST3Modules, each of which  represents 
+ * an independent processing unit to users. Many  plugin files contain a 
+ * single module, some (like mda-vst3) contain 10s of modules.
+ */
+
 class DbVST3App : public VST3App
 {
 public:
@@ -39,20 +44,7 @@ public:
 		{
             if(classInfo.category() == kVstAudioEffectClass)
             {
-                DbVST3ModulePtr imod(new DbVST3Module());
-                imod->name = classInfo.name();
-                imod->category = classInfo.category();
-                imod->subCategories = classInfo.subCategoriesString();
-                imod->version = classInfo.version();
-                imod->sdkVersion = classInfo.sdkVersion();
-                imod->processingCtx.provider = Steinberg::owned(new Provider(
-                                      factory, classInfo, 
-                                      true/*useGlobalInstance*/));
-                if(imod->processingCtx.provider.get())
-                {
-                    this->getProviderParams(imod->processingCtx.provider, 
-                                            imod->parameters);
-                }
+                DbVST3ModulePtr imod(new DbVST3Module(classInfo, factory));
                 ctx.modules.emplace_back(imod);
             }
             else
@@ -69,46 +61,6 @@ public:
         return 0;
     }
 
-    /* ------------------------------------------------------------------ */
-    void
-    getProviderParams(ProviderPtr provider, 
-        std::vector<DbVST3ParamInfo> &parameters)
-    {
-        Steinberg::Vst::IComponent* vstPlug = provider->getComponent();
-        if(!vstPlug)
-            return;
-        Steinberg::Vst::IEditController* controller = provider->getController();
-        if(!controller)
-            return;
-        // this->activateMainIOBusses(vstPlug, true);
-        for(int i=0;i<controller->getParameterCount();i++)
-        {
-            ParameterInfo pinfo = {};
-            tresult ret = controller->getParameterInfo(i, pinfo);
-            if(ret != Steinberg::kResultOk)
-            {
-                std::cerr << "Parameter " << i << "has no info\n";
-                continue;
-            }
-            if(pinfo.id < 0)
-            {
-                std::cerr << "Parameter " << i 
-                    << "has invalid id: " << pinfo.id << "\n";
-                continue;
-            }
-
-            DbVST3ParamInfo paramInfo;
-            paramInfo.name = VST3::StringConvert::convert(pinfo.title);
-            paramInfo.id = pinfo.id;
-            paramInfo.defaultValue = pinfo.defaultNormalizedValue;
-            paramInfo.stepCount = pinfo.stepCount;
-            paramInfo.units = VST3::StringConvert::convert(pinfo.units);
-            paramInfo.flags = pinfo.flags;
-            parameters.push_back(paramInfo);
-        }
-        // this->activateMainIOBusses(vstPlug, false);
-        provider->releasePlugIn(vstPlug, controller);
-    }
 };
 
 #endif

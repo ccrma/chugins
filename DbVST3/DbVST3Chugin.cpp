@@ -50,19 +50,18 @@ static t_CKINT dbvst3_datastr_offset = 0;
 //-----------------------------------------------------------------------------
 static std::shared_ptr<DbVST3App> s_vstAppPtr; // shared across multiple instances
 
-class DbVST3 // a chuck context associated with instantiation of our ugen
+class DbVST3Chugin // a chuck context associated with instantiation of our ugen
 {
 public:
     // constructor
-    DbVST3(t_CKFLOAT srate, int nch=2)
+    DbVST3Chugin(t_CKFLOAT srate)
     {
         if(s_vstAppPtr.get() == nullptr)
             s_vstAppPtr.reset(new DbVST3App());
         m_sampleRate = srate;
-        m_nch = nch;
     }
 
-    ~DbVST3()
+    ~DbVST3Chugin()
     {
         m_dbVST3Ctx.Reset();
     }
@@ -86,78 +85,84 @@ public:
     void multitick(SAMPLE* in, SAMPLE* out, int nframes);
 
 private:
-    t_CKINT m_nch;
     t_CKFLOAT m_sampleRate;
     std::string m_pluginPath;
-
     DbVST3Ctx m_dbVST3Ctx;
+    // VST3 plugins have:
+    //  1 or more output Audio busses, each with either mono 
+    //    or stereo channel support - aka Speaker arrangement.
+    //  0 or more input Audio busses, mono or stereo.
+    //   
+    // Currently we register ourselves as requiring two inputs 
+    // and two outputs.  Details of mono-vs-stereo managed by
+    // ProcessSamples
 };
 
-bool DbVST3::loadPlugin(const std::string& filepath)
+bool DbVST3Chugin::loadPlugin(const std::string& filepath)
 {
     int err = s_vstAppPtr->OpenPlugin(filepath, m_dbVST3Ctx);
     if(!err)
-        err = m_dbVST3Ctx.InitProcessing(m_nch, m_nch, m_sampleRate);
+        err = m_dbVST3Ctx.InitProcessing(m_sampleRate);
     return err == 0;
 }
 
 void 
-DbVST3::printModules()
+DbVST3Chugin::printModules()
 {
     m_dbVST3Ctx.Print(std::cout, false/*detailed*/);
 }
 
 int 
-DbVST3::getNumModules()
+DbVST3Chugin::getNumModules()
 {
     return m_dbVST3Ctx.GetNumModules();
 }
 
 int 
-DbVST3::selectModule(int m)
+DbVST3Chugin::selectModule(int m)
 {
-    return m_dbVST3Ctx.ActivateModule(m, m_nch, m_nch, m_sampleRate); // 0 == success, 
+    return m_dbVST3Ctx.ActivateModule(m, m_sampleRate); // 0 == success, 
 }
 
 std::string 
-DbVST3::getModuleName()
+DbVST3Chugin::getModuleName()
 {
     return m_dbVST3Ctx.GetModuleName();
 }
 
 int 
-DbVST3::getNumParameters() 
+DbVST3Chugin::getNumParameters() 
 {
     return m_dbVST3Ctx.GetNumParameters();
 }
 
 int 
-DbVST3::getParameterName(int index, std::string &nm) 
+DbVST3Chugin::getParameterName(int index, std::string &nm) 
 {
     return m_dbVST3Ctx.GetParameterName(index, nm);
 }
 
 float 
-DbVST3::getParameter(int index) 
+DbVST3Chugin::getParameter(int index) 
 {
     return 0.f;
 }
 
 bool 
-DbVST3::setParameter(int index, float v) 
+DbVST3Chugin::setParameter(int index, float v) 
 {
     return m_dbVST3Ctx.SetParamValue(index, v);
 }
 
 bool 
-DbVST3::setParameter(std::string const &nm, float v) 
+DbVST3Chugin::setParameter(std::string const &nm, float v) 
 {
     return m_dbVST3Ctx.SetParamValue(nm, v);
 }
 
 /* --------------------------------------------------------------------- */
 bool 
-DbVST3::noteOn(int noteNumber, float velocity) 
+DbVST3Chugin::noteOn(int noteNumber, float velocity) 
 {
     // 144 is channel 0
     this->midiEvent(144, noteNumber,  int(velocity * 127), 0.);
@@ -165,7 +170,7 @@ DbVST3::noteOn(int noteNumber, float velocity)
 }
 
 bool 
-DbVST3::noteOff(int noteNumber, float velocity) 
+DbVST3Chugin::noteOff(int noteNumber, float velocity) 
 {
     // 128 is channel 0
     this->midiEvent(128, noteNumber,  int(velocity * 127), 0.);
@@ -173,9 +178,9 @@ DbVST3::noteOff(int noteNumber, float velocity)
 }
 
 bool
-DbVST3::midiEvent(int status, int data1, int data2, float dur)
+DbVST3Chugin::midiEvent(int status, int data1, int data2, float dur)
 {
-    //std::cout << "DbVST3::midiEvent " << data1 << " " << data2 
+    //std::cout << "DbVST3Chugin::midiEvent " << data1 << " " << data2 
     // << " " << data3 << " " << dur << "\n"; 
     // dur is zero unless playing from file
     return m_dbVST3Ctx.MidiEvent(status, data1, data2);
@@ -183,7 +188,7 @@ DbVST3::midiEvent(int status, int data1, int data2, float dur)
 
 /* -------------------------------------------------------------------- */
 void 
-DbVST3::multitick(SAMPLE* in, SAMPLE* out, int nframes)
+DbVST3Chugin::multitick(SAMPLE* in, SAMPLE* out, int nframes)
 {
     if(!m_dbVST3Ctx.Ready())
     {
@@ -204,14 +209,14 @@ DbVST3::multitick(SAMPLE* in, SAMPLE* out, int nframes)
     }
     else
     {
-        m_dbVST3Ctx.ProcessSamples(in, out, nframes);
+        m_dbVST3Ctx.ProcessSamples(in, 2, out, 2, nframes);
     }
 }
 
 //-----------------------------------------------------------------------------
 // query function: chuck calls this when loading the Chugin
 //-----------------------------------------------------------------------------
-CK_DLL_QUERY( DbVST3 )
+CK_DLL_QUERY(DbVST3Chugin)
 {
     // hmm, don't change this...
     QUERY->setname(QUERY, "DbVST3");
@@ -226,7 +231,13 @@ CK_DLL_QUERY( DbVST3 )
     QUERY->add_dtor(QUERY, dbvst3_dtor);
 
     // 2, 2 to do stereo in and stereo out
-    // can only add funcf or func, not both
+    // can only add funcf or func, not both, so to obtain
+    // 0->1, 0->2, 1->1 and 2->1 (side-chain), 2->2, and 
+    // 3->2 (side-chain), we might need to instantiate 6 chugins
+    // like: DbVST3_1_1, etc.
+    // Til then we'll go 2->2 and expect it to cover these cases:
+    // 0->1 (mono-instrument), 0->2 (stereo-instrument), 1->1 
+    // (mono filter), 2->2 (stereo filter).
     QUERY->add_ugen_funcf(QUERY, dbvst3_multitick, NULL, 2, 2);
 
     QUERY->add_mfun(QUERY, dbvst3_loadPlugin, "int", "loadPlugin");
@@ -290,7 +301,7 @@ CK_DLL_CTOR(dbvst3_ctor)
     OBJ_MEMBER_INT(SELF, dbvst3_data_offset) = 0;
 
     // instantiate our internal c++ class representation
-    DbVST3 * b_obj = new DbVST3(API->vm->get_srate(API, SHRED));
+    DbVST3Chugin* b_obj = new DbVST3Chugin(API->vm->get_srate(API, SHRED));
 
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, dbvst3_data_offset) = (t_CKINT) b_obj;
@@ -304,7 +315,7 @@ CK_DLL_CTOR(dbvst3_ctor)
 CK_DLL_DTOR(dbvst3_dtor)
 {
     // get our c++ class pointer
-    DbVST3 * b_obj = (DbVST3 *) OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b_obj = (DbVST3Chugin *) OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     // check it
     if( b_obj )
     {
@@ -320,26 +331,26 @@ CK_DLL_MFUN(dbvst3_loadPlugin)
 {
     std::string filename = GET_NEXT_STRING_SAFE(ARGS);
 
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
 
     RETURN->v_int = b->loadPlugin(filename);
 }
 
 CK_DLL_MFUN(dbvst3_printModules)
 {
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     b->printModules();
 }
 
 CK_DLL_MFUN(dbvst3_getNumModules)
 {
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     RETURN->v_int = b->getNumModules();
 }
 
 CK_DLL_MFUN(dbvst3_selectModule)
 {
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     t_CKINT index = GET_NEXT_INT(ARGS);
     RETURN->v_int = b->selectModule(index);
 }
@@ -348,7 +359,7 @@ CK_DLL_MFUN(dbvst3_selectModule)
 CK_DLL_TICKF(dbvst3_multitick)
 {
     // get our c++ class pointer
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
 
     // invoke our tick function; store in the magical out variable
     if (b) b->multitick(in, out, nframes);
@@ -359,7 +370,7 @@ CK_DLL_TICKF(dbvst3_multitick)
 
 CK_DLL_MFUN(dbvst3_getModuleName)
 {
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     std::string s = b->getModuleName();
     Chuck_String *ckstr = OBJ_MEMBER_STRING(SELF, dbvst3_datastr_offset);
     ckstr->set(s);
@@ -368,7 +379,7 @@ CK_DLL_MFUN(dbvst3_getModuleName)
 
 CK_DLL_MFUN(dbvst3_getNumParameters)
 {
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
 
     RETURN->v_int = b->getNumParameters();
 }
@@ -377,7 +388,7 @@ CK_DLL_MFUN(dbvst3_getParameterName)
 {
     t_CKINT index = GET_NEXT_INT(ARGS);
 
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     std::string s;
     Chuck_String *ckstr = OBJ_MEMBER_STRING(SELF, dbvst3_datastr_offset);
     if(0 == b->getParameterName(index, s))
@@ -389,7 +400,7 @@ CK_DLL_MFUN(dbvst3_getParameter)
 {
     t_CKINT index = GET_NEXT_INT(ARGS);
 
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
 
     RETURN->v_float = b->getParameter(index);
 }
@@ -398,7 +409,7 @@ CK_DLL_MFUN(dbvst3_setParameter)
 {
     t_CKINT index = GET_NEXT_INT(ARGS);
     t_CKFLOAT val = GET_NEXT_FLOAT(ARGS);
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     RETURN->v_int = b->setParameter(index, val);
 }
 
@@ -406,7 +417,7 @@ CK_DLL_MFUN(dbvst3_setParameterByName)
 {
     std::string nm = GET_NEXT_STRING_SAFE(ARGS);
     t_CKFLOAT val = GET_NEXT_FLOAT(ARGS);
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     RETURN->v_int = b->setParameter(nm, val);
 }
 
@@ -414,7 +425,7 @@ CK_DLL_MFUN(dbvst3_noteOn)
 {
     t_CKINT noteNumber = GET_NEXT_INT(ARGS);
     t_CKFLOAT velocity = GET_NEXT_FLOAT(ARGS);
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     RETURN->v_int = b->noteOn(noteNumber, velocity);
 }
 
@@ -422,13 +433,13 @@ CK_DLL_MFUN(dbvst3_noteOff)
 {
     t_CKINT noteNumber = GET_NEXT_INT(ARGS);
     t_CKFLOAT velocity = GET_NEXT_FLOAT(ARGS);
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     RETURN->v_int = b->noteOff(noteNumber, velocity);
 } 
 
 CK_DLL_MFUN(dbvst3_midiEvent)
 {
-    DbVST3* b = (DbVST3*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     Chuck_Object *msg = GET_NEXT_OBJECT(ARGS);
 
     /* object mvar offsets for MidiMsg not exported by chuck
