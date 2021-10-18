@@ -9,8 +9,17 @@ fun void doit(int id, dur maxwait)
         me.exit();
     }
 
+    string instname;
+    -1 => int mod; // default
+
+    "mda-vst3.vst3" => instname;
+    14 => mod; // 10:DX, 14:JX
+
+    // "Movementron/Resources/Movementron.vst3" >> instname;
+
     <<< "MIDI device:", min.num(), " -> ", min.name() >>>;
     <<< "Listening for midi events for", maxwait >>>;
+    <<< "Instrument", instname, "module", mod >>>;
 
     //DbVST3 filt;
     // filt.loadPlugin("ValhallaSupermassive.vst3");
@@ -18,10 +27,10 @@ fun void doit(int id, dur maxwait)
     //filt.loadPlugin("hostchecker.vst3");
 
     DbVST3 inst;
-    //inst.loadPlugin("mda-vst3.vst3");
-    //inst.selectModule(10); // DX 10 synth
-    inst.loadPlugin("Movementron/Resources/Movementron.vst3");
-    //inst.selectModule(0);
+    inst.setVerbosity(0);
+    inst.loadPlugin(instname);
+    if(mod != -1)
+        inst.selectModule(mod);
 
     // inst => filt => dac;
     inst => dac;
