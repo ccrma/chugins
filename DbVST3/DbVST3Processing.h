@@ -285,7 +285,7 @@ public:
                 {
                     int sa = 0;
                     for(int k=0;k<busch;k++)
-                        sa &= (1 << k);
+                        sa |= (1 << k);
                     inSA[i] = sa;
                     this->busUsage.activeInputBuses.push_back(i);
                     this->component->activateBus(Steinberg::Vst::kAudio,
@@ -317,7 +317,7 @@ public:
                 {
                     int sa = 0;
                     for(int k=0;k<busch;k++)
-                        sa &= (1 << k);
+                        sa |= (1 << k);
                     outSA[i] = sa;
                     this->busUsage.activeOutputBuses.push_back(i);
                     this->component->activateBus(Steinberg::Vst::kAudio,
