@@ -4,23 +4,38 @@
 #include <string>
 #include <pluginterfaces/vst/ivsteditcontroller.h> // ParameterInfo
 
-struct DbVST3ParamInfo
+class DbVST3ParamInfo : public Steinberg::Vst::ParameterInfo
 {
+public:
     std::string name;
-    int stepCount; // 0: float, 1: toggle, 2: discreet
-    Steinberg::Vst::ParamID id;
-    double defaultValue; // normalized, (double is the type of VST::ParamValue)
-    float currentValue;
-    std::string units; // XXX: two kinds of units (string and int)
-    bool readOnly;
-    bool automatable;
-    bool hidden;
-    bool islist;
-    bool isProgramChange;
 
-    DbVST3ParamInfo(Steinberg::Vst::ParameterInfo &pinfo)
+    DbVST3ParamInfo(Steinberg::Vst::ParameterInfo const &pinfo) :
+        Steinberg::Vst::ParameterInfo(pinfo)
     {
         this->name = VST3::StringConvert::convert(pinfo.title);
+    }
+
+    bool hidden() const
+    {
+        return this->flags & Steinberg::Vst::ParameterInfo::kIsHidden;
+    }
+
+    bool automatable() const
+    {
+        return this->flags & Steinberg::Vst::ParameterInfo::kCanAutomate;
+    }
+
+    bool readOnly() const
+    {
+        return this->flags & Steinberg::Vst::ParameterInfo::kIsReadOnly;
+    }
+
+    bool programChange() const
+    {
+        return this->flags & Steinberg::Vst::ParameterInfo::kIsProgramChange;
+    }
+
+/*
         this->id = pinfo.id;
         this->defaultValue = pinfo.defaultNormalizedValue;
         this->stepCount = pinfo.stepCount;
@@ -33,16 +48,19 @@ struct DbVST3ParamInfo
             // flags == 0 case is for Midi CC;
             // some plugins add 16 * 128 automatable MIDI CC parameters
         this->islist = pinfo.flags & Steinberg::Vst::ParameterInfo::kIsList;
+
     }
+*/
 
     void Print(std::ostream &ostr, char const *indent, int index)
     {
-        if(this->hidden) return;
+        if(this->flags & Steinberg::Vst::ParameterInfo::kIsHidden)
+            return;
 
         ostr << indent << "- name: \"" << this->name << "\"\n";
         ostr << indent << "  type: float\n"; // all vst3 params are floats
         ostr << indent << "  id: " << this->id << "\n";
-        ostr << indent << "  default: " << this->defaultValue << "\n";
+        ostr << indent << "  default: " << this->defaultNormalizedValue << "\n";
         if(this->stepCount == 1)
             ostr << indent << "  editType: checkbox\n";
         else
@@ -54,17 +72,19 @@ struct DbVST3ParamInfo
                 delta = 1.0f / this->stepCount;
             ostr << indent << "  range: [0, 1, " << delta << "]\n";
         }
-
-        ostr << indent << "  auto: " << this->automatable << "\n";
-        if(this->units.size())
-            ostr << indent << "  units: '" << this->units << "'\n";
-        if(this->readOnly)
+        
+        if(this->flags & Steinberg::Vst::ParameterInfo::kCanAutomate)
+            ostr << indent << "  auto: " << 1 << "\n";
+        std::string ustr = VST3::StringConvert::convert(this->units);
+        if(ustr.size())
+            ostr << indent << "  units: '" << ustr << "'\n";
+        if(this->flags & Steinberg::Vst::ParameterInfo::kIsReadOnly)
             ostr << indent << "  ro:  1\n";
-        if(this->islist)
+        if(this->flags & Steinberg::Vst::ParameterInfo::kIsList)
             ostr << indent << "  enum:  1\n";
-        if(this->hidden)
+        if(this->flags & Steinberg::Vst::ParameterInfo::kIsHidden)
             ostr << indent << "  hidden:  1\n";
-        if(this->isProgramChange)
+        if(this->flags & Steinberg::Vst::ParameterInfo::kIsProgramChange)
             ostr << indent << "  programchange:  1\n";
     }
 };

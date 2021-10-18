@@ -2,6 +2,7 @@
 #define DbVST3Processing_h
 
 #include "DbVST3ProcessData.h"
+#include <public.sdk/source/common/memorystream.h>
 
 class DbVST3ProcessingCtx : 
     public Steinberg::Vst::IComponentHandler,
@@ -70,13 +71,64 @@ public:
         return this->provider;
     }
 
+    bool
+    synchronizeStates()
+    {
+        if(!this->component)
+            this->initComponent();
+
+        Steinberg::MemoryStream stream;
+        if(this->component->getState(&stream) == Steinberg::kResultTrue) 
+        {
+            if(this->verbosity)
+                std::cerr << "Read " << stream.getSize() << " bytes from component state\n";
+
+            // Steinberg::int64 newpos;
+            // stream.seek(0, Steinberg::IBStream::kIBSeekSet, &newpos);
+            Steinberg::tresult res = this->controller->setComponentState(&stream);
+            if(!(res == Steinberg::kResultOk || 
+                 res == Steinberg::kNotImplemented))
+            {
+                if(this->verbosity)
+                {
+                    std::cerr << "Couldn't synchronize VST3 component with controller state\n";
+                }
+                this->readAllParameters(false);
+            }
+            return res == Steinberg::kResultOk;
+		}
+        else
+        {
+            std::cerr << "problem reading state from plugin\n";
+            return false;
+        }
+	}
+
+    void
+    initComponent()
+    {
+        this->component = this->provider->getComponent();	
+        this->controller = this->provider->getController();
+        this->controller->setComponentHandler(this);
+        this->midiMapping = Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping>(this->controller);
+
+#if 0
+        // mda-synth plus LABS both didn't allow
+        Steinberg::FUnknownPtr<Steinberg::Vst::IEditControllerHostEditing> 
+            host_editing(this->controller);
+        if(host_editing)
+            std::cerr << "HostEditing allowed\n";
+        else
+            std::cerr << "No HostEditing allowed\n";
+#endif
+    }
+
     void 
     beginProcessing(float sampleRate)
     {
-        this->controller = this->provider->getController();
-        this->controller->setComponentHandler(this);
-        this->component = this->provider->getComponent();	
-        this->midiMapping = Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping>(this->controller);
+        if(!this->component)
+            this->initComponent();
+
         // this->controllerEx1 = Steinberg::FUnknownPtr<Steinberg::Vst::EditControllerEx1>(this->controller);
         if(this->verbosity)
             std::cerr << "initialize nparams: " << this->controller->getParameterCount() << "\n";
@@ -107,9 +159,8 @@ public:
             if(this->audioEffect->setupProcessing(this->processSetup) 
                 == Steinberg::kResultTrue)
             {
+                // synchronizeState has already been called
                 this->initBuses();
-                this->readAllParameters(false/*don't push*/);
-
                 // syncState between controller and processor
                 // via component->getState(&stream), stream.rewind
                 //     controller->setComponentState()
@@ -139,7 +190,7 @@ public:
             this->controller->release();
         }
         if(this->component)
-
+        {
             this->component->setActive(false); 
             this->component->terminate();
             this->component->release();
@@ -193,8 +244,12 @@ public:
             this->controller->getParameterInfo(i, info);
             float val = this->controller->getParamNormalized(info.id);
             this->paramValues[i] = val;
-            if(andPush && (info.flags & Steinberg::Vst::ParameterInfo::kCanAutomate))
+            if(info.flags & Steinberg::Vst::ParameterInfo::kCanAutomate)
+            {
+                if(this->verbosity > 1)
+                    std::cerr << i << ": " << val << "\n";
                 this->SetParamValue(info.id, val, true);
+            }
         }
     }
 
@@ -369,6 +424,14 @@ public:
         }
 
         this->processData.initialize(this->processSetup,  &this->busUsage);
+
+        bool enable = true;
+        int inEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kInput);
+	    int outEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kOutput);
+        for(int i = 0; i < inEvt; ++i) 
+            this->component->activateBus(Steinberg::Vst::kEvent, Steinberg::Vst::kInput, i, enable);
+        for(int i = 0; i < outEvt; ++i)
+            this->component->activateBus(Steinberg::Vst::kEvent, Steinberg::Vst::kOutput, i, enable);
     }
 
     // 'param id' it's paramID !== index

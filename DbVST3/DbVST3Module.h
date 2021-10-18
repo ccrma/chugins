@@ -4,6 +4,7 @@
 #include "DbVST3Param.h"
 #include "DbVST3Processing.h"
 
+
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -42,7 +43,10 @@ public:
         this->sdkVersion = classInfo.sdkVersion();
         auto provider = this->processingCtx.initProvider(factory, classInfo);
         if(provider.get())
+        {
             this->getProviderParams(provider, this->parameters);
+            this->processingCtx.synchronizeStates();
+        }
         this->programChangeIndex = -1;
         this->verbosity = 0 ;
     }
@@ -152,7 +156,7 @@ public:
         char const *i2 = in.c_str();
         for(int i=0; i<this->parameters.size();i++)
         {
-            if(this->parameters[i].hidden)
+            if(this->parameters[i].hidden())
                 continue;
             this->parameters[i].Print(ostr, i2, i);
         }
@@ -210,6 +214,7 @@ private:
         // this->activateMainIOBusses(vstPlug, false);
         provider->releasePlugIn(vstPlug, controller);
     }
+
 };
 
 typedef std::shared_ptr<DbVST3Module> DbVST3ModulePtr;

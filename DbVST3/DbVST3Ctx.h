@@ -147,13 +147,11 @@ struct DbVST3Ctx
             if(info)
             {
                 auto id = info->id;
-                if(info->automatable)
+                if(info->automatable())
                     err = this->getProcessingCtx().SetParamValue(id, val, true);
                 else
-                if(!info->readOnly) // program change
-                {
+                if(info->programChange())
                     err = this->getProcessingCtx().SetParamValue(id, val, false);
-                }
                 else
                     std::cerr << "parameter " << index << " can't be automated.\n";
             }
@@ -179,10 +177,10 @@ struct DbVST3Ctx
             if(this->verbosity)
                 std::cerr << "Parameter " << nm << " found as id: " << info->id << "\n";
 
-            if(info->automatable)
+            if(info->automatable())
                 err = this->getProcessingCtx().SetParamValue(info->id, val, true);
             else
-            if(!info->readOnly) // a program change
+            if(info->programChange()) // a program change
                 err = this->getProcessingCtx().SetParamValue(info->id, val, false);
             else
                 std::cerr << "parameter " << nm << " can't be automated.\n";

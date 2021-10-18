@@ -165,7 +165,7 @@ public:
         Steinberg::int32 queueIndex;
         Steinberg::Vst::IParamValueQueue *q = 
             this->inPChanges.addParameterData(paramId, queueIndex);
-        if(this->verbosity > 1)
+        if(this->verbosity > 2)
             std::cerr << "prepareParamChange " << paramId << " " << value 
                 << " len:" <<  q->getPointCount() <<  "\n";
         
