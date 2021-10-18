@@ -9,9 +9,9 @@
 
 class DbVST3ProcessingCtx : 
     public Steinberg::Vst::IComponentHandler,
-	public Steinberg::Vst::IComponentHandler2
+	public Steinberg::Vst::IComponentHandler2,
+	public Steinberg::Vst::IUnitHandler // notification of program change
     /*
-	public Steinberg::Vst::IUnitHandler,
 	public Steinberg::IPlugFrame
     */
 {
@@ -462,6 +462,25 @@ public:
     tresult PLUGIN_API finishGroupEdit()  override
     {
         return Steinberg::kNotImplemented;
+    }
+
+    /* IUnitHandler API */
+	tresult PLUGIN_API 
+    notifyUnitSelection(Steinberg::Vst::UnitID id) override
+    {
+        std::cout << "unit selected: " << id << "\n";
+        return Steinberg::kResultOk;
+    }
+
+	tresult PLUGIN_API 
+    notifyProgramListChange(
+        Steinberg::Vst::ProgramListID listId, 
+        Steinberg::int32 programIndex) override
+    {
+
+        std::cout << "notifyProgramListChange: " << listId 
+                  << " " << programIndex << "\n";
+        return Steinberg::kResultOk;
     }
 
     /* --------------------------------------------------------------------- */
