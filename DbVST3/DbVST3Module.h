@@ -22,6 +22,7 @@ public:
     DbVST3ProcessingCtx processingCtx;
     std::unordered_map<std::string, int> nameToIndex;
     std::unordered_map<Steinberg::Vst::ParamID, int> idToIndex;
+    int programChangeIndex;
 
     DbVST3Module(VST3::Hosting::ClassInfo &classInfo, 
             const Steinberg::Vst::PlugProvider::PluginFactory &factory)
@@ -127,13 +128,14 @@ public:
         
         ostr << indent << "  Version: " << this->version << "\n";
         ostr << indent << "  SdkVersion: " << this->sdkVersion << "\n";
+        ostr << indent << "  NumInputs: " << this->parameters.size() << "\n";
         ostr << indent << "  Inputs:\n";
         std::string in(indent);
         in.append("  ");
         char const *i2 = in.c_str();
         for(int i=0; i<this->parameters.size();i++)
         {
-            if(this->parameters[i].hidden == 0)
+            if(this->parameters[i].hidden)
                 continue;
             this->parameters[i].Print(ostr, i2, i);
         }
@@ -145,6 +147,7 @@ private:
     getProviderParams(VST3App::ProviderPtr provider, 
         std::vector<DbVST3ParamInfo> &parameters)
     {
+        this->programChangeIndex = -1;
         Steinberg::Vst::IComponent* vstPlug = provider->getComponent();
         if(!vstPlug)
             return;
@@ -167,9 +170,26 @@ private:
                     << "has invalid id: " << pinfo.id << "\n";
                 continue;
             }
+		    if(VST3::StringConvert::convert(pinfo.title).find("MIDI CC ")
+                != std::string::npos)
+                continue;
 
             DbVST3ParamInfo paramInfo(pinfo);
             parameters.push_back(paramInfo);
+            if(pinfo.flags & Steinberg::Vst::ParameterInfo::kIsProgramChange)
+            {
+                if(this->programChangeIndex == -1)
+                {
+                    this->programChangeIndex = i;
+                    #if VERBOSE
+                    std::cerr << "Program-change index: " << i << "\n";
+                    #endif
+                }
+                else
+                {
+                    std::cerr << "Multiple program-changes? " << i << "\n";
+                }
+            }
         }
         // this->activateMainIOBusses(vstPlug, false);
         provider->releasePlugIn(vstPlug, controller);

@@ -13,8 +13,8 @@ fun void doit(int id, dur maxwait)
     <<< "Listening for midi events for", maxwait >>>;
 
     DbVST3 x => dac;
-    x.loadPlugin("LABS (64 Bit).vst3");
-    // x.loadPlugin("LABS.vst3");
+    // x.loadPlugin("LABS (64 Bit).vst3");
+    x.loadPlugin("LABS.vst3");
     // x.setModule(0);
     now => time start;
     while(now - start < maxwait)

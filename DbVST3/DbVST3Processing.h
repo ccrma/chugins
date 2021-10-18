@@ -4,7 +4,7 @@
 #include "DbVST3ProcessData.h"
 
 #ifndef VERBOSE
-#define VERBOSE 1
+#define VERBOSE 0
 #endif
 
 class DbVST3ProcessingCtx : 
@@ -75,7 +75,7 @@ public:
         this->midiMapping = Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping>(this->controller);
         // this->controllerEx1 = Steinberg::FUnknownPtr<Steinberg::Vst::EditControllerEx1>(this->controller);
         #if VERBOSE
-        std::cout << "initialize: " << this->controller->getParameterCount() << "\n";
+        std::cout << "initialize nparams: " << this->controller->getParameterCount() << "\n";
         #endif
 
         if(Steinberg::kResultTrue != this->component->queryInterface(
@@ -198,18 +198,28 @@ public:
 	tresult PLUGIN_API 
     restartComponent(int32 flags) override
     {
-        std::cout << "Restart component (program change) " << flags << "\n";
-        // std::cout << "initialize: " << this->controller->getParameterCount() << "\n";
         bool forcePush = true;
         if(flags & Steinberg::Vst::kReloadComponent)
         {
+            std::cout << "Reload component (program change)\n";
             forcePush = false;
             this->deactivate();
             this->activate();
         }
         if(flags & Steinberg::Vst::kParamValuesChanged)
         {
-            this->readAllParameters(forcePush);
+            std::cout << "ParamValuesChanged (program change)\n";
+            this->readAllParameters(forcePush /* proven to be needed */);
+            /* tried this .. 
+                this->deactivate();
+                this->activate();
+             */
+        }
+        if(flags & Steinberg::Vst::kLatencyChanged)
+        {
+            std::cout << "latency change " << forcePush << "\n";
+            this->deactivate();
+            this->activate();
         }
 		return Steinberg::kResultOk;
     }
@@ -390,6 +400,7 @@ public:
 
     void Process(float *in, int inCh, float *out, int outCh, int nframes)
     {
+        this->activate();
         this->processData.beginAudioProcessing(in, inCh, out, outCh, nframes);
         this->audioEffect->setProcessing(true);
         VST3App::tresult result = this->audioEffect->process(this->processData);

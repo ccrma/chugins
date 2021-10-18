@@ -4,7 +4,9 @@
 #include <pluginterfaces/vst/ivstaudioprocessor.h>
 #include <vector>
 
-#define VERBOSE 1
+#ifndef VERBOSE
+#define VERBOSE 0
+#endif
 
 /* DbVST3ProcessData manages state around the all-important process
  * method invoked in DbVST3Processing.h. This includes audio buffer

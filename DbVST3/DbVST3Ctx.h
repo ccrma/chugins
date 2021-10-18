@@ -5,7 +5,9 @@
 #include "DbVST3Module.h"
 #include <unordered_map>
 
-#define VERBOSE 1
+#ifndef VERBOSE
+#define VERBOSE 0
+#endif
 
 /* -------------------------------------------------------------------------- */
 

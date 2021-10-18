@@ -16,6 +16,7 @@ struct DbVST3ParamInfo
     bool automatable;
     bool hidden;
     bool islist;
+    bool isProgramChange;
 
     DbVST3ParamInfo(Steinberg::Vst::ParameterInfo &pinfo)
     {
@@ -26,7 +27,8 @@ struct DbVST3ParamInfo
         this->units = VST3::StringConvert::convert(pinfo.units);
         this->readOnly = pinfo.flags & Steinberg::Vst::ParameterInfo::kIsReadOnly;
         this->automatable = pinfo.flags & Steinberg::Vst::ParameterInfo::kCanAutomate;
-        this->hidden = (pinfo.flags == 0) || 
+        this->isProgramChange = pinfo.flags & Steinberg::Vst::ParameterInfo::kIsProgramChange;
+        this->hidden = // (pinfo.flags == 0) || 
                         (pinfo.flags & Steinberg::Vst::ParameterInfo::kIsHidden);
             // flags == 0 case is for Midi CC;
             // some plugins add 16 * 128 automatable MIDI CC parameters
@@ -35,6 +37,8 @@ struct DbVST3ParamInfo
 
     void Print(std::ostream &ostr, char const *indent, int index)
     {
+        if(this->hidden) return;
+
         ostr << indent << "- name: \"" << this->name << "\"\n";
         ostr << indent << "  type: float\n"; // all vst3 params are floats
         ostr << indent << "  id: " << this->id << "\n";
@@ -52,13 +56,16 @@ struct DbVST3ParamInfo
         }
 
         ostr << indent << "  auto: " << this->automatable << "\n";
-        ostr << indent << "  units: '" << this->units << "'\n";
+        if(this->units.size())
+            ostr << indent << "  units: '" << this->units << "'\n";
         if(this->readOnly)
             ostr << indent << "  ro:  1\n";
         if(this->islist)
             ostr << indent << "  enum:  1\n";
         if(this->hidden)
             ostr << indent << "  hidden:  1\n";
+        if(this->isProgramChange)
+            ostr << indent << "  programchange:  1\n";
     }
 };
 
