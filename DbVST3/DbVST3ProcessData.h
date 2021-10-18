@@ -5,10 +5,6 @@
 #include <vector>
 #include <algorithm>
 
-#ifndef VERBOSE
-#define VERBOSE 0
-#endif
-
 /* DbVST3ProcessData manages state around the all-important process
  * method invoked in DbVST3Processing.h. This includes audio buffer
  * management.
@@ -91,6 +87,7 @@ public:
 
     DbVST3ProcessData() 
     {
+        this->verbosity = 0;
     }
 
     virtual ~DbVST3ProcessData() 
@@ -105,6 +102,12 @@ public:
             delete [] this->outputs->channelBuffers32;
             delete [] this->outputs;
         }
+    }
+
+    void
+    SetVerbosity(int v)
+    {
+        this->verbosity = v;
     }
 
     void initialize(Steinberg::Vst::ProcessSetup &pd,  BusUsage const *u)
@@ -162,10 +165,10 @@ public:
         Steinberg::int32 queueIndex;
         Steinberg::Vst::IParamValueQueue *q = 
             this->inPChanges.addParameterData(paramId, queueIndex);
-        #if VERBOSE && 0
-        std::cout << "prepareParamChange " << paramId << " " << value 
-            << " len:" <<  q->getPointCount() <<  "\n";
-        #endif
+        if(this->verbosity > 1)
+            std::cerr << "prepareParamChange " << paramId << " " << value 
+                << " len:" <<  q->getPointCount() <<  "\n";
+        
         Steinberg::int32 ptIndex;
         q->addPoint(0, value, ptIndex);
     }
@@ -181,11 +184,12 @@ public:
             evt->busIndex = 0; // ??
             if(this->inEvents.addEvent(*evt) != Steinberg::kResultOk)
                 std::cerr  << "Problem adding MIDI event to eventlist\n";
-            #if VERBOSE
-            std::cout << "midi event: " << status 
-                << " note: " << data1 << " vel: " << data2 
-                <<  " qlen: " << this->inEvents.getEventCount() << "\n";
-            #endif
+            if(this->verbosity)
+            {
+                std::cout << "midi event: " << status 
+                    << " note: " << data1 << " vel: " << data2 
+                    <<  " qlen: " << this->inEvents.getEventCount() << "\n";
+            }
             return;
         }
         // else all else is converted to CC
@@ -258,6 +262,7 @@ private: // ------------------------------------------------------------------
     Steinberg::Vst::EventList inEvents;
 
     BusUsage const *busUsage;
+    int verbosity;
 };
 
 #endif

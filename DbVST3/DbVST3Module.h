@@ -12,6 +12,10 @@
 // interfaces (aka modules)
 class DbVST3Module 
 {
+private:
+    int programChangeIndex;
+    int verbosity;
+
 public:
     std::string name;
     std::string category; // "Audio Module Class" | "Component Controller Class"
@@ -22,11 +26,15 @@ public:
     DbVST3ProcessingCtx processingCtx;
     std::unordered_map<std::string, int> nameToIndex;
     std::unordered_map<Steinberg::Vst::ParamID, int> idToIndex;
-    int programChangeIndex;
 
     DbVST3Module(VST3::Hosting::ClassInfo &classInfo, 
-            const Steinberg::Vst::PlugProvider::PluginFactory &factory)
+            const Steinberg::Vst::PlugProvider::PluginFactory &factory,
+            int verboseness=0)
     {
+        this->programChangeIndex = -1;
+        this->verbosity = 0;
+        if(verboseness != 0)
+            this->SetVerbosity(verboseness);
         this->name = classInfo.name();
         this->category = classInfo.category();
         this->subCategories = classInfo.subCategoriesString();
@@ -35,6 +43,15 @@ public:
         auto provider = this->processingCtx.initProvider(factory, classInfo);
         if(provider.get())
             this->getProviderParams(provider, this->parameters);
+        this->programChangeIndex = -1;
+        this->verbosity = 0 ;
+    }
+
+    void
+    SetVerbosity(int v)
+    {
+        this->verbosity = v;
+        this->processingCtx.SetVerbosity(v);
     }
 
     DbVST3ParamInfo const *
@@ -181,9 +198,8 @@ private:
                 if(this->programChangeIndex == -1)
                 {
                     this->programChangeIndex = i;
-                    #if VERBOSE
-                    std::cerr << "Program-change index: " << i << "\n";
-                    #endif
+                    if(this->verbosity)
+                        std::cerr << "Program-change index: " << i << "\n";
                 }
                 else
                 {

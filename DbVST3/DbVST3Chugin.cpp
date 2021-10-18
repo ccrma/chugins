@@ -17,6 +17,7 @@ CK_DLL_CTOR(dbvst3_ctor);
 CK_DLL_DTOR(dbvst3_dtor);
 
 CK_DLL_MFUN(dbvst3_loadPlugin);
+CK_DLL_MFUN(dbvst3_setVerbosity);
 CK_DLL_MFUN(dbvst3_printModules);
 CK_DLL_MFUN(dbvst3_getNumModules);
 CK_DLL_MFUN(dbvst3_selectModule);
@@ -59,6 +60,7 @@ public:
         if(s_vstAppPtr.get() == nullptr)
             s_vstAppPtr.reset(new DbVST3App());
         m_sampleRate = srate;
+        m_verbosity = 0;
     }
 
     ~DbVST3Chugin()
@@ -68,6 +70,7 @@ public:
 
     bool loadPlugin(const std::string& filename);
     void printModules();
+    void setVerbosity(int);
     int getNumModules();
     int selectModule(int index); // returns 0 on success
     std::string getModuleName(); // of current module
@@ -85,6 +88,7 @@ public:
     void multitick(SAMPLE* in, SAMPLE* out, int nframes);
 
 private:
+    int m_verbosity;
     t_CKFLOAT m_sampleRate;
     std::string m_pluginPath;
     DbVST3Ctx m_dbVST3Ctx;
@@ -100,10 +104,17 @@ private:
 
 bool DbVST3Chugin::loadPlugin(const std::string& filepath)
 {
-    int err = s_vstAppPtr->OpenPlugin(filepath, m_dbVST3Ctx);
+    int err = s_vstAppPtr->OpenPlugin(filepath, m_dbVST3Ctx, this->m_verbosity);
     if(!err)
         err = m_dbVST3Ctx.InitProcessing(m_sampleRate);
     return err == 0;
+}
+
+void
+DbVST3Chugin::setVerbosity(int v)
+{
+    this->m_verbosity = v;
+    this->m_dbVST3Ctx.SetVerbosity(v);
 }
 
 void 
@@ -243,6 +254,9 @@ CK_DLL_QUERY(DbVST3Chugin)
     QUERY->add_mfun(QUERY, dbvst3_loadPlugin, "int", "loadPlugin");
     QUERY->add_arg(QUERY, "string", "filename");
 
+    QUERY->add_mfun(QUERY, dbvst3_setVerbosity, "void", "setVerbosity");
+    QUERY->add_arg(QUERY, "int", "level");
+
     QUERY->add_mfun(QUERY, dbvst3_printModules, "void", "printModules");
 
     QUERY->add_mfun(QUERY, dbvst3_getNumModules, "int", "getNumModules");
@@ -334,6 +348,13 @@ CK_DLL_MFUN(dbvst3_loadPlugin)
     DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
 
     RETURN->v_int = b->loadPlugin(filename);
+}
+
+CK_DLL_MFUN(dbvst3_setVerbosity)
+{
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    t_CKINT v = GET_NEXT_INT(ARGS);
+    b->setVerbosity(v);
 }
 
 CK_DLL_MFUN(dbvst3_printModules)

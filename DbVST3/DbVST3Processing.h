@@ -3,10 +3,6 @@
 
 #include "DbVST3ProcessData.h"
 
-#ifndef VERBOSE
-#define VERBOSE 0
-#endif
-
 class DbVST3ProcessingCtx : 
     public Steinberg::Vst::IComponentHandler,
 	public Steinberg::Vst::IComponentHandler2,
@@ -17,6 +13,7 @@ class DbVST3ProcessingCtx :
 {
 public:
     int error;
+    int verbosity;
 
 private:
     VST3App::ProviderPtr provider;
@@ -41,6 +38,7 @@ public:
 
     DbVST3ProcessingCtx()
     {
+        this->verbosity = 0;
         this->error = 0;
         this->component = nullptr;
         this->controller = nullptr;
@@ -53,6 +51,12 @@ public:
         this->endProcessing();
     }
 
+    void
+    SetVerbosity(int v)
+    {
+        this->verbosity = v;
+        this->processData.SetVerbosity(v);
+    }
 
     /* -------------------------------------------------------------------- */
     VST3App::ProviderPtr 
@@ -74,9 +78,8 @@ public:
         this->component = this->provider->getComponent();	
         this->midiMapping = Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping>(this->controller);
         // this->controllerEx1 = Steinberg::FUnknownPtr<Steinberg::Vst::EditControllerEx1>(this->controller);
-        #if VERBOSE
-        std::cout << "initialize nparams: " << this->controller->getParameterCount() << "\n";
-        #endif
+        if(this->verbosity)
+            std::cerr << "initialize nparams: " << this->controller->getParameterCount() << "\n";
 
         if(Steinberg::kResultTrue != this->component->queryInterface(
                                         Steinberg::Vst::IAudioProcessor::iid, 
@@ -244,20 +247,24 @@ public:
 
         if(this->busUsage.numInputEventBuses > 0)
         {
-            #if VERBOSE
-            std::cout << this->busUsage.numInputEventBuses 
+            if(this->verbosity)
+            {
+                std::cerr << this->busUsage.numInputEventBuses 
                       << " input event busses\n";
-            Steinberg::Vst::BusInfo binfo;
-			if(this->component->getBusInfo(Steinberg::Vst::kEvent,
-                Steinberg::Vst::kInput, 0, binfo) == Steinberg::kResultTrue)
-			{
-                auto busName = VST3::StringConvert::convert(binfo.name);
-                std::cout << "Event bus 0: " << busName << "\n";
+                Steinberg::Vst::BusInfo binfo;
+                if(this->component->getBusInfo(Steinberg::Vst::kEvent,
+                    Steinberg::Vst::kInput, 0, binfo) == Steinberg::kResultTrue)
+                {
+                    auto busName = VST3::StringConvert::convert(binfo.name);
+                    std::cerr << "Event bus 0: " << busName << "\n";
+                }
             }
-            #endif
         }
         else
-            std::cerr << "No event-in busses\n";
+        {
+            if(this->verbosity)
+                std::cerr << "No event-in busses\n"; // usually accept events anyway
+        }
 
         // Now that we understand the global bus picture, we need to
         // assign speaker-arrangements to characterize the multi-channel
@@ -342,21 +349,23 @@ public:
             }
         }
 
-        #if VERBOSE || 1
-        std::cerr << "Configuring audio buses, in:" << inSA.size()
+        if(this->verbosity)
+        {
+            std::cerr << "Configuring audio buses, in:" << inSA.size()
                   << " out:" << outSA.size() << "\n";
-        std::cerr << "Configure audio channels, in:" << inch
+            std::cerr << "Configure audio channels, in:" << inch
                   << " out:" << outch << "\n";
-        #endif
+        }
         if(this->audioEffect->setBusArrangements(
             inSA.size() ? &inSA[0] : nullptr, inSA.size(),
             outSA.size() ? &outSA[0] : nullptr , outSA.size())
             != Steinberg::kResultTrue)
         {
-            #if VERBOSE
-            // some plugins return error but seem to act "okay".
-            std::cerr << "Problem configuring bus arrangement.\n";
-            #endif
+            if(this->verbosity)
+            {
+                // some plugins return error but seem to act "okay".
+                std::cerr << "Problem configuring bus arrangement.\n";
+            }
         }
 
         this->processData.initialize(this->processSetup,  &this->busUsage);
@@ -409,14 +418,18 @@ public:
 
     void Process(float *in, int inCh, float *out, int outCh, int nframes)
     {
-        this->activate();
+        this->activate(); 
+        // beginAudioProcessing plugins in chuck pointers to the arrays
         this->processData.beginAudioProcessing(in, inCh, out, outCh, nframes);
-        this->audioEffect->setProcessing(true);
+        // active: true, processing: true
         VST3App::tresult result = this->audioEffect->process(this->processData);
         this->processData.endAudioProcessing();
-        this->audioEffect->setProcessing(false);
+
         if(result != Steinberg::kResultOk)
             std::cerr << "Problem processing data...\n";
+
+        // this->deactivate(); // only needed when we modify processMode, sampleRate,
+        
     }
 
     /* --------------------------------------------------------------------- */

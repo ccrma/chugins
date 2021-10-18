@@ -5,10 +5,6 @@
 #include "DbVST3Module.h"
 #include <unordered_map>
 
-#ifndef VERBOSE
-#define VERBOSE 0
-#endif
-
 /* -------------------------------------------------------------------------- */
 
 //  DbVST3Ctx is the primary handle that our clients have on a plugin file.
@@ -22,6 +18,7 @@ struct DbVST3Ctx
     std::string filepath;
     std::vector<DbVST3ModulePtr> modules;
     DbVST3ModulePtr activeModule;
+    int verbosity = 0;
 
     bool Ready()
     {
@@ -91,6 +88,12 @@ struct DbVST3Ctx
             this->activeModule = this->modules[0];
         }
     }
+
+    void SetVerbosity(int v)
+    {
+        this->verbosity = v;
+    }
+
     void Print(std::ostream &ostr, bool detailed)
     {
         // output to yaml, as two objects:
@@ -173,9 +176,9 @@ struct DbVST3Ctx
                 std::cerr << "Unknown parameter " << nm << "\n";
                 return -1;
             }
-            #if VERBOSE
-            std::cout << "Parameter " << nm << " found as id: " << info->id << "\n";
-            #endif
+            if(this->verbosity)
+                std::cerr << "Parameter " << nm << " found as id: " << info->id << "\n";
+
             if(info->automatable)
                 err = this->getProcessingCtx().SetParamValue(info->id, val, true);
             else

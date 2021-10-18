@@ -22,7 +22,7 @@ public:
     {}
 
     int
-    OpenPlugin(std::string const &path, DbVST3Ctx &ctx)
+    OpenPlugin(std::string const &path, DbVST3Ctx &ctx, int verbosity=0)
     {
         std::string error;
         ctx.Reset();
@@ -44,7 +44,7 @@ public:
 		{
             if(classInfo.category() == kVstAudioEffectClass)
             {
-                DbVST3ModulePtr imod(new DbVST3Module(classInfo, factory));
+                DbVST3ModulePtr imod(new DbVST3Module(classInfo, factory, verbosity));
                 ctx.modules.emplace_back(imod);
             }
             else
