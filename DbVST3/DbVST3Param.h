@@ -35,22 +35,10 @@ public:
         return this->flags & Steinberg::Vst::ParameterInfo::kIsProgramChange;
     }
 
-/*
-        this->id = pinfo.id;
-        this->defaultValue = pinfo.defaultNormalizedValue;
-        this->stepCount = pinfo.stepCount;
-        this->units = VST3::StringConvert::convert(pinfo.units);
-        this->readOnly = pinfo.flags & Steinberg::Vst::ParameterInfo::kIsReadOnly;
-        this->automatable = pinfo.flags & Steinberg::Vst::ParameterInfo::kCanAutomate;
-        this->isProgramChange = pinfo.flags & Steinberg::Vst::ParameterInfo::kIsProgramChange;
-        this->hidden = // (pinfo.flags == 0) || 
-                        (pinfo.flags & Steinberg::Vst::ParameterInfo::kIsHidden);
-            // flags == 0 case is for Midi CC;
-            // some plugins add 16 * 128 automatable MIDI CC parameters
-        this->islist = pinfo.flags & Steinberg::Vst::ParameterInfo::kIsList;
-
+    bool isList() const
+    {
+        return this->flags & Steinberg::Vst::ParameterInfo::kIsList;
     }
-*/
 
     void Print(std::ostream &ostr, char const *indent, int index)
     {
@@ -73,18 +61,18 @@ public:
             ostr << indent << "  range: [0, 1, " << delta << "]\n";
         }
         
-        if(this->flags & Steinberg::Vst::ParameterInfo::kCanAutomate)
+        if(this->automatable())
             ostr << indent << "  auto: " << 1 << "\n";
         std::string ustr = VST3::StringConvert::convert(this->units);
         if(ustr.size())
             ostr << indent << "  units: '" << ustr << "'\n";
-        if(this->flags & Steinberg::Vst::ParameterInfo::kIsReadOnly)
+        if(this->readOnly())
             ostr << indent << "  ro:  1\n";
-        if(this->flags & Steinberg::Vst::ParameterInfo::kIsList)
+        if(this->isList())
             ostr << indent << "  enum:  1\n";
-        if(this->flags & Steinberg::Vst::ParameterInfo::kIsHidden)
+        if(this->hidden())
             ostr << indent << "  hidden:  1\n";
-        if(this->flags & Steinberg::Vst::ParameterInfo::kIsProgramChange)
+        if(this->programChange())
             ostr << indent << "  programchange:  1\n";
     }
 };

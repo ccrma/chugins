@@ -259,14 +259,16 @@ public:
         bool forcePush = true;
         if(flags & Steinberg::Vst::kReloadComponent)
         {
-            std::cout << "Reload component (program change)\n";
+            if(this->verbosity)
+                std::cerr << "Reload component (program change)\n";
             forcePush = false;
             this->deactivate();
             this->activate();
         }
         if(flags & Steinberg::Vst::kParamValuesChanged)
         {
-            std::cout << "ParamValuesChanged (program change)\n";
+            if(this->verbosity)
+                std::cerr << "ParamValuesChanged (program change)\n";
             this->readAllParameters(forcePush /* proven to be needed */);
             /* tried this .. 
                 this->deactivate();
@@ -275,7 +277,8 @@ public:
         }
         if(flags & Steinberg::Vst::kLatencyChanged)
         {
-            std::cout << "latency change " << forcePush << "\n";
+            if(this->verbosity)
+                std::cerr << "latency change " << forcePush << "\n";
             this->deactivate();
             this->activate();
         }

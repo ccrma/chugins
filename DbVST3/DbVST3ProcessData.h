@@ -112,7 +112,6 @@ public:
 
     void initialize(Steinberg::Vst::ProcessSetup &pd,  BusUsage const *u)
     {
-        static float x[10]; // testing
 
         this->busUsage = u;
         this->processMode = pd.processMode;
@@ -125,17 +124,17 @@ public:
             this->inputs = new Steinberg::Vst::AudioBusBuffers[this->numInputs];
             for(int i=0;i<this->numInputs;i++) // foreach bus
             {
-                bool active = u->IsInputBusActive(i);
+                // bool active = u->IsInputBusActive(i);
                 int nchan = u->GetNChan(u->inAudioChan[i]);
+                this->inputs[i].silenceFlags = 0;
                 this->inputs[i].numChannels = nchan;
                 this->inputs[i].channelBuffers32 = new float*[nchan];
                 for(int j=0;j<nchan;j++)
                 {
-                    // #XYZ
-                    // currently nullptr whether active or not, we play
-                    // with pointers during process to read & write directly
-                    // to chuck buffers;
-                    this->inputs[i].channelBuffers32[j] = active ? x : nullptr;
+                    // in attempting to get sound out of LABS we
+                    // tried the experiment of pointing to real memory
+                    // here... no-go. (on output too)
+                    this->inputs[i].channelBuffers32[j] = nullptr;
                 }
             }
         }
@@ -144,14 +143,14 @@ public:
             this->outputs = new Steinberg::Vst::AudioBusBuffers[this->numOutputs];
             for(int i=0;i<this->numOutputs;i++) // foreach bus
             {
-                bool active = u->IsOutputBusActive(i);
+                // bool active = u->IsOutputBusActive(i);
                 int nchan = u->GetNChan(u->outAudioChan[i]);
+                this->outputs[i].silenceFlags = 0;
                 this->outputs[i].numChannels = nchan;
                 this->outputs[i].channelBuffers32 = new float*[nchan];
                 for(int j=0;j<nchan;j++)
                 {
-                    // see #XYZ above
-                    this->outputs[i].channelBuffers32[j] = active ? x : nullptr;
+                    this->outputs[i].channelBuffers32[j] = nullptr;
                 }
             }
         }
