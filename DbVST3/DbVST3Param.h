@@ -8,11 +8,13 @@ class DbVST3ParamInfo : public Steinberg::Vst::ParameterInfo
 {
 public:
     std::string name;
+    float currentValue;
 
     DbVST3ParamInfo(Steinberg::Vst::ParameterInfo const &pinfo) :
         Steinberg::Vst::ParameterInfo(pinfo)
     {
         this->name = VST3::StringConvert::convert(pinfo.title);
+        this->currentValue = pinfo.defaultNormalizedValue;
     }
 
     bool hidden() const
