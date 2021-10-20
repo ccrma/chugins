@@ -129,7 +129,7 @@ public:
         if(!detailed)
             ostr << indent << "- " << this->name << "\n";
         else
-            ostr << indent << "- RegistryName: " << this->name << "\n";
+            ostr << indent << "- RegistryName: '" << this->name << "'\n";
         if(!detailed) return;
         // category is always "Audio Module Class"
         ostr << indent << "  Categories:\n";
@@ -148,7 +148,7 @@ public:
         } 
         
         ostr << indent << "  Version: " << this->version << "\n";
-        ostr << indent << "  SdkVersion: " << this->sdkVersion << "\n";
+        ostr << indent << "  SdkVersion: '" << this->sdkVersion << "'\n";
         ostr << indent << "  NumInputs: " << this->parameters.size() << "\n";
         ostr << indent << "  Inputs:\n";
         std::string in(indent);

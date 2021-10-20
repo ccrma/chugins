@@ -102,8 +102,8 @@ struct DbVST3Ctx
         //   FiddleNodes:
         //      - array of modules with parameters, etc
         ostr << "VST3Plugin:\n";
-        ostr << "  filepath: " << this->filepath << "\n";
-        ostr << "  vendor: " << this->vendor << "\n";
+        ostr << "  filepath: '" << this->filepath << "'\n";
+        ostr << "  vendor: '" << this->vendor << "'\n";
         ostr << "  nmodules: " << this->modules.size() << "\n";
         if(!detailed)
             ostr << "Modules:\n";
