@@ -48,11 +48,14 @@ public:
             return;
 
         ostr << indent << "- name: \"" << this->name << "\"\n";
-        ostr << indent << "  type: float\n"; // all vst3 params are floats
         ostr << indent << "  id: " << this->id << "\n";
         ostr << indent << "  default: " << this->defaultNormalizedValue << "\n";
         if(this->stepCount == 1)
+        {
+            // checkboxes only work for int (even though VST3 is float)
+            ostr << indent << "  type: int\n";
             ostr << indent << "  editType: checkbox\n";
+        }
         else
         {
             float delta;
@@ -60,6 +63,7 @@ public:
                 delta = .01; /* .001 was too small.. */
             else
                 delta = 1.0f / this->stepCount;
+            ostr << indent << "  type: float\n"; // all vst3 params are floats
             ostr << indent << "  range: [0, 1, " << delta << "]\n";
         }
         

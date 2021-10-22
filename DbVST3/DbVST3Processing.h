@@ -344,6 +344,7 @@ public:
         outSA.resize(this->busUsage.outAudioChan.size());
 
         int inch = 0;
+        char const *nms[2] = {"Main", "Aux"};
         for(int j=0;j<2;j++) // prioritize main (j==0) over aux
         {
             for(int i=0;i<this->busUsage.inAudioChan.size();i++)
@@ -354,7 +355,14 @@ public:
 
                 if(j==1 && !this->busUsage.IsAux(cinfo))
                     continue;
+                
                 int busch = this->busUsage.GetNChan(cinfo);
+                if(verbosity)
+                {
+                    std::cerr << "AudioIn bus:" 
+                        << nms[j] << "." << i << " nchan:" << busch << "\n";
+                }
+
                 inch += busch;
                 if(inch <= 2)
                 {
@@ -409,10 +417,10 @@ public:
 
         if(this->verbosity)
         {
-            std::cerr << "Configuring audio buses, in:" << inSA.size()
-                  << " out:" << outSA.size() << "\n";
-            std::cerr << "Configure audio channels, in:" << inch
-                  << " out:" << outch << "\n";
+            std::cerr << "Configuring audio _buses_: in " 
+                << inSA.size() << " out:" << outSA.size() << "\n";
+            std::cerr << "Configure audio _channels_: in " 
+                << inch << " out " << outch << "\n";
         }
         if(this->audioEffect->setBusArrangements(
             inSA.size() ? &inSA[0] : nullptr, inSA.size(),
@@ -502,17 +510,17 @@ public:
 
 	tresult PLUGIN_API beginEdit(ParamID id) override
 	{
-		std::cout << "beginEdit called " << id << "\n";
+		//std::cout << "beginEdit called " << id << "\n";
 		return Steinberg::kNotImplemented;
 	}
 	tresult PLUGIN_API performEdit(ParamID id, ParamValue valueNormalized) override
 	{
-		std::cout << "performEdit called " << id << " " << valueNormalized << "\n";
+		//std::cout << "performEdit called " << id << " " << valueNormalized << "\n";
 		return Steinberg::kNotImplemented;
 	}
 	tresult PLUGIN_API endEdit(ParamID id) override
 	{
-		std::cout << "endEdit called " << id << "\n";
+		//std::cout << "endEdit called " << id << "\n";
 		return Steinberg::kNotImplemented;
 	}
 

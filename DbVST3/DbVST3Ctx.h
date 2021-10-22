@@ -30,6 +30,7 @@ struct DbVST3Ctx
         if(this->modules.size() > index)
         {
             this->activeModule = this->modules[index];
+            this->activeModule->SetVerbosity(this->verbosity);
             this->InitProcessing(sampleRate);
             return 0;
         }
@@ -92,6 +93,8 @@ struct DbVST3Ctx
     void SetVerbosity(int v)
     {
         this->verbosity = v;
+        if(this->activeModule)
+            this->activeModule->SetVerbosity(this->verbosity);
     }
 
     void Print(std::ostream &ostr, bool detailed)
@@ -168,22 +171,40 @@ struct DbVST3Ctx
         {
             // processingCtx's job to add the parameter change
             // to the automation setup.
+            // std::cerr << "SetParameter parameter " << nm << "\n";
             DbVST3ParamInfo const *info = this->activeModule->GetParamInfo(nm);
             if(!info)
             {
-                std::cerr << "Unknown parameter " << nm << "\n";
+                if(nm != "verbosity")
+                    std::cerr << "Unknown parameter " << nm << "\n";
+                else
+                    this->SetVerbosity((int) val);
                 return -1;
             }
             if(this->verbosity)
-                std::cerr << "Parameter " << nm << " found as id: " << info->id << "\n";
+            {
+                if(info->programChange())
+                    std::cerr << "ProgramChange " << val << "\n";
+                else
+                    std::cerr << "SetParameter " << nm << " has id: " << info->id << "\n";
+            }
 
-            if(info->automatable())
-                err = this->getProcessingCtx().SetParamValue(info->id, val, true);
-            else
             if(info->programChange()) // a program change
                 err = this->getProcessingCtx().SetParamValue(info->id, val, false);
             else
+            if(info->automatable())
+                err = this->getProcessingCtx().SetParamValue(info->id, val, true);
+            else
                 std::cerr << "parameter " << nm << " can't be automated.\n";
+        }
+        else
+        if(nm == "verbosity")
+        {
+            this->SetVerbosity((int) val);
+        }
+        else
+        {
+            std::cerr << "SetParameter " << nm << " called before moduleInit\n";
         }
         return err;
     }
