@@ -14,7 +14,7 @@
 class DbVST3Module 
 {
 private:
-    int programChangeIndex;
+    int programChangeIndex; // some modules support 0, some 1, some > 1
     int verbosity;
 
 public:
@@ -175,7 +175,42 @@ private:
         Steinberg::Vst::IEditController* controller = provider->getController();
         if(!controller)
             return;
-        // this->activateMainIOBusses(vstPlug, true);
+
+        Steinberg::FUnknownPtr<Steinberg::Vst::IUnitInfo> unitInfo(controller);
+
+        std::unordered_map<int, std::shared_ptr<std::vector<std::string>>> programMap;
+        if(unitInfo)
+        {
+            Steinberg::int32 programListCount = unitInfo->getProgramListCount();
+            if(programListCount > 0)
+            {
+                for(int i=0;i<programListCount;i++)
+                {
+                    Steinberg::Vst::ProgramListInfo plInfo;
+                    if(unitInfo->getProgramListInfo(i, plInfo) == Steinberg::kResultOk)
+                    {
+                        int plId = plInfo.id;
+                        auto plName = VST3::StringConvert::convert(plInfo.name);
+
+                        auto np = std::shared_ptr<std::vector<std::string>>(new std::vector<std::string>);
+                        programMap[plId] = np;
+                        // std::cerr << "programlist " << plName << " for " << plId << "-------------------------\n";
+                        for(int j=0;j<plInfo.programCount; j++)
+                        {
+                            Steinberg::Vst::TChar pnm[256];
+                            if(unitInfo->getProgramName(plId, j, pnm) == Steinberg::kResultOk)
+                            {
+                                if(pnm[0] == 0)
+                                    continue;
+                                auto pnmStr = VST3::StringConvert::convert(pnm);
+                                // std::cerr << "   " << pnmStr << "\n";
+                                np->push_back(pnmStr);
+                            }
+                        }
+                    }
+                }
+            }
+        }
         for(int i=0;i<controller->getParameterCount();i++)
         {
             Steinberg::Vst::ParameterInfo pinfo = {};
@@ -196,9 +231,15 @@ private:
                 continue;
 
             DbVST3ParamInfo paramInfo(pinfo);
-            parameters.push_back(paramInfo);
             if(pinfo.flags & Steinberg::Vst::ParameterInfo::kIsProgramChange)
             {
+                if(programMap.count(pinfo.id))
+                {
+                    paramInfo.menuItems = programMap[pinfo.id];
+                    // std::cerr << paramInfo.name << " has " <<
+                    //   paramInfo.menuItems->size() << " menuitems\n";
+                }
+                else
                 if(this->programChangeIndex == -1)
                 {
                     this->programChangeIndex = i;
@@ -207,9 +248,12 @@ private:
                 }
                 else
                 {
+                    // this appears to be allowed if a module supports 
+                    // programlists (above).
                     std::cerr << "Multiple program-changes? " << i << "\n";
                 }
             }
+            parameters.push_back(paramInfo); // issues copy-constructor
         }
         // this->activateMainIOBusses(vstPlug, false);
         provider->releasePlugIn(vstPlug, controller);
