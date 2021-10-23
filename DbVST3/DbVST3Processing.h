@@ -282,7 +282,7 @@ public:
         if(flags & Steinberg::Vst::kLatencyChanged)
         {
             if(this->verbosity)
-                std::cerr << "latency change " << forcePush << "\n";
+                std::cerr << "LatencyChanged " << forcePush << "\n";
             this->deactivate();
             this->activate();
         }
@@ -393,7 +393,6 @@ public:
         }
 
         // if not provided, create the input routing map.
-        char const *nms[2] = {"Main", "Aux"};
         if(!inputBusRouting || *inputBusRouting == '\0')
         {
             nchanIn = 0;
@@ -409,11 +408,6 @@ public:
                         continue;
                     
                     int busch = binfo.nch;
-                    if(verbosity)
-                    {
-                        std::cerr << "AudioIn bus:" 
-                            << nms[j] << "." << i << " nchan:" << busch << "\n";
-                    }
                     nchanIn += busch;
                     if(nchanIn <= 2)
                         busUsage.inputRouting[i] = busch;
@@ -518,14 +512,6 @@ public:
             }
         }
 
-        if(this->verbosity)
-        {
-            std::cerr << "Configuring audio _buses_: in " 
-                << inSA.size() << ", out " << outSA.size() << "\n";
-            std::cerr << "Configure audio _channels_: in " 
-                << nchanIn << ", out " << nchanOut << "\n";
-        }
-
         // Here we communicate the desired bus behavior of the effect.
         // The host should always deliver the same number of input and 
         // output busses that the plug-in needs. The plug-in has 3 
@@ -554,14 +540,16 @@ public:
         {
             if(this->verbosity)
             {
-                std::cerr << this->processData.busUsage.numInputEventBuses 
-                      << " input event busses\n";
+                std::cerr << "Input event busses\n";
                 Steinberg::Vst::BusInfo binfo;
-                if(this->component->getBusInfo(Steinberg::Vst::kEvent,
-                    Steinberg::Vst::kInput, 0, binfo) == Steinberg::kResultTrue)
+                for(int i=0;i<this->processData.busUsage.numInputEventBuses;i++)
                 {
-                    auto busName = VST3::StringConvert::convert(binfo.name);
-                    std::cerr << "Event bus 0: " << busName << "\n";
+                    if(this->component->getBusInfo(Steinberg::Vst::kEvent,
+                        Steinberg::Vst::kInput, 0, binfo) == Steinberg::kResultTrue)
+                    {
+                        auto busName = VST3::StringConvert::convert(binfo.name);
+                        std::cerr << " - " << i << " " << busName << "\n";
+                    }
                 }
             }
         }

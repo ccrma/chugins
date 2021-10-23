@@ -183,12 +183,13 @@ struct DbVST3Ctx
                     this->SetVerbosity((int) val);
                 return -1;
             }
-            if(this->verbosity)
+            if(this->verbosity > 1)
             {
                 if(info->programChange())
                     std::cerr << "ProgramChange " << val << "\n";
                 else
-                    std::cerr << "SetParameter " << nm << " has id: " << info->id << "\n";
+                    std::cerr << "SetParameter " << nm << " " 
+                        << val << " (id:" << info->id << ")\n";
             }
 
             if(info->programChange()) // a program change

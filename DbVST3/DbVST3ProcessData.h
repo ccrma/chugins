@@ -126,6 +126,12 @@ public:
             for(int i=0;i<this->numInputs;i++) // foreach bus
             {
                 int nchan = this->busUsage.inAudioChan[i].nch;
+                char const *bt = this->busUsage.inAudioChan[i].isAux ? "Aux" : "Main";
+                if(this->verbosity)
+                {
+                    std::cerr << "AudioIn bus: " 
+                        << bt << "." << i << " nchan:" << nchan << "\n";
+                }
                 this->inputs[i].silenceFlags = 0;
                 this->inputs[i].numChannels = nchan;
                 this->inputs[i].channelBuffers32 = new float*[nchan];
@@ -145,6 +151,12 @@ public:
             {
                 // bool active = u->IsOutputBusActive(i);
                 int nchan = this->busUsage.outAudioChan[i].nch;
+                char const *bt = this->busUsage.outAudioChan[i].isAux ? "Aux" : "Main";
+                if(this->verbosity)
+                {
+                    std::cerr << "AudioOut bus: " 
+                        << bt << "." << i << " nchan:" << nchan << "\n";
+                }
                 this->outputs[i].silenceFlags = 0;
                 this->outputs[i].numChannels = nchan;
                 this->outputs[i].channelBuffers32 = new float*[nchan];
@@ -158,12 +170,12 @@ public:
         this->inputEvents = &this->inEvents;
         if(this->verbosity)
         {
-            std::cerr << "input routing '";
+            std::cerr << "AudioIn routing '";
             for(int i=0;i<this->busUsage.inputRouting.size();i++)
                 std::cerr << char(this->busUsage.inputRouting[i] + '0');
             std::cerr << "'\n";
 
-            std::cerr << "output routing '";
+            std::cerr << "AudioOut routing '";
             for(int i=0;i<this->busUsage.outputRouting.size();i++)
                 std::cerr << char(this->busUsage.outputRouting[i] + '0');
             std::cerr << "'\n";

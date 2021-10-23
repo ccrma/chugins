@@ -5,7 +5,7 @@ int done;
 fun void doit()
 {
     DbVST3 vocoder;
-    // vocoder.setVerbosity(1);
+    vocoder.setVerbosity(1);
 
     vocoder.loadPlugin("TAL-Vocoder-2.vst3");
     <<<"Vocoder loaded,", vocoder.getNumParameters(), "parameters.">>>;
