@@ -592,7 +592,7 @@ public:
         if(this->midiMapping)
         {
             Steinberg::Vst::ParamID pid;
-            int bus=0,ch=0;
+            int bus=0, ch=0;
             this->midiMapping->getMidiControllerAssignment(bus, ch, data1, pid);
             return pid;
         }

@@ -27,7 +27,7 @@ fun void doit(int id, dur maxwait)
     //filt.loadPlugin("hostchecker.vst3");
 
     DbVST3 inst;
-    inst.setVerbosity(0);
+    inst.setVerbosity(2);
     inst.loadPlugin(instname);
     if(mod != -1)
         inst.selectModule(mod);

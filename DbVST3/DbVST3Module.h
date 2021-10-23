@@ -58,7 +58,7 @@ public:
         this->processingCtx.SetVerbosity(v);
     }
 
-    DbVST3ParamInfo const *
+    DbVST3ParamInfo *
     GetParamInfo(int index)
     {
         if(index < this->parameters.size())
@@ -69,10 +69,10 @@ public:
 
     /* this entrypoint supports midi name-remapping
      */
-    DbVST3ParamInfo const *
+    DbVST3ParamInfo *
     GetParamInfo(std::string const &nm, float *val=nullptr)
     {
-        DbVST3ParamInfo const *info = nullptr;
+        DbVST3ParamInfo *info = nullptr;
         if(this->nameToIndex.size() == 0 && this->parameters.size() > 0)
         {
             // build a little cache

@@ -148,17 +148,10 @@ struct DbVST3Ctx
         {
             // processingCtx's job to add ithe parameter change
             // to the automation setup.
-            DbVST3ParamInfo const *info = this->activeModule->GetParamInfo(index);
+            DbVST3ParamInfo *info = this->activeModule->GetParamInfo(index);
             if(info)
             {
-                auto id = info->id;
-                if(info->automatable())
-                    err = this->getProcessingCtx().SetParamValue(id, val, true);
-                else
-                if(info->programChange())
-                    err = this->getProcessingCtx().SetParamValue(id, val, false);
-                else
-                    std::cerr << "parameter " << index << " can't be automated.\n";
+                this->setParamValue(info, val);
             }
             else
                 std::cerr << "invalide parameter index " << index << "\n";
@@ -174,7 +167,7 @@ struct DbVST3Ctx
             // processingCtx's job to add the parameter change
             // to the automation setup.
             // std::cerr << "SetParameter parameter " << nm << "\n";
-            DbVST3ParamInfo const *info = this->activeModule->GetParamInfo(nm);
+            DbVST3ParamInfo *info = this->activeModule->GetParamInfo(nm);
             if(!info)
             {
                 if(nm != "verbosity")
@@ -183,22 +176,8 @@ struct DbVST3Ctx
                     this->SetVerbosity((int) val);
                 return -1;
             }
-            if(this->verbosity > 1)
-            {
-                if(info->programChange())
-                    std::cerr << "ProgramChange " << val << "\n";
-                else
-                    std::cerr << "SetParameter " << nm << " " 
-                        << val << " (id:" << info->id << ")\n";
-            }
-
-            if(info->programChange()) // a program change
-                err = this->getProcessingCtx().SetParamValue(info->id, val, false);
             else
-            if(info->automatable())
-                err = this->getProcessingCtx().SetParamValue(info->id, val, true);
-            else
-                std::cerr << "parameter " << nm << " can't be automated.\n";
+                err = this->setParamValue(info, val);
         }
         else
         if(nm == "verbosity")
@@ -208,6 +187,41 @@ struct DbVST3Ctx
         else
         {
             std::cerr << "SetParameter " << nm << " called before moduleInit\n";
+        }
+        return err;
+    }
+
+    int setParamValue(DbVST3ParamInfo *info, float val)
+    {
+        auto id = info->id;
+        int err = -1;
+        if(info->programChange())
+        {
+            if(this->verbosity > 1)
+                std::cerr << "ProgramChange " << val << "\n";
+            err = this->getProcessingCtx().SetParamValue(id, val, false);
+        }
+        else
+        if(info->automatable()) // mda-PitchBend etc aren't automatable
+        {
+            if(this->verbosity > 1)
+            {
+                std::cerr << "SetParameter " << info->name << " " 
+                    << val << "\n";
+                    // " (id:" << info->id << ")\n";
+            }
+            err = this->getProcessingCtx().SetParamValue(id, val, true);
+        }
+        else
+        {
+            if(this->verbosity > 1)
+            {
+                std::cerr << "SetParameter " << info->name << " " 
+                    << val << " (id:" << info->id << ")\n";
+            }
+            err = this->getProcessingCtx().SetParamValue(id, val, true);
+            if(err)
+                std::cerr << "parameter " << info->name << " can't be automated.\n";
         }
         return err;
     }
