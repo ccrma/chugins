@@ -27,6 +27,8 @@ CK_DLL_MFUN(dbvst3_getParameterName);
 CK_DLL_MFUN(dbvst3_getParameter);
 CK_DLL_MFUN(dbvst3_setParameter);
 CK_DLL_MFUN(dbvst3_setParameterByName);
+CK_DLL_MFUN(dbvst3_setInputRouting);
+CK_DLL_MFUN(dbvst3_setOutputRouting);
 CK_DLL_MFUN(dbvst3_noteOn);
 CK_DLL_MFUN(dbvst3_noteOff);
 CK_DLL_MFUN(dbvst3_midiEvent);
@@ -87,26 +89,41 @@ public:
 
     void multitick(SAMPLE* in, SAMPLE* out, int nframes);
 
+    // experimental
+    void setInputRouting(std::string const &r);
+    void setOutputRouting(std::string const &r);
+
 private:
     int m_verbosity;
     t_CKFLOAT m_sampleRate;
     std::string m_pluginPath;
     DbVST3Ctx m_dbVST3Ctx;
+
+    // i/o routing:
+    // usually empty, otherwise: nch for _bus_
+    // ie:  "11" for TAL-Vocoder input to use the sidechain.
+    //      "20" is the default behavior which "should" work for L+R mode (but doesn't?)
+    std::string m_inputBusRouting;
+    std::string m_outputBusRouting;
     // VST3 plugins have:
+    //  0 or more input Audio busses, mono or multichan.
     //  1 or more output Audio busses, each with either mono 
-    //    or stereo channel support - aka Speaker arrangement.
-    //  0 or more input Audio busses, mono or stereo.
+    //    or multichannel support - aka Speaker arrangement.
     //   
     // Currently we register ourselves as requiring two inputs 
     // and two outputs.  Details of mono-vs-stereo managed by
-    // ProcessSamples
+    // InitProcessing, ProcessSamples
 };
 
 bool DbVST3Chugin::loadPlugin(const std::string& filepath)
 {
     int err = s_vstAppPtr->OpenPlugin(filepath, m_dbVST3Ctx, this->m_verbosity);
     if(!err)
-        err = m_dbVST3Ctx.InitProcessing(m_sampleRate);
+    {
+        err = m_dbVST3Ctx.InitProcessing(m_sampleRate,  
+                                m_inputBusRouting.c_str(), 
+                                m_outputBusRouting.c_str());
+    }
     return err == 0;
 }
 
@@ -169,6 +186,18 @@ bool
 DbVST3Chugin::setParameter(std::string const &nm, float v) 
 {
     return m_dbVST3Ctx.SetParamValue(nm, v);
+}
+
+void
+DbVST3Chugin::setInputRouting(std::string const &r)
+{
+    this->m_inputBusRouting = r;
+}
+
+void
+DbVST3Chugin::setOutputRouting(std::string const &r)
+{
+    this->m_outputBusRouting = r;
 }
 
 /* --------------------------------------------------------------------- */
@@ -292,6 +321,13 @@ CK_DLL_QUERY(DbVST3Chugin)
 
     QUERY->add_mfun(QUERY, dbvst3_midiEvent, "void", "midiEvent");
     QUERY->add_arg(QUERY, "MidiMsg", "msg");
+
+    // WIP/experimental
+    QUERY->add_mfun(QUERY, dbvst3_setInputRouting, "void", "setInputRouting");
+    QUERY->add_arg(QUERY, "string", "routing");
+
+    QUERY->add_mfun(QUERY, dbvst3_setOutputRouting, "void", "setOutputRouting");
+    QUERY->add_arg(QUERY, "string", "routing");
 
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
@@ -440,6 +476,22 @@ CK_DLL_MFUN(dbvst3_setParameterByName)
     t_CKFLOAT val = GET_NEXT_FLOAT(ARGS);
     DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     RETURN->v_int = b->setParameter(nm, val);
+}
+
+// experimental
+CK_DLL_MFUN(dbvst3_setInputRouting)
+{
+    std::string r = GET_NEXT_STRING_SAFE(ARGS);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    b->setInputRouting(r);
+}
+
+// experimental
+CK_DLL_MFUN(dbvst3_setOutputRouting)
+{
+    std::string r = GET_NEXT_STRING_SAFE(ARGS);
+    DbVST3Chugin* b = (DbVST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    b->setOutputRouting(r);
 }
 
 CK_DLL_MFUN(dbvst3_noteOn)

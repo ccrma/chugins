@@ -127,12 +127,14 @@ struct DbVST3Ctx
         }
     }
     
-    int InitProcessing(float sampleRate)
+    int InitProcessing(float sampleRate, 
+        char const *inputBusRouting = nullptr, 
+        char const *outputBusRouting = nullptr)
     {
         DbVST3ProcessingCtx &pctx = this->getProcessingCtx();
         if(!pctx.error)
         {
-            pctx.beginProcessing(sampleRate);
+            pctx.beginProcessing(sampleRate, inputBusRouting, outputBusRouting);
             // ~ProcessingCtx handles teardown
         }
         return pctx.error;

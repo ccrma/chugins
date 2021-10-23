@@ -26,7 +26,6 @@ private:
     std::vector<float> paramValues;
     Steinberg::Vst::ProcessSetup processSetup;
     DbVST3ProcessData processData; // our audio buffers are within
-    DbVST3ProcessData::BusUsage busUsage;
     bool activated;
 
 public:
@@ -124,7 +123,9 @@ public:
     }
 
     void 
-    beginProcessing(float sampleRate)
+    beginProcessing(float sampleRate, 
+                    char const *inputBusRouting, 
+                    char const *outputBusRouting)
     {
         if(!this->component)
             this->initComponent();
@@ -160,7 +161,10 @@ public:
                 == Steinberg::kResultTrue)
             {
                 // synchronizeState has already been called
-                this->initBuses();
+                this->initBuses(inputBusRouting, outputBusRouting);
+                // initialize process data (allocate AudioBuffers, etc)
+                // nb: processData owns busUsage which we've just initialized above.
+                this->processData.initialize(this->processSetup); 
                 // syncState between controller and processor
                 // via component->getState(&stream), stream.rewind
                 //     controller->setComponentState()
@@ -285,29 +289,272 @@ public:
 		return Steinberg::kResultOk;
     }
 
+    // optional routing hints
+    //  - string with len == num input or output bus.
+    //  - in each position '0' || '1' || '2' represent channel allocation
+    //    for each bus.  This differs for each component, so there is no
+    //    universally correct answer.
+    // default behavior:
+    // - greedily allocate 2 channels prioritizing Main over Aux buses.
     void 
-    initBuses()
+    initBuses(char const *inputBusRouting, char const *outputBusRouting)
     {
-        // countChannels builds up BusConfig.
-        this->busUsage.Reset();
+        // countChannels initializes busConfig.
+        int nbusIn, nbusOut;
+        this->processData.busUsage.Reset();
+
+        /* audio buses -- */
         this->countChannels(Steinberg::Vst::kAudio, 
                             Steinberg::Vst::kInput, 
-                            this->busUsage.inAudioChan,
-                            this->busUsage.numInputChannels);
+                            this->processData.busUsage.inAudioChan,
+                            this->processData.busUsage.numInputChannels);
+        nbusIn = this->processData.busUsage.inAudioChan.size();
+        if(nbusIn > 0)
+            this->processData.busUsage.inputRouting.resize(nbusIn, 0);
+
         this->countChannels(Steinberg::Vst::kAudio, 
                             Steinberg::Vst::kOutput, 
-                            this->busUsage.outAudioChan,
-                            this->busUsage.numOutputChannels);
-        this->busUsage.numInputEventBuses = this->component->getBusCount(
-                Steinberg::Vst::kEvent, Steinberg::Vst::kInput);
-        this->busUsage.numOutputEventBuses = this->component->getBusCount(
-                Steinberg::Vst::kEvent, Steinberg::Vst::kOutput);
+                            this->processData.busUsage.outAudioChan,
+                            this->processData.busUsage.numOutputChannels);
+        nbusOut = this->processData.busUsage.outAudioChan.size();
+        if(nbusOut > 0)
+            this->processData.busUsage.outputRouting.resize(nbusOut, 0);
 
-        if(this->busUsage.numInputEventBuses > 0)
+        // Now that we understand the global bus picture, we need to
+        // assign speaker-arrangements to characterize the multi-channel
+        // configurations.  It's up to us to signal to the plugin that
+        // a particular bus is active, so we'll adopt the convention
+        // that we only handle: 0, 1, 2 input and output (Audio) buses
+        // with no more than 2 channels (total) on each side. ie:
+        // can't handle two, stereo inputs at-the-moment. This is driven
+        // largely by the chuck chugin architecture that disallows dynamic
+        // specification of the in & out ugen.
+        // Note that the speaker-arrangement for inactive buses is set to 0.
+        // Also, we prioritize Main buses over Aux buses which accounts
+        // for the two loops through each.
+        //
+        // A bus can be understood as a "collection of data channels" belonging 
+        // together. It describes a data input or a data output of the plug-in. 
+        // A VST component can define any desired number of busses. Dynamic 
+        // usage of busses is handled in the host by activating and deactivating 
+        // busses. All busses are initially inactive. The component has to 
+        // define the maximum number of supported busses and it has to define 
+        // which of them have to be activated by default after instantiation 
+        // of the plug-in (This is only a wish, the host is allow to not follow 
+        // it, and only activate the first bus for example). A host that can 
+        // handle multiple busses, allows the user to activate busses which 
+        // are initially all inactive. The kMain busses have to place before 
+        // any others kAux busses.
+        //
+        //  side-chaining scenarios
+        //        
+        //   A (TAL-Vocoder) kMain0 | kMain1
+        //   input ch/bus:   1      | 1
+        //   output ch/bus:  2      | 0
+        //
+        //                   kMain | kAux
+        //   input ch/bus:   1     | 1
+        //   output ch/bus:  2     | 0
+
+        DbVST3BusUsage &busUsage = this->processData.busUsage;
+        std::vector<Steinberg::Vst::SpeakerArrangement> inSA;
+        std::vector<Steinberg::Vst::SpeakerArrangement> outSA;
+        inSA.resize(nbusIn);
+        outSA.resize(nbusOut);
+        int nchanIn=0, nchanOut=0;
+
+        if(inputBusRouting && inputBusRouting[0] != '\0') 
+        {
+            if(strlen(inputBusRouting) != nbusIn)
+            {
+                std::cerr << "Incorrect length " << strlen(inputBusRouting) 
+                    << " for input channel routing (nbuses == " 
+                    << nbusIn
+                    << ")\n";
+                inputBusRouting = nullptr; // force default
+            }
+            else
+            {
+                for(int i=0;i<nbusIn;i++)
+                {
+                    int nch = inputBusRouting[i] - '0';
+                    nchanIn += nch;
+                    if(nchanIn <= 2)
+                        busUsage.inputRouting[i] = nch;
+                    else
+                    {
+                        std::cerr << "Custom input routing request exceeds channel allocation "
+                            << inputBusRouting << "\n";
+                        inputBusRouting = nullptr;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // if not provided, create the input routing map.
+        char const *nms[2] = {"Main", "Aux"};
+        if(!inputBusRouting || *inputBusRouting == '\0')
+        {
+            nchanIn = 0;
+            for(int j=0;j<2;j++) // prioritize Main (j==0) over Aux
+            {
+                for(int i=0;i<nbusIn;i++)
+                {
+                    DbVST3BusUsage::Bus &binfo = busUsage.inAudioChan[i];
+                    if(j==0 && binfo.isAux)
+                        continue;
+
+                    if(j==1 && !binfo.isAux)
+                        continue;
+                    
+                    int busch = binfo.nch;
+                    if(verbosity)
+                    {
+                        std::cerr << "AudioIn bus:" 
+                            << nms[j] << "." << i << " nchan:" << busch << "\n";
+                    }
+                    nchanIn += busch;
+                    if(nchanIn <= 2)
+                        busUsage.inputRouting[i] = busch;
+                    else
+                        busUsage.inputRouting[i] = 0;
+                }
+            }
+        }
+
+        // error-check optional outputRouting request
+        if(outputBusRouting && outputBusRouting[0] != '\0')
+        {
+            if(strlen(outputBusRouting) != nbusOut)
+            {
+                std::cerr << "Incorrect length " << strlen(outputBusRouting) 
+                        << " for output channel routing (nbuses == " 
+                        << nbusOut
+                        << ")\n";
+                outputBusRouting = nullptr;
+            }
+            else
+            {
+                nchanOut = 0;
+                for(int i=0;i<nbusOut;i++)
+                {
+                    int nch = outputBusRouting[i] - '0';
+                    nchanOut += nch;
+                    if(nchanOut <= 2)
+                        busUsage.outputRouting[i] = nch;
+                    else
+                    {
+                        std::cerr << "Custom output routing request exceeds channel allocation "
+                            << outputBusRouting << "\n";
+                        outputBusRouting = nullptr;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if(!outputBusRouting || *outputBusRouting == '\0')
+        {
+            nchanOut = 0;
+            for(int j=0;j<2;j++) // prioritize main (j==0) over aux
+            {
+                for(int i=0;i<busUsage.outAudioChan.size();i++)
+                {
+                    DbVST3BusUsage::Bus &binfo = busUsage.outAudioChan[i];
+                    if(j == 0 && binfo.isAux)
+                        continue;
+                    else
+                    if(j==1 && !binfo.isAux)
+                        continue;
+                    int busch = binfo.nch;
+                    nchanOut += busch;
+                    if(nchanOut <= 2)
+                        busUsage.outputRouting[i] = busch;
+                    else
+                        busUsage.outputRouting[i] = 0;
+                }
+            }
+        }
+
+        // apply the routing requests ---------------------
+        for(int i=0;i<nbusIn;i++)
+        {
+            int nch = busUsage.inputRouting[i];
+            if(nch == 0)
+            {
+                inSA[i] = 0;
+                this->component->activateBus(Steinberg::Vst::kAudio,
+                                        Steinberg::Vst::kInput, i, false);
+            }
+            else
+            {
+                int sa = 0;
+                for(int k=0;k<nch;k++)
+                    sa |= (1 << k);
+                inSA[i] = sa;
+                this->component->activateBus(Steinberg::Vst::kAudio,
+                                        Steinberg::Vst::kInput, i, true);
+            }
+        }
+
+        for(int i=0;i<nbusOut;i++)
+        {
+            int nch = busUsage.outputRouting[i];
+            if(nch == 0)
+            {
+                outSA[i] = 0;
+                this->component->activateBus(Steinberg::Vst::kAudio,
+                                        Steinberg::Vst::kOutput, i, false);
+            }
+            else
+            {
+                int sa = 0;
+                for(int k=0;k<nch;k++)
+                    sa |= (1 << k);
+                outSA[i] = sa;
+                this->component->activateBus(Steinberg::Vst::kAudio,
+                                        Steinberg::Vst::kOutput, i, true);
+            }
+        }
+
+        if(this->verbosity)
+        {
+            std::cerr << "Configuring audio _buses_: in " 
+                << inSA.size() << ", out " << outSA.size() << "\n";
+            std::cerr << "Configure audio _channels_: in " 
+                << nchanIn << ", out " << nchanOut << "\n";
+        }
+
+        // Here we communicate the desired bus behavior of the effect.
+        // The host should always deliver the same number of input and 
+        // output busses that the plug-in needs. The plug-in has 3 
+        // potential responses to our request:
+        // 1. accept our request (return true)
+        // 2. reject but attempt to negotiate (return false)
+        // 3. reject outright, revert to default behavior (return false)
+        if(this->audioEffect->setBusArrangements(
+            inSA.size() ? &inSA[0] : nullptr, inSA.size(),
+            outSA.size() ? &outSA[0] : nullptr , outSA.size())
+            != Steinberg::kResultTrue)
         {
             if(this->verbosity)
             {
-                std::cerr << this->busUsage.numInputEventBuses 
+                // some plugins return error but seem to act "okay".
+                std::cerr << "Problem configuring bus arrangement.\n";
+            }
+        }
+
+        // event buses ------------------------------------------------------
+        this->processData.busUsage.numInputEventBuses = this->component->getBusCount(
+                Steinberg::Vst::kEvent, Steinberg::Vst::kInput);
+        this->processData.busUsage.numOutputEventBuses = this->component->getBusCount(
+                Steinberg::Vst::kEvent, Steinberg::Vst::kOutput);
+        if(this->processData.busUsage.numInputEventBuses > 0)
+        {
+            if(this->verbosity)
+            {
+                std::cerr << this->processData.busUsage.numInputEventBuses 
                       << " input event busses\n";
                 Steinberg::Vst::BusInfo binfo;
                 if(this->component->getBusInfo(Steinberg::Vst::kEvent,
@@ -324,118 +571,6 @@ public:
                 std::cerr << "No event-in busses\n"; // usually accept events anyway
         }
 
-        // Now that we understand the global bus picture, we need to
-        // assign speaker-arrangements to characterize the multi-channel
-        // configurations.  It's up to us to signal to the plugin that
-        // a particular bus is active, so we'll adopt the convention
-        // that we only handle: 0, 1, 2 input and output (Audio) buses
-        // with no more than 2 channels (total) on each side. ie:
-        // can't handle two, stereo inputs at-the-moment. This is driven
-        // largely by the chuck chugin architecture that disallows dynamic
-        // specification of the in & out ugen.
-        // Note that the speaker-arrangement for inactive buses is set to 0.
-        // Also, we prioritize Main buses over Aux buses which accounts
-        // for the two loops through each.
-
-        std::vector<Steinberg::Vst::SpeakerArrangement> inSA;
-        std::vector<Steinberg::Vst::SpeakerArrangement> outSA;
-
-        inSA.resize(this->busUsage.inAudioChan.size());
-        outSA.resize(this->busUsage.outAudioChan.size());
-
-        int inch = 0;
-        char const *nms[2] = {"Main", "Aux"};
-        for(int j=0;j<2;j++) // prioritize main (j==0) over aux
-        {
-            for(int i=0;i<this->busUsage.inAudioChan.size();i++)
-            {
-                int cinfo = this->busUsage.inAudioChan[i];
-                if(j==0 && this->busUsage.IsAux(cinfo))
-                    continue;
-
-                if(j==1 && !this->busUsage.IsAux(cinfo))
-                    continue;
-                
-                int busch = this->busUsage.GetNChan(cinfo);
-                if(verbosity)
-                {
-                    std::cerr << "AudioIn bus:" 
-                        << nms[j] << "." << i << " nchan:" << busch << "\n";
-                }
-
-                inch += busch;
-                if(inch <= 2)
-                {
-                    int sa = 0;
-                    for(int k=0;k<busch;k++)
-                        sa |= (1 << k);
-                    inSA[i] = sa;
-                    this->busUsage.activeInputBuses.push_back(i);
-                    this->component->activateBus(Steinberg::Vst::kAudio,
-                                    Steinberg::Vst::kInput, i, true);
-                }
-                else
-                {
-                    inSA[i] = 0;
-                    this->component->activateBus(Steinberg::Vst::kAudio,
-                                    Steinberg::Vst::kInput, i, false);
-                }
-            }
-        }
-
-        int outch = 0;
-        for(int j=0;j<2;j++) // prioritize main (j==0) over aux
-        {
-            for(int i=0;i<this->busUsage.outAudioChan.size();i++)
-            {
-                int cinfo = this->busUsage.outAudioChan[i];
-                if(j==0 && this->busUsage.IsAux(cinfo))
-                    continue;
-                else
-                if(j==1 && !this->busUsage.IsAux(cinfo))
-                    continue;
-                int busch = this->busUsage.GetNChan(cinfo);
-                outch += busch;
-                if(outch <= 2)
-                {
-                    int sa = 0;
-                    for(int k=0;k<busch;k++)
-                        sa |= (1 << k);
-                    outSA[i] = sa;
-                    this->busUsage.activeOutputBuses.push_back(i);
-                    this->component->activateBus(Steinberg::Vst::kAudio,
-                                    Steinberg::Vst::kOutput, i, true);
-                }
-                else
-                {
-                    outSA[i] = 0;
-                    this->component->activateBus(Steinberg::Vst::kAudio,
-                                    Steinberg::Vst::kOutput, i, false);
-                }
-            }
-        }
-
-        if(this->verbosity)
-        {
-            std::cerr << "Configuring audio _buses_: in " 
-                << inSA.size() << " out:" << outSA.size() << "\n";
-            std::cerr << "Configure audio _channels_: in " 
-                << inch << " out " << outch << "\n";
-        }
-        if(this->audioEffect->setBusArrangements(
-            inSA.size() ? &inSA[0] : nullptr, inSA.size(),
-            outSA.size() ? &outSA[0] : nullptr , outSA.size())
-            != Steinberg::kResultTrue)
-        {
-            if(this->verbosity)
-            {
-                // some plugins return error but seem to act "okay".
-                std::cerr << "Problem configuring bus arrangement.\n";
-            }
-        }
-
-        this->processData.initialize(this->processSetup,  &this->busUsage);
-
         bool enable = true;
         int inEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kInput);
 	    int outEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kOutput);
@@ -443,6 +578,7 @@ public:
             this->component->activateBus(Steinberg::Vst::kEvent, Steinberg::Vst::kInput, i, enable);
         for(int i = 0; i < outEvt; ++i)
             this->component->activateBus(Steinberg::Vst::kEvent, Steinberg::Vst::kOutput, i, enable);
+
     }
 
     // 'param id' it's paramID !== index
@@ -594,7 +730,7 @@ public:
     void
     countChannels(Steinberg::Vst::MediaType media, 
         Steinberg::Vst::BusDirection dir, 
-        std::vector<int> &chansPerBus,
+        std::vector<DbVST3BusUsage::Bus> &chansPerBus,
         int &totalChannels)
     {
         int nbus = this->component->getBusCount(media, dir);
@@ -603,11 +739,11 @@ public:
             Steinberg::Vst::BusInfo binfo;
             if(this->component->getBusInfo(media, dir, i, binfo) == Steinberg::kResultTrue)
             {
-                int nch = binfo.channelCount;
-                if(binfo.busType == Steinberg::Vst::kAux)
-                    nch = this->busUsage.SetAuxBit(nch);
-                chansPerBus.push_back(nch);
-                totalChannels += binfo.channelCount; // nch may have aux bit set
+                DbVST3BusUsage::Bus b;
+                b.nch = binfo.channelCount;
+                b.isAux = (binfo.busType == Steinberg::Vst::kAux);
+                chansPerBus.push_back(b);
+                totalChannels += b.nch;
             }
         }
     }
