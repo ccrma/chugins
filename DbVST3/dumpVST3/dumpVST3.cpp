@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
             for(int i=0;i<plugins.size();i++)
             {
                 std::string yamlfile = dstdir;
-                std::string &vst3file = plugins[i];
+                std::string const &vst3file = plugins[i];
                 std::size_t found = vst3file.find_last_of("/\\");
                 if(found != std::string::npos)
                     yamlfile.append(vst3file.substr(found));

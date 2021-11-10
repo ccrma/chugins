@@ -171,7 +171,7 @@ struct DbVST3Ctx
             if(!info)
             {
                 if(nm != "verbosity")
-                    std::cerr << "Unknown parameter " << nm << "\n";
+                    std::cerr << "DbVST3 unknown parameter " << nm << "\n";
                 else
                     this->SetVerbosity((int) val);
                 return -1;
@@ -186,7 +186,7 @@ struct DbVST3Ctx
         }
         else
         {
-            std::cerr << "SetParameter " << nm << " called before moduleInit\n";
+            std::cerr << "DbVST3 SetParameter " << nm << " called before moduleInit\n";
         }
         return err;
     }

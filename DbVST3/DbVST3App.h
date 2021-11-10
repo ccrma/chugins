@@ -37,6 +37,12 @@ public:
             return -1;
         }
         ctx.filepath = ctx.plugin->getPath();
+        if(ctx.filepath.size() == 0)
+        {
+            // std::cerr << "plugin doesn't know its path, using ours.\n";
+            // happens on linux with plugins installed at ~/.vst3
+            ctx.filepath = path;
+        }
         auto factory = ctx.plugin->getFactory();
 		auto finfo = factory.info();
         ctx.vendor = finfo.vendor();
