@@ -34,7 +34,10 @@
 #include <base/source/fobject.h>
 
 /* -------------------------------------------------------------------------- */
-// we pattern ourself after validator.cpp which bypasses HostApplication
+// VST3App is used to load plugins.  
+// On success, we instantiate and return a Plugin: VST3::Hosting::Module::Ptr;
+// For persistent state, please refer to DbVST3App.
+// 
 class VST3App : public Steinberg::FObject, public Steinberg::Vst::IHostApplication 
 {
 public:
@@ -59,10 +62,44 @@ public:
 public:
     using Plugin = VST3::Hosting::Module::Ptr;
 
+    void 
+    PrintAllInstalledPlugins(std::ostream &ostr)
+    {
+        std::vector<std::string> knownPlugins;
+        this->GetKnownPlugins(knownPlugins);
+        if(knownPlugins.size() == 0)
+            ostr << "<no VST3 plugins found>\n";
+        else
+        for(const auto& path : knownPlugins)
+            ostr << path << "\n";
+    }
+
+    int
+    GetKnownPlugins(std::vector<std::string> &knownPlugins)
+    {
+        knownPlugins = VST3::Hosting::Module::getModulePaths();
+        return (knownPlugins.size() > 0) ? 0 : -1;
+    }
+
     Plugin
     LoadPlugin(std::string const &path, std::string &error)
     {
-        return VST3::Hosting::Module::create(path, error);
+        // first assume path is fully qualified
+        Plugin plugin = VST3::Hosting::Module::create(path, error); 
+        if(!plugin)
+        {
+            // see if it matches any installed plugins
+            auto paths = VST3::Hosting::Module::getModulePaths();
+            for(const auto& plug : paths)
+            {
+                if(this->endsWith(plug, path))
+                {
+                    plugin = VST3::Hosting::Module::create(plug, error);
+                    break;
+                }
+            }
+        }
+        return plugin;
     }
 
     char const *
@@ -108,78 +145,34 @@ protected: // --------------------------------------------------------------
     }
 
     tresult PLUGIN_API
-    queryInterface(const char* iid, void** obj)
+    queryInterface(const char* iid, void** obj) override
     {
-        // std::cerr << "query call for " << _iid << "\n";
+        // std::cerr << "query call for " << iid << "\n";
         QUERY_INTERFACE(iid, obj, Steinberg::Vst::IHostApplication::iid, 
                         Steinberg::Vst::IHostApplication);
         if (m_plugInterfaceSupport && 
             m_plugInterfaceSupport->queryInterface(iid, obj) == Steinberg::kResultTrue)
+        {
             return ::Steinberg::kResultOk;
-        std::cerr << "query went unanswered!!!\n";
-        return Steinberg::kResultFalse;
+        }
+        else
+        {
+            std::cerr << "VST3App queryInterface went unanswered for " << iid << "\n";
+            return Steinberg::kResultFalse;
+        }
     }
 
-    void 
-    printAllInstalledPlugins()
+private:
+    bool endsWith(std::string const &fullpath, std::string const &partpath)
     {
-        std::cout << "Searching installed Plug-ins...\n";
-        std::cout.flush();
-        auto paths = VST3::Hosting::Module::getModulePaths();
-        if(paths.empty())
-        {
-            std::cout << "No Plug-ins found.\n";
-            return;
-        }
-        for(const auto& path : paths)
-        {
-            std::cout << path << "\n";
-        }
+        if(partpath.size() > fullpath.size()) return false;
+        int dlen = fullpath.length() - partpath.length(); 
+        return (0 == fullpath.compare(dlen, partpath.length(), partpath));
     }
 
 private:
     char const *m_name;
 	Steinberg::IPtr<Steinberg::Vst::PlugInterfaceSupport> m_plugInterfaceSupport;
-};
-
-class VST3ComponentHandler : public Steinberg::Vst::IComponentHandler
-{
-public:
-    using tresult = Steinberg::tresult;
-    using ParamID = Steinberg::Vst::ParamID;
-    using ParamValue = Steinberg::Vst::ParamValue;
-    using int32 = Steinberg::int32;
-    using uint32 = Steinberg::uint32;
-    using TUID = Steinberg::TUID;
-
-	tresult PLUGIN_API beginEdit(ParamID id) override
-	{
-		std::cout << "beginEdit called " << id << "\n";
-		return Steinberg::kNotImplemented;
-	}
-	tresult PLUGIN_API performEdit(ParamID id, ParamValue valueNormalized) override
-	{
-		std::cout << "performEdit called " << id << " " << valueNormalized << "\n";
-		return Steinberg::kNotImplemented;
-	}
-	tresult PLUGIN_API endEdit(ParamID id) override
-	{
-		std::cout << "endEdit called " << id << "\n";
-		return Steinberg::kNotImplemented;
-	}
-	tresult PLUGIN_API restartComponent(int32 flags) override
-	{
-		std::cout << "restartComponent called " << flags << "\n";
-		return Steinberg::kNotImplemented;
-	}
-
-private:
-	tresult PLUGIN_API queryInterface(const TUID /*_iid*/, void** /*obj*/) override
-	{
-		return Steinberg::kNoInterface;
-	}
-	uint32 PLUGIN_API addRef() override { return 1000; }
-	uint32 PLUGIN_API release() override { return 1000; }
 };
 
 #endif
