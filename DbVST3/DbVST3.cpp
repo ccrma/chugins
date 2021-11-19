@@ -282,8 +282,10 @@ CK_DLL_CTOR(dbvst3_ctor)
 
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, dbvst3_data_offset) = (t_CKINT) b_obj;
+
+    std::string empty;
     OBJ_MEMBER_STRING(SELF, dbvst3_datastr_offset) = (Chuck_String *)
-        API->object->create_string(API, SHRED, std::string());
+        API->object->create_string(API, SHRED, empty);
 }
 
 // implementation for the destructor
