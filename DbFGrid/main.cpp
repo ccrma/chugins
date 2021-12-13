@@ -1,7 +1,7 @@
 /*---------------------------------------------------------------------------- 
- DbAbc is a abc notation parser for chuck that produces MidiMsgs
+ DbFMatrix is a note-grid (.fgrd) parser for chuck that produces Midi-like Msgs
  that represent the file contents.
- Dana Batali Jun 2021 (same license as chuck (gpl2+)).
+ Dana Batali Dec 2021 (same license as chuck (gpl2+)).
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,13 +21,15 @@ U.S.A.
 #include "chuck_dl.h"
 #include "chuck_def.h"
 
-#include "dbAbc.h"
+#include "dbFGrid.h"
 
 #include <stdio.h>
 #include <limits.h>
 #include <math.h>
 
 /* ---------------------------------------------------------------------------*/
+// XXX: we don't use midimsg cuz we wish to convey more data.  We
+// can/should share code with DbAbc, but for now...
 CK_DLL_CTOR( abcMsg_ctor );
 CK_DLL_DTOR( abcMsg_dtor );
 static t_CKINT abcMsg_when_offset;
@@ -40,22 +42,20 @@ static t_CKINT abcMsg_data4_offset;
 static t_CKINT abcMsg_datastr_offset;
 
 /* ---------------------------------------------------------------------------*/
-CK_DLL_CTOR( abc_ctor );
-CK_DLL_DTOR( abc_dtor );
-CK_DLL_MFUN( abc_configure );
-CK_DLL_MFUN( abc_open );
-CK_DLL_MFUN( abc_close );
-CK_DLL_MFUN( abc_read );
-CK_DLL_MFUN( abc_numTracks );
-CK_DLL_MFUN( abc_setBPM );
-CK_DLL_MFUN( abc_getBPM );
-CK_DLL_MFUN( abc_rewind );
-static t_CKINT abc_data_offset = 0; // offset to instance of DbAbc
+CK_DLL_CTOR( fgrd_ctor );
+CK_DLL_DTOR( fgrd_dtor );
+CK_DLL_MFUN( fgrd_open );
+CK_DLL_MFUN( fgrd_close );
+CK_DLL_MFUN( fgrd_rewind );
+CK_DLL_MFUN( fgrd_read );
+CK_DLL_MFUN( fgrd_numLayers );
+
+static t_CKINT fgrd_data_offset = 0; // offset to instance of DbAbc
 
 /* ----------------------------------------------------------- */
-CK_DLL_QUERY(DbAbc)
+CK_DLL_QUERY(DbFGrid)
 {
-    QUERY->setname(QUERY, "DbAbc");
+    QUERY->setname(QUERY, "DbFGrid");
 
     /* ------------------------------------------------------------- */
     QUERY->begin_class(QUERY, "AbcMsg", "Object");
@@ -73,37 +73,35 @@ CK_DLL_QUERY(DbAbc)
     QUERY->end_class(QUERY);
 
     /* ------------------------------------------------------------- */
-    QUERY->begin_class(QUERY, "DbAbc", "Object");
+    QUERY->begin_class(QUERY, "DbFGrid", "Object");
 
-    QUERY->add_ctor(QUERY, abc_ctor);
-    QUERY->add_dtor(QUERY, abc_dtor);
+    QUERY->add_ctor(QUERY, fgrd_ctor);
+    QUERY->add_dtor(QUERY, fgrd_dtor);
 
-    QUERY->add_mfun(QUERY, abc_configure, "void", "configure");
-    QUERY->add_arg(QUERY, "string[]", "argv");
-
-    QUERY->add_mfun(QUERY, abc_open, "int", "open");
+    // open(path)
+    QUERY->add_mfun(QUERY, fgrd_open, "int", "open");
     QUERY->add_arg(QUERY, "string", "path");
 
-    QUERY->add_mfun(QUERY, abc_close, "void", "close");
-
-    QUERY->add_mfun(QUERY, abc_read, "int", "read");
-    QUERY->add_arg(QUERY, "AbcMsg", "msg");
-    QUERY->add_arg(QUERY, "int", "track");
-
-    QUERY->add_mfun(QUERY, abc_numTracks, "int", "numTracks");
-
-    QUERY->add_mfun(QUERY, abc_setBPM, "void", "setBPM");
-    QUERY->add_arg(QUERY, "float", "bpm");
-
-    QUERY->add_mfun(QUERY, abc_getBPM, "float", "getBPM");
+    // close()
+    QUERY->add_mfun(QUERY, fgrd_close, "void", "close");
     // no params
 
-    QUERY->add_mfun(QUERY, abc_rewind, "void", "rewind");
+    // read()
+    QUERY->add_mfun(QUERY, fgrd_read, "int", "read");
+    QUERY->add_arg(QUERY, "AbcMsg", "msg");
+    QUERY->add_arg(QUERY, "int", "layer");
+
+    // rewind()
+    QUERY->add_mfun(QUERY, fgrd_rewind, "void", "rewind");
+    // no params
+
+    // numLayers()
+    QUERY->add_mfun(QUERY, fgrd_numLayers, "int", "numLayers");
     // no params
 
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
-    abc_data_offset = QUERY->add_mvar(QUERY, "int", "@abc_data", false);
+    fgrd_data_offset = QUERY->add_mvar(QUERY, "int", "@fgrd_data", false);
     QUERY->end_class(QUERY);
     return TRUE;
 }
@@ -126,77 +124,55 @@ CK_DLL_DTOR(abcMsg_dtor)
 }
 
 /* ----------------------------------------------------------------------- */
-CK_DLL_CTOR(abc_ctor)
+CK_DLL_CTOR(fgrd_ctor)
 {
-    OBJ_MEMBER_INT(SELF, abc_data_offset) = 0;
-    dbAbc *c = new dbAbc(API->vm->get_srate(API, SHRED));
-    OBJ_MEMBER_INT(SELF, abc_data_offset) = (t_CKINT) c;
+    OBJ_MEMBER_INT(SELF, fgrd_data_offset) = 0;
+    dbFGrid *c = new dbFGrid(API->vm->get_srate(API, SHRED));
+    OBJ_MEMBER_INT(SELF, fgrd_data_offset) = (t_CKINT) c;
 }
 
-CK_DLL_DTOR(abc_dtor)
+CK_DLL_DTOR(fgrd_dtor)
 {
-    dbAbc *c = (dbAbc *) OBJ_MEMBER_INT(SELF, abc_data_offset);
+    dbFGrid *c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
     if(c)
     {
         delete c;
-        OBJ_MEMBER_INT(SELF, abc_data_offset) = 0;
+        OBJ_MEMBER_INT(SELF, fgrd_data_offset) = 0;
         c = NULL;
     }
 }
 
-// configure allows chuck programs to deliver "argv" to 
-// the abc parser subsystem.  Typical application is to
-// set the verbosity, -v 6, for debugging.
-CK_DLL_MFUN(abc_configure)
+CK_DLL_MFUN(fgrd_open)
 {
-    dbAbc * c = (dbAbc *) OBJ_MEMBER_INT(SELF, abc_data_offset);
-    Chuck_Object *cfg = GET_NEXT_OBJECT(ARGS);
-    Chuck_Array4 *userArray = (Chuck_Array4 *) cfg; // 4 and 8 are the same on 64-bit
-
-    std::vector<std::string> argv;
-    for(int i=0;i<userArray->m_vector.size();i++)
-    {
-        Chuck_String **x = reinterpret_cast<Chuck_String **>(&userArray->m_vector[i]); 
-        // printf("%d %s\n", i, (*x)->str().c_str());
-        argv.push_back((*x)->str());
-    }
-    if(argv.size() > 0)
-    {
-        c->Configure(argv);
-    }
-}
-
-CK_DLL_MFUN(abc_open)
-{
-    dbAbc * c = (dbAbc *) OBJ_MEMBER_INT(SELF, abc_data_offset);
+    dbFGrid * c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
     std::string filename = GET_NEXT_STRING_SAFE(ARGS);
     int err = c->Open(filename);
     RETURN->v_int = err ? 0 : 1; // following midifilein return conventions
 }
 
-CK_DLL_MFUN(abc_close)
+CK_DLL_MFUN(fgrd_close)
 {
-    dbAbc *c = (dbAbc *) OBJ_MEMBER_INT(SELF, abc_data_offset);
+    dbFGrid *c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
     int err = c->Close();
     RETURN->v_int = err ? 0 : 1;
 }
 
-CK_DLL_MFUN(abc_numTracks)
+CK_DLL_MFUN(fgrd_numLayers)
 {
-    dbAbc * c = (dbAbc *) OBJ_MEMBER_INT(SELF, abc_data_offset);
-    RETURN->v_int = c->GetNumTracks();
+    dbFGrid * c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
+    RETURN->v_int = c->GetNumLayers();
 }
 
-CK_DLL_MFUN(abc_read)
+CK_DLL_MFUN(fgrd_read)
 {
-    dbAbc *c = (dbAbc *) OBJ_MEMBER_INT(SELF, abc_data_offset);
+    dbFGrid *c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
 
-    // MidiIn::readTrack(MidiMsg m, int track)
     Chuck_Object *msg = GET_NEXT_OBJECT(ARGS);
-    t_CKINT track = GET_NEXT_INT(ARGS);
+    t_CKINT layer = GET_NEXT_INT(ARGS);
     RETURN->v_int = 0; // means error or nothing left to read
-    if(track >= 0 && track < c->GetNumTracks())
+    if(layer >= 0 && layer < c->GetNumLayers())
     {
+        #if 0
         MidiEvent mevt;
         int active = c->Read(track, &mevt);
         if(active)
@@ -216,25 +192,14 @@ CK_DLL_MFUN(abc_read)
             }
             RETURN->v_int = (int) sz; 
         }
+        #endif
         // else nothing left to do
     }
 }
 
-CK_DLL_MFUN(abc_rewind)
+CK_DLL_MFUN(fgrd_rewind)
 {
-    dbAbc *c = (dbAbc *) OBJ_MEMBER_INT(SELF, abc_data_offset);
+    dbFGrid *c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
     c->Rewind();
     // no return atm
-}
-
-CK_DLL_MFUN(abc_setBPM)
-{
-    dbAbc * c = (dbAbc *) OBJ_MEMBER_INT(SELF, abc_data_offset);
-    c->SetBPM(GET_NEXT_FLOAT(ARGS));
-}
-
-CK_DLL_MFUN(abc_getBPM)
-{
-    dbAbc * c = (dbAbc *) OBJ_MEMBER_INT(SELF, abc_data_offset);
-    RETURN->v_float = c->GetBPM();
 }
