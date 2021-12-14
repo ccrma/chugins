@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 static bool sDebug = false;
 
@@ -19,6 +20,10 @@ int
 dbFGrid::Open(std::string const &fnm)
 {
     int err = 0;
+    this->m_currentTime = 0;
+    this->m_bbox[0] = 1e6;
+    this->m_bbox[1] = 0;
+
     std::ifstream fstr;
     fstr.open(fnm.c_str());
     if(fstr.good())
@@ -34,15 +39,32 @@ dbFGrid::Open(std::string const &fnm)
             {
                 std::cerr << "DbFGrid opened " << fnm << "\n";
                 auto jfm = j["fmatrix"];
+                this->m_params = jfm["params"];
                 auto jlayers = jfm["layers"];
                 for(int i=0;i<jlayers.size(); i++)
                 {
-                    this->m_layers.push_back(layer());
-                    layer &l = this->m_layers[i];
-
                     auto jl = jlayers.at(i);
-                    auto jelist = jl["events"]; // array of objects
+                    auto fnm = jl["fnm"];
+                    layer::layerType lt;
+                    if(fnm == "MidiNote")
+                        lt = layer::k_noteLayer;
+                    else
+                    if(fnm == "MidiCC")
+                        lt = layer::k_ccLayer;
+                    else
+                    {
+                        std::cerr << "DbFGrid unimplemented layer type " << fnm << "\n";
+                        continue;
+                    }
+                    this->m_layers.push_back(layer(lt));
+                    layer &l = this->m_layers[i];
+                    l.fparams = jl["fparams"];
+                    l.defaultValue = l.fparams.count("v") ? l.fparams["v"] : .75f;
+                    l.defaultID = l.fparams.count("id") ? l.fparams["id"] : 0;
+                    l.bbox[0] = 1e10f;
+                    l.bbox[1] = 0;
 
+                    auto jelist = jl["events"]; // array of objects
                     for(int j=0;j<jelist.size();j++)
                     {
                         l.events.push_back(event());
@@ -50,23 +72,28 @@ dbFGrid::Open(std::string const &fnm)
                         auto je = jelist[j]; // an event object
                         for (json::iterator it = je.begin(); it != je.end(); ++it) 
                         {
-                            if(it.key() == "l")
+                            if(it.key() == "_")
                             {
                                 auto v = it.value();
-                                e.start = v[0];
-                                e.dur = v[1];
+                                e.start = v[0].get<float>();
+                                e.end = e.start + v[1].get<float>();
                                 e.row = v[2];
+
+                                if(e.start < l.bbox[0])
+                                    l.bbox[0] = e.start;
+                                if(e.end > l.bbox[1])
+                                    l.bbox[1] = e.end;
                             }
                             else
                                 e.params[it.key()] = it.value();
                         }
-                        /*--
-                        if((j%5 == 0) && i == 0)
-                            this->dumpObject("je", je);
-                        --*/
                     }
+                    if(this->m_bbox[0] > l.bbox[0])
+                        this->m_bbox[0] = l.bbox[0];
+                    if(this->m_bbox[1] < l.bbox[1])
+                        this->m_bbox[1] = l.bbox[1];
+                    l.ComputeEdgeOrdering();
                 }
-
             }
             else
             {
@@ -97,29 +124,139 @@ dbFGrid::Open(std::string const &fnm)
 }
 
 int
-dbFGrid::Close()
-{
-    return 0;
-}
-
-int
 dbFGrid::GetNumLayers()
 {
-    return 0;
+    return (int) this->m_layers.size();
 }
 
 int
 dbFGrid::Rewind()
 {
+    for(layer &l : this->m_layers)
+        l.Rewind();
+    this->m_currentTime = 0;
     return 0;
 }
 
-int
-dbFGrid::Read(void *)
+/* return 0 on success, non-zero when we reach the end 
+ */
+int 
+dbFGrid::Read(Event *evt)
 {
+    if(this->m_currentTime > (this->m_bbox[1]+kEpsilon))
+        return -1;
+
+    // first nominate the best next event defined as the one whose
+    // start or end is closest to this->m_currentTime
+    float minDist = 1e6;
+    int nextEventLayer = -1;
+    for(int i=0;i<this->m_layers.size();i++)
+    {
+        layer &l = this->m_layers[i];
+        if(this->m_currentTime > l.bbox[1])
+          continue;
+        
+        float dist = l.NextDistance(this->m_currentTime);
+        if(dist < minDist)
+        {
+            minDist = dist;
+            nextEventLayer = i;
+        }
+    }
+    if(nextEventLayer == -1)
+        return -2;
+    else
+    {
+        evt->layer = nextEventLayer;
+        if(minDist > kEpsilon)
+        {
+            evt->eType = Event::k_Wait;
+            evt->value = minDist;
+            evt->note = 0;
+            evt->ccID = 0;
+            this->m_currentTime += minDist; // time in "columns"
+        }
+        else
+        {
+            layer &l = this->m_layers[nextEventLayer];
+            l.GetEvent(this->m_currentTime, evt);
+        }
+    }
     return 0;
 }
 
+void
+dbFGrid::layer::ComputeEdgeOrdering()
+{
+    int nEdges = this->events.size() * 2;
+    this->orderedEdges.reserve(nEdges);
+    for(int i=0;i<nEdges;i++)
+    {
+        // start with serialized events, event is orderedEdges index/2
+        // and start/end is even/odd
+        this->orderedEdges.push_back(i); 
+    }
+    std::sort(this->orderedEdges.begin(), this->orderedEdges.end(), *this);
+}
+
+bool 
+dbFGrid::layer::operator()(int a, int b)
+{
+    event &aEvt = this->events[a/2];
+    event &bEvt = this->events[b/2];
+    float ax = (a & 1) ? aEvt.end : aEvt.start;
+    float bx = (b & 1) ? bEvt.end : bEvt.start;
+    return ax < bx;
+}
+
+float
+dbFGrid::layer::NextDistance(float current)
+{
+    if(this->oIndex >= this->orderedEdges.size())
+    {
+        // this case occurs when we've processed our final events but
+        // the current time hasn't yet been advanced.
+        return 1e10;
+    }
+
+    int ievt = this->orderedEdges[this->oIndex];
+    event &e = this->events[ievt/2];
+    if(ievt & 1)
+        return e.end - current;
+    else
+        return e.start - current;
+}
+
+void
+dbFGrid::layer::GetEvent(float current, Event *evt)
+{
+    // Until we implement super-sampling we only emit at start or end
+    // It's up to caller to call GetEvent only when appropriate.
+    int ievt = this->orderedEdges[this->oIndex];
+    event &e = this->events[ievt/2];
+    bool isStart = !(ievt & 1);
+    if(this->type == k_noteLayer)
+    {
+        evt->eType = isStart ? Event::k_NoteOn : Event::k_NoteOff;
+        evt->note = e.row; // XXX: could add "detuning"
+        if(isStart)
+            evt->value = e.GetParam("v", this->defaultValue);
+        else
+            evt->value = 0; // 0 velocity
+        evt->ccID = 0;
+    }
+    else
+    if(this->type == k_ccLayer)
+    {
+        evt->eType = Event::k_CC;
+        evt->note = e.row; // this is our "MPE" content
+        evt->value = e.GetParam("v", this->defaultValue);
+        evt->ccID = e.GetParam("id", this->defaultID);
+    }
+    this->oIndex++;
+}
+
+/* -------------------------------------------------------------------------- */
 void
 dbFGrid::dumpObjectList(char const *nm, t_jobjArray const &olist)
 {
@@ -143,11 +280,13 @@ void
 dbFGrid::dumpMatrix()
 {
     std::cerr << "matrix has " << this->m_layers.size() << " layers\n";
+    this->dumpObject(" mparams", this->m_params);
+	
     int i = 0;
-    for(auto l : this->m_layers)
+    for(layer &l : this->m_layers)
     {
-        std::cerr << "  l" << i++ << " has " << l.events.size() << " events\n";
-        for(auto e : l.events)
+        std::cerr << "  L" << i++ << " has " << l.events.size() << " events\n";
+        for(event &e : l.events)
         {
             for(auto it=e.params.begin(); it!=e.params.end(); ++it)
                 std::cerr << "    " << it->first << ": " << it->second << "\n";

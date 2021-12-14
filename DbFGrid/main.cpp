@@ -28,24 +28,20 @@ U.S.A.
 #include <math.h>
 
 /* ---------------------------------------------------------------------------*/
-// XXX: we don't use midimsg cuz we wish to convey more data.  We
-// can/should share code with DbAbc, but for now...
-CK_DLL_CTOR( abcMsg_ctor );
-CK_DLL_DTOR( abcMsg_dtor );
-static t_CKINT abcMsg_when_offset;
-static t_CKINT abcMsg_status_offset; 
-static t_CKINT abcMsg_meta_offset; 
-static t_CKINT abcMsg_data1_offset; // can't do arrays yet in chuck plugins
-static t_CKINT abcMsg_data2_offset;
-static t_CKINT abcMsg_data3_offset;
-static t_CKINT abcMsg_data4_offset;
-static t_CKINT abcMsg_datastr_offset;
+// XXX: we don't use MidiMsg or AbcMsg cuz we wish to convey alt data.  
+CK_DLL_CTOR( fgrdMsg_ctor );
+CK_DLL_DTOR( fgrdMsg_dtor );
+static t_CKINT fgrdMsg_type_offset; 
+static t_CKINT fgrdMsg_layer_offset; 
+static t_CKINT fgrdMsg_note_offset;  // also used for CC "MPE"
+static t_CKINT fgrdMsg_value_offset; // velocity, CC, waittime
+static t_CKINT fgrdMsg_id_offset; 
+static t_CKINT fgrdMsg_chan_offset; 
 
 /* ---------------------------------------------------------------------------*/
 CK_DLL_CTOR( fgrd_ctor );
 CK_DLL_DTOR( fgrd_dtor );
 CK_DLL_MFUN( fgrd_open );
-CK_DLL_MFUN( fgrd_close );
 CK_DLL_MFUN( fgrd_rewind );
 CK_DLL_MFUN( fgrd_read );
 CK_DLL_MFUN( fgrd_numLayers );
@@ -58,23 +54,19 @@ CK_DLL_QUERY(DbFGrid)
     QUERY->setname(QUERY, "DbFGrid");
 
     /* ------------------------------------------------------------- */
-    QUERY->begin_class(QUERY, "AbcMsg", "Object");
-    QUERY->add_ctor(QUERY, abcMsg_ctor); // unused atm (needed if we get array creation)
-    QUERY->add_dtor(QUERY, abcMsg_dtor); // unused atm
-
-    abcMsg_when_offset = QUERY->add_mvar(QUERY, "dur", "when", false);
-    abcMsg_status_offset = QUERY->add_mvar(QUERY, "int", "status", false);
-    abcMsg_meta_offset = QUERY->add_mvar(QUERY, "int", "meta", false);
-    abcMsg_data1_offset = QUERY->add_mvar(QUERY, "int", "data1", false);
-    abcMsg_data2_offset = QUERY->add_mvar(QUERY, "int", "data2", false);
-    abcMsg_data3_offset = QUERY->add_mvar(QUERY, "int", "data3", false);
-    abcMsg_data4_offset = QUERY->add_mvar(QUERY, "int", "data4", false);
-    abcMsg_datastr_offset = QUERY->add_mvar(QUERY, "string", "datastr", false);
+    QUERY->begin_class(QUERY, "FGridMsg", "Object");
+    QUERY->add_ctor(QUERY, fgrdMsg_ctor); // unused atm (needed if we get array creation)
+    QUERY->add_dtor(QUERY, fgrdMsg_dtor); // unused atm
+    fgrdMsg_type_offset = QUERY->add_mvar(QUERY, "int", "type", false);
+    fgrdMsg_layer_offset = QUERY->add_mvar(QUERY, "int", "layer", false);
+    fgrdMsg_note_offset = QUERY->add_mvar(QUERY, "float", "note", false);
+    fgrdMsg_value_offset = QUERY->add_mvar(QUERY, "float", "value", false);
+    fgrdMsg_id_offset = QUERY->add_mvar(QUERY, "int", "id", false);
+    fgrdMsg_chan_offset = QUERY->add_mvar(QUERY, "int", "chan", false);
     QUERY->end_class(QUERY);
 
     /* ------------------------------------------------------------- */
     QUERY->begin_class(QUERY, "DbFGrid", "Object");
-
     QUERY->add_ctor(QUERY, fgrd_ctor);
     QUERY->add_dtor(QUERY, fgrd_dtor);
 
@@ -82,14 +74,9 @@ CK_DLL_QUERY(DbFGrid)
     QUERY->add_mfun(QUERY, fgrd_open, "int", "open");
     QUERY->add_arg(QUERY, "string", "path");
 
-    // close()
-    QUERY->add_mfun(QUERY, fgrd_close, "void", "close");
-    // no params
-
     // read()
     QUERY->add_mfun(QUERY, fgrd_read, "int", "read");
-    QUERY->add_arg(QUERY, "AbcMsg", "msg");
-    QUERY->add_arg(QUERY, "int", "layer");
+    QUERY->add_arg(QUERY, "FGridMsg", "msg");
 
     // rewind()
     QUERY->add_mfun(QUERY, fgrd_rewind, "void", "rewind");
@@ -106,19 +93,14 @@ CK_DLL_QUERY(DbFGrid)
     return TRUE;
 }
 
-
 /* ----------------------------------------------------------------------- */
 
-CK_DLL_CTOR(abcMsg_ctor)
+CK_DLL_CTOR(fgrdMsg_ctor)
 {
     // only needed to construct dynamic members
-    std::string s; // empty
-    OBJ_MEMBER_STRING(SELF, abcMsg_datastr_offset) = (Chuck_String *)
-        API->object->create_string(API, SHRED, s);
-
 }
 
-CK_DLL_DTOR(abcMsg_dtor)
+CK_DLL_DTOR(fgrdMsg_dtor)
 {
     // may not need to delete_string? (there's no api)
 }
@@ -150,13 +132,6 @@ CK_DLL_MFUN(fgrd_open)
     RETURN->v_int = err ? 0 : 1; // following midifilein return conventions
 }
 
-CK_DLL_MFUN(fgrd_close)
-{
-    dbFGrid *c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
-    int err = c->Close();
-    RETURN->v_int = err ? 0 : 1;
-}
-
 CK_DLL_MFUN(fgrd_numLayers)
 {
     dbFGrid * c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
@@ -166,35 +141,19 @@ CK_DLL_MFUN(fgrd_numLayers)
 CK_DLL_MFUN(fgrd_read)
 {
     dbFGrid *c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
-
     Chuck_Object *msg = GET_NEXT_OBJECT(ARGS);
-    t_CKINT layer = GET_NEXT_INT(ARGS);
-    RETURN->v_int = 0; // means error or nothing left to read
-    if(layer >= 0 && layer < c->GetNumLayers())
+    dbFGrid::Event evt;
+    int ret = c->Read(&evt);
+    if(ret == 0)
     {
-        #if 0
-        MidiEvent mevt;
-        int active = c->Read(track, &mevt);
-        if(active)
-        {
-            size_t sz = mevt.data.size();
-            OBJ_MEMBER_DUR(msg, abcMsg_when_offset) = mevt.dur;
-            OBJ_MEMBER_INT(msg, abcMsg_status_offset) = mevt.evt;
-            OBJ_MEMBER_INT(msg, abcMsg_meta_offset) = mevt.metaType;
-            OBJ_MEMBER_INT(msg, abcMsg_data1_offset) = sz > 0 ? mevt.data[0] : 0;
-            OBJ_MEMBER_INT(msg, abcMsg_data2_offset) = sz > 1 ? mevt.data[1] : 0;
-            OBJ_MEMBER_INT(msg, abcMsg_data3_offset) = sz > 2 ? mevt.data[2] : 0;
-            OBJ_MEMBER_INT(msg, abcMsg_data4_offset) = sz > 3 ? mevt.data[3] : 0;
-            if(sz > 4)
-            {
-                Chuck_String *str = OBJ_MEMBER_STRING(msg, abcMsg_datastr_offset);
-                str->set(std::string(&mevt.data[0], &mevt.data[0] + mevt.data.size()));
-            }
-            RETURN->v_int = (int) sz; 
-        }
-        #endif
-        // else nothing left to do
+        OBJ_MEMBER_INT(msg, fgrdMsg_type_offset) = (int) evt.eType;
+        OBJ_MEMBER_INT(msg, fgrdMsg_layer_offset) = evt.layer;
+        OBJ_MEMBER_FLOAT(msg, fgrdMsg_value_offset) = evt.value;
+        OBJ_MEMBER_FLOAT(msg, fgrdMsg_note_offset) = evt.note;
+        OBJ_MEMBER_INT(msg, fgrdMsg_id_offset) = evt.ccID;
+        OBJ_MEMBER_INT(msg, fgrdMsg_chan_offset) = evt.chan;
     }
+    RETURN->v_int = ret;
 }
 
 CK_DLL_MFUN(fgrd_rewind)
