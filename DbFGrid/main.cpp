@@ -45,6 +45,8 @@ CK_DLL_MFUN( fgrd_open );
 CK_DLL_MFUN( fgrd_rewind );
 CK_DLL_MFUN( fgrd_read );
 CK_DLL_MFUN( fgrd_numLayers );
+CK_DLL_MFUN( fgrd_beatSize );
+CK_DLL_MFUN( fgrd_barSize );
 
 static t_CKINT fgrd_data_offset = 0; // offset to instance of DbAbc
 
@@ -77,6 +79,7 @@ CK_DLL_QUERY(DbFGrid)
     // read()
     QUERY->add_mfun(QUERY, fgrd_read, "int", "read");
     QUERY->add_arg(QUERY, "FGridMsg", "msg");
+    QUERY->add_arg(QUERY, "int", "soloLayer"); // set to -1 to read all layers
 
     // rewind()
     QUERY->add_mfun(QUERY, fgrd_rewind, "void", "rewind");
@@ -85,6 +88,11 @@ CK_DLL_QUERY(DbFGrid)
     // numLayers()
     QUERY->add_mfun(QUERY, fgrd_numLayers, "int", "numLayers");
     // no params
+
+    // beatUnit() eg .25 is 1/4 note
+    QUERY->add_mfun(QUERY, fgrd_beatSize, "int", "beatSize"); 
+
+    QUERY->add_mfun(QUERY, fgrd_barSize, "int", "barSize"); 
 
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
@@ -138,12 +146,25 @@ CK_DLL_MFUN(fgrd_numLayers)
     RETURN->v_int = c->GetNumLayers();
 }
 
+CK_DLL_MFUN(fgrd_barSize)
+{
+    dbFGrid * c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
+    RETURN->v_int = c->GetBarSize(); // from file signature
+} 
+
+CK_DLL_MFUN(fgrd_beatSize)
+{
+    dbFGrid * c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
+    RETURN->v_int = c->GetBeatSize(); // from file signature
+}
+
 CK_DLL_MFUN(fgrd_read)
 {
     dbFGrid *c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
     Chuck_Object *msg = GET_NEXT_OBJECT(ARGS);
+    int soloLayer = GET_NEXT_INT(ARGS);
     dbFGrid::Event evt;
-    int ret = c->Read(&evt);
+    int ret = c->Read(&evt, soloLayer);
     if(ret == 0)
     {
         OBJ_MEMBER_INT(msg, fgrdMsg_type_offset) = (int) evt.eType;

@@ -25,6 +25,8 @@ public:
     int Open(std::string const &filepath);
     int Close();
     int GetNumLayers();
+    int GetBarSize();    // num of signature
+    int GetBeatSize(); // denom of signature - 'which note value == beat'
     int Rewind();
 
     struct Event
@@ -46,12 +48,17 @@ public:
         int ccID;
         int chan;
     };
-    int Read(Event *); // return 0 on success, non-zero means "done"
+    int Read(Event *, int layer=-1); // return 0 on success, non-zero means "done"
 
 private:
     unsigned m_sampleRate;
     float m_bbox[2]; // of all layers
-    float m_currentTime;
+    int m_signature[2];  // from file (eg [4, 4] === [4, .25])
+    float m_sigDenom; // from file (.25)
+    float m_columnUnit;  // from file (eg .125)
+    float m_colToBeat; // combines sigDenom and columnUnit
+
+    float m_currentTime; // measured in fractional columns
 
     t_jobj m_params;
     /*

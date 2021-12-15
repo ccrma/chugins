@@ -139,13 +139,12 @@ dbAbc::Read(int track, MidiEvent *evt)
 
     // printf("Read track %d begin\n", track);
 
-    int r = 0;
+    int r;
     this->m_activeTrack = track;
     if(this->clearPending(track, evt))
-        r = 1;
+        r = 1; // no more stuff
     else
     {
-        r = 0;
         // getNextPerfEvents returns active.  It doesn't necessarily
         // mean that it produced any Midi in the process. Alternatively
         // it may have produced multiple midi events.  We wish to ensure
@@ -156,7 +155,7 @@ dbAbc::Read(int track, MidiEvent *evt)
             if(this->m_activePending)
                 break;
         }
-        r = this->clearPending(track, evt);
+        r = this->clearPending(track, evt); // returns 0 if still begining
         this->m_activeTrack = -1;
     }
 

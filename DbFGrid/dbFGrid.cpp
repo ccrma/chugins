@@ -23,6 +23,10 @@ dbFGrid::Open(std::string const &fnm)
     this->m_currentTime = 0;
     this->m_bbox[0] = 1e6;
     this->m_bbox[1] = 0;
+    this->m_columnUnit = .25f; // size of a column (here 1/4 note)
+    this->m_signature[0] = 4;
+    this->m_signature[1] = 4;  // size of a bat (here 1/4 note)
+    this->m_colToBeat = 1.f; // converts columns to beats (here 1)
 
     std::ifstream fstr;
     fstr.open(fnm.c_str());
@@ -32,7 +36,8 @@ dbFGrid::Open(std::string const &fnm)
         {
             // Because json.hpp accesses everything *by value*, we
             // opt not to live-parse through the events array, rather
-            // we'll parse once and free the results.
+            // we'll parse once and free the results.  We *do* copy the
+            // optional paramlists out.
             json j;
             fstr >> j;
             if(j.contains("fmatrix"))
@@ -40,6 +45,19 @@ dbFGrid::Open(std::string const &fnm)
                 std::cerr << "DbFGrid opened " << fnm << "\n";
                 auto jfm = j["fmatrix"];
                 this->m_params = jfm["params"];
+                float beatSize;
+                if(this->m_params.count("signature"))
+                {
+                    this->m_signature[0] = this->m_params["signature"]["x"].get<int>();
+                    beatSize = this->m_params["signature"]["y"].get<float>();
+                    this->m_signature[1] = int(.5f + 1.f/ beatSize);
+                }
+                else
+                    beatSize = 1.0f / this->m_signature[1];
+                if(this->m_params.count("columnUnit"))
+                    this->m_columnUnit = this->m_params["columnUnit"].get<float>();
+                // example: 1/8 colunit, 1/4 sigDenom => colToBeat: .5 
+                this->m_colToBeat = this->m_columnUnit / beatSize; 
                 auto jlayers = jfm["layers"];
                 for(int i=0;i<jlayers.size(); i++)
                 {
@@ -130,6 +148,18 @@ dbFGrid::GetNumLayers()
 }
 
 int
+dbFGrid::GetBarSize()
+{
+    return this->m_signature[0];
+}
+
+int
+dbFGrid::GetBeatSize()
+{
+    return this->m_signature[1];
+}
+
+int
 dbFGrid::Rewind()
 {
     for(layer &l : this->m_layers)
@@ -141,7 +171,7 @@ dbFGrid::Rewind()
 /* return 0 on success, non-zero when we reach the end 
  */
 int 
-dbFGrid::Read(Event *evt)
+dbFGrid::Read(Event *evt, int soloLayer)
 {
     if(this->m_currentTime > (this->m_bbox[1]+kEpsilon))
         return -1;
@@ -152,6 +182,9 @@ dbFGrid::Read(Event *evt)
     int nextEventLayer = -1;
     for(int i=0;i<this->m_layers.size();i++)
     {
+        if(soloLayer != -1 && i != soloLayer)
+            continue;
+
         layer &l = this->m_layers[i];
         if(this->m_currentTime > l.bbox[1])
           continue;
@@ -171,7 +204,7 @@ dbFGrid::Read(Event *evt)
         if(minDist > kEpsilon)
         {
             evt->eType = Event::k_Wait;
-            evt->value = minDist;
+            evt->value = minDist * this->m_colToBeat;
             evt->note = 0;
             evt->ccID = 0;
             this->m_currentTime += minDist; // time in "columns"
