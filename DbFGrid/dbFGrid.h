@@ -60,7 +60,7 @@ private:
 
     float m_currentTime; // measured in fractional columns
 
-    t_jobj m_params;
+    t_jobj m_params; // of fmatrix
     /*
         altLength: "16 : 2 : 0"
         noteFilter: 1 // Chromatic
@@ -72,12 +72,11 @@ private:
         octaveRange: {"x":1,"y":7}
         scaleRoot: 0
     */
-    struct event
+    struct event // events and subevents
     {
         int row; // midi-note
         float start, end; // in "column coords"
         t_jobj params;
-
         float GetParam(char const *nm, float fallback)
         {
             return this->params.count(nm) ? this->params[nm] : fallback;

@@ -86,7 +86,8 @@ dbFGrid::Open(std::string const &fnm)
                     for(int j=0;j<jelist.size();j++)
                     {
                         l.events.push_back(event());
-                        event &e = l.events[j];
+                        event &e = l.events.back();
+                        float edur;
                         auto je = jelist[j]; // an event object
                         for (json::iterator it = je.begin(); it != je.end(); ++it) 
                         {
@@ -94,13 +95,47 @@ dbFGrid::Open(std::string const &fnm)
                             {
                                 auto v = it.value();
                                 e.start = v[0].get<float>();
-                                e.end = e.start + v[1].get<float>();
+                                edur = v[1].get<float>();
+                                e.end = e.start + edur;
                                 e.row = v[2];
 
                                 if(e.start < l.bbox[0])
                                     l.bbox[0] = e.start;
                                 if(e.end > l.bbox[1])
                                     l.bbox[1] = e.end;
+                            }
+                            if(it.key() == "_se")
+                            {
+                                // array of subevent objects (CCs associated with a note)
+                                // these are flattened in the total event list.
+                                auto selist = it.value()["_se"]; // array of objects
+                                for(int k=0;i<selist.size();k++)
+                                {
+                                    l.events.push_back(event());
+                                    event &se = l.events.back();
+                                    auto jse = selist[k]; // a subevent object
+                                    // iterate its keys
+                                    for (json::iterator itSub = jse.begin(); 
+                                        itSub != jse.end(); ++itSub) 
+                                    {
+                                        auto seKey = itSub.key();
+                                        auto seVal = itSub.value();
+                                        if(seKey == "_")
+                                        {
+                                            // sub-event coords are relative
+                                            // to parent (ie on [0,1])
+                                            se.start = e.start + edur*seVal[0].get<float>();
+                                            se.end = se.start + edur*seVal[1].get<float>();
+                                            se.row = e.row;
+
+                                            // theory is that our size is bounded
+                                            // by our event, so we don't update
+                                            // l.bbox
+                                        }
+                                        else
+                                            se.params[seKey] = seVal;
+                                    }
+                                }
                             }
                             else
                                 e.params[it.key()] = it.value();
