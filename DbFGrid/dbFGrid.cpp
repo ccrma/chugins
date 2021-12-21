@@ -77,8 +77,8 @@ dbFGrid::Open(std::string const &fnm)
                     this->m_layers.push_back(layer(lt));
                     layer &l = this->m_layers[i];
                     l.fparams = jl["fparams"];
-                    l.defaultValue = l.fparams.count("v") ? l.fparams["v"] : .75f;
-                    l.defaultID = l.fparams.count("id") ? l.fparams["id"] : 0;
+                    l.defaultValue = l.fparams.count("v") ? l.fparams["v"].get<float>() : .75f;
+                    l.defaultID = l.fparams.count("id") ? l.fparams["id"].get<int>() : 0;
                     l.bbox[0] = 1e10f;
                     l.bbox[1] = 0;
 

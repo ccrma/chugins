@@ -79,7 +79,7 @@ private:
         t_jobj params;
         float GetParam(char const *nm, float fallback)
         {
-            return this->params.count(nm) ? this->params[nm] : fallback;
+            return this->params.count(nm) ? this->params[nm].get<float>() : fallback;
         }
     };
     struct layer
