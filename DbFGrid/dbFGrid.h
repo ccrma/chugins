@@ -74,6 +74,11 @@ private:
     */
     struct event // events and subevents
     {
+        event()
+        {
+            this->subEvent = false;
+        }
+        bool subEvent;
         int row; // midi-note
         float start, end; // in "column coords"
         t_jobj params;

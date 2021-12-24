@@ -59,9 +59,15 @@ dbFGrid::Open(std::string const &fnm)
                 // example: 1/8 colunit, 1/4 sigDenom => colToBeat: .5 
                 this->m_colToBeat = this->m_columnUnit / beatSize; 
                 auto jlayers = jfm["layers"];
-                for(int i=0;i<jlayers.size(); i++)
+
+                // foreach layer
+                for(int il=0;il<jlayers.size(); il++)
                 {
-                    auto jl = jlayers.at(i);
+                    auto jl = jlayers.at(il);
+                    auto jelist = jl["events"]; // array of objects
+                    if(jelist.size() == 0)
+                        continue;
+
                     auto fnm = jl["fnm"];
                     layer::layerType lt;
                     if(fnm == "MidiNote")
@@ -75,44 +81,55 @@ dbFGrid::Open(std::string const &fnm)
                         continue;
                     }
                     this->m_layers.push_back(layer(lt));
-                    layer &l = this->m_layers[i];
+                    layer &l = this->m_layers.back();
                     l.fparams = jl["fparams"];
                     l.defaultValue = l.fparams.count("v") ? l.fparams["v"].get<float>() : .75f;
                     l.defaultID = l.fparams.count("id") ? l.fparams["id"].get<int>() : 0;
                     l.bbox[0] = 1e10f;
                     l.bbox[1] = 0;
+                    l.events.reserve(jelist.size()); // more when subevents
 
-                    auto jelist = jl["events"]; // array of objects
+                    // foreach event
                     for(int j=0;j<jelist.size();j++)
                     {
-                        l.events.push_back(event());
-                        event &e = l.events.back();
-                        float edur;
                         auto je = jelist[j]; // an event object
+                        // No order guarantees for je keys, we need "_" first
+                        // in order to process subevents.
+                        auto jeLoc = je["_"]; // a location array
+                        float ebegin = jeLoc[0].get<float>();
+                        float edur = jeLoc[1].get<float>();
+                        int erow = jeLoc[2].get<int>();
+                        unsigned eIndex = l.events.size(); // before we add one
+                        l.events.push_back(event());
+
+                        // NB: this ref is only valid 'til array resizing happens
+                        event &e = l.events[eIndex];
+                        e.start = ebegin;
+                        e.end = ebegin + edur;
+                        e.row = erow;
+                        if(e.start < l.bbox[0])
+                            l.bbox[0] = e.start;
+                        if(e.end > l.bbox[1])
+                            l.bbox[1] = e.end;
+                        
+                        // foreach field event
                         for (json::iterator it = je.begin(); it != je.end(); ++it) 
                         {
                             if(it.key() == "_")
-                            {
-                                auto v = it.value();
-                                e.start = v[0].get<float>();
-                                edur = v[1].get<float>();
-                                e.end = e.start + edur;
-                                e.row = v[2];
-
-                                if(e.start < l.bbox[0])
-                                    l.bbox[0] = e.start;
-                                if(e.end > l.bbox[1])
-                                    l.bbox[1] = e.end;
-                            }
+                                continue;
                             if(it.key() == "_se")
                             {
                                 // array of subevent objects (CCs associated with a note)
                                 // these are flattened in the total event list.
-                                auto selist = it.value()["_se"]; // array of objects
-                                for(int k=0;i<selist.size();k++)
+                                auto selist = it.value();
+
+                                // foreach subevent
+                                l.events.reserve(l.events.size() + selist.size());
+                                for(int k=0;k<selist.size();k++)
                                 {
                                     l.events.push_back(event());
                                     event &se = l.events.back();
+                                    se.subEvent = true;
                                     auto jse = selist[k]; // a subevent object
                                     // iterate its keys
                                     for (json::iterator itSub = jse.begin(); 
@@ -124,12 +141,12 @@ dbFGrid::Open(std::string const &fnm)
                                         {
                                             // sub-event coords are relative
                                             // to parent (ie on [0,1])
-                                            se.start = e.start + edur*seVal[0].get<float>();
+                                            se.start = ebegin + edur*seVal[0].get<float>();
                                             se.end = se.start + edur*seVal[1].get<float>();
-                                            se.row = e.row;
+                                            se.row = erow;
 
-                                            // theory is that our size is bounded
-                                            // by our event, so we don't update
+                                            // Our xsize is bounded  by our 
+                                            // parent event, so we don't update
                                             // l.bbox
                                         }
                                         else
@@ -138,7 +155,10 @@ dbFGrid::Open(std::string const &fnm)
                                 }
                             }
                             else
-                                e.params[it.key()] = it.value();
+                            {
+                                l.events[eIndex].params[it.key()] = it.value();
+                                // e.params[it.key()] = it.value();
+                            }
                         }
                     }
                     if(this->m_bbox[0] > l.bbox[0])
@@ -303,7 +323,7 @@ dbFGrid::layer::GetEvent(float current, Event *evt)
     int ievt = this->orderedEdges[this->oIndex];
     event &e = this->events[ievt/2];
     bool isStart = !(ievt & 1);
-    if(this->type == k_noteLayer)
+    if(this->type == k_noteLayer && e.subEvent == false)
     {
         evt->eType = isStart ? Event::k_NoteOn : Event::k_NoteOff;
         evt->note = e.row; // XXX: could add "detuning"
@@ -314,12 +334,16 @@ dbFGrid::layer::GetEvent(float current, Event *evt)
         evt->ccID = 0;
     }
     else
-    if(this->type == k_ccLayer)
     {
         evt->eType = Event::k_CC;
         evt->note = e.row; // this is our "MPE" content
         evt->value = e.GetParam("v", this->defaultValue);
         evt->ccID = e.GetParam("id", this->defaultID);
+
+        if(evt->ccID == 224)
+        {
+            std::cerr << "dbFGrid PitchWheel " << evt->value  << "\n";
+        }
     }
     this->oIndex++;
 }
