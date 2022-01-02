@@ -112,45 +112,50 @@ dbFGrid::Open(std::string const &fnm)
                         if(e.end > l.bbox[1])
                             l.bbox[1] = e.end;
                         
-                        // foreach field event
+                        // foreach fevent
                         for (json::iterator it = je.begin(); it != je.end(); ++it) 
                         {
                             if(it.key() == "_")
                                 continue;
                             if(it.key() == "_se")
                             {
-                                // array of subevent objects (CCs associated with a note)
-                                // these are flattened in the total event list.
-                                auto selist = it.value();
-
-                                // foreach subevent
-                                l.events.reserve(l.events.size() + selist.size());
-                                for(int k=0;k<selist.size();k++)
+                                // dictionary whose keys are the CCid and
+                                // whose values are an array of subevent 
+                                // objects (CCs associated with a note)
+                                // these are flattened into the total event list.
+                                auto seobj = it.value();
+                                for(json::iterator seit = seobj.begin(); seit != seobj.end(); ++seit)
                                 {
-                                    l.events.push_back(event());
-                                    event &se = l.events.back();
-                                    se.subEvent = true;
-                                    auto jse = selist[k]; // a subevent object
-                                    // iterate its keys
-                                    for (json::iterator itSub = jse.begin(); 
-                                        itSub != jse.end(); ++itSub) 
+                                    auto selist = seit.value();
+                                    // foreach subevent
+                                    l.events.reserve(l.events.size() + selist.size());
+                                    for(int k=0;k<selist.size();k++)
                                     {
-                                        auto seKey = itSub.key();
-                                        auto seVal = itSub.value();
-                                        if(seKey == "_")
+                                        l.events.push_back(event());
+                                        event &se = l.events.back();
+                                        se.subEvent = true;
+                                        auto jse = selist[k]; // a subevent object
+                                        // iterate its keys
+                                        for (json::iterator itSub = jse.begin(); 
+                                            itSub != jse.end(); ++itSub) 
                                         {
-                                            // sub-event coords are relative
-                                            // to parent (ie on [0,1])
-                                            se.start = ebegin + edur*seVal[0].get<float>();
-                                            se.end = se.start + edur*seVal[1].get<float>();
-                                            se.row = erow;
+                                            auto seKey = itSub.key();
+                                            auto seVal = itSub.value();
+                                            if(seKey == "_")
+                                            {
+                                                // sub-event coords are relative
+                                                // to parent (ie on [0,1])
+                                                se.start = ebegin + edur*seVal[0].get<float>();
+                                                se.end = se.start + edur*seVal[1].get<float>();
+                                                se.row = erow;
 
-                                            // Our xsize is bounded  by our 
-                                            // parent event, so we don't update
-                                            // l.bbox
+                                                // Our xsize is bounded  by our 
+                                                // parent event, so we don't update
+                                                // l.bbox
+                                            }
+                                            else
+                                                se.params[seKey] = seVal;
                                         }
-                                        else
-                                            se.params[seKey] = seVal;
                                     }
                                 }
                             }
@@ -233,6 +238,7 @@ dbFGrid::Read(Event *evt, int soloLayer)
 
     // first nominate the best next event defined as the one whose
     // start or end is closest to this->m_currentTime
+retry:
     float minDist = 1e6;
     int nextEventLayer = -1;
     for(int i=0;i<this->m_layers.size();i++)
@@ -267,7 +273,9 @@ dbFGrid::Read(Event *evt, int soloLayer)
         else
         {
             layer &l = this->m_layers[nextEventLayer];
-            l.GetEvent(this->m_currentTime, evt);
+            int skip = l.GetEvent(this->m_currentTime, evt);
+            if(skip)
+                goto retry;
         }
     }
     return 0;
@@ -309,25 +317,27 @@ dbFGrid::layer::NextDistance(float current)
 
     int ievt = this->orderedEdges[this->oIndex];
     event &e = this->events[ievt/2];
-    if(ievt & 1)
-        return e.end - current;
-    else
+    bool isDown = !(ievt&1);
+    if(isDown)
         return e.start - current;
+    else
+        return e.end - current;
 }
 
-void
+int
 dbFGrid::layer::GetEvent(float current, Event *evt)
 {
     // Until we implement super-sampling we only emit at start or end
     // It's up to caller to call GetEvent only when appropriate.
     int ievt = this->orderedEdges[this->oIndex];
     event &e = this->events[ievt/2];
-    bool isStart = !(ievt & 1);
+    bool isDown = !(ievt & 1);
+    int err = 0;
     if(this->type == k_noteLayer && e.subEvent == false)
     {
-        evt->eType = isStart ? Event::k_NoteOn : Event::k_NoteOff;
+        evt->eType = isDown ? Event::k_NoteOn : Event::k_NoteOff;
         evt->note = e.row; // XXX: could add "detuning"
-        if(isStart)
+        if(isDown)
             evt->value = e.GetParam("v", this->defaultValue);
         else
             evt->value = 0; // 0 velocity
@@ -335,17 +345,23 @@ dbFGrid::layer::GetEvent(float current, Event *evt)
     }
     else
     {
-        evt->eType = Event::k_CC;
-        evt->note = e.row; // this is our "MPE" content
-        evt->value = e.GetParam("v", this->defaultValue);
-        evt->ccID = e.GetParam("id", this->defaultID);
-
-        if(evt->ccID == 224)
+        // We only deliver *start* CC events (piecewise constant)
+        if(isDown)
         {
-            std::cerr << "dbFGrid PitchWheel " << evt->value  << "\n";
+            evt->eType = Event::k_CC;
+            evt->note = e.row; // this is our "MPE" content
+            evt->value = e.GetParam("v", this->defaultValue);
+            evt->ccID = e.GetParam("id", this->defaultID);
+            if(evt->ccID == 224)
+            {
+                // std::cerr << "dbFGrid PitchWheel " << evt->value  << "\n";
+            }
         }
+        else
+            err = 1; // didn't emit
     }
     this->oIndex++;
+    return err;
 }
 
 /* -------------------------------------------------------------------------- */

@@ -108,7 +108,7 @@ private:
         bool operator()(int i, int j); // for sorting event order
 
         float NextDistance(float current);
-        void GetEvent(float current, Event *evt);
+        int GetEvent(float current, Event *evt); // return non-zero to skip this
 
         layerType type;
         float defaultValue; // for events without one
