@@ -42,11 +42,11 @@ public:
             k_NoteOff,
             k_CC,
         } eType;
-        int layer;
-        float note;  // associated with row
+        unsigned layer;
+        unsigned note;  // associated with row
+        unsigned ccID;
+        unsigned chan;
         float value; // velocity, ccvalue, k_Wait dur 
-        int ccID;
-        int chan;
     };
     int Read(Event *, int layer=-1); // return 0 on success, non-zero means "done"
 
@@ -108,7 +108,7 @@ private:
         bool operator()(int i, int j); // for sorting event order
 
         float NextDistance(float current);
-        int GetEvent(float current, Event *evt); // return non-zero to skip this
+        void GetEvent(float current, Event *evt);
 
         layerType type;
         float defaultValue; // for events without one
@@ -120,6 +120,20 @@ private:
         unsigned oIndex; // last accessed ordered event
     };
     std::vector<layer> m_layers;
+
+private:
+    // We associate a MIDI channel with a note following MPE practice.
+    // Since our CC events are already tied to a note, this isn't strictly
+    // necessary. It may make the lives of downstream players a little simpler.
+    // The idea: Midi CCs (except note-aftertouch) are "channel-wide". The
+    // MPE trick is to trick MIDI by assigning different channels to each note.
+    // In MIDI there are only 15 non-default channels, so we need to dole them
+    // out accordingly.  This means that no more than 15 notes with cc's can
+    // be live at one time.
+    std::vector<unsigned> m_channelPool; // max length 15
+    std::map<unsigned, unsigned> m_channelsInUse; // key is layer << 7 | note
+    unsigned allocateChannel(unsigned note, unsigned layer);
+    unsigned findChannel(unsigned note, unsigned layer, bool release);
 
 private:
     void dumpObjectList(char const *nm, t_jobjArray const &);

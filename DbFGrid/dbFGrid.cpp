@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <cmath>
 
 static bool sDebug = false;
 
@@ -27,6 +28,15 @@ dbFGrid::Open(std::string const &fnm)
     this->m_signature[0] = 4;
     this->m_signature[1] = 4;  // size of a bat (here 1/4 note)
     this->m_colToBeat = 1.f; // converts columns to beats (here 1)
+    this->m_channelPool.clear();
+    this->m_channelsInUse.clear();
+    for(unsigned i=0;i<15;i++)
+    {
+        // below, we access new elements from back. For "cosmetics"
+        // we'll initialize the pool so that low-numbered channels
+        // come online before high-numbered channels
+        this->m_channelPool.push_back(15-i);
+    }    
 
     std::ifstream fstr;
     fstr.open(fnm.c_str());
@@ -238,9 +248,8 @@ dbFGrid::Read(Event *evt, int soloLayer)
 
     // first nominate the best next event defined as the one whose
     // start or end is closest to this->m_currentTime
-retry:
     float minDist = 1e6;
-    int nextEventLayer = -1;
+    int nextLIndex = -1;
     for(int i=0;i<this->m_layers.size();i++)
     {
         if(soloLayer != -1 && i != soloLayer)
@@ -254,14 +263,14 @@ retry:
         if(dist < minDist)
         {
             minDist = dist;
-            nextEventLayer = i;
+            nextLIndex = i;
         }
     }
-    if(nextEventLayer == -1)
+    if(nextLIndex == -1)
         return -2;
     else
     {
-        evt->layer = nextEventLayer;
+        evt->layer = nextLIndex;
         if(minDist > kEpsilon)
         {
             evt->eType = Event::k_Wait;
@@ -272,13 +281,68 @@ retry:
         }
         else
         {
-            layer &l = this->m_layers[nextEventLayer];
-            int skip = l.GetEvent(this->m_currentTime, evt);
-            if(skip)
-                goto retry;
+            layer &l = this->m_layers[nextLIndex];
+            l.GetEvent(this->m_currentTime, evt);
+            switch(evt->eType)
+            {
+            case Event::k_NoteOn:
+                evt->chan = this->allocateChannel((unsigned) evt->note, nextLIndex);
+                break;
+            case Event::k_NoteOff:
+                evt->chan = this->findChannel((unsigned) evt->note, nextLIndex, true);
+                break;
+            case Event::k_CC:
+                evt->chan = this->findChannel(evt->note, nextLIndex, false);
+                break;
+            }
         }
     }
     return 0;
+}
+
+unsigned
+dbFGrid::allocateChannel(unsigned note, unsigned layer)
+{
+    unsigned chan = 0;
+    if(this->m_channelPool.size() > 0)
+    {
+        chan = this->m_channelPool.back();
+        this->m_channelPool.pop_back();
+
+        unsigned key = (layer << 7) | note;
+        if(this->m_channelsInUse.count(key) != 0)
+        {
+            std::cerr << "dbFGrid MIDI/MPE channel write botch for note " 
+                      << note << "\n";
+        }
+        this->m_channelsInUse[key] = chan;
+    }
+    else
+        std::cerr << "dbFGrid out of MIDI/MPE channels for note " << note << "\n";
+    return chan;
+}
+
+unsigned
+dbFGrid::findChannel(unsigned note, unsigned layer, bool release)
+{
+    unsigned chan = 0;
+    unsigned key = (layer << 7) | note;
+    if(this->m_channelsInUse.count(key) != 0)
+    {
+        auto it = this->m_channelsInUse.find(key);
+        chan = it->second;
+        if(release)
+        {
+            this->m_channelsInUse.erase(it);
+            this->m_channelPool.push_back(chan);
+        }
+    }
+    else
+    {
+        std::cerr << "dbFGrid MIDI/MPE channel read botch for note " 
+                 << note << "\n";
+    }
+    return chan;
 }
 
 void
@@ -292,6 +356,13 @@ dbFGrid::layer::ComputeEdgeOrdering()
         // and start/end is even/odd
         this->orderedEdges.push_back(i); 
     }
+
+#if 0
+    bool x = operator()(202, 353);
+    bool y = operator()(353, 202);
+    assert(x == !y);
+#endif
+
     std::sort(this->orderedEdges.begin(), this->orderedEdges.end(), *this);
 }
 
@@ -300,9 +371,39 @@ dbFGrid::layer::operator()(int a, int b)
 {
     event &aEvt = this->events[a/2];
     event &bEvt = this->events[b/2];
-    float ax = (a & 1) ? aEvt.end : aEvt.start;
-    float bx = (b & 1) ? bEvt.end : bEvt.start;
-    return ax < bx;
+    bool aStart = !(a&1);
+    bool bStart = !(b&1);
+    float ax = aStart ? aEvt.start : aEvt.end;
+    float bx = bStart ? bEvt.start : bEvt.end;
+    float dx = fabs(ax - bx);
+    if(dx < .0001f)
+    {
+        // tie breaker
+        if(aStart && bStart)
+        {
+            // parent Begin before sub Begin
+            if(!aEvt.subEvent && bEvt.subEvent)
+                return true; 
+            else
+                return false; 
+        }
+        else
+        if(aStart || bStart)
+        {
+            // any end beats a begin
+            return aStart ? false : true;
+        }
+        else
+        {
+            // sub End before parent End
+            if(aEvt.subEvent && !bEvt.subEvent)
+                return true;
+            else
+                return false;
+        }
+    }
+    else
+        return ax < bx;
 }
 
 float
@@ -318,13 +419,22 @@ dbFGrid::layer::NextDistance(float current)
     int ievt = this->orderedEdges[this->oIndex];
     event &e = this->events[ievt/2];
     bool isDown = !(ievt&1);
-    if(isDown)
-        return e.start - current;
+    if(isDown || !e.subEvent)
+    {
+        if(isDown)
+            return e.start - current;
+        else
+            return e.end - current;
+    }
     else
-        return e.end - current;
+    {
+        // skip subEvent release messages (CC values are sample+hold)
+        this->oIndex++;
+        return this->NextDistance(current); 
+    }
 }
 
-int
+void
 dbFGrid::layer::GetEvent(float current, Event *evt)
 {
     // Until we implement super-sampling we only emit at start or end
@@ -332,7 +442,6 @@ dbFGrid::layer::GetEvent(float current, Event *evt)
     int ievt = this->orderedEdges[this->oIndex];
     event &e = this->events[ievt/2];
     bool isDown = !(ievt & 1);
-    int err = 0;
     if(this->type == k_noteLayer && e.subEvent == false)
     {
         evt->eType = isDown ? Event::k_NoteOn : Event::k_NoteOff;
@@ -346,22 +455,17 @@ dbFGrid::layer::GetEvent(float current, Event *evt)
     else
     {
         // We only deliver *start* CC events (piecewise constant)
-        if(isDown)
+        assert(isDown);
+        evt->eType = Event::k_CC;
+        evt->note = e.row; // this is our "MPE" content
+        evt->value = e.GetParam("v", this->defaultValue);
+        evt->ccID = e.GetParam("id", this->defaultID);
+        if(evt->ccID == 224)
         {
-            evt->eType = Event::k_CC;
-            evt->note = e.row; // this is our "MPE" content
-            evt->value = e.GetParam("v", this->defaultValue);
-            evt->ccID = e.GetParam("id", this->defaultID);
-            if(evt->ccID == 224)
-            {
-                // std::cerr << "dbFGrid PitchWheel " << evt->value  << "\n";
-            }
+            // std::cerr << "dbFGrid PitchWheel " << evt->value  << "\n";
         }
-        else
-            err = 1; // didn't emit
     }
     this->oIndex++;
-    return err;
 }
 
 /* -------------------------------------------------------------------------- */
