@@ -28,15 +28,7 @@ dbFGrid::Open(std::string const &fnm)
     this->m_signature[0] = 4;
     this->m_signature[1] = 4;  // size of a bat (here 1/4 note)
     this->m_colToBeat = 1.f; // converts columns to beats (here 1)
-    this->m_channelPool.clear();
-    this->m_channelsInUse.clear();
-    for(unsigned i=0;i<15;i++)
-    {
-        // below, we access new elements from back. For "cosmetics"
-        // we'll initialize the pool so that low-numbered channels
-        // come online before high-numbered channels
-        this->m_channelPool.push_back(15-i);
-    }    
+    this->Rewind();
 
     std::ifstream fstr;
     fstr.open(fnm.c_str());
@@ -86,6 +78,9 @@ dbFGrid::Open(std::string const &fnm)
                     if(fnm == "MidiCC")
                         lt = layer::k_ccLayer;
                     else
+                    if(fnm == "Session")
+                        lt = layer::k_sessionLayer;
+                    else
                     {
                         std::cerr << "DbFGrid unimplemented layer type " << fnm << "\n";
                         continue;
@@ -93,7 +88,10 @@ dbFGrid::Open(std::string const &fnm)
                     this->m_layers.push_back(layer(lt));
                     layer &l = this->m_layers.back();
                     l.fparams = jl["fparams"];
-                    l.defaultValue = l.fparams.count("v") ? l.fparams["v"].get<float>() : .75f;
+
+                    const char *defKey = "v"; // value
+                    l.defaultKey = defKey;
+                    l.defaultValue = l.fparams.count(defKey) ? l.fparams[defKey].get<float>() : .75f;
                     l.defaultID = l.fparams.count("id") ? l.fparams["id"].get<int>() : 0;
                     l.bbox[0] = 1e10f;
                     l.bbox[1] = 0;
@@ -164,7 +162,10 @@ dbFGrid::Open(std::string const &fnm)
                                                 // l.bbox
                                             }
                                             else
+                                            {
+                                                // seKey
                                                 se.params[seKey] = seVal;
+                                            }
                                         }
                                     }
                                 }
@@ -235,6 +236,15 @@ dbFGrid::Rewind()
     for(layer &l : this->m_layers)
         l.Rewind();
     this->m_currentTime = 0;
+    this->m_channelPool.clear();
+    this->m_channelsInUse.clear();
+    for(unsigned i=0;i<15;i++)
+    {
+        // below, we access new elements from back. For "cosmetics"
+        // we'll initialize the pool so that low-numbered channels
+        // come online before high-numbered channels
+        this->m_channelPool.push_back(15-i);
+    }    
     return 0;
 }
 
@@ -312,7 +322,7 @@ dbFGrid::allocateChannel(unsigned note, unsigned layer)
         unsigned key = (layer << 7) | note;
         if(this->m_channelsInUse.count(key) != 0)
         {
-            std::cerr << "dbFGrid MIDI/MPE channel write botch for note " 
+            std::cerr << "dbFGrid MIDI/MPE channel allocation botch for note " 
                       << note << "\n";
         }
         this->m_channelsInUse[key] = chan;
@@ -339,8 +349,12 @@ dbFGrid::findChannel(unsigned note, unsigned layer, bool release)
     }
     else
     {
-        std::cerr << "dbFGrid MIDI/MPE channel read botch for note " 
+        if(note > 16) // poor man's check for !k_sessionLayer
+        {
+            std::cerr << "dbFGrid MIDI/MPE channel read botch for note " 
                  << note << "\n";
+        }
+        // else chan 0 is fine
     }
     return chan;
 }
@@ -434,6 +448,20 @@ dbFGrid::layer::NextDistance(float current)
     }
 }
 
+float
+dbFGrid::event::GetParam(char const *nm, float fallback)
+{
+    if(this->params.count(nm))
+        return this->params[nm].get<float>();
+    else
+    {
+        // It's quite normal for a value not to be present.
+        // See caller for more details.
+        // std::cerr << "Can't find " << nm << "\n";
+        return fallback;
+    }
+}
+
 void
 dbFGrid::layer::GetEvent(float current, Event *evt)
 {
@@ -442,24 +470,28 @@ dbFGrid::layer::GetEvent(float current, Event *evt)
     int ievt = this->orderedEdges[this->oIndex];
     event &e = this->events[ievt/2];
     bool isDown = !(ievt & 1);
-    if(this->type == k_noteLayer && e.subEvent == false)
+    if(this->type != k_ccLayer && e.subEvent == false)
     {
         evt->eType = isDown ? Event::k_NoteOn : Event::k_NoteOff;
         evt->note = e.row; // XXX: could add "detuning"
         if(isDown)
-            evt->value = e.GetParam("v", this->defaultValue);
+            evt->value = e.GetParam(this->defaultKey, this->defaultValue);
         else
             evt->value = 0; // 0 velocity
         evt->ccID = 0;
     }
     else
     {
-        // We only deliver *start* CC events (piecewise constant)
-        assert(isDown);
+        // We only deliver *start* CC events (piecewise constant).
+        // Global CCs, like channel volume, pan, etc can occur in
+        // session layers.
         evt->eType = Event::k_CC;
         evt->note = e.row; // this is our "MPE" content
-        evt->value = e.GetParam("v", this->defaultValue);
         evt->ccID = e.GetParam("id", this->defaultID);
+        // currently a value is only present if it overrides the default
+        // value. Problem is, we don't know the default value for every
+        // possible CC.  Let's elect .5 as a good choice.
+        evt->value = e.GetParam("v", .5f);
         if(evt->ccID == 224)
         {
             // std::cerr << "dbFGrid PitchWheel " << evt->value  << "\n";

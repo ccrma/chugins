@@ -29,7 +29,7 @@ public:
     int GetBeatSize(); // denom of signature - 'which note value == beat'
     int Rewind();
 
-    struct Event
+    struct Event // delivered to read
     {
         Event()
         {
@@ -82,10 +82,7 @@ private:
         int row; // midi-note
         float start, end; // in "column coords"
         t_jobj params;
-        float GetParam(char const *nm, float fallback)
-        {
-            return this->params.count(nm) ? this->params[nm].get<float>() : fallback;
-        }
+        float GetParam(char const *nm, float fallback);
     };
     struct layer
     {
@@ -93,6 +90,7 @@ private:
         {
             k_noteLayer,
             k_ccLayer,
+            k_sessionLayer
         };
 
         layer(layerType t)
@@ -111,6 +109,7 @@ private:
         void GetEvent(float current, Event *evt);
 
         layerType type;
+        char const *defaultKey;
         float defaultValue; // for events without one
         int defaultID; // CC id
         t_jobj fparams;
@@ -118,7 +117,7 @@ private:
         std::vector<int> orderedEdges;
         float bbox[2];
         unsigned oIndex; // last accessed ordered event
-    };
+    }; // end of struct layer
     std::vector<layer> m_layers;
 
 private:
