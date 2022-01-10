@@ -115,7 +115,7 @@ private:
         bool operator()(int i, int j); // for sorting event order
 
         float NextDistance(float current);
-        void GetEvent(float current, Event *evt);
+        void GetEvent(float current, Event *evt, int verbosity);
         float GetMaxTime() 
         { 
             return (this->section1 == 0) ? this->bbox[1] : this->section1;

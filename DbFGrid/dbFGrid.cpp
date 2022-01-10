@@ -329,7 +329,7 @@ dbFGrid::Read(Event *evt, int soloLayer)
         else
         {
             layer &l = this->m_layers[nextLIndex];
-            l.GetEvent(this->m_currentTime, evt);
+            l.GetEvent(this->m_currentTime, evt, this->m_verbosity);
             switch(evt->eType)
             {
             case Event::k_NoteOn:
@@ -542,7 +542,7 @@ dbFGrid::event::GetParam(char const *nm, float fallback)
 }
 
 void
-dbFGrid::layer::GetEvent(float current, Event *evt)
+dbFGrid::layer::GetEvent(float current, Event *evt, int verbosity)
 {
     // Until we implement super-sampling we only emit at start or end
     // It's up to caller to call GetEvent only when appropriate.
@@ -551,6 +551,12 @@ dbFGrid::layer::GetEvent(float current, Event *evt)
     bool isDown = !(ievt & 1);
     if(this->type != k_ccLayer && e.subEvent == false)
     {
+        if(verbosity > 0)
+        {
+            std::cerr << "dbFGrid Note " << e.row << " "  
+                << (isDown ? "down" : "up") <<  " @ " << 
+                    (isDown ? e.start : e.end) << "\n";
+        }
         evt->eType = isDown ? Event::k_NoteOn : Event::k_NoteOff;
         evt->note = e.row; // XXX: could add "detuning"
         if(isDown)
@@ -612,14 +618,36 @@ dbFGrid::dumpMatrix()
         std::cerr << "    " << s << ": [" << c0 << "," << c1 <<"]\n";
     }
     this->dumpObject("  params", this->m_params);
-    int i = 0;
+    int il = 0;
     for(layer &l : this->m_layers)
     {
-        std::cerr << "  L" << i++ << " has " << l.events.size() << " events\n";
-        for(event &e : l.events)
+        std::cerr << "  L" << il++ << " has " << l.events.size() << " events\n";
+        int i = 0;
+        int ie=0, ise=-666;
+
+        // these are the events, not the ordered events
+        if(this->m_verbosity > 1)
         {
-            for(auto it=e.params.begin(); it!=e.params.end(); ++it)
-                std::cerr << "    " << it->first << ": " << it->second << "\n";
+            for(event &e : l.events)
+            {
+                for(auto it=e.params.begin(); it!=e.params.end(); ++it)
+                {
+                    if(e.subEvent)
+                    {
+                        if(this->m_verbosity > 2)
+                        {
+                            std::cerr << "     se" << ise++ << " " 
+                                << it->first << ": " << it->second << "\n";
+                        }
+                    }
+                    else
+                    {
+                        std::cerr << "    e" << ie++ << " " << e.start << "\n";
+                        ise = 0;
+                    }
+                }
+                i++;
+            }
         }
     }
 }
