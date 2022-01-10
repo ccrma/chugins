@@ -5,12 +5,13 @@
 #include <algorithm>
 #include <cmath>
 
-static bool sDebug = false;
+#define kColEpsilon .0001f /* measured in columns */
 
 /* ----------------------------------------------------------------------- */
 dbFGrid::dbFGrid(unsigned int sampleRate)
 {
     this->m_sampleRate = sampleRate;
+    this->m_verbosity = 0;
 }
 
 dbFGrid::~dbFGrid()
@@ -28,6 +29,7 @@ dbFGrid::Open(std::string const &fnm)
     this->m_signature[0] = 4;
     this->m_signature[1] = 4;  // size of a bat (here 1/4 note)
     this->m_colToBeat = 1.f; // converts columns to beats (here 1)
+    this->m_sections.clear();
     this->Rewind();
 
     std::ifstream fstr;
@@ -46,6 +48,25 @@ dbFGrid::Open(std::string const &fnm)
             {
                 std::cerr << "DbFGrid opened " << fnm << "\n";
                 auto jfm = j["fmatrix"];
+                if(jfm.count("sections"))
+                {
+                    // sections is array of objects of "name", "column"
+                    auto sections = jfm["sections"];
+                    for(int is=0;is<sections.size();is++)
+                    {
+                        auto jsection = sections.at(is); // on o bje
+                        auto jcolumns = jsection["columns"];
+                        section s;
+                        s.c0 = jcolumns.at(0).get<int>();
+                        s.c1 = jcolumns.at(1).get<int>();
+                        this->m_sections.push_back(s);
+                    }
+                    if(this->m_verbosity > 0)
+                    {
+                        std::cerr << "dbFGrid found " 
+                            << this->m_sections.size() << " sections\n";
+                    }
+                }
                 this->m_params = jfm["params"];
                 float beatSize;
                 if(this->m_params.count("signature"))
@@ -190,7 +211,7 @@ dbFGrid::Open(std::string const &fnm)
                 err = 1;
             }
             
-            if(err == 0 && sDebug)
+            if(err == 0 && this->m_verbosity > 0)
             {
                 this->dumpMatrix();
             }
@@ -231,11 +252,27 @@ dbFGrid::GetBeatSize()
 }
 
 int
-dbFGrid::Rewind()
+dbFGrid::Rewind(int sectionIndex)
 {
-    for(layer &l : this->m_layers)
-        l.Rewind();
-    this->m_currentTime = 0;
+    if(sectionIndex != -1 && this->m_sections.size() <= sectionIndex)
+    {
+        std::cerr << "dbFGrid undefined section: " << sectionIndex << "\n";
+        sectionIndex = -1;
+    }
+    if(sectionIndex == -1)
+    {
+        for(layer &l : this->m_layers)
+            l.Rewind();
+        this->m_currentTime = 0;
+    }
+    else
+    {
+        section &s = this->m_sections[sectionIndex];
+        unsigned il=0;
+        for(layer &l : this->m_layers)
+            l.Rewind(s.c0, s.c1, il++, this->m_verbosity);
+        this->m_currentTime = s.c0;
+    }
     this->m_channelPool.clear();
     this->m_channelsInUse.clear();
     for(unsigned i=0;i<15;i++)
@@ -253,7 +290,7 @@ dbFGrid::Rewind()
 int 
 dbFGrid::Read(Event *evt, int soloLayer)
 {
-    if(this->m_currentTime > (this->m_bbox[1]+kEpsilon))
+    if(this->m_currentTime > (this->m_bbox[1]+kColEpsilon))
         return -1;
 
     // first nominate the best next event defined as the one whose
@@ -266,7 +303,7 @@ dbFGrid::Read(Event *evt, int soloLayer)
             continue;
 
         layer &l = this->m_layers[i];
-        if(this->m_currentTime > l.bbox[1])
+        if(this->m_currentTime > l.GetMaxTime())
           continue;
         
         float dist = l.NextDistance(this->m_currentTime);
@@ -281,7 +318,7 @@ dbFGrid::Read(Event *evt, int soloLayer)
     else
     {
         evt->layer = nextLIndex;
-        if(minDist > kEpsilon)
+        if(minDist > kColEpsilon)
         {
             evt->eType = Event::k_Wait;
             evt->value = minDist * this->m_colToBeat;
@@ -381,7 +418,7 @@ dbFGrid::layer::ComputeEdgeOrdering()
 }
 
 bool 
-dbFGrid::layer::operator()(int a, int b)
+dbFGrid::layer::operator()(int a, int b) // sort function
 {
     event &aEvt = this->events[a/2];
     event &bEvt = this->events[b/2];
@@ -390,7 +427,7 @@ dbFGrid::layer::operator()(int a, int b)
     float ax = aStart ? aEvt.start : aEvt.end;
     float bx = bStart ? bEvt.start : bEvt.end;
     float dx = fabs(ax - bx);
-    if(dx < .0001f)
+    if(dx < kColEpsilon)
     {
         // tie breaker
         if(aStart && bStart)
@@ -420,6 +457,45 @@ dbFGrid::layer::operator()(int a, int b)
         return ax < bx;
 }
 
+void
+dbFGrid::layer::Rewind(unsigned c0, unsigned c1, unsigned layerIndex, 
+                        int verbosity)
+{
+    this->section0 = c0;
+    this->section1 = c1;
+
+    bool found = false;;
+    // update oIndex to prior to or at c0
+    for(unsigned i=0;i<this->orderedEdges.size();i++)
+    {
+        int ievt = this->orderedEdges[i];
+        event &e = this->events[ievt >> 1];
+        bool isDown = !(ievt & 1);
+        if(isDown && !e.subEvent)
+        {
+            // Find the first real notedown after or equal to c0
+            // Note that some notes may cross this line and so their
+            // associated subEvents will be "orphaned" and result in
+            // the MPE read "botch" state in findChannel, above.
+            if(e.start > c0 || fabs(e.start - c0) < kColEpsilon)
+            {
+                found = true;
+                this->oIndex = i;
+                if(verbosity > 0)
+                {
+                    std::cerr << "dbFGrid Layer " << layerIndex << " section rewind, col " 
+                        << c0 << " -> " << this->oIndex << " @ " << e.start << "\n";
+                }
+                break;
+            }
+        }
+    }
+    if(!found)
+    {
+        std::cerr << "dbFGrid Layer section botch " << c0 << "\n";
+    }
+}
+
 float
 dbFGrid::layer::NextDistance(float current)
 {
@@ -427,11 +503,14 @@ dbFGrid::layer::NextDistance(float current)
     {
         // this case occurs when we've processed our final events but
         // the current time hasn't yet been advanced.
-        return 1e10;
+        if(current < this->GetMaxTime())
+            return this->GetMaxTime() - current; // produce a wait
+        else
+            return 1e10;
     }
 
     int ievt = this->orderedEdges[this->oIndex];
-    event &e = this->events[ievt/2];
+    event &e = this->events[ievt >> 1];
     bool isDown = !(ievt&1);
     if(isDown || !e.subEvent)
     {
@@ -513,7 +592,7 @@ dbFGrid::dumpObjectList(char const *nm, t_jobjArray const &olist)
 void
 dbFGrid::dumpObject(char const *nm, t_jobj const &o)
 {
-    std::cerr << "o " << nm << "\n";
+    std::cerr << nm << "\n";
     for (auto i : o)
     {
         std::cout << "  " << i.first << ": " << i.second << '\n';
@@ -523,9 +602,16 @@ dbFGrid::dumpObject(char const *nm, t_jobj const &o)
 void
 dbFGrid::dumpMatrix()
 {
-    std::cerr << "matrix has " << this->m_layers.size() << " layers\n";
-    this->dumpObject(" mparams", this->m_params);
-	
+    std::cerr << "matrix has:\n";
+    std::cerr << "  " << this->m_layers.size() << " layers\n";
+    std::cerr << "  " << this->m_sections.size() << " sections\n";
+    for(int s=0;s<this->m_sections.size();s++)
+    {
+        int c0 = m_sections[s].c0;
+        int c1 = m_sections[s].c1;
+        std::cerr << "    " << s << ": [" << c0 << "," << c1 <<"]\n";
+    }
+    this->dumpObject("  params", this->m_params);
     int i = 0;
     for(layer &l : this->m_layers)
     {

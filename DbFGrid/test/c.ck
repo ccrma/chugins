@@ -1,6 +1,6 @@
 FGridMsg msg; 
 DbFGrid f;
-me.dir() + "../samples/threeLayers.fgrd" => string file;
+me.dir() + "../samples/scale.fgrd" => string file;
 f.open(file);
 
 while(true)
@@ -19,3 +19,7 @@ while(true)
     else
         break;
 }
+
+f.rewindSection(0);
+
+

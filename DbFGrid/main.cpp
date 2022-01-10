@@ -41,8 +41,11 @@ static t_CKINT fgrdMsg_chan_offset;
 /* ---------------------------------------------------------------------------*/
 CK_DLL_CTOR( fgrd_ctor );
 CK_DLL_DTOR( fgrd_dtor );
+
+CK_DLL_MFUN( fgrd_setVerbosity );
 CK_DLL_MFUN( fgrd_open );
 CK_DLL_MFUN( fgrd_rewind );
+CK_DLL_MFUN( fgrd_rewindSection );
 CK_DLL_MFUN( fgrd_read );
 CK_DLL_MFUN( fgrd_numLayers );
 CK_DLL_MFUN( fgrd_beatSize );
@@ -72,6 +75,10 @@ CK_DLL_QUERY(DbFGrid)
     QUERY->add_ctor(QUERY, fgrd_ctor);
     QUERY->add_dtor(QUERY, fgrd_dtor);
 
+    // setVerbosity(1)
+    QUERY->add_mfun(QUERY, fgrd_setVerbosity, "void", "setVerbosity");
+    QUERY->add_arg(QUERY, "int", "level");
+
     // open(path)
     QUERY->add_mfun(QUERY, fgrd_open, "int", "open");
     QUERY->add_arg(QUERY, "string", "path");
@@ -84,6 +91,10 @@ CK_DLL_QUERY(DbFGrid)
     // rewind()
     QUERY->add_mfun(QUERY, fgrd_rewind, "void", "rewind");
     // no params
+
+    // rewindSection()
+    QUERY->add_mfun(QUERY, fgrd_rewindSection, "void", "rewindSection");
+    QUERY->add_arg(QUERY, "int", "sectionIndex");
 
     // numLayers()
     QUERY->add_mfun(QUERY, fgrd_numLayers, "int", "numLayers");
@@ -130,6 +141,13 @@ CK_DLL_DTOR(fgrd_dtor)
         OBJ_MEMBER_INT(SELF, fgrd_data_offset) = 0;
         c = NULL;
     }
+}
+
+CK_DLL_MFUN(fgrd_setVerbosity)
+{
+    dbFGrid * c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
+    int verbosity = GET_NEXT_INT(ARGS);
+    c->SetVerbosity(verbosity);
 }
 
 CK_DLL_MFUN(fgrd_open)
@@ -181,5 +199,13 @@ CK_DLL_MFUN(fgrd_rewind)
 {
     dbFGrid *c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
     c->Rewind();
+    // no return atm
+}
+
+CK_DLL_MFUN(fgrd_rewindSection)
+{
+    dbFGrid *c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
+    int sectionIndex = GET_NEXT_INT(ARGS);
+    c->Rewind(sectionIndex);
     // no return atm
 }

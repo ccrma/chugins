@@ -13,8 +13,6 @@ using json = nlohmann::json;
 typedef std::unordered_map<std::string, json> t_jobj;
 typedef std::vector<t_jobj> t_jobjArray;
 
-#define kEpsilon .000001f
-
 // parser, execution engine for .fgrd (Fiddle note/function grid files).
 class dbFGrid
 {
@@ -22,12 +20,13 @@ public:
     dbFGrid(unsigned int sampleRate);
     ~dbFGrid();
 
+    void SetVerbosity(int v) { this->m_verbosity = v; }
     int Open(std::string const &filepath);
     int Close();
     int GetNumLayers();
     int GetBarSize();    // num of signature
     int GetBeatSize(); // denom of signature - 'which note value == beat'
-    int Rewind();
+    int Rewind(int sectionIndex=-1);
 
     struct Event // delivered to read
     {
@@ -51,12 +50,19 @@ public:
     int Read(Event *, int layer=-1); // return 0 on success, non-zero means "done"
 
 private:
+    struct section
+    {
+        unsigned c0, c1;
+    };
+
     unsigned m_sampleRate;
     float m_bbox[2]; // of all layers
     int m_signature[2];  // from file (eg [4, 4] === [4, .25])
     float m_sigDenom; // from file (.25)
     float m_columnUnit;  // from file (eg .125)
     float m_colToBeat; // combines sigDenom and columnUnit
+    std::vector<section> m_sections;
+    int m_verbosity;
 
     float m_currentTime; // measured in fractional columns
 
@@ -101,12 +107,19 @@ private:
         void Rewind()
         {
             this->oIndex = 0;
+            this->section0 = 0;
+            this->section1 = 0;
         }
+        void Rewind(unsigned c0, unsigned c1, unsigned layerIndex, int verbosity);
         void ComputeEdgeOrdering(); // after loading
         bool operator()(int i, int j); // for sorting event order
 
         float NextDistance(float current);
         void GetEvent(float current, Event *evt);
+        float GetMaxTime() 
+        { 
+            return (this->section1 == 0) ? this->bbox[1] : this->section1;
+        }
 
         layerType type;
         char const *defaultKey;
@@ -117,6 +130,7 @@ private:
         std::vector<int> orderedEdges;
         float bbox[2];
         unsigned oIndex; // last accessed ordered event
+        unsigned section0, section1;
     }; // end of struct layer
     std::vector<layer> m_layers;
 
