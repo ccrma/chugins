@@ -51,7 +51,8 @@ dbFGrid::Open(std::string const &fnm)
             fstr >> j;
             if(j.contains("fmatrix"))
             {
-                std::cerr << "DbFGrid opened " << fnm << "\n";
+                if(this->m_verbosity > 0)
+                    std::cerr << "DbFGrid opened " << fnm << "\n";
                 auto jfm = j["fmatrix"];
                 if(jfm.count("sections"))
                 {
@@ -215,7 +216,7 @@ dbFGrid::Open(std::string const &fnm)
             }
             else
             {
-                std::cerr << "DbFGrid fail opening " << fnm << "\n";
+                std::cerr << "DbFGrid failed to open " << fnm << "\n";
                 err = 1;
             }
             
@@ -645,7 +646,7 @@ dbFGrid::dumpObject(char const *nm, t_jobj const &o)
 void
 dbFGrid::dumpMatrix()
 {
-    std::cerr << "matrix has:\n";
+    std::cerr << "dbFGrid has:\n";
     std::cerr << "  " << this->m_layers.size() << " layers\n";
     std::cerr << "  " << this->m_sections.size() << " sections\n";
     for(int s=0;s<this->m_sections.size();s++)
