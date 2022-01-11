@@ -16,6 +16,11 @@ dbFGrid::dbFGrid(unsigned int sampleRate)
 
 dbFGrid::~dbFGrid()
 {
+    std::set<char const *>::iterator it = this->m_customCCNames.begin();
+    while (it != this->m_customCCNames.end())
+    {
+        delete [] *it;
+    }
 }
 
 int
@@ -148,14 +153,16 @@ dbFGrid::Open(std::string const &fnm)
                                 continue;
                             if(it.key() == "_se")
                             {
-                                // dictionary whose keys are the CCid and
+                                // dictionary whose keys are the CCid/label and
                                 // whose values are an array of subevent 
                                 // objects (CCs associated with a note)
                                 // these are flattened into the total event list.
                                 auto seobj = it.value();
                                 for(json::iterator seit = seobj.begin(); seit != seobj.end(); ++seit)
                                 {
+                                    auto sekey = seit.key(); // like "id:192", "Rate"
                                     auto selist = seit.value();
+                                    const char *ccName = this->getCustomCCName(sekey);
                                     // foreach subevent
                                     l.events.reserve(l.events.size() + selist.size());
                                     for(int k=0;k<selist.size();k++)
@@ -163,6 +170,7 @@ dbFGrid::Open(std::string const &fnm)
                                         l.events.push_back(event());
                                         event &se = l.events.back();
                                         se.subEvent = true;
+                                        se.customName = ccName;
                                         auto jse = selist[k]; // a subevent object
                                         // iterate its keys
                                         for (json::iterator itSub = jse.begin(); 
@@ -231,6 +239,30 @@ dbFGrid::Open(std::string const &fnm)
         err = -1;
     }
     return err;
+}
+
+/* tokenize incoming custom CCNames... */
+char const *
+dbFGrid::getCustomCCName(std::string const &str)
+{
+    char const *ret;
+    if(str.size() > 3 && str[0] == 'i' && str[1] == 'd' && str[2] == ':')
+        ret = nullptr;
+    else
+    {
+        std::set<char const *>::iterator it = this->m_customCCNames.find(str.c_str());
+        if(it != this->m_customCCNames.end())
+            ret = *it;
+        else
+        {
+            char *c = new char[str.size() + 1];
+            if(c)
+                strcpy(c, str.c_str());
+            this->m_customCCNames.insert(c);
+            ret = c;
+        }
+    }
+    return ret;
 }
 
 int
@@ -323,7 +355,8 @@ dbFGrid::Read(Event *evt, int soloLayer)
             evt->eType = Event::k_Wait;
             evt->value = minDist * this->m_colToBeat;
             evt->note = 0;
-            evt->ccID = 0;
+            evt->ccID = -1;
+            evt->ccName = nullptr;
             this->m_currentTime += minDist; // time in "columns"
         }
         else
@@ -564,6 +597,7 @@ dbFGrid::layer::GetEvent(float current, Event *evt, int verbosity)
         else
             evt->value = 0; // 0 velocity
         evt->ccID = 0;
+        evt->ccName = nullptr;
     }
     else
     {
@@ -572,15 +606,18 @@ dbFGrid::layer::GetEvent(float current, Event *evt, int verbosity)
         // session layers.
         evt->eType = Event::k_CC;
         evt->note = e.row; // this is our "MPE" content
-        evt->ccID = e.GetParam("id", this->defaultID);
+        evt->ccID = e.GetParam("id", -1); // default when customName
+        evt->ccName = e.customName; // usually nulltpr, otherwise token
+        if(evt->ccID == -1 && evt->ccName == nullptr)
+        {
+            std::cerr << "DbFGrid unidentifiable CC\n";
+            evt->ccID = this->defaultID;
+        }
+
         // currently a value is only present if it overrides the default
         // value. Problem is, we don't know the default value for every
         // possible CC.  Let's elect .5 as a good choice.
         evt->value = e.GetParam("v", .5f);
-        if(evt->ccID == 224)
-        {
-            // std::cerr << "dbFGrid PitchWheel " << evt->value  << "\n";
-        }
     }
     this->oIndex++;
 }

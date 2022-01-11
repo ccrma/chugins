@@ -7,6 +7,7 @@
 #include <vector>
 #include <unordered_map>
 #include <cassert>
+#include <set>
 
 using json = nlohmann::json;
 
@@ -43,7 +44,8 @@ public:
         } eType;
         unsigned layer;
         unsigned note;  // associated with row
-        unsigned ccID;
+        int ccID; // negative is invalid
+        char const *ccName; // used for custom CC names. usually nullptr
         unsigned chan;
         float value; // velocity, ccvalue, k_Wait dur 
     };
@@ -83,13 +85,16 @@ private:
         event()
         {
             this->subEvent = false;
+            this->customName = nullptr;
         }
         bool subEvent;
         int row; // midi-note
         float start, end; // in "column coords"
         t_jobj params;
+        char const *customName;
         float GetParam(char const *nm, float fallback);
     };
+
     struct layer
     {
         enum layerType
@@ -147,6 +152,16 @@ private:
     std::map<unsigned, unsigned> m_channelsInUse; // key is layer << 7 | note
     unsigned allocateChannel(unsigned note, unsigned layer);
     unsigned findChannel(unsigned note, unsigned layer, bool release);
+    char const *getCustomCCName(std::string const &); 
+    struct cmpStr
+    {
+        // strict weak ordering
+        bool operator()(char const *a, char const *b) const
+        {
+            return std::strcmp(a, b) < 0;
+        }
+    };
+    std::set<char const *, cmpStr> m_customCCNames;
 
 private:
     void dumpObjectList(char const *nm, t_jobjArray const &);
