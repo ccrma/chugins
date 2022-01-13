@@ -48,6 +48,7 @@ public:
         char const *ccName; // used for custom CC names. usually nullptr
         unsigned chan;
         float value; // velocity, ccvalue, k_Wait dur 
+        float timestamp; // columns
     };
     int Read(Event *, int layer=-1); // return 0 on success, non-zero means "done"
 

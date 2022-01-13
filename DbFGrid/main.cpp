@@ -38,6 +38,7 @@ static t_CKINT fgrdMsg_value_offset; // velocity, CC, waittime
 static t_CKINT fgrdMsg_id_offset; 
 static t_CKINT fgrdMsg_chan_offset; 
 static t_CKINT fgrdMsg_name_offset;  // for custom MPE names
+static t_CKINT fgrdMsg_column_offset;  // current time
 
 /* ---------------------------------------------------------------------------*/
 CK_DLL_CTOR( fgrd_ctor );
@@ -70,6 +71,7 @@ CK_DLL_QUERY(DbFGrid)
     fgrdMsg_id_offset = QUERY->add_mvar(QUERY, "int", "id", false);
     fgrdMsg_chan_offset = QUERY->add_mvar(QUERY, "int", "chan", false);
     fgrdMsg_name_offset = QUERY->add_mvar(QUERY, "string", "name", false);
+    fgrdMsg_column_offset = QUERY->add_mvar(QUERY, "float", "column", false);
     QUERY->end_class(QUERY);
 
     /* ------------------------------------------------------------- */
@@ -196,6 +198,7 @@ CK_DLL_MFUN(fgrd_read)
         OBJ_MEMBER_FLOAT(msg, fgrdMsg_note_offset) = evt.note;
         OBJ_MEMBER_INT(msg, fgrdMsg_id_offset) = evt.ccID;
         OBJ_MEMBER_INT(msg, fgrdMsg_chan_offset) = evt.chan;
+        OBJ_MEMBER_FLOAT(msg, fgrdMsg_column_offset) = evt.timestamp;
 
         Chuck_String *str = OBJ_MEMBER_STRING(msg, fgrdMsg_name_offset);
         if(evt.ccName)

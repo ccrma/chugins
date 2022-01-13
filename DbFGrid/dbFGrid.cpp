@@ -583,6 +583,7 @@ dbFGrid::layer::GetEvent(float current, Event *evt, int verbosity)
     int ievt = this->orderedEdges[this->oIndex];
     event &e = this->events[ievt/2];
     bool isDown = !(ievt & 1);
+    evt->timestamp = isDown ? e.start : e.end;
     if(this->type != k_ccLayer && e.subEvent == false)
     {
         if(verbosity > 0)
