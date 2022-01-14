@@ -27,7 +27,7 @@ public:
     int GetNumLayers();
     int GetBarSize();    // num of signature
     int GetBeatSize(); // denom of signature - 'which note value == beat'
-    int Rewind(int sectionIndex=-1);
+    int Rewind(int sectionIndex = -1);
 
     struct Event // delivered to read
     {

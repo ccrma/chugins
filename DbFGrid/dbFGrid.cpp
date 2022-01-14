@@ -287,9 +287,12 @@ dbFGrid::GetBeatSize()
 int
 dbFGrid::Rewind(int sectionIndex)
 {
+    // Define sectionIndex of 0 as valid even without sections since 
+    // CC values are on [0, 1].
     if(sectionIndex != -1 && this->m_sections.size() <= sectionIndex)
     {
-        std::cerr << "dbFGrid undefined section: " << sectionIndex << "\n";
+        if(sectionIndex != 0)
+            std::cerr << "dbFGrid undefined section: " << sectionIndex << "\n";
         sectionIndex = -1;
     }
     if(sectionIndex == -1)
