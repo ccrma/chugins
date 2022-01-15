@@ -108,6 +108,13 @@ dbFGrid::Open(std::string const &fnm)
                     if(fnm == "Session")
                         lt = layer::k_sessionLayer;
                     else
+                    if(fnm == "Comments")
+                    {
+                        // not performable but we don't want to mess with id
+                        this->m_layers.push_back(layer(layer::k_commentsLayer));
+                        continue; 
+                    }
+                    else
                     {
                         std::cerr << "DbFGrid unimplemented layer type " << fnm << "\n";
                         continue;

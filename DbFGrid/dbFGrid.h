@@ -102,7 +102,8 @@ private:
         {
             k_noteLayer,
             k_ccLayer,
-            k_sessionLayer
+            k_sessionLayer,
+            k_commentsLayer // skip comment events, so empty
         };
 
         layer(layerType t)
