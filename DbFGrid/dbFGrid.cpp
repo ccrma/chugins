@@ -223,7 +223,7 @@ dbFGrid::Open(std::string const &fnm)
             }
             else
             {
-                std::cerr << "DbFGrid failed to open " << fnm << "\n";
+                std::cerr << "DbFGrid invalid file '" << fnm << "'\n";
                 err = 1;
             }
             
@@ -243,7 +243,7 @@ dbFGrid::Open(std::string const &fnm)
     }
     else
     {
-        std::cerr << "DbFGrid: " << fnm << " not found\n";
+        std::cerr << "DbFGrid: '" << fnm << "' not found\n";
         err = -1;
     }
     return err;
