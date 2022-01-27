@@ -42,6 +42,7 @@ CK_DLL_TICKF(elliptic_tick);
 
 // this is a special offset reserved for Chugin internal data
 t_CKINT elliptic_data_offset = 0;
+static int debug = 0;
 
 extern "C" {
   extern double ellset(double f1, double f2, double f3,
@@ -175,6 +176,7 @@ private:
     if (nsects == 0)
       printf("Elliptic: filter not yet initialized. (You may need to relax the specs.)\n");
     else
+    if(debug)
       printf("Elliptic: filter initialized.\n");
   }
     
