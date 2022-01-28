@@ -90,6 +90,11 @@ set LLVM_DIR=C:/repos/llvm-project/llvm/build/lib/cmake/llvm
 cmake .. -DUSE_LLVM_CONFIG=off -DFAUST_DIR=C:/repos/faust
 ```
 
+Run this one more time:
+```bash
+cmake .. -DUSE_LLVM_CONFIG=off -DFAUST_DIR=C:/repos/faust
+```
+
 Then open `FaucK.sln` and build in Release/64.
 
 #### Post-build

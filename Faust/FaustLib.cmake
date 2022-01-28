@@ -72,6 +72,7 @@ FILE(GLOB llvm_components ${LLVM_DIR_TEMP}/../../../Release/lib/*.lib)
 # Todo: why does this one need to be excluded?
 list(FILTER llvm_components EXCLUDE REGEX ".*LLVM-C\.lib")
 string(STRIP "${llvm_components}" llvm_components)
+message("llvm_components: " ${llvm_components})
 target_link_libraries(dynamiclib PRIVATE ${llvm_components})
 
 ## Restore llvm directory
