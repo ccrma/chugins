@@ -9,6 +9,9 @@
 CK_DLL_CTOR(foldback_ctor);
 CK_DLL_DTOR(foldback_dtor);
 
+CK_DLL_MFUN(foldback_setBypass);
+CK_DLL_MFUN(foldback_getBypass);
+
 CK_DLL_MFUN(foldback_setMakeupGain);
 CK_DLL_MFUN(foldback_getMakeupGain);
 
@@ -27,8 +30,8 @@ struct FoldbackData
     float makeupGain;
     float threshold;
     float index;
+    int bypass;
 };
-
 
 CK_DLL_QUERY(FoldbackSaturator)
 {
@@ -41,6 +44,13 @@ CK_DLL_QUERY(FoldbackSaturator)
     QUERY->add_dtor(QUERY, foldback_dtor);
     
     QUERY->add_ugen_func(QUERY, foldback_tick, NULL, 1, 1);
+
+    QUERY->add_mfun(QUERY, foldback_setBypass, "void", "bypass");
+    QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->doc_func(QUERY, "A switch to toggle the effect");
+
+    QUERY->add_mfun(QUERY, foldback_getBypass, "void", "bypass");
+    QUERY->doc_func(QUERY, "Query bypass.");
 
     QUERY->add_mfun(QUERY, foldback_setMakeupGain, "float", "makeupGain");
     QUERY->add_arg(QUERY, "float", "arg");
@@ -76,9 +86,10 @@ CK_DLL_CTOR(foldback_ctor)
     OBJ_MEMBER_INT(SELF, foldback_data_offset) = 0;
 
     FoldbackData * fbdata = new FoldbackData;
-    fbdata->makeupGain = 1.0;
+    fbdata->makeupGain = 1.0f;
     fbdata->threshold = 0.6f;
-    fbdata->index = 2.0;
+    fbdata->index = 2.0f;
+    fbdata->bypass = 0;
     
     OBJ_MEMBER_INT(SELF, foldback_data_offset) = (t_CKINT) fbdata;
 }
@@ -97,6 +108,11 @@ CK_DLL_DTOR(foldback_dtor)
 CK_DLL_TICK(foldback_tick)
 {
     FoldbackData * fbdata = (FoldbackData *) OBJ_MEMBER_INT(SELF, foldback_data_offset);
+    if(fbdata->bypass)
+    {
+        *out = in;
+        return TRUE;
+    }
     SAMPLE theSample = in;
     if(theSample > fbdata->threshold)
     {
@@ -111,6 +127,18 @@ CK_DLL_TICK(foldback_tick)
     }
     *out = theSample * (1.0/fbdata->threshold) * fbdata->makeupGain;
     return TRUE;
+}
+
+CK_DLL_MFUN(foldback_setBypass)
+{
+    FoldbackData * fbdata = (FoldbackData *) OBJ_MEMBER_INT(SELF, foldback_data_offset);
+    fbdata->bypass = GET_NEXT_INT(ARGS);
+}
+
+CK_DLL_MFUN(foldback_getBypass)
+{
+    FoldbackData * fbdata = (FoldbackData *) OBJ_MEMBER_INT(SELF, foldback_data_offset);
+    RETURN->v_int = fbdata->bypass;
 }
 
 CK_DLL_MFUN(foldback_setMakeupGain)
