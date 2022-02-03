@@ -97,15 +97,19 @@ CK_DLL_DTOR(foldback_dtor)
 CK_DLL_TICK(foldback_tick)
 {
     FoldbackData * fbdata = (FoldbackData *) OBJ_MEMBER_INT(SELF, foldback_data_offset);
-    
     SAMPLE theSample = in;
-
-    if((theSample > fbdata->threshold) || (theSample < fbdata->threshold * -1.0)){
-        theSample = fabs(fabs(fmod((float)(theSample - fbdata->threshold), (float)(fbdata->threshold * 4.0))) - fbdata->threshold * 2.0) - fbdata->threshold;
+    if(theSample > fbdata->threshold)
+    {
+        float over = theSample - fbdata->threshold;
+        theSample = fmodf(fbdata->threshold - over*fbdata->index, fbdata->threshold);
     }
-
+    else
+    if(theSample < -fbdata->threshold)
+    {
+        float under = fbdata->threshold + theSample; // .6 + -.76 => -.16
+        theSample = fmodf(-fbdata->threshold - under*fbdata->index, fbdata->threshold);
+    }
     *out = theSample * (1.0/fbdata->threshold) * fbdata->makeupGain;
-
     return TRUE;
 }
 
