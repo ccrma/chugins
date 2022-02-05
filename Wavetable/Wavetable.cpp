@@ -197,6 +197,7 @@ private:
         return (y1 * (1 - mu) + y2 * mu);
     }
 
+    /* this is a Catmull-Rom cubic... */
     double CubicInterpolate(double y0, double y1, double y2, double y3, double mu)
     {
         double a0, a1, a2, a3, mu2;
