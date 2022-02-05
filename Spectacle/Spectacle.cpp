@@ -116,11 +116,11 @@ public:
     float *eq = eqtable;
     float *feed = fbtable;
     for (int i = 0; i < kMaxTableLen; i++)
-      {
-	*del++ = rand2f(mindeltime, maxdeltime);
-	*eq++ = 0.0;
-	*feed++ = 0.0;
-      }
+    {
+        *del++ = rand2f(mindeltime, maxdeltime);
+        *eq++ = 0.0;
+        *feed++ = 0.0;
+    }
     dttablen = eqtablen = fbtablen = kDefaultTableSize;
     minfreq = maxfreq = 0.0;
     posteq = hold = false;
@@ -163,15 +163,15 @@ public:
     float dt = (p / srate);
     dt = CLIP(dt, kMinMaxDelTime, kMaxMaxDelTime);
 	if (dt > maxdeltime)
-	  {
+	{
 		// pin existing delay times to new maximum
 		for (int i = 0; i < dttablen; i++)
-		  {
+		{
 			if (dttable[i] > dt)
 			  dttable[i] = dt;
-		  }
+		}
 		spectdelay->set_maxdeltime(dt);
-	  }
+	}
     maxdeltime = dt;
 	//printf("dt: %f, maxdeltime: %f\n",dt,maxdeltime);
     return p;
@@ -311,9 +311,9 @@ public:
   int setTableLen( t_CKINT p )
   {
 	if (p > kMaxTableLen)
-	  {
+    {
 		printf("Spectacle: tableSize cannot exceed %d.\n",kMaxTableLen);
-	  }
+    }
 	p = CLIP(p,1,kMaxTableLen);
 	dttablen = p;
 	fbtablen = p;
@@ -354,46 +354,46 @@ public:
 	return x;
   }
 
-    int setTable ( const char* p, const char* q )
+  int setTable ( const char* p, const char* q )
   {
 	const char p0 = p[0];
 	const char q0 = q[0];
 	int table=0, type;
 
 	switch (p0)
-	  {
-	  case 'a':
-		type = 0;
+    {
+	  case 'a': // all
+		table = 0;
 		break;
-	  case 'd':
-		type = 1;
+	  case 'd': // delay
+		table = 1;
 		break;
-	  case 'e':
-		type = 2;
+	  case 'e': // eq
+		table = 2;
 		break;
-	  case 'f':
-		type = 3;
+	  case 'f': // freq
+		table = 3;
 		break;
 	  default:
 		printf ("Spectacle: error: first argument \"%s\" not valid.\n",p);
 		return 0;
-	  }
+    }
 
 	switch (q0)
-	  {
-	  case 'a':
+    {
+	  case 'a': // ascending
 		type = 0;
 		break;
-	  case 'd':
+	  case 'd': // descending
 		type = 1;
 		break;
-	  case 'r':
+	  case 'r': // random
 		type = 2;
 		break;
 	  default:
 		printf ("Spectacle: error: second argument \"%s\" not valid.\n",q);
 		return 0;
-	  }
+    }
 
 	if (table == 0 || table == 1) setDelayTable(type);
 	if (table == 0 || table == 2) setEQTable(type);
@@ -418,58 +418,58 @@ private:
   bool hold, posteq;
   float mix;
 
-  void setDelayTable (int type)
+  void setDelayTable (int type) // range over min/maxdeltime
   {
 	for (int i=0; i<dttablen; i++)
 	  {
 		switch (type)
 		  {
-		  case 0:
+		  case 0: // ascending
 			dttable[i] = lerp((float)i, 0, (float)dttablen, mindeltime, maxdeltime);
 			break;
-		  case 1:
+		  case 1: // descending
 			dttable[i] = lerp((float)i, (float)dttablen, 0, mindeltime, maxdeltime);
 			break;
-		  default:
+		  default: // random
 			dttable[i] = rand2f(mindeltime, maxdeltime);
 		  }
 	  }
   }
 
-  void setEQTable (int type)
+  void setEQTable (int type) // units are dB [-24, 24]
   {
 	for (int i=0; i<eqtablen; i++)
-	  {
+    {
 		switch (type)
-		  {
-		  case 0:
+        {
+		  case 0: // ascending
 			eqtable[i] = lerp((float)i, 0, (float)dttablen, -24.f,24.f);
 			break;
-		  case 1:
+		  case 1: // descending
 			eqtable[i] = lerp((float)i, (float)dttablen, 0, -24.f,24.f);
 			break;
-		  default:
+		  default: // random
 			eqtable[i] = rand2f(-24.f,24.f);
-		  }
-	  }
+        }
+    }
   }
 
-  void setFBTable (int type)
+  void setFBTable (int type) // feedback, on [-1, 1]
   {
 	for (int i=0; i<fbtablen; i++)
-	  {
+    {
 		switch (type)
-		  {
-		  case 0:
+        {
+		  case 0: // ascending
 			fbtable[i] = lerp((float)i, 0, (float)fbtablen, -1.0 , 1.0);
 			break;
-		  case 1:
+		  case 1: // descending
 			fbtable[i] = lerp((float)i, (float)fbtablen, 0, -1.0, 1.0);
 			break;
-		  default:
+		  default: // random
 			fbtable[i] = rand2f( -0.1, 0.1 );
-		  }
-	  }
+        }
+    }
   }
 
   float rand2f (float min, float max)
@@ -480,8 +480,8 @@ private:
   float lerp (float val, float inlow, float inhigh, float outlow, float outhigh)
   {
 	return outlow + (val-inlow) * (outhigh-outlow) / (inhigh-inlow);
-	}
-};
+  }
+}; // end class Spectacle
 
 
 // query function: chuck calls this when loading the Chugin
@@ -871,7 +871,7 @@ CK_DLL_MFUN(spectacle_setTable)
 }
 
 // example implementation for setter
-CK_DLL_MFUN(spectacle_setTableLen)
+CK_DLL_MFUN(spectacle_setTableLen) // aka Bands
 {
   // get our c++ class pointer
   Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);

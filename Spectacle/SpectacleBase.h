@@ -122,6 +122,7 @@ class SpectacleBase {
   int *_binmaptable;
   
  private:
+  void cleanup();
   int make_windows();
   void prepare_input(const float buf[]);
   void prepare_output();
