@@ -115,27 +115,27 @@ public:
     // set parameter example
     float setFreq(t_CKFLOAT p)
     {
-        freq = p;
-        step = table_size * freq / srate;
+        this->freq = p;
+        this->step = this->table_size * this->freq / this->srate;
         return freq;
     }
 
     float getFreq()
     {
-        return freq;
+        return this->freq;
     }
 
     int setInterpolate(t_CKINT p)
     {
         if (p > 4 || p < 0)
             p = 0;
-        interpolate = p;
+        this->interpolate = p;
         return p;
     }
 
     int getInterpolate()
     {
-        return interpolate;
+        return this->interpolate;
     }
 
     int setSync(t_CKINT p)
@@ -150,16 +150,24 @@ public:
 
     int getSync()
     {
-        return sync;
+        return this->sync;
     }
 
     void setTable(Chuck_Object *p)
     {
         Chuck_Array8 *userArray = (Chuck_Array8 *)p;
-
-        current_table = &userArray->m_vector[0];
-        table_size = (int)userArray->size();
-        step = table_size * freq / srate;
+        if(userArray->m_vector.size() > 0)
+        {
+            // Copy in to prevent confusion if user edits the array.
+            this->user_table = userArray->m_vector; 
+            this->current_table = &this->user_table[0];
+            this->table_size = this->user_table.size();
+            // step is normalized so different table sizes can
+            // still produce the same frequency.
+            this->step = this->table_size * this->freq / srate;
+        }
+        else
+            fprintf(stderr, "Wavetable.setTable called with empty table\n");
         /*
         printf("size of userArray: %d\n", table_size);
         for (int i=0; i<table_size; i++)
@@ -173,6 +181,7 @@ private:
     double table_pos;
     double *internal_table;
     double *current_table;
+    std::vector<double> user_table; // we copy-in
     float freq;
     double step;
     unsigned int table_size, sync;
@@ -183,7 +192,7 @@ private:
     {
         for (int i = 0; i < table_size; i++)
         {
-            internal_table[i] = sin(TWO_PI * i / table_size);
+            this->internal_table[i] = sin(TWO_PI * i / table_size);
         }
     }
 
