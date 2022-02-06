@@ -25,6 +25,7 @@ public:
     int Open(std::string const &filepath);
     int Close();
     int GetNumLayers();
+    bool IsValid() { return this->GetNumLayers() > 0; }
     int GetBarSize();    // num of signature
     int GetBeatSize(); // denom of signature - 'which note value == beat'
     int Rewind(int sectionIndex = -1);
@@ -52,8 +53,21 @@ public:
     };
     int Read(Event *, int layer=-1); // return 0 on success, non-zero means "done"
 
+    /**
+     * @brief  read the enter channel data within the specified cell.
+     * 
+     * @param nm  name of the channel (eg Pan)
+     * @param layer  layer index
+     * @param col  column index of cell
+     * @param row  row index of cell
+     * @param results results will be placed here.
+     * @return int 0 on fail, npts on success
+     */
+    int ReadChannel(char const *nm, int layer, int col, int row,
+        std::vector<double> &results);
+
 private:
-    struct section
+    struct Section
     {
         unsigned c0, c1;
     };
@@ -64,7 +78,7 @@ private:
     float m_sigDenom; // from file (.25)
     float m_columnUnit;  // from file (eg .125)
     float m_colToBeat; // combines sigDenom and columnUnit
-    std::vector<section> m_sections;
+    std::vector<Section> m_sections;
     int m_verbosity;
 
     float m_currentTime; // measured in fractional columns
@@ -81,9 +95,9 @@ private:
         octaveRange: {"x":1,"y":7}
         scaleRoot: 0
     */
-    struct event // events and subevents
+    struct Cell // cell events and subevents
     {
-        event()
+        Cell()
         {
             this->subEvent = false;
             this->customName = nullptr;
@@ -96,7 +110,7 @@ private:
         float GetParam(char const *nm, float fallback);
     };
 
-    struct layer
+    struct Layer
     {
         enum layerType
         {
@@ -106,7 +120,7 @@ private:
             k_commentsLayer // skip comment events, so empty
         };
 
-        layer(layerType t)
+        Layer(layerType t)
         {
             this->type = t;
             this->Rewind();
@@ -127,19 +141,26 @@ private:
         { 
             return (this->section1 == 0) ? this->bbox[1] : this->section1;
         }
+        /**
+         * @brief Fill data with values for the named subevent located
+         * within the cell located at (col, row).
+         * @return int  0 on fail, npts on success
+         */
+        int ReadSubEventData(char const *name,
+            unsigned col, unsigned row, std::vector<double> &data);
 
         layerType type;
         char const *defaultKey;
         float defaultValue; // for events without one
         int defaultID; // CC id
         t_jobj fparams;
-        std::vector<event> events;
+        std::vector<Cell> cells;
         std::vector<int> orderedEdges;
         float bbox[2];
         unsigned oIndex; // last accessed ordered event
         unsigned section0, section1;
     }; // end of struct layer
-    std::vector<layer> m_layers;
+    std::vector<Layer> m_layers;
 
 private:
     // We associate a MIDI channel with a note following MPE practice.
@@ -154,7 +175,8 @@ private:
     std::map<unsigned, unsigned> m_channelsInUse; // key is layer << 7 | note
     unsigned allocateChannel(unsigned note, unsigned layer);
     unsigned findChannel(unsigned note, unsigned layer, bool release);
-    char const *getCustomCCName(std::string const &); 
+    bool hasCustomCCName(char const *nm);
+    char const *getCustomCCName(char const *nm);
     struct cmpStr
     {
         // strict weak ordering
@@ -163,7 +185,7 @@ private:
             return std::strcmp(a, b) < 0;
         }
     };
-    std::set<char const *, cmpStr> m_customCCNames;
+    std::set<char *, cmpStr> m_customCCNames;
 
 private:
     void dumpObjectList(char const *nm, t_jobjArray const &);

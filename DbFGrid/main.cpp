@@ -49,6 +49,7 @@ CK_DLL_MFUN( fgrd_open );
 CK_DLL_MFUN( fgrd_rewind );
 CK_DLL_MFUN( fgrd_rewindSection );
 CK_DLL_MFUN( fgrd_read );
+CK_DLL_MFUN( fgrd_readChannel );
 CK_DLL_MFUN( fgrd_numLayers );
 CK_DLL_MFUN( fgrd_beatSize );
 CK_DLL_MFUN( fgrd_barSize );
@@ -91,6 +92,16 @@ CK_DLL_QUERY(DbFGrid)
     QUERY->add_mfun(QUERY, fgrd_read, "int", "read");
     QUERY->add_arg(QUERY, "FGridMsg", "msg");
     QUERY->add_arg(QUERY, "int", "soloLayer"); // set to -1 to read all layers
+
+    // readChannel("mysignal", 8, 107, 0, mytable)
+    // column and row numbers can be found in GridEditor's Cells panel.
+    // returns 0 on error, numpoints on success.
+    QUERY->add_mfun(QUERY, fgrd_readChannel, "int", "readChannel");
+    QUERY->add_arg(QUERY, "string", "channel");
+    QUERY->add_arg(QUERY, "int", "column");
+    QUERY->add_arg(QUERY, "int", "row");
+    QUERY->add_arg(QUERY, "int", "layer");
+    QUERY->add_arg(QUERY, "float[]", "table");
 
     // rewind()
     QUERY->add_mfun(QUERY, fgrd_rewind, "void", "rewind");
@@ -181,6 +192,31 @@ CK_DLL_MFUN(fgrd_beatSize)
 {
     dbFGrid * c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
     RETURN->v_int = c->GetBeatSize(); // from file signature
+}
+
+// readChannel("mychan", int col, int row, int layer, float[] myarray)
+// reads the named control data within the cell identified by 
+// (col, row, layer)
+// return 0 on fail
+CK_DLL_MFUN(fgrd_readChannel)
+{
+    dbFGrid *c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
+    int npts = 0; // means fail
+    if(c->IsValid())
+    {
+        std::string channame = GET_NEXT_STRING_SAFE(ARGS);
+        int column = GET_NEXT_INT(ARGS);
+        int row = GET_NEXT_INT(ARGS);
+        int layer = GET_NEXT_INT(ARGS);
+        if(layer < c->GetNumLayers())
+        {
+            Chuck_Object *o = GET_NEXT_OBJECT(ARGS);
+            Chuck_Array8 *userArray = (Chuck_Array8 *)o;
+            npts = c->ReadChannel(channame.c_str(), layer, column, row, 
+                            userArray->m_vector);
+        }
+    }
+    RETURN->v_int = npts;
 }
 
 CK_DLL_MFUN(fgrd_read)
