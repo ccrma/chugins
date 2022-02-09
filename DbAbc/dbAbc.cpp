@@ -23,6 +23,7 @@ dbAbc::~dbAbc()
 int
 dbAbc::Open(std::string const &fp)
 {
+    // fprintf(stderr, "DbAbc chugin open: '%s'\n", fp.c_str());
     this->Close();
     this->m_parser = new AbcParser();
     this->m_store = new AbcStore(this->m_parser);
@@ -69,8 +70,21 @@ dbAbc::Open(std::string const &fp)
     std::istream *istr;
     if(openFile)
     {
-        fstr.open(fp.c_str());
-        istr = &fstr;
+        fstr.open(fp.c_str(), std::ifstream::in);
+        if(fstr.good())
+        {
+            /*
+            fstr.seekg(0, std::ios::end);
+            fprintf(stderr, "DbAbc opened file sized %d\n", (int) fstr.tellg());
+            fstr.seekg(0, std::ios::beg);
+            */
+            istr = &fstr;
+        }
+        else
+        {
+            istr = nullptr;
+            fprintf(stderr, "Problem opening %s\n", fp.c_str());
+        }
     }
     else
     {
@@ -78,13 +92,19 @@ dbAbc::Open(std::string const &fp)
         istr = &sstr;
     }
 
-    if(istr->good())
+    if(istr && istr->good())
     {
         // because we've requested "_perform_", the abc parse result 
         // is left "hanging" within AbcStore+AbcGenMidi. Now we're read
         // for calls to getNextEvent
         this->m_parser->Parse(istr, this->m_store, AbcParser::k_AbcToMidi);
         this->m_numTracks = this->m_store->genMidi.ntracks;
+        // fprintf(stderr, "DbAbc::numTracks %d\n", this->m_numTracks);
+        if(this->m_numTracks == 0)
+        {
+            std::cerr << "DbABC: no tracks found" << filename.c_str() << "\n";
+            return 1;
+        }
         // NB: not all have "tracks", in multitrack files first track is
         // tempo-only. There, a tempo-map can trigger tempo changes. 
         //  - Is Tempo information important to client?
@@ -98,6 +118,9 @@ dbAbc::Open(std::string const &fp)
         this->m_activeTrack = 0;
         this->writeTempo(600000); // 100 bpm
         this->m_activeTrack = -1;
+
+        if(fstr.good())
+            fstr.close();
     }
     else
         std::cerr << "dbAbc: " << filename.c_str() << " not found\n";

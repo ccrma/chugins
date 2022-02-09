@@ -57,6 +57,7 @@ AbcParser::parseBegin(ParseMode m)
     this->nokeysig = 0;
     this->fileline_number = 1;
     this->intune = 1;
+    this->ignore_line = 0;
     this->temperament = 0;
     this->oldchordconvention = 0;
     this->parserOn();
@@ -72,7 +73,7 @@ AbcParser::parseEnd()
 void
 AbcParser::parserOff()
 {
-    this->parsing = 1;
+    this->parsing = 0;
     this->slur = 0;
 }
 
@@ -222,6 +223,7 @@ AbcParser::parseStream(std::istream *istream)
 void
 AbcParser::parseline(char const *line)
 {
+    // fprintf(stderr, "AbcParser.parseline %s %d\n", line, this->parseMode);
     if(strcmp(line,"%%begintext") == 0)
         ignore_line = 1;
     else
@@ -349,7 +351,7 @@ AbcParser::parse_precomment(char const *s)
 {
     char package[40];
     char const *p;
-    sscanf(s, "%%%%abc-version %3s", abcversion);
+    sscanf(s, "%%%%abc-version %3s", const_cast<char*>(abcversion)); 
     if(*s == '%')
     {
         p = s + 1;
@@ -1011,6 +1013,7 @@ AbcParser::parsefield(char key, char const *f)
             /* [JA] 2020-10-14 */
             this->handler->error("Missing blank line before new tune");
         }
+        // fprintf(stderr, "----------refno %d\n", x);
         this->handler->refno(x);
         this->ignore_line = 0; /* [SS] 2017-04-12 */
         this->reset_parser_status(); /* [JA] 2020-10-12 */

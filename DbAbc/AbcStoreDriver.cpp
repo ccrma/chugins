@@ -198,7 +198,7 @@ void
 AbcStore::setup_trackstructure() 
 {
     AbcGenMidi::Track *td = this->genMidi.trackdescriptor;
-    td[0].tracktype = AbcGenMidi::Tracktype::NOTES;
+    td[0].tracktype = AbcGenMidi::NOTES;
     td[0].voicenum = 1; // each voice can have gchords
     td[0].midichannel = -1; // unspecified, 
 
@@ -227,39 +227,39 @@ AbcStore::setup_trackstructure()
            this->error("Too many tracks");
            return;
         }
-        td[this->genMidi.ntracks].tracktype = AbcGenMidi::Tracktype::NOTES;
+        td[this->genMidi.ntracks].tracktype = AbcGenMidi::NOTES;
         td[this->genMidi.ntracks].voicenum = p->indexno;
         td[this->genMidi.ntracks].midichannel = p->midichannel; // -1 means unspecified (ok)
         if(p->haswords)
         {
             if(!this->separate_tracks_for_words) 
             {
-                td[this->genMidi.ntracks].tracktype = AbcGenMidi::Tracktype::NOTEWORDS;
+                td[this->genMidi.ntracks].tracktype = AbcGenMidi::NOTEWORDS;
                 td[this->genMidi.ntracks].voicenum = p->indexno;
             } 
             else 
             {
                 this->genMidi.ntracks++;
-                td[this->genMidi.ntracks].tracktype = AbcGenMidi::Tracktype::WORDS;
+                td[this->genMidi.ntracks].tracktype = AbcGenMidi::WORDS;
                 td[this->genMidi.ntracks].voicenum = td[this->genMidi.ntracks-1].voicenum;
             }
         }
         if(p->hasgchords)
         {
             this->genMidi.ntracks++;
-            td[this->genMidi.ntracks].tracktype = AbcGenMidi::Tracktype::GCHORDS;
+            td[this->genMidi.ntracks].tracktype = AbcGenMidi::GCHORDS;
             td[this->genMidi.ntracks].voicenum = p->indexno;
         }
         if(p->hasdrums)
         {
             this->genMidi.ntracks++;
-            td[this->genMidi.ntracks].tracktype = AbcGenMidi::Tracktype::DRUMS;
+            td[this->genMidi.ntracks].tracktype = AbcGenMidi::DRUMS;
             td[this->genMidi.ntracks].voicenum = p->indexno;
         }
         if(p->hasdrone) 
         {
             this->genMidi.ntracks++;  
-            td[this->genMidi.ntracks].tracktype = AbcGenMidi::Tracktype::DRONE;
+            td[this->genMidi.ntracks].tracktype = AbcGenMidi::DRONE;
             td[this->genMidi.ntracks].voicenum = p->indexno;
         }
         this->genMidi.ntracks++;
