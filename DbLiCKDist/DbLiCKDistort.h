@@ -40,7 +40,9 @@ public:
     }
 };
 
-// db: not sure what the intent is here.
+// db: not sure what the intent is here. ck implementation has
+// even and odd running in different shred each 2 and 4 samples.
+// Seems to suggest that dropping samples is intended?
 class BucketBrigade : public DbLiCKDistort
 {
 public:
@@ -59,16 +61,16 @@ public:
     float Doit(float x) override
     {
         this->last = x;
-        if(this->state == 2)
+        if(this->state == 0)
         {
-            this->odd();
+            this->even();
             this->state++;
         }
         else
-        if(this->state == 4)
+        if(this->state == 1)
         {
-            this->even();
-            this->state = 1;
+            this->odd();
+            this->state = 0;
         }
         else
             this->state++;
