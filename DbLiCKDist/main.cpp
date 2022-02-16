@@ -18,10 +18,13 @@
  U.S.A.
  ---------------------------------------------------------------------
 */
-#include "DbLiCKDistort.h"
+#define _USE_MATH_DEFINES
 
 #include "chuck_dl.h"
 #include "chuck_def.h"
+
+#include "DbLiCKDistort.h"
+
 
 CK_DLL_CTOR( dbld_ctor );
 CK_DLL_DTOR( dbld_dtor );

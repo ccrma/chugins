@@ -6,8 +6,6 @@
 //
 // See http://electro-music.com/forum/topic-19287.html&postorder=asc
 
-#define _USE_MATH_DEFINES
-
 #include <cmath>
 #include <cstring> // memset
 #include <string>
@@ -311,7 +309,7 @@ public:
         else
         {
             std::cerr << "DbLiCKDistort unknown effect " << nm << "\n";
-            std::cerr << "  expect on of:\n" <<
+            std::cerr << "  expect one of:\n" <<
                 "  WaveShaper, Atan, BucketBrigade,\n"  <<
                 "  Clip(range), Frostburn, FullRectifier,\n" <<
                 "  Offset(x), Phase(x), Invert, " <<
