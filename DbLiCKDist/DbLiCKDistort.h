@@ -98,13 +98,17 @@ class Clip : public DbLiCKDistort
 public:
     float min, max;
 
-    Clip() : DbLiCKDistort("Clip") {}
+    Clip() : DbLiCKDistort("Clip") 
+    {
+        this->setRange(.8);
+    }
     
     virtual void SetParam(int i, float x) override
     {
         if(i == 0)
             this->setRange(x);
     }
+
     void setRange(float x)
     {
         float half = fabsf(x) / 2.f;
@@ -138,8 +142,13 @@ class FullRectifier : public DbLiCKDistort
 public:
     float bias;
     FullRectifier() : DbLiCKDistort("FullRectifier")
-    {
+    { 
         this->bias = 0.f;
+    }
+    virtual void SetParam(int i, float x) override
+    {
+        if(i == 0)
+            this->bias = x;
     }
     float Doit(float x) override
     {
@@ -155,6 +164,11 @@ public:
     {
         this->offset = 0.f;
     }
+    virtual void SetParam(int i, float x) override
+    {
+        if(i == 0)
+            this->offset = x;
+    }
     float Doit(float x) override
     {
         return x + this->offset;
@@ -168,6 +182,13 @@ public:
     Phase() : DbLiCKDistort("Phase")
     {
         this->inOrOut = true; // in phase
+    }
+    virtual void SetParam(int i, float x) override
+    {
+        if(i == 0)
+        {
+            this->inOrOut = x > .5;
+        }
     }
     float Doit(float x) override
     {
@@ -309,6 +330,7 @@ public:
         if(!strcmp(nm, "Tanh"))
             newDistort = new Tanh();
         else
+        if(strcmp(nm, "None") != 0)
         {
             std::cerr << "DbLiCKDistort unknown effect " << nm << "\n";
             std::cerr << "  expect one of:\n" <<
@@ -316,17 +338,15 @@ public:
                 "  Clip(range), Frostburn, FullRectifier,\n" <<
                 "  Offset(x), Phase(x), Invert, " <<
                 "  KijjazDist, KijjazDist2, KijjazDist3, KijjazDist4,\n" <<
-                "  Ribbon, Tanh\n";
+                "  Ribbon, Tanh, None\n";
         }
         if(!newDistort)
             err = 1;
-        else
-        {
-            this->name = nm;
-            if(this->currentDistortion)
-                delete this->currentDistortion;
-            this->currentDistortion = newDistort;
-        }
+
+        this->name = nm;
+        if(this->currentDistortion)
+            delete this->currentDistortion;
+        this->currentDistortion = newDistort;
         return err;
     }
 
