@@ -18,6 +18,19 @@ public:
     virtual ~DbLiCKDistort() {};
     virtual void SetParam(int i, float x) {}
     virtual float Doit(float x) = 0L;
+
+    void SetSampleRate(float srate)
+    {
+        this->sampleRate = srate;
+    }
+
+    float FreqToStep(float freq)
+    {
+        return freq/this->sampleRate;
+    }
+
+protected:
+    float sampleRate; 
 };
 
 class WaveShaper : public DbLiCKDistort // default WaveShaper
@@ -123,6 +136,132 @@ public:
         if(x < this->min)
             return this->min;
         return x;
+    }
+};
+
+/* LiCK's Chew effect has two triangular LFOs running 
+ * by default at 4400 hz and depth of .1. These are
+ * used to define a top and bottom envelope against
+ * which to clip the signal in teh clip region we
+ * replace the signal with the triwave.
+ */
+class Chew : public DbLiCKDistort
+{
+public:
+    float lfo0Step; 
+    float lfo0Depth;
+    float lfo1Step;
+    float lfo1Depth;
+    float phase0;
+    float phase1;
+
+    float cutoff0; 
+    float cutoff1;
+    float dc0; 
+    float dc1;
+
+    Chew() : DbLiCKDistort("Chew") 
+    {
+        this->lfo0Depth = .1f;
+        this->lfo0Step = this->FreqToStep(4400.f);
+        this->lfo1Depth = .1f;
+        this->lfo1Step = this->FreqToStep(4400.f);
+        this->phase0 = 0.f;
+        this->phase1 = 0.f;
+        this->updateCutoffs();
+    }
+    
+    virtual void SetParam(int i, float x) override
+    {
+        switch(i)
+        {
+        case 0: 
+            this->lfo0Step = this->FreqToStep(x);
+            break;
+        case 1:
+            this->lfo0Depth = x;
+            this->updateCutoffs();
+            break;
+        case 2:
+            this->lfo1Step = this->FreqToStep(x);
+            break;
+        case 3:
+            this->lfo1Depth = x;
+            this->updateCutoffs();
+            break;
+        }
+    }
+
+    void updateCutoffs()
+    {
+        this->cutoff0 = 1.0f - this->lfo0Depth;
+        this->dc0 = 1.0f - this->lfo0Depth/2.f;
+        this->cutoff1 = -1.0f + this->lfo1Depth;
+        this->dc1 = -1.0f + this->lfo1Depth/2.f;
+    }
+
+    float triwave(float phase, float depth)
+    {
+        float sig;
+        float x = phase + .25f; // at x == .25, we're at a zero crossing
+        if(x > 1.f) 
+            x -= 1.f;
+        if(x < .5f) // positive slope
+            sig = -1.f + 4.f * x; 
+        else
+            sig = 1.f - 4.f * x;
+        return sig * depth;
+    }
+
+    void incphase(float &phase, float step)
+    {
+        phase += step;
+        if(phase > 1.f)
+            phase -= 1.f;
+        else
+        if(phase < 0.f)
+            phase += 1.f;
+    }
+
+    float Doit(float x) override
+    {
+        float sig;
+        if(x > this->cutoff0)
+        {
+            sig = this->dc0 + this->triwave(this->phase0, this->lfo0Depth);
+        }
+        else
+        if(x < this->cutoff1)
+        {
+            sig = this->dc1 - this->triwave(this->phase1, this->lfo1Depth);
+        }
+        else
+            sig = x;
+        this->incphase(this->phase0, this->lfo0Step);
+        this->incphase(this->phase1, this->lfo1Step);
+        return sig;
+    }
+};
+
+class Duff : public DbLiCKDistort
+{
+public:
+    float shape; // 0 to 1
+
+    Duff() : DbLiCKDistort("Duff") 
+    {
+        this->shape = .5;
+    }
+    
+    virtual void SetParam(int i, float x) override
+    {
+        if(i == 0)
+            this->shape = x;
+    }
+
+    float Doit(float x) override
+    {
+        return x / ((1.1f - this->shape) + fabsf(x));
     }
 };
 
@@ -277,9 +416,13 @@ public:
 /* -------------------------------------------------------------- */
 class DbLiCKDistortMgr
 {
+private:
+    float srate;
+
 public:
-    DbLiCKDistortMgr() : currentDistortion(nullptr) 
+    DbLiCKDistortMgr(float sampleRate) : currentDistortion(nullptr) 
     {
+        this->srate = sampleRate;
         this->Set("WaveShaper");
     }
     ~DbLiCKDistortMgr() { delete this->currentDistortion; }
@@ -297,8 +440,14 @@ public:
         if(!strcmp(nm, "BucketBrigade"))
             newDistort = new BucketBrigade();
         else
+        if(!strcmp(nm, "Chew"))
+            newDistort = new Chew();
+        else
         if(!strcmp(nm, "Clip"))
             newDistort = new Clip();
+        else
+        if(!strcmp(nm, "Duff"))
+            newDistort = new Duff();
         else
         if(!strcmp(nm, "Frostburn"))
             newDistort = new Frostburn();
@@ -345,6 +494,8 @@ public:
         }
         if(!newDistort)
             err = 1;
+        else
+            newDistort->SetSampleRate(this->srate);
 
         this->name = nm;
         if(this->currentDistortion)

@@ -57,7 +57,6 @@ CK_DLL_QUERY(DbLiCKDistort)
     // tick
     QUERY->add_ugen_func(QUERY, dbld_tick, NULL, 1, 1);
 
-
     dbld_data_offset = QUERY->add_mvar(QUERY, "int", "@dbLiCKdistort_data", false);
     QUERY->end_class(QUERY);
     return TRUE;
@@ -66,7 +65,8 @@ CK_DLL_QUERY(DbLiCKDistort)
 CK_DLL_CTOR(dbld_ctor)
 {
     OBJ_MEMBER_INT(SELF, dbld_data_offset) = 0;
-    DbLiCKDistortMgr * c = new DbLiCKDistortMgr();
+    float srate = API->vm->get_srate(API, SHRED);
+    DbLiCKDistortMgr * c = new DbLiCKDistortMgr(srate);
     OBJ_MEMBER_INT(SELF, dbld_data_offset) = (t_CKINT) c;
 }
 
