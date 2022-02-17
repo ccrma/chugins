@@ -278,7 +278,10 @@ public:
 class DbLiCKDistortMgr
 {
 public:
-    DbLiCKDistortMgr() : currentDistortion(nullptr) {}
+    DbLiCKDistortMgr() : currentDistortion(nullptr) 
+    {
+        this->Set("WaveShaper");
+    }
     ~DbLiCKDistortMgr() { delete this->currentDistortion; }
 
     int Set(char const *nm) // return 0 on success
