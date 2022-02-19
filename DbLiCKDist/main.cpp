@@ -32,8 +32,6 @@ CK_DLL_MFUN( dbld_distortion );
 CK_DLL_MFUN( dbld_setparam );
 CK_DLL_TICK( dbld_tick );
 
-// set basis
-
 t_CKINT dbld_data_offset = 0;
 
 /* -------------------------------------------------------------------- */

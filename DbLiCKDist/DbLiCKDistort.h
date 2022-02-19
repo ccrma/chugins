@@ -209,7 +209,7 @@ public:
         if(x < .5f) // positive slope
             sig = -1.f + 4.f * x; 
         else
-            sig = 1.f - 4.f * x;
+            sig = 1.f - 4.f * (x-.5f);
         return sig * depth;
     }
 
