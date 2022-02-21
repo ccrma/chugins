@@ -17,7 +17,7 @@ public:
     DbLiCKDistort(char const *nmIgnored) {}
     virtual ~DbLiCKDistort() {};
     virtual void SetParam(int i, float x) {}
-    virtual float Doit(float x) = 0L;
+    virtual float Doit(float x) = 0;
 
     void SetSampleRate(float srate)
     {
