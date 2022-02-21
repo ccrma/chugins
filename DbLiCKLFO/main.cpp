@@ -23,7 +23,7 @@
 #include "chuck_dl.h"
 #include "chuck_def.h"
 
-#include "dbLiCKLFO.h"
+#include "DbLiCKLFO.h"
 
 CK_DLL_CTOR(dbll_ctor);
 CK_DLL_DTOR(dbll_dtor);
