@@ -18,7 +18,8 @@ class DbLiCKLFO
 public:
     DbLiCKLFO(float srate) :
         sampleRate(srate),
-        osc(srate)
+        osc(srate),
+        modulateInput(false)
     {
         this->Sine();
         this->SetOutputRange(-1.f, 1.f);
@@ -106,10 +107,9 @@ public:
         this->modulateInput = mod ? true : false;
     }
 
-    float Tick(float in)
+    float Eval(float phase, float in=0.f)
     {
         float out = 0.f;
-        float phase = this->osc.GetPhase();
         if(this->sawMix > 0.f)
             out += this->sawMix * this->osc.Saw(phase);
         if(this->sineMix > 0.f)
@@ -129,10 +129,17 @@ public:
             out += this->filteredNoiseMix * 
                     this->onePole.tick(this->noise.tick());
         }
-        this->osc.IncPhase();
         // remap
         float lfo = this->outMin + this->deltaOut * (.5f * (out+1.f));
         return this->modulateInput ? lfo*in : lfo;
+    }
+
+    float Tick(float in)
+    {
+        float phase = this->osc.GetPhase();
+        float out = this->Eval(phase, in);
+        this->osc.IncPhase();
+        return out;
     }
 
     // durations converted to samples by chuck...

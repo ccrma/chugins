@@ -28,6 +28,7 @@
 CK_DLL_CTOR(dbll_ctor);
 CK_DLL_DTOR(dbll_dtor);
 CK_DLL_TICK(dbll_tick);
+CK_DLL_MFUN(dbll_eval);
 CK_DLL_MFUN(dbll_saw);
 CK_DLL_MFUN(dbll_sine);
 CK_DLL_MFUN(dbll_sqr);
@@ -92,6 +93,10 @@ CK_DLL_QUERY(DbLiCKLFO)
     QUERY->add_mfun(QUERY, dbll_setnoisehold, "void", "setnoisehold");
     QUERY->add_arg(QUERY, "dur", "hold");
 
+    // eval can be used instead of tick when audiorate evaluation
+    // isn't required.
+    QUERY->add_mfun(QUERY, dbll_eval, "float", "eval");
+    QUERY->add_arg(QUERY, "float", "phase");
 
     QUERY->add_ugen_func(QUERY, dbll_tick, NULL, 1, 1);
 
@@ -124,6 +129,13 @@ CK_DLL_TICK(dbll_tick)
     DbLiCKLFO *c = (DbLiCKLFO *)OBJ_MEMBER_INT(SELF, dbll_data_offset);
     *out = c->Tick(in);
     return TRUE;
+}
+
+CK_DLL_MFUN(dbll_eval)
+{
+    DbLiCKLFO *c = (DbLiCKLFO *)OBJ_MEMBER_INT(SELF, dbll_data_offset);
+    float phase = GET_NEXT_FLOAT(ARGS); //
+    RETURN->v_float = c->Eval(phase);
 }
 
 CK_DLL_MFUN(dbll_saw)
