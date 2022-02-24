@@ -67,6 +67,11 @@ public:
         this->Mix(1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
     }
 
+    void Phasor()
+    {
+        this->Mix(-1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
+    }
+
     void Sine()
     {
         this->Mix(0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
@@ -107,24 +112,40 @@ public:
         this->modulateInput = mod ? true : false;
     }
 
+    float Phase(float phase)
+    {
+        return this->osc.SetPhase(phase);
+    }
+
+    void PhaseWobble(float phaseWobble)
+    {
+        this->osc.SetPhaseWobble(phaseWobble);
+    }
+
+    void PhaseWobbleFreq(float phaseWobbleFreq)
+    {
+        this->osc.SetPhaseWobbleFreq(phaseWobbleFreq);
+    }
+
+    // we support negative gain to eg convert saw to phasor
     float Eval(float phase, float in=0.f)
     {
         float out = 0.f;
-        if(this->sawMix > 0.f)
+        if(this->sawMix != 0.f)
             out += this->sawMix * this->osc.Saw(phase);
-        if(this->sineMix > 0.f)
+        if(this->sineMix != 0.f)
             out += this->sineMix * this->osc.Sine(phase);
-        if(this->sqrMix > 0.f)
+        if(this->sqrMix != 0.f)
             out += this->sqrMix * this->osc.Sqr(phase);
-        if(this->triMix > 0.f)
+        if(this->triMix != 0.f)
             out += this->triMix * this->osc.Tri(phase);
-        if(this->hyperMix > 0.f)
+        if(this->hyperMix != 0.f)
             out += this->hyperMix * this->osc.Hyper(phase);
-        if(this->sampleHoldMix > 0.f)
+        if(this->sampleHoldMix != 0.f)
             out += this->sampleHoldMix * this->sampleHold(in);
-        if(this->smoothSampleHoldMix > 0.f)
+        if(this->smoothSampleHoldMix != 0.f)
             out += this->smoothSampleHoldMix * this->smoothSampleHold(in);
-        if(this->filteredNoiseMix > 0.f)
+        if(this->filteredNoiseMix != 0.f)
         {
             out += this->filteredNoiseMix * 
                     this->onePole.tick(this->noise.tick());

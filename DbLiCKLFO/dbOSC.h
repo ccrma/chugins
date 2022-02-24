@@ -5,10 +5,24 @@ const float kTwoPi = M_PI * 2.;
 
 class DbOSC
 {
+private:
+    float sampleRate;
+    float freq;
+    float num;
+    float phase; // current phase
+    float phaseWobbleAmp; // 
+    float phaseWobbleFreq;
+    float phaseWobbleNum;
+    float phaseWobble; // current phase for wobble
+
 public:
     DbOSC(float srate) :
         sampleRate(srate),
-        phase(0.f)
+        phase(0.f),
+        phaseWobbleAmp(0.f),
+        phaseWobbleFreq(0.f),
+        phaseWobbleNum(0.f),
+        phaseWobble(0.f)
     {
         this->SetFreq(120);
     }
@@ -24,27 +38,64 @@ public:
         return this->phase;
     }
 
+    float SetPhase(float x)
+    {
+        this->phase = x;
+        return x;
+    }
+
+    void SetPhaseWobble(float x)
+    {
+        this->phaseWobbleAmp = x;
+    }
+
+    void SetPhaseWobbleFreq(float x)
+    {
+        this->phaseWobbleFreq = x;
+        this->phaseWobbleNum = x / this->sampleRate;
+    }
+
     void IncPhase()
     {
         this->phase += this->num;
+        if(this->phaseWobbleAmp != 0.f)
+        {
+            float dphase = this->phaseWobbleAmp * this->Sine(this->phaseWobble);
+            this->phase += dphase;
+            this->phaseWobble += this->phaseWobbleNum;
+            if(this->phaseWobble > 1.f)
+                this->phaseWobble -= 1.f;
+            else
+            if(this->phaseWobble < 0.f)
+                this->phaseWobble += 1.f;
+        }
         if(this->phase > 1.f)
             this->phase -= 1.f;
         else
         if(this->phase < 0.f)
             this->phase += 1.f;
     }
-
-    float Saw(float t)
+ 
+    // Saw is a decreasing phasor, so -saw is increasing like
+    // a Phasor. This can be obtained with a -1 gain;
+    //
+    // +1
+    // |\_      |\_
+    // |  \_    |  \_
+    // |    \_  |    \_
+    // |      \_|      \_
+    // -1
+    float Saw(float t) 
     {
-        float phase = t + .25; 
-        if(phase > 1.0) 
-            phase -= 1.0;
+        float phase = t + .5f; 
+        if(phase > 1.0f) 
+            phase -= 1.0f;
         return 1.0f - 2.0f * phase;
     }
 
     float Sine(float t)
     {
-        return ::sin(t * 6.24);
+        return ::sin(t * kTwoPi);
     }
 
     // pulse requires extra width argument.
@@ -95,9 +146,4 @@ public:
         #endif
     }
 
-private:
-    float freq;
-    float num;
-    float sampleRate;
-    float phase;
 };

@@ -28,8 +28,12 @@
 CK_DLL_CTOR(dbll_ctor);
 CK_DLL_DTOR(dbll_dtor);
 CK_DLL_TICK(dbll_tick);
+CK_DLL_MFUN(dbll_phase);
+CK_DLL_MFUN(dbll_phasewobble);
+CK_DLL_MFUN(dbll_phasewobblefreq);
 CK_DLL_MFUN(dbll_eval);
 CK_DLL_MFUN(dbll_saw);
+CK_DLL_MFUN(dbll_phasor);
 CK_DLL_MFUN(dbll_sine);
 CK_DLL_MFUN(dbll_sqr);
 CK_DLL_MFUN(dbll_tri);
@@ -65,6 +69,7 @@ CK_DLL_QUERY(DbLiCKLFO)
     QUERY->add_arg(QUERY, "int", "domod");
 
     QUERY->add_mfun(QUERY, dbll_saw, "void", "saw");
+    QUERY->add_mfun(QUERY, dbll_phasor, "void", "phasor");
     QUERY->add_mfun(QUERY, dbll_sine, "void", "sine");
     QUERY->add_mfun(QUERY, dbll_sqr, "void", "sqr");
     QUERY->add_mfun(QUERY, dbll_tri, "void", "tri");
@@ -97,6 +102,15 @@ CK_DLL_QUERY(DbLiCKLFO)
     // isn't required.
     QUERY->add_mfun(QUERY, dbll_eval, "float", "eval");
     QUERY->add_arg(QUERY, "float", "phase");
+
+    QUERY->add_mfun(QUERY, dbll_phase, "float", "phase");
+    QUERY->add_arg(QUERY, "float", "phase");
+
+    QUERY->add_mfun(QUERY, dbll_phasewobble, "float", "phasewobble");
+    QUERY->add_arg(QUERY, "float", "wobble"); // wobble gain
+
+    QUERY->add_mfun(QUERY, dbll_phasewobblefreq, "float", "phasewobblefreq");
+    QUERY->add_arg(QUERY, "float", "wobblefreq"); 
 
     QUERY->add_ugen_func(QUERY, dbll_tick, NULL, 1, 1);
 
@@ -138,10 +152,39 @@ CK_DLL_MFUN(dbll_eval)
     RETURN->v_float = c->Eval(phase);
 }
 
+CK_DLL_MFUN(dbll_phase)
+{
+    DbLiCKLFO *c = (DbLiCKLFO *)OBJ_MEMBER_INT(SELF, dbll_data_offset);
+    float phase = GET_NEXT_FLOAT(ARGS); //
+    RETURN->v_float = c->Phase(phase);
+}
+
+CK_DLL_MFUN(dbll_phasewobble)
+{
+    DbLiCKLFO *c = (DbLiCKLFO *)OBJ_MEMBER_INT(SELF, dbll_data_offset);
+    float wobble = GET_NEXT_FLOAT(ARGS); //
+    c->PhaseWobble(wobble);
+    RETURN->v_float = 0.f; // c->Phase(phase);
+}
+
+CK_DLL_MFUN(dbll_phasewobblefreq)
+{
+    DbLiCKLFO *c = (DbLiCKLFO *)OBJ_MEMBER_INT(SELF, dbll_data_offset);
+    float wobbleFreq = GET_NEXT_FLOAT(ARGS); //
+    c->PhaseWobbleFreq(wobbleFreq);
+    RETURN->v_float = 0.f; // c->Phase(phase);
+}
+
 CK_DLL_MFUN(dbll_saw)
 {
     DbLiCKLFO *c = (DbLiCKLFO *)OBJ_MEMBER_INT(SELF, dbll_data_offset);
     c->Saw();
+}
+
+CK_DLL_MFUN(dbll_phasor)
+{
+    DbLiCKLFO *c = (DbLiCKLFO *)OBJ_MEMBER_INT(SELF, dbll_data_offset);
+    c->Phasor();
 }
 
 CK_DLL_MFUN(dbll_sine)
