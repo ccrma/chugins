@@ -279,19 +279,27 @@ public:
 class FullRectifier : public DbLiCKDistort
 {
 public:
+    float threshold;
     float bias;
     FullRectifier() : DbLiCKDistort("FullRectifier")
     { 
+        this->threshold = 0.f;
         this->bias = 0.f;
     }
     virtual void SetParam(int i, float x) override
     {
         if(i == 0)
+            this->threshold = x;
+        else
+        if(i == 1)
             this->bias = x;
     }
     float Doit(float x) override
     {
-        return (x > this->bias) ? x : this->bias + (this->bias - x);
+        if(x > this->threshold)
+            return x + this->bias;
+        else
+            return this->threshold + (this->threshold - x) + this->bias;
     }
 };
 
