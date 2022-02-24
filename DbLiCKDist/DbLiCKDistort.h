@@ -299,7 +299,17 @@ public:
         if(x > this->threshold)
             return x + this->bias;
         else
-            return this->threshold + (this->threshold - x) + this->bias;
+        {
+            // when a value is above the threshold we rectify:
+            //  threshold:  0, x: -.5 => .5
+            //  threshold: .5, x: 0 => 1.
+            //  threshold: .5, x: -1 => 1.5 => .5
+            //  threshold: .5, x:  0 => 1.0 => 1.
+            //  threshold: .5, x: .4 => 1.5 => .6
+            float xx = this->threshold + (this->threshold - x) + this->bias;
+            if(xx > 1.f)
+                xx = 1.f - xx; // another flip
+        }
     }
 };
 
