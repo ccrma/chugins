@@ -1940,9 +1940,22 @@ AbcGenMidi::checkbar(int pass)
                 sprintf(msg+strlen(msg), " units instead of %d", this->wctx->barsize);
                 if(pass == 2) 
                     strcat(msg, " in repeat");
+                strcat(msg, " (0 indexed)");
                 if(this->initState->quiet == -1) 
                     this->wctx->warning(msg);
             }
+            else
+            if(0) // debuggin
+            {
+                snprintf(msg, 100, "abc track %d bar %d has %d",
+                    this->wctx->tracknumber, this->wctx->barno, this->wctx->bar_num);
+                if(this->wctx->bar_denom != 1) 
+                    sprintf(msg+strlen(msg), "/%d", this->wctx->bar_denom);
+                sprintf(msg+strlen(msg), " units (%d)", this->wctx->barsize);
+                if(this->initState->quiet == -1) 
+                    this->wctx->warning(msg);
+            }
+
         }
     }
     if(this->wctx->bar_num > 0) 

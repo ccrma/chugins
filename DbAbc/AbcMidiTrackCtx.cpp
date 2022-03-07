@@ -537,7 +537,9 @@ AbcMidiTrackCtx::set_gchords(char const *s)
     }
     if(seq_len == 0) 
     {
-        this->error("Bad gchord");
+        char msg[100];
+        snprintf(msg, 100, "Bad gchord %s", s);
+        this->error(msg);
         gchord_seq[0] = 'z';
         gchord_len[0] = 1;
         seq_len = 1;
