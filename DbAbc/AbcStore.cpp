@@ -2830,7 +2830,9 @@ AbcStore::dotie(int j, int xinchord, int voiceno)
             break;
     }
     if(this->featurelist[tienote].feature != Abc::NOTE)
+    {
         this->error("Cannot find note before tie");
+    }
     else 
     {
         int inchord = xinchord;
