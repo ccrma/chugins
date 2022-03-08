@@ -1933,22 +1933,23 @@ AbcGenMidi::checkbar(int pass)
                 ((pass == 2) || (this->wctx->barno != 0)) &&
                 this->initState->quiet == -1) 
             {
+                // report messages in index-origin 1
                 snprintf(msg, 100, "abc track %d bar %d has %d",
-                    this->wctx->tracknumber, this->wctx->barno, this->wctx->bar_num);
+                    this->wctx->tracknumber+1, this->wctx->barno+1, this->wctx->bar_num);
                 if(this->wctx->bar_denom != 1) 
                     sprintf(msg+strlen(msg), "/%d", this->wctx->bar_denom);
                 sprintf(msg+strlen(msg), " units instead of %d", this->wctx->barsize);
                 if(pass == 2) 
                     strcat(msg, " in repeat");
-                strcat(msg, " (0 indexed)");
                 if(this->initState->quiet == -1) 
                     this->wctx->warning(msg);
             }
             else
             if(0) // debuggin
             {
+                // report messages in index-origin 1
                 snprintf(msg, 100, "abc track %d bar %d has %d",
-                    this->wctx->tracknumber, this->wctx->barno, this->wctx->bar_num);
+                    this->wctx->tracknumber+1, this->wctx->barno+1, this->wctx->bar_num);
                 if(this->wctx->bar_denom != 1) 
                     sprintf(msg+strlen(msg), "/%d", this->wctx->bar_denom);
                 sprintf(msg+strlen(msg), " units (%d)", this->wctx->barsize);

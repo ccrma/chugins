@@ -152,7 +152,6 @@ public:
     int Parse(char const *buf, class IAbcParseClient *, ParseMode m);
     int Parse(std::istream *stream, class IAbcParseClient *, ParseMode m);
 
-
 public:
     // following static parser methods available for context-free
     // parsing (used by AbcGenMidi).

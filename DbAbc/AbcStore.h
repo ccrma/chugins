@@ -86,19 +86,30 @@ public:
 
     void warning(char const *msg) 
     { 
-        fprintf(stderr, "%s warning: %s\n", this->appname.c_str(), msg); 
+        fprintf(stderr, "%s warning: %s\n", this->getContext(), msg); 
     }
     void error(char const *msg) 
     { 
-        fprintf(stderr, "%s error: %s\n", this->appname.c_str(), msg); 
+        fprintf(stderr, "%s error: %s\n", this->getContext(), msg); 
     }
     void log(char const *msg) 
     { 
-        fprintf(stderr, "%s note: %s\n", this->appname.c_str(), msg); 
+        fprintf(stderr, "%s note: %s\n", this->getContext(), msg); 
+    }
+    char const *getContext()
+    {
+        static char ctx[200];
+        snprintf(ctx, 200, "%s/%s line:%d", 
+            this->appname.c_str(), this->abcfile.c_str(),
+            this->parser->lineno);
+        // XXX: current line number
+        return ctx;
     }
 
 private:
     std::string appname;
+    std::string abcfile;
+    AbcParser *parser;
     int done_with_barloc; /* [SS] 2019-03-21 */
 
     /* parsing stage */

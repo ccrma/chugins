@@ -224,6 +224,7 @@ void
 AbcParser::parseline(char const *line)
 {
     // fprintf(stderr, "AbcParser.parseline %s %d\n", line, this->parseMode);
+    this->fileline_number++;
     if(strcmp(line,"%%begintext") == 0)
         ignore_line = 1;
     else
@@ -2774,7 +2775,6 @@ AbcParser::preparse_words(char *s)
 void
 AbcParser::parsetempo(char *place)
 {
-
     int relative = 0;
     char *p = place;
     char *pre_string = nullptr;

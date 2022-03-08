@@ -9,6 +9,7 @@ static const char *sOneOctave = "cdefgab";
 static int sScale[7] = {0, 2, 4, 5, 7, 9, 11}; // diatonic 'major' mode
 
 AbcStore::AbcStore(AbcParser *p) :
+    parser(p),
     IAbcParseClient(p),
     temperament_dt {0.0,0.0,0.0,0.0, 0.0,0.0,0.0,0.0, 0.0,0.0,0.0,0.0},
     temponame 
@@ -95,6 +96,7 @@ AbcStore::~AbcStore()
     this->Cleanup();
 }
 
+// parse args, output *filename
 void
 AbcStore::Init(int argc, char const*argv[], std::string *filename)
 {
@@ -312,6 +314,13 @@ AbcStore::Init(int argc, char const*argv[], std::string *filename)
             xmatch = this->parser->readnumf(argv[2]);
         }
         *filename = argv[1];
+        char const *p = strrchr(argv[1], '/');
+        if(!p)
+            p = strrchr(argv[1], '\\');
+        if(p)
+            this->abcfile = (p+1);
+        else
+            this->abcfile = argv[1];
         this->outbase = argv[1];
         std::string::size_type s = this->outbase.find_last_of('.');
         if(s != std::string::npos)
