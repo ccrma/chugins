@@ -930,12 +930,11 @@ AbcStore::midi(char const *s)
     if(done == 0) 
     {
         /* add as a command to be interpreted later 
-         *  includes beat and beatmod
+         *  includes beat and beatmod, control, etc
          */
         this->textfeature(Abc::DYNAMIC, s);
     }
 }
-
 
 void
 AbcStore::field(char k, char const *f)
@@ -1931,7 +1930,7 @@ AbcStore::note(int decorators[Abc::DECSIZE],
     char note, int xoctave, int n, int m)
 {
     FeatureDesc &fd = this->featurelist[this->nextFeature];
-    fd.decotype = 0;
+    fd.decosrc = -1;
     if(this->voicesused == 0) 
         this->bodystarted = 1;
     if(v == nullptr) 
@@ -2022,7 +2021,7 @@ AbcStore::note(int decorators[Abc::DECSIZE],
             }
             if(decorators[Abc::TRILL]) 
             {
-                fd.decotype = this->notesdefined;
+                fd.decosrc = this->notesdefined;
                 this->dotrill_setup(note, octave, num, denom, pitch);
                 this->addfeature(Abc::NOTE, pitch, num*4, denom*(v->default_length));
             }
@@ -2032,7 +2031,7 @@ AbcStore::note(int decorators[Abc::DECSIZE],
             else 
             { 
                 // ROLL
-                fd.decotype = notesdefined; 
+                fd.decosrc = notesdefined; 
                 this->doroll_setup(note, octave, num, denom, pitch);
                 fd.bentpitch = this->active_pitchbend;
                 this->addfeature(Abc::NOTE, pitch, num*4, denom*(v->default_length));

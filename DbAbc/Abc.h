@@ -158,7 +158,7 @@ namespace Abc
         FeatureDesc()
         {
             this->bentpitch = 0; // 8192 is a good default only for NOTES
-            this->decotype = 0;
+            this->decosrc = -1;
             this->stressvelocity = -1;
             this->pitchline = -1;
             this->charloc = 0;
@@ -174,7 +174,7 @@ namespace Abc
             this->denom = rhs.denom;
             this->bentpitch = rhs.bentpitch;
             this->stressvelocity = rhs.stressvelocity;
-            this->decotype = rhs.decotype;
+            this->decosrc = rhs.decosrc;
             this->pitchline = rhs.pitchline;
             this->charloc = rhs.charloc;
         }
@@ -185,7 +185,7 @@ namespace Abc
         int denom;
         int bentpitch; // microtones
         int stressvelocity;
-        int decotype; // ROLLS, TRILLS, etc
+        int decosrc; // when != -1, contains the index for ornatment source: ROLLS, TRILLS, etc
         int pitchline; // file location when ties are in play
         int charloc; // character position in abctune
     };

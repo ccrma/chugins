@@ -898,7 +898,7 @@ AbcStore::insertfeature(Abc::FeatureType f, int p, int n, int d, int loc)
     fd.pitchline = 0;
     fd.charloc = this->parser->lineposition;
     fd.bentpitch = 0;
-    fd.decotype = 0;
+    fd.decosrc = -1;
 }
 
 /* The function switches the contents of the features in loc1 and loc2 */
@@ -2368,7 +2368,7 @@ void
 AbcStore::doroll_output(int featureIndex)
 {
     FeatureDesc &fd = this->featurelist[featureIndex];
-    int deco_index = fd.decotype;
+    int deco_index = fd.decosrc;
     notestruct *s = this->noteaddr[deco_index];
     int pitch = s->pitch;
     int pitchdown = s->pitchdown;
@@ -2447,7 +2447,7 @@ void
 AbcStore::dotrill_output(int featureIndex)
 {
     FeatureDesc &fd = this->featurelist[featureIndex];
-    int deco_index = fd.decotype;
+    int deco_index = fd.decosrc;
     notestruct *s = this->noteaddr[deco_index];
     int pitch = s->pitch;
     int pitchup = s->pitchup;
@@ -3025,7 +3025,7 @@ AbcStore::dumpfeat(int from, int to)
         {
             snprintf(msg, 80, "%d %s   %d %d %d %d %d %d",
                 i, Abc::featname(fd.feature),
-                fd.pitch, fd.bentpitch, fd.decotype,  
+                fd.pitch, fd.bentpitch, fd.decosrc,  
                 fd.num, fd.denom, fd.charloc);
             this->log(msg);
         }
@@ -3173,14 +3173,14 @@ AbcStore::expand_ornaments()
     for(int i=0; i<this->nextFeature; i++) 
     {
         FeatureDesc &fd = this->featurelist[i];
-        if(fd.decotype != 0)
+        if(fd.decosrc != -1)
         {
             if(fd.feature == Abc::TNOTE) 
                 this->convert_tnote_to_note(i);
             else
             if(fd.feature == Abc::NOTE) 
             {
-                int deco_index = fd.decotype;
+                int deco_index = fd.decosrc;
                 notestruct *s =  this->noteaddr[deco_index];
                 int notetype = s->notetype;
                 switch(notetype) 
@@ -3193,7 +3193,7 @@ AbcStore::expand_ornaments()
                     break;
                 default: 
                     snprintf(msg, 80, "no such decoration %d/%d", 
-                        fd.decotype, notetype);
+                        fd.decosrc, notetype);
                     this->error(msg);
                     break;
                 }
