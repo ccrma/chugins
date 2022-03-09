@@ -9,8 +9,8 @@ static const char *sOneOctave = "cdefgab";
 static int sScale[7] = {0, 2, 4, 5, 7, 9, 11}; // diatonic 'major' mode
 
 AbcStore::AbcStore(AbcParser *p) :
-    parser(p),
     IAbcParseClient(p),
+    parser(p),
     temperament_dt {0.0,0.0,0.0,0.0, 0.0,0.0,0.0,0.0, 0.0,0.0,0.0,0.0},
     temponame 
     {
