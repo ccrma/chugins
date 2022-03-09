@@ -70,19 +70,19 @@ AbcMidiTrackCtx::beginWriting(int xtrack,
 void
 AbcMidiTrackCtx::error(char const *msg)
 {
-    printf("error: %s\n", msg);
+    printf("%s error: %s\n", this->genMidi->logPrefix.c_str(), msg);
 }
 
 void
 AbcMidiTrackCtx::warning(char const *msg)
 {
-    printf("warning: %s\n", msg);
+    printf("%s warning: %s\n", this->genMidi->logPrefix.c_str(), msg);
 }
 
 void
 AbcMidiTrackCtx::log(char const *msg)
 {
-    printf("info: %s\n", msg);
+    printf("%s info: %s\n", this->genMidi->logPrefix.c_str(), msg);
 }
 
 /* called at the start of each MIDI track. Sets up all 

@@ -62,7 +62,8 @@ AbcStore::startfile()
         this->ratio_b = 4;
     }
     this->wcount = 0;
-    this->genMidi.Init(this->performing);
+    std::string logPrefix = this->getContext(false);
+    this->genMidi.Init(this->performing, logPrefix.c_str());
     this->genMidi.set_gchords("x");
     this->genMidi.set_drums("z");
 

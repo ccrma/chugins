@@ -45,11 +45,14 @@ dbAbc::Open(std::string const &fp)
         if(s != std::string::npos)
         {
             size_t end = fp.find("\n", s);
-            tmp = fp.substr(s, end-s-1);
+            size_t start = s+2;
+            tmp = fp.substr(start, end-start);
             largv.push_back(tmp.c_str()); // argv[1]
         }
         else
+        {
             largv.push_back("abcstring.abc"); // argv[1]
+        }
     }
     else
         largv.push_back(fp.c_str()); // argv[1]

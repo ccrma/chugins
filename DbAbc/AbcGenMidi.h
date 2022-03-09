@@ -69,6 +69,7 @@ public:
      * intermediate state).
      */
     std::string partspec;
+    std::string logPrefix;
     int parts; 
     int part_start[26];
 
@@ -87,7 +88,7 @@ public:
     int beatmodel; /* flag selecting standard or Phil's model */
 
 public:
-    void Init(bool forPerformance); // false means write file
+    void Init(bool forPerformance, char const *logPrefix); // false means write file
 
     // public methods invokedb y AbcStore during abcfile parsing...
     // TODO: inprove distinction between abcparse-time and midigen-time state.
@@ -124,7 +125,6 @@ public: // called from AbcMidiTrackCtx (XXX: refactor)
     //  or 'perform' the post-parse featurelist.  These calls are
     //  made by AbcStoreDriver.cpp
     int writefile(char const *filepath, Abc::InitState const *init);
-
 
     // When peforming (and after parsing/storing is complete) the
     // client may invoke these routines to trigger event generation

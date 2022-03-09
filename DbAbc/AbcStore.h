@@ -96,12 +96,20 @@ public:
     { 
         fprintf(stderr, "%s note: %s\n", this->getContext(), msg); 
     }
-    char const *getContext()
+    char const *getContext(bool duringParsing=true)
     {
         static char ctx[200];
-        snprintf(ctx, 200, "%s/%s line:%d", 
-            this->appname.c_str(), this->abcfile.c_str(),
-            this->parser->lineno);
+        if(duringParsing)
+        {
+            snprintf(ctx, 200, "%s/%s line:%d", 
+                this->appname.c_str(), this->abcfile.c_str(),
+                this->parser->lineno);
+        }
+        else
+        {
+            snprintf(ctx, 200, "%s/%s genMidi", 
+                this->appname.c_str(), this->abcfile.c_str());
+        }
         // XXX: current line number
         return ctx;
     }

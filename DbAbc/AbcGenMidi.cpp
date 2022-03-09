@@ -24,9 +24,10 @@ AbcGenMidi::~AbcGenMidi()
 {}
 
 void
-AbcGenMidi::Init(bool forPerformance)
+AbcGenMidi::Init(bool forPerformance, char const *logPrefix)
 {
     this->performing = forPerformance;
+    this->logPrefix = logPrefix;
     this->barflymode = 0; // overriden via -BF or "R:"
     this->beatmodel = 0;
     this->stressmodel = 0;
