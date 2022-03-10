@@ -1746,11 +1746,17 @@ AbcStore::handle_instruction(char const *s)
     char const* p = s;
     AbcParser::Skipspace(&p);
     char *q = const_cast<char *>(p);  // we know we can overwrite since ::instruction owns
-    /* remove any trailing spaces */
-    while ((*q != '\0') && (*q != ' ')) 
-        q = q + 1;
-    if(*q == ' ') 
-        *q = '\0';
+    /* remove any trailing spaces, internal spaces are ok */
+    // first walk to end
+    while (*q != '\0') q = q + 1;
+    q = q-1;
+    while(q > p)
+    {
+        if(*q == ' ') 
+            *q = '\0';
+        else
+            break; // first non-space from back
+    }
     int done = 0;
     if(this->nofnop == 0) 
     {
@@ -1912,8 +1918,17 @@ AbcStore::handle_instruction(char const *s)
         if(strcmp(s,"wedge") == 0)
             done = 1;
         else
-        if (strcmp(s,"turn") == 0)
+        if(strcmp(s,"turn") == 0)
             done = 1;
+        else
+        if(strncmp(s, "CC", 2) == 0)
+        {
+            // eg: CC27 0-127
+            char const *x = s+2;
+            snprintf(midimsg, sizeof(midimsg), "control %s", x);
+            this->specific("MIDI", midimsg); // let DYNAMIC parse this.
+            done = 1;
+        }
     }
 
     if(done == 0 && quiet == -1)

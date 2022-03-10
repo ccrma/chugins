@@ -711,8 +711,9 @@ AbcParser::parsemusic(char const *line)
                 /* else fall through into the next case statement */
             case '!':
                 {
+                    // !ppp! !CC27 val|  (multiples accepted separated by ';')
                     std::string instruction;
-                    char endcode = *p;
+                    char endcode = '!';
                     p = p + 1;
                     char const *s = p;
                     while((*p != endcode) && (*p != '\0'))
