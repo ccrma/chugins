@@ -96,7 +96,7 @@ public:
         int *bendstate, int *bendnvals, int **benddata) override;
     void getEffectsState(long **delta_time, 
         int *bendstate, int *bendnvals, int **benddata,
-        int *nlayers, int **controlnvals,  int **controldefaults,
+        int *layerIndex, int **controlnvals,  int **controldefaults,
         int **controldata) override;
 
     /* ------------------------------------------------------------ */
@@ -245,8 +245,8 @@ public:
 
     int controldata[MAXLAYERS][256];
     int controlnvals[MAXLAYERS];
-    int controldefaults[128]; 
-    int nlayers;
+    int controldefaults[128];  // values associated with each of 128 CCs
+    int layerIndex;
     int controlcombo;
 
     int onemorenote;

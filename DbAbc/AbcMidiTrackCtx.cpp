@@ -55,7 +55,7 @@ AbcMidiTrackCtx::beginWriting(int xtrack,
     bendstate = 8192; /* also linked with queues.c */
     bendtype = 1;
 
-    nlayers = 0;
+    layerIndex = 0;
     controlcombo = 0;
 
     onemorenote = 0;
@@ -512,7 +512,6 @@ AbcMidiTrackCtx::delay(int a, int b, int c)
         this->tracklen); 
 }
 
-
 /* set up a string which indicates how to generate accompaniment from */
 /* guitar chords (i.e. "A", "G" in abc). */
 /* called from dodeferred(), startfile() and setbeat() */
@@ -538,7 +537,7 @@ AbcMidiTrackCtx::set_gchords(char const *s)
     if(seq_len == 0) 
     {
         char msg[100];
-        snprintf(msg, 100, "Bad gchord %s", s);
+        snprintf(msg, 100, "Bad gchord '%s'", s);
         this->error(msg);
         gchord_seq[0] = 'z';
         gchord_len[0] = 1;
@@ -1043,14 +1042,14 @@ AbcMidiTrackCtx::getEffectsState(long **delta_time,
 void 
 AbcMidiTrackCtx::getEffectsState(long **delta_time, 
     int *bendstate, int *bendnvals, int **benddata,
-    int *nlayers, int **controlnvals,  int **controldefaults,
+    int *layerIndex, int **controlnvals,  int **controldefaults,
     int **controldata)
 {
    *delta_time = &this->delta_time; 
    *bendstate = this->bendstate;
    *bendnvals = this->bendnvals;
    *benddata = this->benddata;
-   *nlayers = this->nlayers;
+   *layerIndex = this->layerIndex;
    *controlnvals = this->controlnvals;
    *controldefaults = this->controldefaults;
    *controldata = (int *) this->controldata;

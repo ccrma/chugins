@@ -186,7 +186,7 @@ AbcQueue::timestep(int t, int atEnd,
                 tracklen = tracklen + delta_time; 
                 switch(qi.effect) 
                 {
-                case 1:
+                case 1: // !bend!
                     note_effect();
                     break;
    
@@ -198,7 +198,7 @@ AbcQueue::timestep(int t, int atEnd,
                     note_effect3();
                     break;
 
-                case 10:
+                case 10: // !shape!
                     /*note_effect4(Q[Qhead].chan);*/
                     note_effect5(qi.chan);
                     break;
@@ -331,16 +331,16 @@ AbcQueue::note_effect()
             pitchbend = 16383;
         if(pitchbend < 0) 
             pitchbend = 0;
-        data[0] = (char) (pitchbend&0x7f);
-        data[1] = (char) ((pitchbend>>7)&0x7f);
+        data[0] = (pitchbend&0x7f);
+        data[1] = ((pitchbend>>7)&0x7f);
         this->client->midi_event(delta8, MidiEvent::pitch_wheel, qh.chan, 
             data, 2);
         *delta_time -= delta8;
     }
     this->client->midi_noteoff(*delta_time, qh.pitch, qh.chan);
     pitchbend = bendstate; /* [SS] 2014-09-22 */
-    data[0] = (char) (pitchbend&0x7f);
-    data[1] = (char) ((pitchbend>>7)&0x7f);
+    data[0] = (pitchbend&0x7f);
+    data[1] = ((pitchbend>>7)&0x7f);
     this->client->midi_event(*delta_time, MidiEvent::pitch_wheel, qh.chan, 
         data, 2);
 }
@@ -372,8 +372,8 @@ AbcQueue::note_effect2()
         if(pitchbend < 0) 
             pitchbend = 0;
  
-        data[0] = (char) (pitchbend&0x7f);
-        data[1] = (char) ((pitchbend>>7)&0x7f);
+        data[0] = (pitchbend&0x7f);
+        data[1] = ((pitchbend>>7)&0x7f);
         if (i == 0) /* [SS] 2014-09-24 */
         {
             this->client->midi_event(0, MidiEvent::pitch_wheel,
@@ -390,8 +390,8 @@ AbcQueue::note_effect2()
     this->client->midi_noteoff(*delta_time, qh.pitch, qh.chan);
     *delta_time = 0;
     pitchbend = bendstate;
-    data[0] = (char) (pitchbend&0x7f);
-    data[1] = (char) ((pitchbend>>7)&0x7f);
+    data[0] = (pitchbend&0x7f);
+    data[1] = ((pitchbend>>7)&0x7f);
     this->client->midi_event(*delta_time, MidiEvent::pitch_wheel,
         qh.chan, data, 2);
 }
@@ -418,16 +418,16 @@ AbcQueue::note_effect3()
         pitchbend = 16383;
     if(pitchbend < 0) 
         pitchbend = 0;
-    data[0] = (char) (pitchbend&0x7f);
-    data[1] = (char) ((pitchbend>>7)&0x7f);
+    data[0] = (pitchbend&0x7f);
+    data[1] = ((pitchbend>>7)&0x7f);
 
     Qitem &qh = this->queue[this->head];
     this->client->midi_event(delta, MidiEvent::pitch_wheel, qh.chan, data, 2);
     this->client->midi_noteoff(*delta_time, qh.pitch, qh.chan);
 
     pitchbend = bendstate;
-    data[0] = (char) (pitchbend&0x7f);
-    data[1] = (char) ((pitchbend>>7)&0x7f);
+    data[0] = (pitchbend&0x7f);
+    data[1] = ((pitchbend>>7)&0x7f);
     this->client->midi_event(delta, MidiEvent::pitch_wheel, qh.chan, data, 2);
 }
 
@@ -444,13 +444,13 @@ AbcQueue::note_effect5(int chan)
     int bendnvals;
     int *benddata;
     int bendstate;
-    int nlayers;
+    int layerIndex;
     int *controlnvals; 
     int *controldefaults; 
     int *controldata; // 2D [][256]
     this->client->getEffectsState(&delta_time, 
         &bendstate, &bendnvals, &benddata, 
-        &nlayers, &controlnvals, &controldefaults, &controldata);
+        &layerIndex, &controlnvals, &controldefaults, &controldata);
 
     event eventlist[1024];
     int delta=0, notetime;
@@ -480,14 +480,14 @@ AbcQueue::note_effect5(int chan)
                pitchbend = 0;
             }
             eventlist[j].time = notetime;
-            eventlist[j].cmd = (char) MidiEvent::pitch_wheel;
+            eventlist[j].cmd = MidiEvent::pitch_wheel;
             eventlist[j].data1 = pitchbend & 0x7f;
             eventlist[j].data2 = (pitchbend >> 7) & 0x7f;
             notetime += delta;
             j++;
         } 
     }
-    for(int layer=0;layer <= nlayers; layer++) 
+    for(int layer=0;layer <= layerIndex; layer++) 
     {
         if(controlnvals[layer] > 1) 
         {
@@ -500,6 +500,7 @@ AbcQueue::note_effect5(int chan)
                 return;
             }
     
+            // first value is CC num, so index starts at 1
             for(int i=1; i < controlnvals[layer]; i++) 
             {
                 controlval = controldata[layer*256 + i];
@@ -514,7 +515,7 @@ AbcQueue::note_effect5(int chan)
                     controlval = 127;
                 }
                 eventlist[j].time = notetime;
-                eventlist[j].cmd  = (char) MidiEvent::control_change;
+                eventlist[j].cmd  = MidiEvent::control_change;
                 eventlist[j].data1 = controltype;
                 eventlist[j].data2 = controlval;
                 notetime += delta;
@@ -537,20 +538,26 @@ AbcQueue::note_effect5(int chan)
     Qitem &qh = this->queue[this->head];
     this->client->midi_noteoff(last_delta, qh.pitch, qh.chan);
 
-    for(int layer=0;layer <= nlayers;layer++) 
+    // reset CC to default value after it's been played.
+    // defaults are established with "control" / CC n.
+    // currently we detect in-initialized value by simply being out
+    // of range [0-127].  This 
+    for(int layer=0;layer <= layerIndex;layer++) 
     {
         controltype = controldata[layer*256]; // controldata[layer][0]
-        data[0] = (char) controltype;
-        data[1] = (char) controldefaults[controltype];
+        data[0] = controltype;
+        data[1] = controldefaults[controltype];
+        if(data[1] > 127)
+            data[1] = 0;
         this->client->midi_event_with_delay(0, 
-            MidiEvent::control_change, chan, data, 2);
+                MidiEvent::control_change, chan, data, 2);
     }
     if(bendnvals > 0)
     {
         /* restore pitchbend to its original state */
         pitchbend = initial_bend; /* [SS] 2014-09-25 */
-        data[0] = (char) (pitchbend&0x7f);
-        data[1] = (char) ((pitchbend>>7)&0x7f);
+        data[0] = (pitchbend&0x7f);
+        data[1] = ((pitchbend>>7)&0x7f);
         this->client->midi_event_with_delay(0, 
             MidiEvent::pitch_wheel, chan, data, 2);
     }
@@ -579,17 +586,17 @@ AbcQueue::output_eventlist(event *list, int nsize, int chan)
     {
         int delta = list[i].time - miditime;
         miditime = list[i].time;
-        data[0] = (char) list[i].data1; 
-        data[1] = (char) list[i].data2;
-        char cmd = list[i].cmd;
-        if(cmd == -80) 
+        data[0] = list[i].data1; 
+        data[1] = list[i].data2;
+        unsigned char cmd = list[i].cmd;
+        if(cmd == 0xb0) 
         {
             this->client->midi_event_with_delay(delta, 
                 MidiEvent::control_change,
                 chan, data, 2);
         }
         else
-        if(cmd == -32) 
+        if(cmd == 0xe0) 
         {
             this->client->midi_event(delta, 
                 MidiEvent::pitch_wheel,

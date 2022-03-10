@@ -145,7 +145,6 @@ namespace Abc
         UPPERMORDENT, // P
         SEGNO,        // S
 
-
         DECSIZE      
     };
 

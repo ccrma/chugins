@@ -49,7 +49,7 @@ public:
             int *bendstate, int *bendnvals, int **benddata) = 0;
         virtual void getEffectsState(long **delta_time, 
             int *bendstate, int *bendnvals, int **benddata,
-            int *nlayers, int **controlnvals,  int **controldefaults,
+            int *layerIndex, int **controlnvals,  int **controldefaults,
             int **controldata) = 0;
     };
 
@@ -98,12 +98,12 @@ private:
     void note_effect3();
     void note_effect5(int chan);
 
-    struct event  // used by effect5
+    struct event  // used by effect5 (CCx/commandstring/shape)
     {
         int time;
-        char cmd;
-        char data1;
-        char data2;
+        unsigned char cmd;
+        unsigned char data1;
+        unsigned char data2;
     };
     static int compare_events(const void *a, const void *b);
     void output_eventlist(event *list, int nsize, int chan);

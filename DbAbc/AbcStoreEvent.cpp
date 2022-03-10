@@ -1852,7 +1852,13 @@ AbcStore::handle_instruction(char const *s)
             done = 1;
         }
         else
-        if(strcmp(p, "arpeggio") == 0) 
+        if(strncmp(s, "chordattack", 11) == 0)
+        {
+            this->specific("MIDI", s); // let DYNAMIC parse this.
+            done = 1;
+        }
+        else
+        if(strcmp(p, "arpeggio") == 0)  // see also "MIDI chordattack"
         {
             addfeature(Abc::ARPEGGIO, 0, 0, 0);
             done = 1;
@@ -1890,13 +1896,32 @@ AbcStore::handle_instruction(char const *s)
         else
         if (strcmp(s, "bend") == 0) 
         {
-            addfeature(Abc::EFFECT, 1, 0, 0);
+            addfeature(Abc::EFFECT, 1, 0, 0); // bendtype 1
             done = 1;
         }
         else
         if(strcmp(s, "shape") == 0) 
         {
-            addfeature(Abc::EFFECT, 2, 0, 0);
+            addfeature(Abc::EFFECT, 2, 0, 0); // bendtype 2
+            done = 1;
+        }
+        else
+        if(strncmp(s, "CC ", 3) == 0) // %%MIDI control n val
+        {
+            char buf[128];
+            char const *x = s+3;
+            snprintf(buf, sizeof(buf), "control %s", x);
+            this->specific("MIDI", buf); // let DYNAMIC parse this.
+            done = 1;
+        }
+        else
+        if(strncmp(s, "CCx ", 4) == 0) // %%MIDI controlstring n val a b c d
+        {
+            // referenced by ensuing shape.
+            char buf[128];
+            char const *x = s+4;
+            snprintf(buf, sizeof(buf), "controlstring %s", x);
+            this->specific("MIDI", buf); // let DYNAMIC parse this.
             done = 1;
         }
         else
@@ -1920,15 +1945,6 @@ AbcStore::handle_instruction(char const *s)
         else
         if(strcmp(s,"turn") == 0)
             done = 1;
-        else
-        if(strncmp(s, "CC", 2) == 0)
-        {
-            // eg: CC27 0-127
-            char const *x = s+2;
-            snprintf(midimsg, sizeof(midimsg), "control %s", x);
-            this->specific("MIDI", midimsg); // let DYNAMIC parse this.
-            done = 1;
-        }
     }
 
     if(done == 0 && quiet == -1)

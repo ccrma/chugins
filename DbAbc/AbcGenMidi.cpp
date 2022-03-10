@@ -819,9 +819,9 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
         this->pedal_off();
         break;
     case Abc::EFFECT: 
-        if(fd.pitch == 1)
+        if(fd.pitch == 1) // !bend!
             this->wctx->effecton = this->wctx->bendtype;
-        else
+        else // fd.pitch == 2 (!shape!)
             this->wctx->effecton = 10;
         break;
     default:
@@ -1640,10 +1640,10 @@ AbcGenMidi::midi_noteon(long delta_time, int pitch, int pitchbend, int chan, int
     }
 
     if(chan == 9) 
-        data[0] = (char) this->wctx->drum_map[pitch];
+        data[0] = this->wctx->drum_map[pitch];
     else
-        data[0] = (char) pitch;
-    data[1] = (char) vel;
+        data[0] = pitch;
+    data[1] = vel;
     this->midi->writeMidiEvent(delta_time, 
         MidiEvent::note_on, chan, data, 2);
 }
@@ -1654,10 +1654,10 @@ AbcGenMidi::midi_noteoff(long delta_time, int pitch, int chan)
 {
     unsigned char data[2];
     if (chan == 9) 
-        data[0] = (char) this->wctx->drum_map[pitch];
+        data[0] = this->wctx->drum_map[pitch];
     else
-        data[0] = (char) pitch;
-    data[1] = (char) 0;
+        data[0] = pitch;
+    data[1] = 0;
     this->midi->writeMidiEvent(delta_time, 
             MidiEvent::note_off, chan, data, 2);
 }
@@ -1674,8 +1674,8 @@ AbcGenMidi::midi_re_tune(int channel)
     unsigned char data[2];
     #if 0 
     // XXX - unused
-    data[0] = (char) (this->initState->bend & 0x7f); /* least significant bits */
-    data[1] = (char) ((this->initState->bend >>7) & 0x7f);
+    data[0] = (this->initState->bend & 0x7f); /* least significant bits */
+    data[1] = ((this->initState->bend >>7) & 0x7f);
     #endif
     /* indicate that we are applying RPN fine and gross tuning using
         the following two control commands. 
@@ -1692,11 +1692,11 @@ AbcGenMidi::midi_re_tune(int channel)
         commands for the least significant and most significant bits
     */
     data[0] = 6; /* control data entry for coarse bits */
-    data[1] = (char) ((this->initState->bend >>7) & 0x7f);
+    data[1] = ((this->initState->bend >>7) & 0x7f);
     this->midi->writeMidiEvent(0, MidiEvent::control_change, channel, data, 2);
 
     data[0] = 38; /* control data entry for fine bits */
-    data[1] = (char) (this->initState->bend & 0x7f); /* least significant bits */
+    data[1] = (this->initState->bend & 0x7f); /* least significant bits */
     this->midi->writeMidiEvent(0, MidiEvent::control_change, channel, data, 2);
 } 
 
@@ -2315,7 +2315,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
                 this->wctx->error("data must be in the range 0 - 127");
                 datum = 0;
             }
-            data[n] = (char) datum;
+            data[n] = datum;
             n = n + 1;
             AbcParser::Skipspace(&p);
         }
@@ -2331,24 +2331,24 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
         {
             for(i=0;i<AbcMidiTrackCtx::MAXLAYERS;i++) 
                 this->wctx->controlnvals[i] = 0;
-            this->wctx->nlayers = 0;  /* overwrite layer 0 if not a combo */
+            this->wctx->layerIndex = 0;  /* overwrite layer 0 if not a combo */
         }
-        if(this->wctx->nlayers >= AbcMidiTrackCtx::MAXLAYERS) 
+        if(this->wctx->layerIndex >= AbcMidiTrackCtx::MAXLAYERS) 
             this->wctx->error("too many combos for control data");
         else 
         {
             i = 0;
             while(i<256)
             {
-                this->wctx->controldata[this->wctx->nlayers][i] = AbcParser::Readsnump(&p);
+                this->wctx->controldata[this->wctx->layerIndex][i] = AbcParser::Readsnump(&p);
                 AbcParser::Skipspace(&p);
                 i = i + 1;
                 if(*p == 0) 
                     break;
             }
-            this->wctx->controlnvals[this->wctx->nlayers] = i;
+            this->wctx->controlnvals[this->wctx->layerIndex] = i;
             /* [SS] 2015-08-23 */
-            if(this->wctx->controlnvals[this->wctx->nlayers] < 2) 
+            if(this->wctx->controlnvals[this->wctx->layerIndex] < 2) 
                 this->wctx->error("empty %%MIDI controlstring"); 
             this->wctx->controlcombo = 0; /* turn off controlcombo */
             done = 1;
@@ -2358,7 +2358,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
     if(strcmp(command, "controlcombo") == 0)
     {
         this->wctx->controlcombo = 1;
-        this->wctx->nlayers++;
+        this->wctx->layerIndex++;
         done = 1;
     }
     else 
@@ -2392,7 +2392,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
             this->wctx->error("data must be in the range 0 - 63");
             datum = 0;
         }
-        data[1] = (char) datum;
+        data[1] = datum;
         this->midi->writeMidiEvent(0, 
             MidiEvent::control_change, chan, data, 2);
         done = 1;
@@ -2427,7 +2427,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
                 this->wctx->error("data must be in the range 0 - 255");
                 datum = 0;
             }
-            data[n] = (char) datum;
+            data[n] = datum;
             n = n + 1;
             AbcParser::Skipspace(&p);
         }
