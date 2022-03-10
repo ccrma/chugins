@@ -2186,7 +2186,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
             this->wctx->bendtype = 2;
     }
     else 
-    if(strcmp(command, "bendstringex") == 0) 
+    if(strcmp(command, "bendstringex") == 0)  // "smooth" (4x) the incoming data
     {
         int bendinput[64];
         i = 0;

@@ -1925,6 +1925,13 @@ AbcStore::handle_instruction(char const *s)
             done = 1;
         }
         else
+        if(strncmp(s, "bendstring", 10) == 0) // %%MIDI bendstring n1 n2 n3 ..
+        {
+            // referenced by ensuing shape.
+            this->specific("MIDI", s); // let DYNAMIC parse this.
+            done = 1;
+        }
+        else
         /* The following instructions were added to avoid numerous
         warnings if they appear in the abc file (in particular the
         files derived from Craig Sapp's kern files using hum2abc).
