@@ -105,7 +105,7 @@ dbAbc::Open(std::string const &fp)
         // fprintf(stderr, "DbAbc::numTracks %d\n", this->m_numTracks);
         if(this->m_numTracks == 0)
         {
-            std::cerr << "DbABC: no tracks found" << filename.c_str() << "\n";
+            std::cerr << "DbABC: no tracks found in " << filename.c_str() << "\n";
             return 1;
         }
         // NB: not all have "tracks", in multitrack files first track is

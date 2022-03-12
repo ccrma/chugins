@@ -16,7 +16,8 @@ AbcGenMidi::AbcGenMidi() :
     initState(nullptr),
     performing(false),
     midi(nullptr),
-    wctx(nullptr)
+    wctx(nullptr),
+    ntracks(0)
 {
 }
 
@@ -27,6 +28,7 @@ void
 AbcGenMidi::Init(bool forPerformance, char const *logPrefix)
 {
     this->performing = forPerformance;
+    this->ntracks = 0;
     this->logPrefix = logPrefix;
     this->barflymode = 0; // overriden via -BF or "R:"
     this->beatmodel = 0;
