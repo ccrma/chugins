@@ -2,6 +2,7 @@
 #include "AbcPort.h"
 #include <cmath> // log10
 #include <cstring>
+#include <random>
 
 char const *AbcStore::version = "4.59 June 27 2021 abc2midi";
 
@@ -1405,25 +1406,30 @@ AbcStore::checkbreak()
  * caller can inspect return.  If == 1, it may be an in-body
  * partlabel (since the line between header and notes is ill-defined)
  */
-/* e.g. P:A(AB)3(CD)2 becomes P:AABABABCDCD */
+/* e.g. P:A(AB)3(CD)2 becomes P:AABABABCDCD 
+        P: A3[A|B|C]3
+        P: A3[A|A|A|B|C]3
+        P: A3(X[A|A|A|B|C]3)5
+        P: A3[C|D|[E|F|G]2]3  // chooser flattens results when its ] is encountered
+ */
 int 
 AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
 {
-    int i, j;
-    int stack[10]; // index of begining of pattern seq
+    int stack[10]; // index of beginning of pattern seq
     char lastch =  ' '; /* [SDG] 2020-06-03 */
     char errmsg[80];
     int stackptr = 0;
     int spec_length = strlen(spec);
-    int hitmap[26];
     int k = 0;
+    int inChoice = 0;
     char const *in = spec;
-    memset(hitmap, 0, sizeof(hitmap));
+
     while(*in != 0 && k < spec_length) 
     { 
         k++;
         if(((*in >= 'A') && (*in <= 'Z')) || (*in == '(') || (*in == '.') ||
             (*in == ')') || (*in == '+') || (*in == '-') || (*in == ' ') || 
+            (*in == '|') || (*in == ']') || (*in == '[') ||
             ((*in >= '0') && (*in <= '9'))) 
         {
             if(*in == '.' || *in == ' ')  // for readability
@@ -1432,15 +1438,16 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
             if(*in == '+' || *in == '-')  // no longer supported, ignore
                 in = in + 1;
 
-            if((*in >= 'A') && (*in <= 'Z')) 
+            if(((*in >= 'A') && (*in <= 'Z')) || (inChoice && *in == '|'))
             {
-                hitmap[*in - 'A'] = 1;
                 partspec->push_back(*in);
                 lastch = *in;
                 in = in + 1;
             }
-            if(*in == '(') 
+            if(*in == '(' || *in == '[') 
             {
+                if(*in == '[')
+                    inChoice++;
                 if(stackptr < 10) 
                 {
                     stack[stackptr] = partspec->size();
@@ -1450,8 +1457,10 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
                     this->error("nesting too deep in part specification");
                 in = in + 1;
             }
-            if(*in == ')')  // nb: we lookahead for number within
+            if(*in == ')' || *in == ']')  // nb: we lookahead for number following
             {
+                int chooser = (*in == ']');
+                if(chooser) inChoice--;
                 in = in + 1;
                 if(stackptr > 0) 
                 {
@@ -1463,12 +1472,40 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
                     stackptr = stackptr - 1;
                     start = stack[stackptr];
                     stop = partspec->size();
-                    for(i=1; i<repeats; i++) 
+                    if(chooser)
                     {
-                        for(j=0; j<((int) (stop-start)); j++) 
+                        std::string input = partspec->substr(start, stop);
+                        std::vector<std::string> choices;
+                        std::string::size_type pos = 0;
+                        while(pos != std::string::npos)
+                        {
+                            auto nextpos = input.find_first_of('|', pos);
+                            if(nextpos == std::string::npos)
+                            {
+                                choices.push_back(input.substr(pos));
+                                break;
+                            }
+                            else
+                            {
+                                choices.push_back(input.substr(pos, nextpos-pos));
+                                pos = nextpos+1;
+                            }
+                        }
+                        std::default_random_engine generator;
+                        std::uniform_int_distribution<int> distribution(0,choices.size()-1);
+                        partspec->erase(start, stop);
+                        for(int i=1; i<repeats; i++) 
+                        {
+                            int r = distribution(generator);
+                            partspec->append(choices[r]);
+                        }
+                    }
+                    else
+                    for(int i=1; i<repeats; i++)  // <-- starts at 1
+                    {
+                        for(int j=0; j<((int) (stop-start)); j++) 
                         {
                             char c = partspec->at(start+j);
-                            hitmap[c - 'A'] = 1;
                             partspec->push_back(partspec->at(start+j));
                         }
                     }
@@ -1483,16 +1520,15 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
                 int repeats = this->parser->readnump(&in);
                 if(partspec->size() > 0) 
                 {
-                    for(i = 1; i<repeats; i++) 
+                    for(int i = 1; i<repeats; i++) 
                     {
-                        hitmap[lastch - 'A'] = 1;
                         partspec->push_back(lastch);
                     }
                 } 
                 else 
                     this->error("No part to repeat in part specification");
             }
-        } 
+        }
         else 
         {
             if(!silent) 
@@ -1511,22 +1547,7 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
         this->error("Too many ('s in part specification");
         return 0;
     }
-    #if 1
     return partspec->size();
-    #else
-    if(partspec->size() == 0)
-        return 0;
-    else
-    {
-        int numparts = 0;
-        for(int i=0;i<26;i++)
-        {
-            if(hitmap[i]) 
-                numparts++;
-        }
-        return numparts;
-    }
-    #endif
 }
 
 /* store away broken rhythm context on encountering grace notes */
