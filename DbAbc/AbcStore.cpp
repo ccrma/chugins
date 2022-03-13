@@ -1427,18 +1427,18 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
     while(*in != 0 && k < spec_length) 
     { 
         k++;
-        if(((*in >= 'A') && (*in <= 'Z')) || (*in == '(') || (*in == '.') ||
-            (*in == ')') || (*in == '+') || (*in == '-') || (*in == ' ') || 
-            (*in == '|') || (*in == ']') || (*in == '[') ||
+        if(*in == '.' || *in == ' ')  // for readability
+            in = in + 1;
+        else
+        if(*in == '+' || *in == '-')  // no longer supported, ignore
+            in = in + 1;
+        else
+        if(((*in >= 'A') && (*in <= 'Z')) || 
+            (*in == '(') || (*in == ')') || (*in == ']') || (*in == '[') ||
+            (*in == '|' && inChoice) ||
             ((*in >= '0') && (*in <= '9'))) 
         {
-            if(*in == '.' || *in == ' ')  // for readability
-                in = in + 1;
-
-            if(*in == '+' || *in == '-')  // no longer supported, ignore
-                in = in + 1;
-
-            if(((*in >= 'A') && (*in <= 'Z')) || (inChoice && *in == '|'))
+            if(((*in >= 'A') && (*in <= 'Z')) || (*in == '|'))
             {
                 partspec->push_back(*in);
                 lastch = *in;
@@ -1513,7 +1513,7 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
                 else 
                     this->error("Too many )'s in part specification");
             }
-
+            else
             if((*in >= '0') && (*in <= '9')) 
             {
                 // handles: A3 (not (AB)3),CASEis->parser->readnump(&in);
@@ -1521,9 +1521,7 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
                 if(partspec->size() > 0) 
                 {
                     for(int i = 1; i<repeats; i++) 
-                    {
                         partspec->push_back(lastch);
-                    }
                 } 
                 else 
                     this->error("No part to repeat in part specification");
@@ -1546,6 +1544,14 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
     {
         this->error("Too many ('s in part specification");
         return 0;
+    }
+    if(this->verbose)
+    {
+        std::string x("P in:");
+        x.append(spec);
+        x.append(" => ");
+        x.append(partspec->c_str());
+        this->log(x.c_str());
     }
     return partspec->size();
 }
