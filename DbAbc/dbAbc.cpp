@@ -158,6 +158,10 @@ dbAbc::Rewind()
     return r;
 }
 
+/* return: 
+ *  0 when nothing left to read, 
+ *  non-zero when an event is produced 
+ */
 int
 dbAbc::Read(int track, MidiEvent *evt)
 {
@@ -165,12 +169,12 @@ dbAbc::Read(int track, MidiEvent *evt)
 
     //fprintf(stderr, "Read track %d begin\n", track);
 
-    int r;
     this->m_activeTrack = track;
     if(this->clearPending(track, evt))
-        r = 1; // no more stuff
+        return 1; // found a pending
     else
     {
+        // getNextPerformanceEvents triggers our midi callbacks below.
         // getNextPerfEvents returns active.  It doesn't necessarily
         // mean that it produced any Midi in the process. Alternatively
         // it may have produced multiple midi events.  We wish to ensure
@@ -181,12 +185,10 @@ dbAbc::Read(int track, MidiEvent *evt)
             if(this->m_activePending)
                 break;
         }
-        r = this->clearPending(track, evt); // returns 0 if still begining
+        int r = this->clearPending(track, evt); // returns 1 when evt is delivered
         this->m_activeTrack = -1;
+        return r;
     }
-
-    // fprintf(stderr, "Read track %d end\n", track);
-    return r;
 }
 
 int
@@ -202,8 +204,10 @@ dbAbc::clearPending(int track, MidiEvent *evt)
         return 1;
     }
     else
+    {
         this->m_activePending = 0;
-    return 0;
+        return 0;
+    }
 }
 
 /* -------------------------------------------------------------------- */

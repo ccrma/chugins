@@ -147,6 +147,11 @@ public:
     long delta_time_track0;
     long tracklen, tracklen1;
     long barloc[1024];
+    /* since the featurelist can have interleaved voices we now
+     * assert that featureIndexEnd is the end of the feature list
+     * and require that each track keep track of the current voice
+     * NB: this->tracknumber is associated with my this->trackvoice.
+     */
     int featureIndexCurrent, featureIndexBegin, featureIndexEnd;
 
     int beat;
@@ -257,6 +262,7 @@ public:
     int partno, partlabel;
 
     int state[6];
+
 
 private: // XXX: migrate more state to private for better encapsulation
     void karaokestarttrack(int xtrack);

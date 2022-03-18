@@ -194,7 +194,6 @@ CK_DLL_MFUN(abc_read)
     // MidiIn::readTrack(MidiMsg m, int track)
     Chuck_Object *msg = GET_NEXT_OBJECT(ARGS);
     t_CKINT track = GET_NEXT_INT(ARGS);
-    RETURN->v_int = 0; // means error or nothing left to read
     if(track >= 0 && track < c->GetNumTracks())
     {
         MidiEvent mevt;
@@ -209,6 +208,12 @@ CK_DLL_MFUN(abc_read)
             OBJ_MEMBER_INT(msg, abcMsg_data2_offset) = sz > 1 ? mevt.data[1] : 0;
             OBJ_MEMBER_INT(msg, abcMsg_data3_offset) = sz > 2 ? mevt.data[2] : 0;
             OBJ_MEMBER_INT(msg, abcMsg_data4_offset) = sz > 3 ? mevt.data[3] : 0;
+            if(sz == 0)
+            {
+                // fprintf(stderr, "0-sized data %x %x\n", mevt.evt, mevt.metaType);
+                sz = 1;
+            }
+            else
             if(sz > 4)
             {
                 Chuck_String *str = OBJ_MEMBER_STRING(msg, abcMsg_datastr_offset);
@@ -216,8 +221,11 @@ CK_DLL_MFUN(abc_read)
             }
             RETURN->v_int = (int) sz; 
         }
-        // else nothing left to do
+        else
+            RETURN->v_int = 0; 
     }
+    else
+        RETURN->v_int = 0; // means error or nothing left to read
 }
 
 CK_DLL_MFUN(abc_rewind)

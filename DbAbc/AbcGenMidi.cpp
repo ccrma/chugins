@@ -103,9 +103,12 @@ AbcGenMidi::getNextPerformanceEvents(int track, IMidiWriter *m)
     if( this->wctx->featureIndexBegin >= 0 &&
         this->wctx->featureIndexCurrent <= this->wctx->featureIndexEnd)
     {
-        this->wctx->featureIndexCurrent = 
-            this->processFeature(this->wctx->featureIndexCurrent, track);
-        this->wctx->featureIndexCurrent++;
+        int next = this->processFeature(this->wctx->featureIndexCurrent, track);
+        /*
+        fprintf(stderr, "processFeature %d => %d/%d\n", 
+            this->wctx->featureIndexCurrent, next, this->wctx->featureIndexEnd);
+        */
+        this->wctx->featureIndexCurrent = next + 1;
         active = 1;
     }
     else
@@ -123,7 +126,6 @@ AbcGenMidi::getNextPerformanceEvents(int track, IMidiWriter *m)
     return active;
 }
 
-
 void
 AbcGenMidi::assignVoiceBounds()
 {
@@ -140,8 +142,11 @@ AbcGenMidi::assignVoiceBounds()
             track.featureIndexEnd = this->initState->nfeatures - 1;
         }
         else
+        {
+            // remember: voices can be interleaved.
             track.featureIndexEnd = this->findvoiceEnd(track.featureIndexBegin, 
                                                         track.voicenum, i);
+        }
     }
 }
 
@@ -231,7 +236,7 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
     Abc::FeatureDesc &fd = this->initState->featurelist[j];
     if(this->initState->verbose > 4) 
     {
-        printf("%d: %d %s %d %d/%d\n",  
+        fprintf(stderr, "%d: %d %s %d %d/%d\n",  
             xtrack, 
             j, Abc::featname((Abc::FeatureType) fd.feature), 
             fd.pitch, fd.num, fd.denom);
@@ -239,6 +244,18 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
     this->wctx->lineposition = fd.charloc; 
     switch(fd.feature)
     {
+    case Abc::VOICE:
+        /* search on for next occurrence of voice */
+        j = this->findvoice(j, this->wctx->trackvoice, xtrack);
+        /* inline voice commands are not followed by MUSICLINE 
+         * where we would normally get thismline 
+         */
+        if(this->wctx->wordson) 
+        {
+            this->wctx->thismline = j+1;
+            this->wctx->nowordline = 0;
+        }
+        break;
     case Abc::NOTE:
         this->wctx->onemorenote = 0;
         if(this->wctx->wordson)
@@ -449,18 +466,6 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
             this->midi->writeMetaEvent(0L, MidiEvent::marker, msg, 1);
         }
         break;
-    case Abc::VOICE:
-        /* search on for next occurrence of voice */
-        j = this->findvoice(j, this->wctx->trackvoice, xtrack);
-        /* inline voice commands are not followed by MUSICLINE 
-         * where we would normally get thismline 
-         */
-        if(this->wctx->wordson) 
-        {
-            this->wctx->thismline = j+1;
-            this->wctx->nowordline = 0;
-        }
-        break;
     case Abc::TEXT:
         if(this->wctx->texton) 
         {
@@ -606,7 +611,7 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
             else 
             {
                 this->wctx->in_varend = 1;   /* segment matches pass number, we play it */
-                /*printf("playing at %d for pass %d\n",j,passnum); */
+                /*fprintf(stderr, "playing at %d for pass %d\n",j,passnum); */
                 if(this->wctx->maxpass < 4) 
                     this->wctx->maxpass = this->wctx->pass+1;
             }
@@ -720,7 +725,7 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
             long newtempo;
 
             newtempo = ((long)num[j]<<16) | ((long)denom[j] & 0xffff);
-            printf("New tempo = %ld [%x %x]\n", newtempo, num[j], denom[j]);
+            fprintf(stderr, "New tempo = %ld [%x %x]\n", newtempo, num[j], denom[j]);
 */
             // The MIDI set tempo meta message sets the tempo of a MIDI 
             // sequence in terms of microseconds per quarter note.
@@ -810,7 +815,7 @@ AbcGenMidi::processFeature(int j, int xtrack, MidiEvent *midiEvent)
     case Abc::META:
         if(fd.pitch == 0 && this->wctx->noteson==1)
         {
-            /*printf("linenum = %d charpos = %d\n",num[j],denom[j]);*/
+            /*fprintf(stderr, "linenum = %d charpos = %d\n",num[j],denom[j]);*/
             // easyabc_interface(j);
         }
         break;
@@ -904,7 +909,7 @@ int
 AbcGenMidi::inlist(int place, int passno)
 {
 
-    /* printf("passno = %d\n", passno); */
+    /* fprintf(stderr, "passno = %d\n", passno); */
     Abc::FeatureDesc &fd = this->initState->featurelist[place];
     if(fd.denom != 0) 
     {
@@ -1006,7 +1011,7 @@ AbcGenMidi::checksyllables()
     if(this->wctx->onemorenote == 1)
     {
         this->wctx->onemorenote = 0;
-        /*printf("onemorenote please, hyphenstate to zero\n (using lyric- instead of note-hyphen)\n"); //not the most elegant solution.. but it works */
+        /*fprintf(stderr, "onemorenote please, hyphenstate to zero\n (using lyric- instead of note-hyphen)\n"); //not the most elegant solution.. but it works */
         this->wctx->hyphenstate = 0;
     }
     this->wctx->lyricsyllables = 0;
@@ -1018,7 +1023,7 @@ int
 AbcGenMidi::findwline(int startline)
 {
 
-    /*   printf("findwline called with %d\n", startline); */
+    /*   fprintf(stderr, "findwline called with %d\n", startline); */
     int done = 0;
     int inwline = 0;
     this->wctx->nowordline = 0;
@@ -1132,7 +1137,7 @@ AbcGenMidi::getword(int *place, int w)
     enum {empty, inword, postword, foundnext, failed} syllstatus;
     /* [BY] 2012-10-03  Big5 chinese character support */
 
-    /*printf("GETWORD: w = %d\n",c);*/
+    /*fprintf(stderr, "GETWORD: w = %d\n",c);*/
     i = 0;
     syllcount = 0;
     if(w >= this->initState->words.size()) 
@@ -1162,7 +1167,7 @@ AbcGenMidi::getword(int *place, int w)
     while((syllstatus != postword) && (syllstatus != failed)) 
     {
         syllable[i] = c;
-        /* printf("syllstatus = %d c = %c i = %d place = %d row= %d \n",syllstatus,c,i,*place,w); */
+        /* fprintf(stderr, "syllstatus = %d c = %c i = %d place = %d row= %d \n",syllstatus,c,i,*place,w); */
         if(isBig5) 
         {
             i = i + 1;
@@ -1301,7 +1306,7 @@ AbcGenMidi::getword(int *place, int w)
         if(strlen(syllable) > 0) 
         {
             this->text_data(syllable);
-            /*printf("TEXT DATA %s\n",syllable);*/
+            /*fprintf(stderr, "TEXT DATA %s\n",syllable);*/
         }
     }
     /* now deal with anything after the syllable */
@@ -1311,7 +1316,7 @@ AbcGenMidi::getword(int *place, int w)
             c = this->initState->words[w].at(*place);
         else
             c = '\0';
-        /*printf("next character = %c\n",c);*/
+        /*fprintf(stderr, "next character = %c\n",c);*/
         switch (c) 
         {
         case ' ':
@@ -1342,7 +1347,7 @@ AbcGenMidi::getword(int *place, int w)
             syllstatus = foundnext;
             break;
         }
-        /* printf("now place = %d syllcount = %d syllstatus = %d\n",*place,syllcount,syllstatus); */
+        /* fprintf(stderr, "now place = %d syllcount = %d syllstatus = %d\n",*place,syllcount,syllstatus); */
     }
     return syllcount;
 }
@@ -1380,7 +1385,7 @@ AbcGenMidi::parse_stress_params(char *input)
         this->ngain[n] = (int) (f + 0.0001);
         if(this->ngain[n] > 127 || this->ngain[n] <0) 
         {
-            printf("**error** bad velocity value ngain[%d] = %d in ptstress command\n",
+            fprintf(stderr, "**error** bad velocity value ngain[%d] = %d in ptstress command\n",
                 n, this->ngain[n]);
         }
         input = next;
@@ -1388,7 +1393,7 @@ AbcGenMidi::parse_stress_params(char *input)
         fdur[n] = f;
         if (fdur[n] > (float) nseg || fdur[n] < 0.0) 
         {
-            printf("**error** bad expansion factor fdur[%d] = %f in ptstress command\n",
+            fprintf(stderr, "**error** bad expansion factor fdur[%d] = %f in ptstress command\n",
                 n, this->fdur[n]);
         }
         input = next;
@@ -1411,7 +1416,7 @@ AbcGenMidi::readstressfile(char const * filename)
     FILE *inputhandle = fopen(filename,"r");
     if (inputhandle == nullptr) 
     {
-        printf("Failed to open file %s\n", filename);
+        fprintf(stderr, "Failed to open file %s\n", filename);
         return;
     }
     for(int n=0;n<32;n++) 
@@ -1422,7 +1427,7 @@ AbcGenMidi::readstressfile(char const * filename)
     this->fdursum[0] = fdur[0];
     this->beatmodel = 2; /* for Phil Taylor's stress model */
     int idummy = fscanf(inputhandle,"%d",&nseg);
-    /*printf("%d\n",nseg);*/
+    /*fprintf(stderr, "%d\n",nseg);*/
     if (nseg > 31) 
         nseg=31;
 
@@ -1458,13 +1463,13 @@ AbcGenMidi::calculate_stress_parameters(int time_num, int time_denom)
                                 this->fdur[n-1] * qfrac;
         if (this->fdursum[n] > (float) this->nseg + 0.05) 
         {
-            printf("**error** bad abc stress file: sum of the expansion factors exceeds number of segments\nAborting stress model\n");
+            fprintf(stderr, "**error** bad abc stress file: sum of the expansion factors exceeds number of segments\nAborting stress model\n");
             this->beatmodel = 0;
             return;
         }
         if (ngain[n] > 127 || ngain[n] < 0) 
         {  
-            printf("**error** bad abc stress file: note velocity not between 0 and 127\n Aborting the stress model\n");
+            fprintf(stderr, "**error** bad abc stress file: note velocity not between 0 and 127\n Aborting the stress model\n");
             this->beatmodel = 0;
             return;
         }
@@ -1472,7 +1477,7 @@ AbcGenMidi::calculate_stress_parameters(int time_num, int time_denom)
         /* ensure fdursum[nseg] = lastsegvalue [SS] 2011-09-06 */
         if(this->fdursum[this->nseg] != lastsegvalue)
         {
-            printf("**warning** the sum of the abc expansion factors is not %d\n some adjustments are made.\n",
+            fprintf(stderr, "**warning** the sum of the abc expansion factors is not %d\n some adjustments are made.\n",
                     nseg);
             this->fdursum[nseg] = lastsegvalue;
         }
@@ -1570,23 +1575,28 @@ AbcGenMidi::findvoice(int initplace, int voice, int xtrack)
     return j; // <--- not found (j == nfeatures)
 } 
 
-// a voiceEnd is inferred when we encounter another voice or
-// we reach the end of the featurelist.
+// voices can be interleaved!
+// a legit voiceEnd is inferred at the end of the last run of this voice
 int 
 AbcGenMidi::findvoiceEnd(int voiceBegin, int voice, int xtrack)
 {
     int j = voiceBegin + 1;
+    int currentVoice = voice;
+    int voiceEnd = j;
     while(j < this->initState->nfeatures)
     {
         Abc::FeatureDesc &fd = this->initState->featurelist[j];
-
-        if((fd.feature == Abc::VOICE) && (fd.pitch != voice)) 
-            return j-1; // <--- found
-        // XXX: what about part?
-        else
-            j++;
+        if(fd.feature == Abc::VOICE)
+        {
+            if(currentVoice == voice && fd.pitch != currentVoice)
+                voiceEnd = j-1;
+            currentVoice = fd.pitch;
+        }
+        j++;
     }
-    return j-1; // eof (last voice)
+    if(currentVoice == voice)
+        voiceEnd = j-1;// eof (last voice)
+    return voiceEnd; 
 } 
 
 /* compute note data and call noteon_data to write MIDI note event */
