@@ -2477,7 +2477,7 @@ AbcGenMidi::dodeferred(char const *s, int noteson)
     if(strcmp(command,"stressmodel") == 0) 
     {
         if(this->barflymode == 0) 
-            printf("**warning stressmodel is ignored without -BF runtime option\n");
+            fprintf(stderr, "**warning stressmodel is ignored without -BF runtime option\n");
         done = 1;
     }
     else 
@@ -2626,7 +2626,7 @@ AbcGenMidi::parse_drummap(char const **s)
     }
     if(mapto < 35 || mapto > 81) 
         this->wctx->warning("drummap destination should be between 35 and 81 inclusive");
-    /*printf("midipitch = %d map to %d \n",midipitch,mapto);*/ 
+    /*fprintf(stderr, "midipitch = %d map to %d \n",midipitch,mapto);*/ 
     this->wctx->drum_map[midipitch] = mapto;
 }
 
@@ -2727,6 +2727,7 @@ AbcGenMidi::configure_gchord()
 void 
 AbcGenMidi::write_program(int p, int channel)
 {
+    // fprintf(stderr, "AbcGenMidi: write_program %d %d\n", p, channel);
     unsigned char data[1];
     p = p - this->initState->programbase;
     if (p <0) 

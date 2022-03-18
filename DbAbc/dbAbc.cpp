@@ -163,7 +163,7 @@ dbAbc::Read(int track, MidiEvent *evt)
 {
     assert(this->m_pendingEvents.size() > track);
 
-    // printf("Read track %d begin\n", track);
+    //fprintf(stderr, "Read track %d begin\n", track);
 
     int r;
     this->m_activeTrack = track;
@@ -185,7 +185,7 @@ dbAbc::Read(int track, MidiEvent *evt)
         this->m_activeTrack = -1;
     }
 
-    // printf("Read track %d end\n", track);
+    // fprintf(stderr, "Read track %d end\n", track);
     return r;
 }
 
@@ -229,7 +229,7 @@ dbAbc::writeTempo(long tempo)
     this->m_samplesPerTick = this->m_tickSeconds * this->m_sampleRate;
 
     #if 0
-    printf("writeTempo Track %d: %ld bpm: %g\n", 
+    fprintf(stderr, "writeTempo Track %d: %ld bpm: %g\n", 
             this->m_activeTrack, tempo, this->m_bpm);
     #endif
     return 0;
@@ -247,7 +247,7 @@ dbAbc::SetBPM(float bpm)
         this->m_ignoreTempoUpdates = true;
 
         #if 0
-        printf("SetBPM %g %ld\n", bpm, this->m_tempo);
+        fprintf(stderr, "SetBPM %g %ld\n", bpm, this->m_tempo);
         #endif
     }
     else
@@ -276,7 +276,8 @@ dbAbc::writeMidiEvent(long dt, int type, int chan, unsigned char const *data, in
 {
     assert(this->m_activeTrack != -1);
     std::deque<MidiEvent> &equeue = this->m_pendingEvents[this->m_activeTrack];
-    MidiEvent mevt(this->convertDur(dt), type, data, size);
+    int status = type | chan;
+    MidiEvent mevt(this->convertDur(dt), status, data, size);
     equeue.push_back(mevt);
     this->m_activePending = equeue.size();
     return 0;
