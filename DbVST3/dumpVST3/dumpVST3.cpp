@@ -1,4 +1,5 @@
-#include "../DbVST3App.h"
+#include "../App.h"
+#include "../pluginCtx.h"
 
 #include <iostream>
 #include <fstream>
@@ -6,7 +7,7 @@
 #include <ctime>
 
 // produces a yaml dump of the requested plugin on stdout
-class Dumpit : public DbVST3App
+class Dumpit : public App
 {
 public:
     Dumpit() {}
@@ -14,7 +15,7 @@ public:
     int DumpOne(char const *path, std::ostream &ostream)
     {
         std::string modpath(path);
-        DbVST3Ctx ctx;
+        PluginCtx ctx;
         if(0 == this->OpenPlugin(modpath, ctx))
         {
             ctx.Print(ostream, true/*detailed*/);

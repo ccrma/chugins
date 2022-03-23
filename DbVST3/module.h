@@ -1,17 +1,18 @@
-#ifndef DbVST3Module_h
-#define DbVST3Module_h
+#ifndef Module_h
+#define Module_h
 
-#include "DbVST3Param.h"
-#include "DbVST3Processing.h"
-
+#include "param.h"
+#include "processingCtx.h"
 
 #include <string>
 #include <vector>
 #include <unordered_map>
 
-// A plugin file (aka Steinberg::Vst::Module), can contain 1 or more
-// interfaces (aka modules)
-class DbVST3Module 
+// A plugin file (which is accessed as a VST::Module) can contain 1 or more
+// interfaces (AudioEffects, Controllers, ...).  This class represents one 
+// of these. IE: it maps to the user's definition of module.
+
+class Module
 {
 private:
     int programChangeIndex; // some modules support 0, some 1, some > 1
@@ -23,14 +24,14 @@ public:
     std::string subCategories;
     std::string version;
     std::string sdkVersion;
-    std::vector<DbVST3ParamInfo> parameters;
-    DbVST3ProcessingCtx processingCtx;
+    std::vector<ParamInfo> parameters;
+    ProcessingCtx processingCtx;
     std::unordered_map<std::string, int> nameToIndex;
     std::unordered_map<Steinberg::Vst::ParamID, int> idToIndex;
 
-    DbVST3Module(VST3::Hosting::ClassInfo &classInfo, 
-            const Steinberg::Vst::PlugProvider::PluginFactory &factory,
-            int verboseness=0)
+    Module(VST3::Hosting::ClassInfo &classInfo, 
+        const Steinberg::Vst::PlugProvider::PluginFactory &factory,
+        int verboseness=0)
     {
         this->programChangeIndex = -1;
         this->verbosity = 0;
@@ -58,7 +59,7 @@ public:
         this->processingCtx.SetVerbosity(v);
     }
 
-    DbVST3ParamInfo *
+    ParamInfo *
     GetParamInfo(int index)
     {
         if(index < this->parameters.size())
@@ -69,10 +70,10 @@ public:
 
     /* this entrypoint supports midi name-remapping
      */
-    DbVST3ParamInfo *
+    ParamInfo *
     GetParamInfo(std::string const &nm, float *val=nullptr)
     {
-        DbVST3ParamInfo *info = nullptr;
+        ParamInfo *info = nullptr;
         if(this->nameToIndex.size() == 0 && this->parameters.size() > 0)
         {
             // build a little cache
@@ -165,8 +166,8 @@ public:
     /* ------------------------------------------------------------------ */
 private:
     void
-    getProviderParams(VST3App::ProviderPtr provider, 
-        std::vector<DbVST3ParamInfo> &parameters)
+    getProviderParams(VSTProviderPtr provider, 
+        std::vector<ParamInfo> &parameters)
     {
         this->programChangeIndex = -1;
         Steinberg::Vst::IComponent* vstPlug = provider->getComponent();
@@ -230,7 +231,7 @@ private:
                 != std::string::npos)
                 continue;
 
-            DbVST3ParamInfo paramInfo(pinfo);
+            ParamInfo paramInfo(pinfo);
             if(pinfo.flags & Steinberg::Vst::ParameterInfo::kIsProgramChange)
             {
                 if(programMap.count(pinfo.id))
@@ -261,6 +262,6 @@ private:
 
 };
 
-typedef std::shared_ptr<DbVST3Module> DbVST3ModulePtr;
+typedef std::shared_ptr<Module> ModulePtr;
 
 #endif

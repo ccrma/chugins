@@ -1,23 +1,23 @@
-#ifndef DbVST3Ctx_h
-#define DbVST3Ctx_h
+#ifndef PluginCtx_h
+#define PluginCtx_h
 
-#include "VST3App.h"
-#include "DbVST3Module.h"
+#include "app.h"
+#include "module.h"
 #include <unordered_map>
 
 /* -------------------------------------------------------------------------- */
 
-//  DbVST3Ctx is the primary handle that our clients have on a plugin file.
-//  Since a plugin can have multiple interfaces/modules, We require
+//  PluginCtx is the primary handle that our clients have on a plugin file.
+//  Since a plugin can have multiple interfaces/modules, we require
 //  a nominal activeModule which can be selected by client.
 // 
-struct DbVST3Ctx
+struct PluginCtx
 {
-    VST3App::Plugin plugin;
+    VST3::Hosting::Module::Ptr plugin;
     std::string vendor;
     std::string filepath;
-    std::vector<DbVST3ModulePtr> modules;
-    DbVST3ModulePtr activeModule;
+    std::vector<ModulePtr> modules;
+    ModulePtr activeModule;
     int verbosity = 0;
 
     bool Ready()
@@ -116,13 +116,13 @@ struct DbVST3Ctx
             this->modules[i]->Print(ostr, "  ", i, detailed);
     }
 
-    DbVST3ProcessingCtx &getProcessingCtx()
+    ProcessingCtx &getProcessingCtx()
     {
         if(this->activeModule.get())
             return this->activeModule->processingCtx;
         else
         {
-            static DbVST3ProcessingCtx s_pctx; // empty
+            static ProcessingCtx s_pctx; // empty
             return s_pctx;
         }
     }
@@ -131,10 +131,10 @@ struct DbVST3Ctx
         char const *inputBusRouting = nullptr, 
         char const *outputBusRouting = nullptr)
     {
-        DbVST3ProcessingCtx &pctx = this->getProcessingCtx();
+        ProcessingCtx &pctx = this->getProcessingCtx();
         if(!pctx.error)
         {
-            pctx.beginProcessing(sampleRate, inputBusRouting, outputBusRouting);
+            pctx.initProcessing(sampleRate, inputBusRouting, outputBusRouting);
             // ~ProcessingCtx handles teardown
         }
         return pctx.error;
@@ -148,7 +148,7 @@ struct DbVST3Ctx
         {
             // processingCtx's job to add ithe parameter change
             // to the automation setup.
-            DbVST3ParamInfo *info = this->activeModule->GetParamInfo(index);
+            ParamInfo *info = this->activeModule->GetParamInfo(index);
             if(info)
             {
                 this->setParamValue(info, val);
@@ -167,7 +167,7 @@ struct DbVST3Ctx
             // processingCtx's job to add the parameter change
             // to the automation setup.
             // std::cerr << "SetParameter parameter " << nm << "\n";
-            DbVST3ParamInfo *info = this->activeModule->GetParamInfo(nm);
+            ParamInfo *info = this->activeModule->GetParamInfo(nm);
             if(!info)
             {
                 if(nm != "verbosity")
@@ -191,7 +191,7 @@ struct DbVST3Ctx
         return err;
     }
 
-    int setParamValue(DbVST3ParamInfo *info, float val)
+    int setParamValue(ParamInfo *info, float val)
     {
         auto id = info->id;
         int err = -1;
@@ -239,7 +239,7 @@ struct DbVST3Ctx
 
     void ProcessSamples(float *in, int inCh, float *out, int outCh, int nframes)
     {
-        DbVST3ProcessingCtx &pctx = this->getProcessingCtx();
+        ProcessingCtx &pctx = this->getProcessingCtx();
         if(pctx.error)
             return; // error reported earlier
         
@@ -248,6 +248,6 @@ struct DbVST3Ctx
         // 'til here.
         pctx.Process(in, inCh, out, outCh, nframes);
     }
-}; // end struct DbVST3Ctx
+}; // end struct PluginCtx
 
 #endif

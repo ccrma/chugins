@@ -1,17 +1,17 @@
-#ifndef DbVST3Param_h
-#define DbVST3Param_h
+#ifndef Param_h
+#define Param_h
 
 #include <string>
 #include <pluginterfaces/vst/ivsteditcontroller.h> // ParameterInfo
 
-class DbVST3ParamInfo : public Steinberg::Vst::ParameterInfo
+class ParamInfo : public Steinberg::Vst::ParameterInfo
 {
 public:
     std::string name;
     float currentValue;
     std::shared_ptr<std::vector<std::string>> menuItems;
 
-    DbVST3ParamInfo(Steinberg::Vst::ParameterInfo const &pinfo) :
+    ParamInfo(Steinberg::Vst::ParameterInfo const &pinfo) :
         Steinberg::Vst::ParameterInfo(pinfo)
     {
         this->name = VST3::StringConvert::convert(pinfo.title);
@@ -19,7 +19,7 @@ public:
     }
 
 #if 0
-    DbVST3ParamInfo(DbVST3ParamInfo const &rhs) :
+    ParamInfo(ParamInfo const &rhs) :
         Steinberg::Vst::ParameterInfo(rhs)
     {
         this->name = rhs.name;
@@ -28,7 +28,7 @@ public:
     }
 #endif
 
-    ~DbVST3ParamInfo()
+    ~ParamInfo()
     {
     }
 

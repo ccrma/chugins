@@ -1,23 +1,24 @@
-#ifndef DbVST3Processing_h
-#define DbVST3Processing_h
+#ifndef ProcessingCtx_h
+#define ProcessingCtx_h
 
-#include "DbVST3ProcessData.h"
+#include "vst3.h"
+#include "processingData.h"
 #include <public.sdk/source/common/memorystream.h>
 
-class DbVST3ProcessingCtx : 
+class ProcessingCtx : 
     public Steinberg::Vst::IComponentHandler,
 	public Steinberg::Vst::IComponentHandler2,
 	public Steinberg::Vst::IUnitHandler // notification of program change
     /*
-	public Steinberg::IPlugFrame
+	public Steinberg::IPlugFrame,
+	public Steinberg::IContextInfoProvider3,
     */
 {
 public:
     int error;
-    int verbosity;
 
 private:
-    VST3App::ProviderPtr provider;
+    VSTProviderPtr provider;
     Steinberg::Vst::IComponent* component; // aka vstPlug
     Steinberg::Vst::IEditController* controller;
     // Steinberg::FUnknownPtr<Steinberg::Vst::EditControllerEx1> controllerEx1;
@@ -25,30 +26,27 @@ private:
     Steinberg::Vst::IAudioProcessor* audioEffect;
     std::vector<float> paramValues;
     Steinberg::Vst::ProcessSetup processSetup;
-    DbVST3ProcessData processData; // our audio buffers are within
+    ProcessingData processData; // our audio buffers are within
     bool activated;
+    int debug;
+    int verbosity;
 
 public:
-    using tresult = Steinberg::tresult;
-    using ParamID = Steinberg::Vst::ParamID;
-    using ParamValue = Steinberg::Vst::ParamValue;
-    using int32 = Steinberg::int32;
-    using uint32 = Steinberg::uint32;
-    using TUID = Steinberg::TUID;
 
-    DbVST3ProcessingCtx()
+    ProcessingCtx()
     {
-        this->verbosity = 0;
         this->error = 0;
+        this->debug = 1;
+        this->verbosity = this->debug;
         this->component = nullptr;
         this->controller = nullptr;
         this->audioEffect = nullptr;
         this->activated = false;
     }
 
-    ~DbVST3ProcessingCtx()
+    ~ProcessingCtx()
     {
-        this->endProcessing();
+        this->deinitProcessing();
     }
 
     void
@@ -59,19 +57,19 @@ public:
     }
 
     /* -------------------------------------------------------------------- */
-    VST3App::ProviderPtr 
+    VSTProviderPtr 
     initProvider(
         const Steinberg::Vst::PlugProvider::PluginFactory &factory,
         VST3::Hosting::ClassInfo &classInfo)
     {
         this->provider = Steinberg::owned(
-                new VST3App::Provider(factory, classInfo, 
+                new VSTProvider(factory, classInfo, 
                 true/*useGlobalInstance*/));
         return this->provider;
     }
 
     bool
-    synchronizeStates()
+    synchronizeStates() // called by Module during construction
     {
         if(!this->component)
             this->initComponent();
@@ -82,16 +80,15 @@ public:
             if(this->verbosity)
                 std::cerr << "Read " << stream.getSize() << " bytes from component state\n";
 
+            stream.seek(0, Steinberg::IBStream::kIBSeekSet, nullptr);
+
             // Steinberg::int64 newpos;
             // stream.seek(0, Steinberg::IBStream::kIBSeekSet, &newpos);
             Steinberg::tresult res = this->controller->setComponentState(&stream);
             if(!(res == Steinberg::kResultOk || 
                  res == Steinberg::kNotImplemented))
             {
-                if(this->verbosity)
-                {
-                    std::cerr << "Couldn't synchronize VST3 component with controller state\n";
-                }
+                std::cerr << "Couldn't synchronize VST3 component with controller state\n";
                 this->readAllParameters(false);
             }
             return res == Steinberg::kResultOk;
@@ -111,19 +108,24 @@ public:
         this->controller->setComponentHandler(this);
         this->midiMapping = Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping>(this->controller);
 
-#if 0
-        // mda-synth plus LABS both didn't allow
-        Steinberg::FUnknownPtr<Steinberg::Vst::IEditControllerHostEditing> 
-            host_editing(this->controller);
-        if(host_editing)
-            std::cerr << "HostEditing allowed\n";
-        else
-            std::cerr << "No HostEditing allowed\n";
-#endif
+        if(this->debug && false)
+        {
+            // mda-synth plus LABS both didn't allow, so hrm 
+            // (we're operating as a console app so no gui context (ie: editor)
+            //  should be viable).
+	        // otherwise: IPlugView* view = _controller->createView (Vst::ViewType::kEditor);
+            Steinberg::FUnknownPtr<Steinberg::Vst::IEditControllerHostEditing> 
+                host_editing(this->controller);
+            if(host_editing)
+                std::cerr << "HostEditing allowed\n";
+            else
+                std::cerr << "No HostEditing allowed\n";
+        }
     }
 
+    // happens once after plugin is loaded..
     void 
-    beginProcessing(float sampleRate, 
+    initProcessing(float sampleRate, 
                     char const *inputBusRouting, 
                     char const *outputBusRouting)
     {
@@ -154,7 +156,7 @@ public:
             // Our job is to deliver the number of busses required
             // by the plugin.  An audio bus can be mono or stereo and
             // indications are that we should also follow the guidance
-            // of the plugin rather that request Speaker-Arrangement 
+            // of the plugin rather than request Speaker-Arrangement 
             // override by the host.
 
             if(this->audioEffect->setupProcessing(this->processSetup) 
@@ -177,7 +179,7 @@ public:
     }
 
     void
-    endProcessing()
+    deinitProcessing()
     {
         if(this->audioEffect)
         {
@@ -356,7 +358,7 @@ public:
         //   input ch/bus:   1     | 1
         //   output ch/bus:  2     | 0
 
-        DbVST3BusUsage &busUsage = this->processData.busUsage;
+        BusUsage &busUsage = this->processData.busUsage;
         std::vector<Steinberg::Vst::SpeakerArrangement> inSA;
         std::vector<Steinberg::Vst::SpeakerArrangement> outSA;
         inSA.resize(nbusIn);
@@ -400,7 +402,7 @@ public:
             {
                 for(int i=0;i<nbusIn;i++)
                 {
-                    DbVST3BusUsage::Bus &binfo = busUsage.inAudioChan[i];
+                    BusUsage::Bus &binfo = busUsage.inAudioChan[i];
                     if(j==0 && binfo.isAux)
                         continue;
 
@@ -455,7 +457,7 @@ public:
             {
                 for(int i=0;i<busUsage.outAudioChan.size();i++)
                 {
-                    DbVST3BusUsage::Bus &binfo = busUsage.outAudioChan[i];
+                    BusUsage::Bus &binfo = busUsage.outAudioChan[i];
                     if(j == 0 && binfo.isAux)
                         continue;
                     else
@@ -559,14 +561,7 @@ public:
                 std::cerr << "No event-in busses\n"; // usually accept events anyway
         }
 
-        bool enable = true;
-        int inEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kInput);
-	    int outEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kOutput);
-        for(int i = 0; i < inEvt; ++i) 
-            this->component->activateBus(Steinberg::Vst::kEvent, Steinberg::Vst::kInput, i, enable);
-        for(int i = 0; i < outEvt; ++i)
-            this->component->activateBus(Steinberg::Vst::kEvent, Steinberg::Vst::kOutput, i, enable);
-
+        setEventBusState(true);
     }
 
     // 'param id' it's paramID !== index
@@ -600,27 +595,44 @@ public:
             return Steinberg::Vst::kNoParamId;
     }
 
+    void
+    setEventBusState(bool enable)
+    {
+        int inEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kInput);
+	    int outEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kOutput);
+        for(int i = 0; i < inEvt; ++i) 
+            this->component->activateBus(Steinberg::Vst::kEvent, Steinberg::Vst::kInput, i, enable);
+        for(int i = 0; i < outEvt; ++i)
+            this->component->activateBus(Steinberg::Vst::kEvent, Steinberg::Vst::kOutput, i, enable);
+    }
+
     int MidiEvent(int status, int data1, int data2)
     {
-       int err;
+        int err;
         if(this->controller)
         {
+            if(this->debug)
+                std::cerr << "MidiEvent " << status << " "  << data1 << "\n";
             this->processData.prepareMidiEvent(status, data1, data2, 
                                             this->midiMapping);
             err = 0;
         }
         else
+        {
+            if(this->debug)
+                std::cerr << "NO controller for MidiEvent " << status << " "  << data1 << "\n";
             err = -1;
+        }
        return err; 
     }
 
     void Process(float *in, int inCh, float *out, int outCh, int nframes)
     {
         this->activate(); 
-        // beginAudioProcessing plugins in chuck pointers to the arrays
+        // beginAudioProcessing plugs chuck pointers to the arrays
         this->processData.beginAudioProcessing(in, inCh, out, outCh, nframes);
         // active: true, processing: true
-        VST3App::tresult result = this->audioEffect->process(this->processData);
+        tresult result = this->audioEffect->process(this->processData);
         this->processData.endAudioProcessing();
 
         if(result != Steinberg::kResultOk)
@@ -634,12 +646,14 @@ public:
 
 	tresult PLUGIN_API beginEdit(ParamID id) override
 	{
-		//std::cout << "beginEdit called " << id << "\n";
+        if(this->debug)
+            std::cout << "beginEdit called " << id << "\n";
 		return Steinberg::kNotImplemented;
 	}
 	tresult PLUGIN_API performEdit(ParamID id, ParamValue valueNormalized) override
 	{
-		//std::cout << "performEdit called " << id << " " << valueNormalized << "\n";
+        if(this->debug)
+            std::cout << "performEdit called " << id << " " << valueNormalized << "\n";
 		return Steinberg::kNotImplemented;
 	}
 	tresult PLUGIN_API endEdit(ParamID id) override
@@ -718,7 +732,7 @@ public:
     void
     countChannels(Steinberg::Vst::MediaType media, 
         Steinberg::Vst::BusDirection dir, 
-        std::vector<DbVST3BusUsage::Bus> &chansPerBus,
+        std::vector<BusUsage::Bus> &chansPerBus,
         int &totalChannels)
     {
         int nbus = this->component->getBusCount(media, dir);
@@ -727,7 +741,7 @@ public:
             Steinberg::Vst::BusInfo binfo;
             if(this->component->getBusInfo(media, dir, i, binfo) == Steinberg::kResultTrue)
             {
-                DbVST3BusUsage::Bus b;
+                BusUsage::Bus b;
                 b.nch = binfo.channelCount;
                 b.isAux = (binfo.busType == Steinberg::Vst::kAux);
                 chansPerBus.push_back(b);
