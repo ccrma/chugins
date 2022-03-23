@@ -1,4 +1,4 @@
-#include "../App.h"
+#include "../Host.h"
 #include "../pluginCtx.h"
 
 #include <iostream>
@@ -7,7 +7,7 @@
 #include <ctime>
 
 // produces a yaml dump of the requested plugin on stdout
-class Dumpit : public App
+class Dumpit : public Host
 {
 public:
     Dumpit() {}

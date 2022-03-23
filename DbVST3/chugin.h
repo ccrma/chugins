@@ -2,20 +2,20 @@
 #define vst3Chugin_h
 
 #include "chuck_type.h"
-#include "app.h"
+#include "host.h"
 #include "pluginCtx.h"
 
 class VST3Chugin
 {
 private:
-    static std::shared_ptr<App> s_appPtr; // shared across multiple instances
+    static std::shared_ptr<Host> s_hostPtr; // shared across multiple instances
 
 public:
     // constructor
     VST3Chugin(t_CKFLOAT srate)
     {
-        if(s_appPtr.get() == nullptr)
-            s_appPtr.reset(new App());
+        if(s_hostPtr.get() == nullptr)
+            s_hostPtr.reset(new Host());
         m_sampleRate = srate;
         m_verbosity = 0;
         m_midiEvents = 0;

@@ -36,7 +36,7 @@ public:
     ProcessingCtx()
     {
         this->error = 0;
-        this->debug = 1;
+        this->debug = 0;
         this->verbosity = this->debug;
         this->component = nullptr;
         this->controller = nullptr;

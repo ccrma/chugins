@@ -1,5 +1,5 @@
-#ifndef App_h
-#define App_h
+#ifndef Host_h
+#define Host_h
 
 // VST3 hosting glue (extra gooey)
 //
@@ -14,7 +14,7 @@
 #include <iostream>
 #include <vector>
 
-class App : 
+class Host : 
     public Steinberg::FObject,
     public Steinberg::Vst::IHostApplication
     /* more appropriate for (but not needed for) processingCtx.h
@@ -28,11 +28,11 @@ private:
 	Steinberg::IPtr<Steinberg::Vst::PlugInterfaceSupport> m_plugInterfaceSupport;
 
 public:
-    App();
-    ~App() override
+    Host();
+    ~Host() override
     {}
 
-	OBJ_METHODS(App, FObject);
+	OBJ_METHODS(Host, FObject);
 	REFCOUNT_METHODS(FObject);
 
 public:

@@ -1,7 +1,7 @@
 #ifndef PluginCtx_h
 #define PluginCtx_h
 
-#include "app.h"
+#include "host.h"
 #include "module.h"
 #include <unordered_map>
 

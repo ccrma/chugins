@@ -1,7 +1,7 @@
-#include "app.h"
+#include "host.h"
 #include "pluginCtx.h"
 
-App::App()
+Host::Host()
 {
     m_name = "DbVST3";
     m_plugInterfaceSupport = owned(new Steinberg::Vst::PlugInterfaceSupport);
@@ -10,7 +10,7 @@ App::App()
 }
 
 void 
-App::PrintAllInstalledPlugins(std::ostream &ostr)
+Host::PrintAllInstalledPlugins(std::ostream &ostr)
 {
     std::vector<std::string> knownPlugins;
     this->GetKnownPlugins(knownPlugins);
@@ -22,14 +22,14 @@ App::PrintAllInstalledPlugins(std::ostream &ostr)
 }
 
 int
-App::GetKnownPlugins(std::vector<std::string> &knownPlugins)
+Host::GetKnownPlugins(std::vector<std::string> &knownPlugins)
 {
     knownPlugins = VST3::Hosting::Module::getModulePaths();
     return (knownPlugins.size() > 0) ? 0 : -1;
 }
 
 int
-App::OpenPlugin(std::string const &path, PluginCtx &ctx, int verbosity)
+Host::OpenPlugin(std::string const &path, PluginCtx &ctx, int verbosity)
 {
     std::string error;
     ctx.Reset();
@@ -75,7 +75,7 @@ App::OpenPlugin(std::string const &path, PluginCtx &ctx, int verbosity)
 }
 
 Plugin
-App::loadPlugin(std::string const &path, std::string &error)
+Host::loadPlugin(std::string const &path, std::string &error)
 {
     // first assume path is fully qualified
     Plugin plugin = VST3::Hosting::Module::create(path, error); 
@@ -96,14 +96,14 @@ App::loadPlugin(std::string const &path, std::string &error)
 }
 
 tresult PLUGIN_API
-App::getName(Steinberg::Vst::String128 name)
+Host::getName(Steinberg::Vst::String128 name)
 {
     return VST3::StringConvert::convert(m_name, name) ? 
         Steinberg::kResultTrue : Steinberg::kInternalError;
 }
 
 tresult PLUGIN_API
-App::createInstance(Steinberg::TUID cid, Steinberg::TUID iid, void** obj)
+Host::createInstance(Steinberg::TUID cid, Steinberg::TUID iid, void** obj)
 {
     // std::cout << "createInstance for cid:" << cid << " iid:" << iid << "\n";
     Steinberg::FUID classID = Steinberg::FUID::fromTUID(cid);
@@ -125,13 +125,13 @@ App::createInstance(Steinberg::TUID cid, Steinberg::TUID iid, void** obj)
         }
         return Steinberg::kOutOfMemory;
     }
-    std::cerr << "VST3App::createInstance FAILED!!\n";
+    std::cerr << "VST3Host::createInstance FAILED!!\n";
     *obj = nullptr;
     return Steinberg::kResultFalse;
 }
 
 tresult PLUGIN_API
-App::queryInterface(const char* iid, void** obj)
+Host::queryInterface(const char* iid, void** obj)
 {
     // std::cerr << "query call for " << iid << "\n";
     // default implemantion as of 3.7.3 (source/vst/hosting/pluginterfacesupport.cpp)
@@ -166,14 +166,14 @@ App::queryInterface(const char* iid, void** obj)
     }
     else
     {
-        std::cerr << "AppBase: queryInterface went unanswered for " << iid << "\n";
+        std::cerr << "VST3Host: queryInterface went unanswered for " << iid << "\n";
         *obj = nullptr;
         return Steinberg::kResultFalse;
     }
 }
 
 bool 
-App::endsWith(std::string const &fullpath, std::string const &partpath)
+Host::endsWith(std::string const &fullpath, std::string const &partpath)
 {
     if(partpath.size() > fullpath.size()) return false;
     int dlen = fullpath.length() - partpath.length(); 

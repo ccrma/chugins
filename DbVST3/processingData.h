@@ -165,7 +165,7 @@ public:
 
     ProcessingData() 
     {
-        this->debug = 1;
+        this->debug = 0;
         this->verbosity = this->debug;
     }
 

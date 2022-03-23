@@ -1,10 +1,10 @@
 #include "chugin.h"
 
-std::shared_ptr<App> VST3Chugin::s_appPtr; // shared across multiple instances
+std::shared_ptr<Host> VST3Chugin::s_hostPtr; // shared across multiple instances
 
 bool VST3Chugin::loadPlugin(const std::string& filepath)
 {
-    int err = s_appPtr->OpenPlugin(filepath, m_pluginCtx, this->m_verbosity);
+    int err = s_hostPtr->OpenPlugin(filepath, m_pluginCtx, this->m_verbosity);
     if(!err)
     {
         err = m_pluginCtx.InitProcessing(m_sampleRate,  
