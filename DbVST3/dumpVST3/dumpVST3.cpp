@@ -1,4 +1,4 @@
-#include "../Host.h"
+#include "../host.h"
 #include "../pluginCtx.h"
 
 #include <iostream>
