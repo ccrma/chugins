@@ -1,7 +1,3 @@
-Code organization could be better, however, VST3 peculiarities
-trigger mysterious double-defined link error. Solution was
-to ensure only a single compilation unit.
-
 ## Our Terms and Class Hierarchy
 
 `PluginFile` refers to the vst3 file itself.
@@ -19,8 +15,9 @@ within a single Plugin.
 > Confusingly the word module is used in two ways in VST3
 > land.  One represents any dynamically loaded plugin 
 > constituent (including the `Plugin` object). The other
-> use is maps onto ours: one of N effects found within
-> a plugin and indentified by its index in that file.
+> use maps onto ours: one of N effects found within
+> a plugin. We currently indentify a module by its index 
+> in that file. 
 
 main/chugin
     has-a singleton app
@@ -31,6 +28,7 @@ App is-a VST::IHostApplication
     implements loadPlugin (returns Plugin)
 
 PluginCtx (was DbVST3Ctx)
+    has an instance of the open Plugin
     has a list of available modules
     has a current module (ActivateModule)
 

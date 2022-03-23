@@ -15,11 +15,11 @@ public:
     int DumpOne(char const *path, std::ostream &ostream)
     {
         std::string modpath(path);
-        PluginCtx ctx;
-        if(0 == this->OpenPlugin(modpath, ctx))
+        PluginCtx *ctx = this->OpenPlugin(modpath);
+        if(ctx) 
         {
-            ctx.Print(ostream, true/*detailed*/);
-            ctx.Reset();
+            ctx->Print(ostream, true/*detailed*/);
+            delete ctx;
         }
         return 0;
     }

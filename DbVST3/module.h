@@ -11,8 +11,8 @@
 // A plugin file (which is accessed as a VST::Module) can contain 1 or more
 // interfaces (AudioEffects, Controllers, ...).  This class represents one 
 // of these. IE: it maps to the user's definition of module.
-
-class Module
+//
+class Module 
 {
 private:
     int programChangeIndex; // some modules support 0, some 1, some > 1
@@ -29,6 +29,11 @@ public:
     std::unordered_map<std::string, int> nameToIndex;
     std::unordered_map<Steinberg::Vst::ParamID, int> idToIndex;
 
+public:
+    // constructed by pluginCtx in building up its list of kVstAudioEffectClass
+    // (modules).  Plugin's factory is passed in. Comp
+    // of our processingCtx until is is needed via its nomination as the 
+    // activemodule.
     Module(VST3::Hosting::ClassInfo &classInfo, 
         const Steinberg::Vst::PlugProvider::PluginFactory &factory,
         int verboseness=0)
@@ -42,12 +47,7 @@ public:
         this->subCategories = classInfo.subCategoriesString();
         this->version = classInfo.version();
         this->sdkVersion = classInfo.sdkVersion();
-        auto provider = this->processingCtx.initProvider(factory, classInfo);
-        if(provider.get())
-        {
-            this->getProviderParams(provider, this->parameters);
-            this->processingCtx.synchronizeStates();
-        }
+        this->processingCtx.Init(factory, classInfo, this->parameters);
         this->programChangeIndex = -1;
         this->verbosity = 0 ;
     }
@@ -165,100 +165,6 @@ public:
 
     /* ------------------------------------------------------------------ */
 private:
-    void
-    getProviderParams(VSTProviderPtr provider, 
-        std::vector<ParamInfo> &parameters)
-    {
-        this->programChangeIndex = -1;
-        Steinberg::Vst::IComponent* vstPlug = provider->getComponent();
-        if(!vstPlug)
-            return;
-        Steinberg::Vst::IEditController* controller = provider->getController();
-        if(!controller)
-            return;
-
-        Steinberg::FUnknownPtr<Steinberg::Vst::IUnitInfo> unitInfo(controller);
-
-        std::unordered_map<int, std::shared_ptr<std::vector<std::string>>> programMap;
-        if(unitInfo)
-        {
-            Steinberg::int32 programListCount = unitInfo->getProgramListCount();
-            if(programListCount > 0)
-            {
-                for(int i=0;i<programListCount;i++)
-                {
-                    Steinberg::Vst::ProgramListInfo plInfo;
-                    if(unitInfo->getProgramListInfo(i, plInfo) == Steinberg::kResultOk)
-                    {
-                        int plId = plInfo.id;
-                        auto plName = VST3::StringConvert::convert(plInfo.name);
-
-                        auto np = std::shared_ptr<std::vector<std::string>>(new std::vector<std::string>);
-                        programMap[plId] = np;
-                        // std::cerr << "programlist " << plName << " for " << plId << "-------------------------\n";
-                        for(int j=0;j<plInfo.programCount; j++)
-                        {
-                            Steinberg::Vst::TChar pnm[256];
-                            if(unitInfo->getProgramName(plId, j, pnm) == Steinberg::kResultOk)
-                            {
-                                if(pnm[0] == 0)
-                                    continue;
-                                auto pnmStr = VST3::StringConvert::convert(pnm);
-                                // std::cerr << "   " << pnmStr << "\n";
-                                np->push_back(pnmStr);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        for(int i=0;i<controller->getParameterCount();i++)
-        {
-            Steinberg::Vst::ParameterInfo pinfo = {};
-            Steinberg::tresult ret = controller->getParameterInfo(i, pinfo);
-            if(ret != Steinberg::kResultOk)
-            {
-                std::cerr << "Parameter " << i << "has no info\n";
-                continue;
-            }
-            if(pinfo.id < 0)
-            {
-                std::cerr << "Parameter " << i 
-                    << "has invalid id: " << pinfo.id << "\n";
-                continue;
-            }
-		    if(VST3::StringConvert::convert(pinfo.title).find("MIDI CC ")
-                != std::string::npos)
-                continue;
-
-            ParamInfo paramInfo(pinfo);
-            if(pinfo.flags & Steinberg::Vst::ParameterInfo::kIsProgramChange)
-            {
-                if(programMap.count(pinfo.id))
-                {
-                    paramInfo.menuItems = programMap[pinfo.id];
-                    // std::cerr << paramInfo.name << " has " <<
-                    //   paramInfo.menuItems->size() << " menuitems\n";
-                }
-                else
-                if(this->programChangeIndex == -1)
-                {
-                    this->programChangeIndex = i;
-                    if(this->verbosity)
-                        std::cerr << "Program-change index: " << i << "\n";
-                }
-                else
-                {
-                    // this appears to be allowed if a module supports 
-                    // programlists (above).
-                    std::cerr << "Multiple program-changes? " << i << "\n";
-                }
-            }
-            parameters.push_back(paramInfo); // issues copy-constructor
-        }
-        // this->activateMainIOBusses(vstPlug, false);
-        provider->releasePlugIn(vstPlug, controller);
-    }
 
 };
 

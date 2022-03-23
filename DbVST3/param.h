@@ -1,8 +1,9 @@
 #ifndef Param_h
 #define Param_h
 
-#include <string>
 #include <pluginterfaces/vst/ivsteditcontroller.h> // ParameterInfo
+#include <string>
+#include <iostream>
 
 class ParamInfo : public Steinberg::Vst::ParameterInfo
 {

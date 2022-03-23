@@ -19,11 +19,12 @@ public:
         m_sampleRate = srate;
         m_verbosity = 0;
         m_midiEvents = 0;
+        m_pluginCtx = nullptr;
     }
 
     ~VST3Chugin()
     {
-        m_pluginCtx.Reset();
+        delete m_pluginCtx;
     }
 
     bool loadPlugin(const std::string& filename);
@@ -53,7 +54,7 @@ private:
     int m_verbosity;
     t_CKFLOAT m_sampleRate;
     std::string m_pluginPath;
-    PluginCtx m_pluginCtx;
+    PluginCtx *m_pluginCtx;
     int m_midiEvents;
 
     // i/o routing:

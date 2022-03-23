@@ -26,6 +26,7 @@ class Host :
 private:
     char const *m_name;
 	Steinberg::IPtr<Steinberg::Vst::PlugInterfaceSupport> m_plugInterfaceSupport;
+    std::string loadingPath;
 
 public:
     Host();
@@ -42,8 +43,8 @@ public:
     int
     GetKnownPlugins(std::vector<std::string> &knownPlugins);
 
-    int
-    OpenPlugin(std::string const &path, struct PluginCtx &ctx, int verbosity=0);
+    class PluginCtx *
+    OpenPlugin(std::string const &path, int verbosity=0);
 
     char const *
     GetName()

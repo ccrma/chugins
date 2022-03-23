@@ -11,14 +11,54 @@
 //  Since a plugin can have multiple interfaces/modules, we require
 //  a nominal activeModule which can be selected by client.
 // 
-struct PluginCtx
+class PluginCtx
 {
+private:
     VST3::Hosting::Module::Ptr plugin;
     std::string vendor;
     std::string filepath;
     std::vector<ModulePtr> modules;
     ModulePtr activeModule;
     int verbosity = 0;
+
+public:
+    PluginCtx(VST3::Hosting::Module::Ptr p, std::string const &path)
+    {
+        this->plugin = p;
+        this->filepath = p->getPath();
+        if(this->filepath.size() == 0)
+        {
+            // std::cerr << "plugin doesn't know its path, using ours.\n";
+            // happens on linux with plugins installed at ~/.vst3
+            this->filepath = path;
+        }
+        auto factory = this->plugin->getFactory();
+        auto finfo = factory.info();
+        this->vendor = finfo.vendor();
+        for(auto& classInfo : factory.classInfos())
+        {
+            if(classInfo.category() == kVstAudioEffectClass)
+            {
+                ModulePtr imod(new Module(classInfo, factory, verbosity));
+                this->modules.emplace_back(imod);
+            }
+            else
+            {
+                // For now we disgregard anything != kVstAudioEffectClass
+                // new Provider throws an error
+                #if 0
+                    std::cout << "  (skipping params for module of type " 
+                        << imod->category << ")\n";
+                #endif
+            }
+        }
+        this->Finalize();
+    }
+
+    ~PluginCtx()
+    {
+        // plugin should be cleaned up by ref-count
+    }
 
     bool Ready()
     {
@@ -70,15 +110,6 @@ struct PluginCtx
             nm = this->activeModule->parameters[index].name;
         }
         return err;
-    }
-
-    void Reset()
-    {
-        vendor = "";
-        filepath = "";
-        modules.clear();
-        activeModule.reset();
-        plugin.reset(); // must be last
     }
 
     void Finalize()
@@ -134,7 +165,7 @@ struct PluginCtx
         ProcessingCtx &pctx = this->getProcessingCtx();
         if(!pctx.error)
         {
-            pctx.initProcessing(sampleRate, inputBusRouting, outputBusRouting);
+            pctx.InitProcessing(sampleRate, inputBusRouting, outputBusRouting);
             // ~ProcessingCtx handles teardown
         }
         return pctx.error;
@@ -191,6 +222,30 @@ struct PluginCtx
         return err;
     }
 
+    int MidiEvent(int status, int data1, int data2)
+    {
+        int err = -1;
+        if(this->activeModule.get())
+        {
+            // processingCtx's job to add the midi event to its eventslist
+            err = this->getProcessingCtx().MidiEvent(status, data1, data2);
+        }
+        return err;
+    }
+
+    void ProcessSamples(float *in, int inCh, float *out, int outCh, int nframes)
+    {
+        ProcessingCtx &pctx = this->getProcessingCtx();
+        if(pctx.error)
+            return; // error reported earlier
+        
+        // midi-events and parameter value changes are applied to
+        // processData when they arrive, but don't get processed 
+        // 'til here.
+        pctx.Process(in, inCh, out, outCh, nframes);
+    }
+
+private:
     int setParamValue(ParamInfo *info, float val)
     {
         auto id = info->id;
@@ -226,28 +281,6 @@ struct PluginCtx
         return err;
     }
 
-    int MidiEvent(int status, int data1, int data2)
-    {
-        int err = -1;
-        if(this->activeModule.get())
-        {
-            // processingCtx's job to add the midi event to its eventslist
-            err = this->getProcessingCtx().MidiEvent(status, data1, data2);
-        }
-        return err;
-    }
-
-    void ProcessSamples(float *in, int inCh, float *out, int outCh, int nframes)
-    {
-        ProcessingCtx &pctx = this->getProcessingCtx();
-        if(pctx.error)
-            return; // error reported earlier
-        
-        // midi-events and parameter value changes are applied to
-        // processData when they arrive, but don't get processed 
-        // 'til here.
-        pctx.Process(in, inCh, out, outCh, nframes);
-    }
 }; // end struct PluginCtx
 
 #endif

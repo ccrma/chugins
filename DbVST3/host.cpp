@@ -28,56 +28,29 @@ Host::GetKnownPlugins(std::vector<std::string> &knownPlugins)
     return (knownPlugins.size() > 0) ? 0 : -1;
 }
 
-int
-Host::OpenPlugin(std::string const &path, PluginCtx &ctx, int verbosity)
+PluginCtx *
+Host::OpenPlugin(std::string const &path, int verbosity)
 {
     std::string error;
-    ctx.Reset();
-    ctx.plugin = this->loadPlugin(path, error); // implemented in parent class
-    if(!ctx.plugin.get())
+    VST3::Hosting::Module::Ptr plugin = this->loadPlugin(path, error); // implemented in parent class
+    if(!plugin.get())
     {
         std::string reason = "could not load vstplugin in file:";
         reason += path;
         reason += "\nError: ";
         reason += error;
         std::cerr << this->GetName() << " " << reason;
-        return -1;
+        return nullptr;
     }
-    ctx.filepath = ctx.plugin->getPath();
-    if(ctx.filepath.size() == 0)
-    {
-        // std::cerr << "plugin doesn't know its path, using ours.\n";
-        // happens on linux with plugins installed at ~/.vst3
-        ctx.filepath = path;
-    }
-    auto factory = ctx.plugin->getFactory();
-    auto finfo = factory.info();
-    ctx.vendor = finfo.vendor();
-    for(auto& classInfo : factory.classInfos())
-    {
-        if(classInfo.category() == kVstAudioEffectClass)
-        {
-            ModulePtr imod(new Module(classInfo, factory, verbosity));
-            ctx.modules.emplace_back(imod);
-        }
-        else
-        {
-            // For now we disgregard anything != kVstAudioEffectClass
-            // new Provider throws an error
-            #if 0
-                std::cout << "  (skipping params for module of type " 
-                    << imod->category << ")\n";
-            #endif
-        }
-    }
-    ctx.Finalize();
-    return 0;
+    else
+        return new PluginCtx(plugin, path);
 }
 
 Plugin
 Host::loadPlugin(std::string const &path, std::string &error)
 {
     // first assume path is fully qualified
+    this->loadingPath = path;
     Plugin plugin = VST3::Hosting::Module::create(path, error); 
     if(!plugin)
     {
@@ -166,7 +139,9 @@ Host::queryInterface(const char* iid, void** obj)
     }
     else
     {
-        std::cerr << "VST3Host: queryInterface went unanswered for " << iid << "\n";
+        std::cerr << "VST3Host: queryInterface went unanswered for " 
+            << this->loadingPath << "("
+            << iid << ")\n";
         *obj = nullptr;
         return Steinberg::kResultFalse;
     }
