@@ -40,6 +40,7 @@ public:
 	//--- ---------------------------------------------------------------------
 	OBJ_METHODS(dbPlugProvider, FObject)
 	REFCOUNT_METHODS(FObject)
+    DEF_INTERFACES_2(ITestPlugProvider, ITestPlugProvider2, FObject)
 	
 //------------------------------------------------------------------------
 protected:

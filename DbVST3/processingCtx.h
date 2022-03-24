@@ -18,6 +18,9 @@ class ProcessingCtx :
 	public Steinberg::IContextInfoProvider3,
     */
 {
+public: 
+    int error;
+
 private:
     std::shared_ptr<dbPlugProvider> provider; // manages loading and cleanup of plugin
     Steinberg::Vst::IComponent* component;
@@ -31,7 +34,6 @@ private:
     bool activated;
     int debug;
     int verbosity;
-    int error;
 
 public:
     ProcessingCtx()

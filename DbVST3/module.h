@@ -35,7 +35,7 @@ public:
     // of our processingCtx until is is needed via its nomination as the 
     // activemodule.
     Module(VST3::Hosting::ClassInfo &classInfo, 
-        const Steinberg::Vst::PlugProvider::PluginFactory &factory,
+        const dbPlugProvider::PluginFactory &factory,
         int verboseness=0)
     {
         this->programChangeIndex = -1;

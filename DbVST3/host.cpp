@@ -1,12 +1,12 @@
 #include "host.h"
 #include "pluginCtx.h"
+#include "plugProvider.h"
 
 Host::Host()
 {
     m_name = "DbVST3";
     m_plugInterfaceSupport = owned(new Steinberg::Vst::PlugInterfaceSupport);
-    Steinberg::Vst::PluginContextFactory::instance()
-        .setPluginContext(this->unknownCast());
+    dbPluginContextFactory::instance().setPluginContext(this->unknownCast());
 }
 
 void 

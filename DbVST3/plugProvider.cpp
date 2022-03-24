@@ -2,7 +2,7 @@
 // Override for VST3 PlugProvider due to malfunction wrt JUCE plugins.
 //
 
-#include "plugprovider.h"
+#include "plugProvider.h"
 #include "vst3.h"
 #include <public.sdk/source/vst/hosting/connectionproxy.h>
 #include <cstdio>
@@ -16,9 +16,9 @@ static std::ostream* errorStream = &std::cout;
 dbPlugProvider::dbPlugProvider(const PluginFactory& factory, 
                                ClassInfo classInfo, bool plugIsGlobal) : 
     factory(factory), 
+    classInfo(classInfo),
     component(nullptr),
     controller(nullptr),
-    classInfo(classInfo),
     plugIsGlobal(plugIsGlobal)
 {
 	if(plugIsGlobal)
