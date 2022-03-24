@@ -6,15 +6,13 @@
 
 void
 ProcessingCtx::Init(
-    const Steinberg::Vst::PlugProvider::PluginFactory &factory,
+    const dbPlugProvider::PluginFactory &factory,
     VST3::Hosting::ClassInfo &classInfo,
     std::vector<ParamInfo> &parameters)
 {
     // VST3Provider aka: PlugProvider here:
     //  source/vst/hosting/plugprovider.cpp
-    this->provider = Steinberg::owned(
-            new VSTProvider(factory, classInfo, 
-                        true/*useGlobalInstance*/));
+    this->provider.reset(new dbPlugProvider(factory, classInfo, true/*useGlobalInstance*/));
     this->initComponent();
     this->synchronizeStates();
     this->initParams(parameters);

@@ -3,6 +3,7 @@
 
 #include "vst3.h"
 #include "processingData.h"
+#include "plugProvider.h"
 #include "param.h"
 
 #include <cassert>
@@ -17,11 +18,8 @@ class ProcessingCtx :
 	public Steinberg::IContextInfoProvider3,
     */
 {
-public:
-    int error;
-
 private:
-    VSTProviderPtr provider; // helper for creating and initializing a component
+    std::shared_ptr<dbPlugProvider> provider; // manages loading and cleanup of plugin
     Steinberg::Vst::IComponent* component;
     Steinberg::Vst::IAudioProcessor* audioEffect;
     Steinberg::Vst::IEditController* controller;
@@ -33,6 +31,7 @@ private:
     bool activated;
     int debug;
     int verbosity;
+    int error;
 
 public:
     ProcessingCtx()
@@ -59,7 +58,7 @@ public:
     }
 
     /* -------------------------------------------------------------------- */
-    void Init(const Steinberg::Vst::PlugProvider::PluginFactory &factory,
+    void Init(const dbPlugProvider::PluginFactory &factory,
                VST3::Hosting::ClassInfo &classInfo,
                std::vector<ParamInfo> &params);
 
