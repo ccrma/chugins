@@ -3,7 +3,7 @@
 
 #include "chuck_type.h"
 #include "host.h"
-#include "pluginCtx.h"
+#include "vst3Ctx.h"
 
 class VST3Chugin
 {
@@ -19,13 +19,13 @@ public:
         m_sampleRate = srate;
         m_verbosity = 0;
         m_midiEvents = 0;
-        m_pluginCtx = nullptr;
+        m_vst3Ctx = nullptr;
         m_activeModule = -1;
     }
 
     ~VST3Chugin()
     {
-        delete m_pluginCtx;
+        delete m_vst3Ctx;
     }
 
     bool loadPlugin(const std::string& filename);
@@ -55,7 +55,7 @@ private:
     int m_verbosity;
     t_CKFLOAT m_sampleRate;
     std::string m_pluginPath;
-    PluginCtx *m_pluginCtx;
+    VST3Ctx *m_vst3Ctx;
     int m_midiEvents;
     int m_activeModule;
 

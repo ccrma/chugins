@@ -1,5 +1,5 @@
 #include "../host.h"
-#include "../pluginCtx.h"
+#include "../vst3Ctx.h"
 
 #include <iostream>
 #include <fstream>
@@ -15,7 +15,7 @@ public:
     int DumpOne(char const *path, std::ostream &ostream)
     {
         std::string modpath(path);
-        PluginCtx *ctx = this->OpenPlugin(modpath);
+        VST3Ctx *ctx = this->OpenPlugin(modpath);
         if(ctx) 
         {
             ctx->Print(ostream, true/*detailed*/);

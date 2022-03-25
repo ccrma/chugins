@@ -1,5 +1,5 @@
-#ifndef PluginCtx_h
-#define PluginCtx_h
+#ifndef VST3Ctx_h
+#define VST3Ctx_h
 
 #include "host.h"
 #include "module.h"
@@ -7,11 +7,11 @@
 
 /* -------------------------------------------------------------------------- */
 
-//  PluginCtx is the primary handle that our clients have on a plugin file.
+//  VST3Ctx is the primary handle that our clients have on a plugin file.
 //  Since a plugin can have multiple interfaces/modules, we require
 //  a nominal activeModule which can be selected by client.
 // 
-class PluginCtx
+class VST3Ctx
 {
 private:
     VST3::Hosting::Module::Ptr plugin;
@@ -22,7 +22,7 @@ private:
     int verbosity = 0;
 
 public:
-    PluginCtx(VST3::Hosting::Module::Ptr p, std::string const &path)
+    VST3Ctx(VST3::Hosting::Module::Ptr p, std::string const &path)
     {
         this->plugin = p;
         this->filepath = p->getPath();
@@ -55,7 +55,7 @@ public:
         this->Finalize();
     }
 
-    ~PluginCtx()
+    ~VST3Ctx()
     {
         // plugin should be cleaned up by ref-count
     }

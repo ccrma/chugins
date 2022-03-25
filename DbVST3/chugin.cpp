@@ -4,36 +4,36 @@ std::shared_ptr<Host> VST3Chugin::s_hostPtr; // shared across multiple instances
 
 bool VST3Chugin::loadPlugin(const std::string& filepath)
 {
-    if(m_pluginCtx)
+    if(m_vst3Ctx)
     {
-        delete m_pluginCtx;
-        m_pluginCtx = nullptr;
+        delete m_vst3Ctx;
+        m_vst3Ctx = nullptr;
     }
-    m_pluginCtx = s_hostPtr->OpenPlugin(filepath, this->m_verbosity);
+    m_vst3Ctx = s_hostPtr->OpenPlugin(filepath, this->m_verbosity);
     // so as to not require activateModule, we activateModule(0)
     // since it's the 95% case.
-    if(m_pluginCtx)
+    if(m_vst3Ctx)
         this->selectModule(0);
-    return m_pluginCtx != nullptr;
+    return m_vst3Ctx != nullptr;
 }
 
 void
 VST3Chugin::setVerbosity(int v)
 {
     m_verbosity = v;
-    m_pluginCtx->SetVerbosity(v);
+    m_vst3Ctx->SetVerbosity(v);
 }
 
 void 
 VST3Chugin::printModules()
 {
-    m_pluginCtx->Print(std::cout, false/*detailed*/);
+    m_vst3Ctx->Print(std::cout, false/*detailed*/);
 }
 
 int 
 VST3Chugin::getNumModules()
 {
-    return m_pluginCtx->GetNumModules();
+    return m_vst3Ctx->GetNumModules();
 }
 
 int 
@@ -41,7 +41,7 @@ VST3Chugin::selectModule(int m)
 {
     if(m != m_activeModule)
     {
-        int err = m_pluginCtx->ActivateModule(m, m_sampleRate); 
+        int err = m_vst3Ctx->ActivateModule(m, m_sampleRate); 
         if(!err)
             m_activeModule = m;
         return err;
@@ -53,19 +53,19 @@ VST3Chugin::selectModule(int m)
 std::string 
 VST3Chugin::getModuleName()
 {
-    return m_pluginCtx->GetModuleName();
+    return m_vst3Ctx->GetModuleName();
 }
 
 int 
 VST3Chugin::getNumParameters() 
 {
-    return m_pluginCtx->GetNumParameters();
+    return m_vst3Ctx->GetNumParameters();
 }
 
 int 
 VST3Chugin::getParameterName(int index, std::string &nm) 
 {
-    return m_pluginCtx->GetParameterName(index, nm);
+    return m_vst3Ctx->GetParameterName(index, nm);
 }
 
 float 
@@ -77,13 +77,13 @@ VST3Chugin::getParameter(int index)
 bool 
 VST3Chugin::setParameter(int index, float v) 
 {
-    return m_pluginCtx->SetParamValue(index, v);
+    return m_vst3Ctx->SetParamValue(index, v);
 }
 
 bool 
 VST3Chugin::setParameter(std::string const &nm, float v) 
 {
-    return m_pluginCtx->SetParamValue(nm, v);
+    return m_vst3Ctx->SetParamValue(nm, v);
 }
 
 void
@@ -122,14 +122,14 @@ VST3Chugin::midiEvent(int status, int data1, int data2, float dur)
     // std::cout << "VST3Chugin::midiEvent " /*  */<< status << " " << data1 
      // << " " << data2 << " " << dur << " " << this->m_midiEvents << "\n"; 
     // dur is zero unless playing from file
-    return m_pluginCtx->MidiEvent(status, data1, data2);
+    return m_vst3Ctx->MidiEvent(status, data1, data2);
 }
 
 /* -------------------------------------------------------------------- */
 void 
 VST3Chugin::multitick(SAMPLE* in, SAMPLE* out, int nframes)
 {
-    if(!m_pluginCtx->Ready())
+    if(!m_vst3Ctx->Ready())
     {
         // fprintf(stderr, "dbVST3Ctx isn't ready\n");
         if(nframes == 1) // actual case
@@ -150,6 +150,6 @@ VST3Chugin::multitick(SAMPLE* in, SAMPLE* out, int nframes)
     else
     {
         // fprintf(stderr, "dbVST3Ctx process\n");
-        m_pluginCtx->ProcessSamples(in, 2, out, 2, nframes);
+        m_vst3Ctx->ProcessSamples(in, 2, out, 2, nframes);
     }
 }

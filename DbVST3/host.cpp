@@ -1,5 +1,5 @@
 #include "host.h"
-#include "pluginCtx.h"
+#include "vst3Ctx.h"
 #include "plugProvider.h"
 #include "processingUtil.h"
 
@@ -30,7 +30,7 @@ Host::GetKnownPlugins(std::vector<std::string> &knownPlugins)
     return (knownPlugins.size() > 0) ? 0 : -1;
 }
 
-PluginCtx *
+VST3Ctx *
 Host::OpenPlugin(std::string const &path, int verbosity)
 {
     std::string error;
@@ -45,7 +45,7 @@ Host::OpenPlugin(std::string const &path, int verbosity)
         return nullptr;
     }
     else
-        return new PluginCtx(plugin, path);
+        return new VST3Ctx(plugin, path);
 }
 
 Plugin

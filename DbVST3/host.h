@@ -49,7 +49,7 @@ public:
     int
     GetKnownPlugins(std::vector<std::string> &knownPlugins);
 
-    class PluginCtx *
+    class VST3Ctx *
     OpenPlugin(std::string const &path, int verbosity=0);
 
     char const *
