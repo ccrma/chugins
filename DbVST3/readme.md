@@ -1,3 +1,10 @@
+## Known Issues
+
+* Currently we don't save/stash plugin state.
+* Presets may not appear to persist/function if they
+  are emitted prior to other value-updates.
+* MIDI events may produce stuck keys.
+
 ## Our Terms and Class Hierarchy
 
 `PluginFile` refers to the vst3 file itself.

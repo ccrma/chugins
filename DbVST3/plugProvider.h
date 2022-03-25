@@ -41,6 +41,8 @@ public:
 	OBJ_METHODS(dbPlugProvider, FObject)
 	REFCOUNT_METHODS(FObject)
     DEF_INTERFACES_2(ITestPlugProvider, ITestPlugProvider2, FObject)
+
+    std::string const &GetName() { return this->classInfo.name(); }
 	
 //------------------------------------------------------------------------
 protected:

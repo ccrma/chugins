@@ -4,6 +4,32 @@
 
 #include <iostream>
 
+ProcessingData::ProcessingData()
+{
+    this->debug = 0;
+    this->verbosity = this->debug;
+}
+
+ProcessingData::~ProcessingData()
+{
+    if(this->inputs)
+    {
+        delete [] this->inputs->channelBuffers32; // array of float *
+        delete [] this->inputs; // array of AudioBusBuffers
+    }
+    if(this->outputs)
+    {
+        delete [] this->outputs->channelBuffers32;
+        delete [] this->outputs;
+    }
+}
+
+void
+ProcessingData::SetVerbosity(int v)
+{
+    this->verbosity = v;
+}
+
 void 
 ProcessingData::initialize(Steinberg::Vst::ProcessSetup &pd)
 {
@@ -94,8 +120,10 @@ ProcessingData::prepareParamChange(Steinberg::Vst::ParamID paramId,
     Steinberg::Vst::IParamValueQueue *q = 
         this->inPChanges.addParameterData(paramId, queueIndex);
     if(this->verbosity > 2)
+    {
         std::cerr << "prepareParamChange " << paramId << " " << value 
             << " len:" <<  q->getPointCount() <<  "\n";
+    }
     
     Steinberg::int32 ptIndex;
     q->addPoint(0, value, ptIndex);
@@ -181,7 +209,8 @@ ProcessingData::prepareMidiEvent(int status, int data1, int data2,
 //      this->endAudioProcessing()
 // so all the goodies are in this file.
 void 
-ProcessingData::beginAudioProcessing(float *in, int inCh, 
+ProcessingData::beginAudioProcessing(
+    float *in, int inCh, 
     float *out, int outCh, int nframes)
 {
     static float zero = 0.f;
@@ -230,7 +259,6 @@ ProcessingData::beginAudioProcessing(float *in, int inCh,
             }
             assert(nbind <= 2);
         }
-
     }
     else
         std::cerr << "Need to copy in+out of allocated buffers";

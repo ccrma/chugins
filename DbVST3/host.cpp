@@ -1,12 +1,14 @@
 #include "host.h"
 #include "pluginCtx.h"
 #include "plugProvider.h"
+#include "processingUtil.h"
 
 Host::Host()
 {
     m_name = "DbVST3";
     m_plugInterfaceSupport = owned(new Steinberg::Vst::PlugInterfaceSupport);
     dbPluginContextFactory::instance().setPluginContext(this->unknownCast());
+    m_debug = 0;
 }
 
 void 
@@ -50,7 +52,7 @@ Plugin
 Host::loadPlugin(std::string const &path, std::string &error)
 {
     // first assume path is fully qualified
-    this->loadingPath = path;
+    this->m_loadingPath = path;
     Plugin plugin = VST3::Hosting::Module::create(path, error); 
     if(!plugin)
     {
@@ -104,9 +106,12 @@ Host::createInstance(Steinberg::TUID cid, Steinberg::TUID iid, void** obj)
 }
 
 tresult PLUGIN_API
-Host::queryInterface(const char* iid, void** obj)
+// Host::queryInterface(const char* iid, void** obj)
+Host::queryInterface(const Steinberg::TUID iid, void** obj)
 {
-    // std::cerr << "query call for " << iid << "\n";
+    if(m_debug)
+        dumpTUID("Host query call for", iid);
+
     // default implemantion as of 3.7.3 (source/vst/hosting/pluginterfacesupport.cpp)
     /*
     ////---VST 3.0.0--------------------------------
@@ -135,13 +140,14 @@ Host::queryInterface(const char* iid, void** obj)
     if (m_plugInterfaceSupport && 
         m_plugInterfaceSupport->queryInterface(iid, obj) == Steinberg::kResultTrue)
     {
-        return ::Steinberg::kResultOk;
+        return Steinberg::kResultOk;
     }
     else
     {
-        std::cerr << "VST3Host: queryInterface went unanswered for " 
-            << this->loadingPath << "("
-            << iid << ")\n";
+        std::string s("VST3Host: queryInterface went unanswered for ");
+        s.append(this->m_loadingPath);
+        dumpTUID(s.c_str(), iid);
+        
         *obj = nullptr;
         return Steinberg::kResultFalse;
     }

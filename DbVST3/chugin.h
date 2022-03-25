@@ -20,6 +20,7 @@ public:
         m_verbosity = 0;
         m_midiEvents = 0;
         m_pluginCtx = nullptr;
+        m_activeModule = -1;
     }
 
     ~VST3Chugin()
@@ -56,6 +57,7 @@ private:
     std::string m_pluginPath;
     PluginCtx *m_pluginCtx;
     int m_midiEvents;
+    int m_activeModule;
 
     // i/o routing:
     // usually empty, otherwise: nch for _bus_

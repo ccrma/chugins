@@ -4,6 +4,17 @@
 #include <iostream>
 #include <unordered_map>
 
+ProcessingCtx::ProcessingCtx()
+{
+    this->error = 0;
+    this->debug = 0;
+    this->verbosity = this->debug;
+    this->component = nullptr;
+    this->controller = nullptr;
+    this->audioEffect = nullptr;
+    this->activated = false;
+}
+
 void
 ProcessingCtx::Init(
     const dbPlugProvider::PluginFactory &factory,
@@ -30,16 +41,15 @@ ProcessingCtx::InitProcessing(float sampleRate,
     if(this->verbosity)
         std::cerr << "initialize nparams: " << this->controller->getParameterCount() << "\n";
 
-    if(Steinberg::kResultTrue != this->component->queryInterface(
-                                    Steinberg::Vst::IAudioProcessor::iid, 
-                                    (void**)&this->audioEffect))
+	if(!(this->audioEffect = Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor>(this->component)))
     {
-        std::cerr << "oops: no audioeffect here\n";
+        std::cerr << "oops: no audioeffect in " <<
+            this->provider->GetName() << "\n";
         this->error = 1;;
     }
     else
     {
-        memset (&this->processSetup, 0, sizeof(Steinberg::Vst::ProcessSetup));
+        memset(&this->processSetup, 0, sizeof(Steinberg::Vst::ProcessSetup));
         this->processSetup.processMode = Steinberg::Vst::kRealtime;
             // from: kRealtime, kPrefetch, kOffline
         this->processSetup.symbolicSampleSize = Steinberg::Vst::kSample32;
@@ -52,7 +62,8 @@ ProcessingCtx::InitProcessing(float sampleRate,
         // indications are that we should also follow the guidance
         // of the plugin rather than request Speaker-Arrangement 
         // override by the host.
-
+        if(this->debug)
+            fprintf(stderr, "SetupProcessing\n");
         if(this->audioEffect->setupProcessing(this->processSetup) 
             == Steinberg::kResultTrue)
         {
@@ -67,14 +78,17 @@ ProcessingCtx::InitProcessing(float sampleRate,
         }
         else
         {
-            std::cerr << "Problem setting up audioEffect\n";
+            std::cerr << "Problem setting up audioEffect for "
+                << this->provider->GetName() << "\n";
         }
     }
+    this->activate();
 }
 
 // 'param id' it's paramID !== index
 int 
-ProcessingCtx::SetParamValue(Steinberg::Vst::ParamID pid, float value, bool asAutomation)
+ProcessingCtx::SetParamValue(Steinberg::Vst::ParamID pid,
+    float value, bool asAutomation) /* as automation means register it via processData */
 {
     // https://developer.steinberg.help/display/VST/Parameters+and+Automation
     int err = 0;
@@ -171,9 +185,10 @@ ProcessingCtx::deinitProcessing()
     this->component = nullptr;
 }
 
-// after scratching heads for many days, trying to get
+// After scratching heads for many days, trying to get
 // JUCE plugins working, I encountered this intriguing comment 
-// from ardour developer:
+// from ardour developer. After deploying this change, I still
+// get no joy...
 //
 /* The official Steinberg SDK's source/vst/hosting/plugprovider.cpp
  * only initializes the controller if it is separate of the component.
@@ -192,7 +207,11 @@ ProcessingCtx::initComponent()
     this->component = this->provider->getComponent();	
     this->controller = this->provider->getController();
     // XXX: --- this->controller->initialize();
-    this->controller->setComponentHandler(this);
+    if(Steinberg::kResultOk != this->controller->setComponentHandler(this))
+    {
+        std::cerr << "Problem setting componenthandler for " 
+                  << this->provider->GetName() << "\n";
+    }
     this->midiMapping = Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping>(this->controller);
     if(this->debug && false)
     {
@@ -220,12 +239,9 @@ ProcessingCtx::synchronizeStates()
             std::cerr << "Read " << stream.getSize() << " bytes from component state\n";
 
         stream.seek(0, Steinberg::IBStream::kIBSeekSet, nullptr);
-
-        // Steinberg::int64 newpos;
-        // stream.seek(0, Steinberg::IBStream::kIBSeekSet, &newpos);
+        // setComponentState triggers restartComponent (below)
         Steinberg::tresult res = this->controller->setComponentState(&stream);
-        if(!(res == Steinberg::kResultOk || 
-                res == Steinberg::kNotImplemented))
+        if((res != Steinberg::kResultOk) && (res != Steinberg::kNotImplemented))
         {
             std::cerr << "Couldn't synchronize VST3 component with controller state\n";
             this->readAllParameters(false);
@@ -283,15 +299,26 @@ ProcessingCtx::readAllParameters(bool andPush)
         this->controller->getParameterInfo(i, info);
         float val = this->controller->getParamNormalized(info.id);
         this->paramValues[i] = val;
+        if(!andPush) continue;
+        // else a preset has changed and we need to update the processor
         if(info.flags & Steinberg::Vst::ParameterInfo::kCanAutomate)
         {
             if(this->verbosity > 1)
                 std::cerr << i << ": " << val << "\n";
-            this->SetParamValue(info.id, val, true);
+            this->SetParamValue(info.id, val, true /*andPush*/);
+        }
+        else
+        {
+            if(!(info.flags & Steinberg::Vst::ParameterInfo::kIsProgramChange))
+                this->SetParamValue(info.id, val, false);
         }
     }
 }
 
+// restartComponent is commonly triggered by VST when we issue
+// this->controller->setComponentState(&stream) (above).
+// our job is merely to pull the values of its update params
+// into our brain (aka shadow parameters)
 tresult PLUGIN_API 
 ProcessingCtx::restartComponent(int32 flags)
 {
@@ -299,7 +326,7 @@ ProcessingCtx::restartComponent(int32 flags)
     if(flags & Steinberg::Vst::kReloadComponent)
     {
         if(this->verbosity)
-            std::cerr << "Reload component (program change)\n";
+            std::cerr << "restartComponent ReloadComponent\n";
         forcePush = false;
         this->deactivate();
         this->activate();
@@ -307,17 +334,13 @@ ProcessingCtx::restartComponent(int32 flags)
     if(flags & Steinberg::Vst::kParamValuesChanged)
     {
         if(this->verbosity)
-            std::cerr << "ParamValuesChanged (program change)\n";
-        this->readAllParameters(forcePush /* proven to be needed */);
-        /* tried this .. 
-            this->deactivate();
-            this->activate();
-            */
+            std::cerr << "restartComponent ParamValuesChanged\n";
+        this->readAllParameters(forcePush);
     }
     if(flags & Steinberg::Vst::kLatencyChanged)
     {
         if(this->verbosity)
-            std::cerr << "LatencyChanged " << forcePush << "\n";
+            std::cerr << "restartComponent LatencyChanged " << forcePush << "\n";
         this->deactivate();
         this->activate();
     }
@@ -542,6 +565,8 @@ ProcessingCtx::initBuses(char const *inputBusRouting, char const *outputBusRouti
             for(int k=0;k<nch;k++)
                 sa |= (1 << k);
             outSA[i] = sa;
+            if(this->debug)
+                std::cerr << "activate output bus " << i << " " << sa << "\n";
             this->component->activateBus(Steinberg::Vst::kAudio,
                                     Steinberg::Vst::kOutput, i, true);
         }
@@ -593,7 +618,6 @@ ProcessingCtx::initBuses(char const *inputBusRouting, char const *outputBusRouti
         if(this->verbosity)
             std::cerr << "No event-in busses\n"; // usually accept events anyway
     }
-
     setEventBusState(true);
 }
 
@@ -602,6 +626,13 @@ ProcessingCtx::setEventBusState(bool enable)
 {
     int inEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kInput);
     int outEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kOutput);
+
+    if(this->debug)
+    {
+        std::cerr << this->provider->GetName() << " setEventBusState " 
+            << enable << " nin:" << inEvt << " nout:" << outEvt << "\n";
+    }
+
     for(int i = 0; i < inEvt; ++i) 
         this->component->activateBus(Steinberg::Vst::kEvent, Steinberg::Vst::kInput, i, enable);
     for(int i = 0; i < outEvt; ++i)
@@ -617,13 +648,19 @@ ProcessingCtx::beginEdit(ParamID id)
         std::cout << "beginEdit called " << id << "\n";
     return Steinberg::kNotImplemented;
 }
+
 tresult PLUGIN_API 
 ProcessingCtx::performEdit(ParamID id, ParamValue valueNormalized)
 {
     if(this->debug)
+    {
+        // Happens when, eg, TALvocoder changes program.  Our job should
+        // be to convey this information back to the host program.
         std::cout << "performEdit called " << id << " " << valueNormalized << "\n";
+    }
     return Steinberg::kNotImplemented;
 }
+
 tresult PLUGIN_API 
 ProcessingCtx::endEdit(ParamID id)
 {
@@ -632,13 +669,21 @@ ProcessingCtx::endEdit(ParamID id)
 }
 
 tresult PLUGIN_API 
-ProcessingCtx::queryInterface(const Steinberg::TUID _iid, void** obj)
+ProcessingCtx::queryInterface(const Steinberg::TUID iid, void** obj)
 {
-    QUERY_INTERFACE(_iid, obj, Steinberg::FUnknown::iid, Steinberg::Vst::IComponentHandler);
-    QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IComponentHandler::iid, Steinberg::Vst::IComponentHandler);
-    QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IComponentHandler2::iid, Steinberg::Vst::IComponentHandler2);
+    // TUID's are 16-char arrays
+
+    if(this->debug)
+        dumpTUID("processingCtx query ", iid);
+
+    QUERY_INTERFACE(iid, obj, Steinberg::FUnknown::iid, Steinberg::Vst::IComponentHandler);
+
+    QUERY_INTERFACE(iid, obj, Steinberg::Vst::IComponentHandler::iid, Steinberg::Vst::IComponentHandler);
+
+    QUERY_INTERFACE(iid, obj, Steinberg::Vst::IComponentHandler2::iid, Steinberg::Vst::IComponentHandler2);
     // QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IUnitHandler::iid, Steinberg::Vst::IUnitHandler);
     // QUERY_INTERFACE(_iid, obj, IPlugFrame::iid, IPlugFrame)
+    std::cerr << "  (not supported)" << iid << "\n";
     *obj = nullptr;
     return Steinberg::kNoInterface;
 }
@@ -722,6 +767,9 @@ ProcessingCtx::countChannels(Steinberg::Vst::MediaType media,
     }
 }
 
+/* fill parameters according to current plugin/controller state 
+ *  - should be performed after we've synchronzized state.
+ */
 void
 ProcessingCtx::initParams(std::vector<ParamInfo> &parameters)
 {

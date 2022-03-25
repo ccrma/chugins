@@ -155,12 +155,21 @@ public:
         std::string in(indent);
         in.append("  ");
         char const *i2 = in.c_str();
+        // place program-change last
+        int programChange = -1;
         for(int i=0; i<this->parameters.size();i++)
         {
             if(this->parameters[i].hidden())
                 continue;
-            this->parameters[i].Print(ostr, i2, i);
+            if(this->parameters[i].programChange())
+                programChange = i;
+            else
+                this->parameters[i].Print(ostr, i2, i);
         }
+        // emitted last so changes that may be triggered take
+        // precedence over priors.
+        if(programChange != -1)
+            this->parameters[programChange].Print(ostr, i2, programChange);
     }
 
     /* ------------------------------------------------------------------ */

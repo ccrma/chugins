@@ -24,8 +24,8 @@ public:
 private:
     std::shared_ptr<dbPlugProvider> provider; // manages loading and cleanup of plugin
     Steinberg::Vst::IComponent* component;
-    Steinberg::Vst::IAudioProcessor* audioEffect;
     Steinberg::Vst::IEditController* controller;
+    Steinberg::Vst::IAudioProcessor* audioEffect;
     // Steinberg::FUnknownPtr<Steinberg::Vst::EditControllerEx1> controllerEx1;
     Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping> midiMapping;
     std::vector<float> paramValues;
@@ -36,16 +36,7 @@ private:
     int verbosity;
 
 public:
-    ProcessingCtx()
-    {
-        this->error = 0;
-        this->debug = 0;
-        this->verbosity = this->debug;
-        this->component = nullptr;
-        this->controller = nullptr;
-        this->audioEffect = nullptr;
-        this->activated = false;
-    }
+    ProcessingCtx();
 
     ~ProcessingCtx()
     {
@@ -64,10 +55,9 @@ public:
                VST3::Hosting::ClassInfo &classInfo,
                std::vector<ParamInfo> &params);
 
-    void 
-    InitProcessing(float sampleRate, 
-                    char const *inputBusRouting, 
-                    char const *outputBusRouting);
+    void InitProcessing(float sampleRate, 
+                char const *inputBusRouting, 
+                char const *outputBusRouting);
 
     int SetParamValue(Steinberg::Vst::ParamID pid, float value, bool asAutomation);
     Steinberg::Vst::ParamID GetMidiMapping(int data1);
@@ -82,6 +72,7 @@ private:
     bool deactivate();
     void readAllParameters(bool andPush);
 	tresult PLUGIN_API restartComponent(int32 flags) override;
+    // tresult PLUGIN_API setComponentState (IBStream* stream) override
 
     // optional routing hints
     //  - string with len == num input or output bus.

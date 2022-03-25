@@ -10,10 +10,6 @@
 
 #include "vst3.h"
 
-#include <string>
-#include <iostream>
-#include <vector>
-
 class Host : 
     public Steinberg::FObject,
     public Steinberg::Vst::IHostApplication
@@ -21,12 +17,22 @@ class Host :
     public Steinberg::Vst::IComponentHandler, // react to restart request
     public Steinberg::Vst::IComponentHandler2, // group edit
     public Steinberg::Vst::IUnitHandler // notification when programlist changed
+
+    // JUCE plugin host:
+    struct VST3HostContext  : public Vst::IComponentHandler,  // From VST V3.0.0
+                          public Vst::IComponentHandler2, // From VST V3.1.0 (a very well named class, of course!)
+                          public Vst::IComponentHandler3, // From VST V3.5.0 (also very well named!)
+                          public Vst::IContextMenuTarget,
+                          public Vst::IHostApplication,
+                          public Vst::IUnitHandler,
+                          private ComponentRestarter::Listener
     */
 {
 private:
     char const *m_name;
 	Steinberg::IPtr<Steinberg::Vst::PlugInterfaceSupport> m_plugInterfaceSupport;
-    std::string loadingPath;
+    std::string m_loadingPath;
+    int m_debug;
 
 public:
     Host();

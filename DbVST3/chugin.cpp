@@ -9,15 +9,12 @@ bool VST3Chugin::loadPlugin(const std::string& filepath)
         delete m_pluginCtx;
         m_pluginCtx = nullptr;
     }
-    int err = -1;
     m_pluginCtx = s_hostPtr->OpenPlugin(filepath, this->m_verbosity);
+    // so as to not require activateModule, we activateModule(0)
+    // since it's the 95% case.
     if(m_pluginCtx)
-    {
-        err = m_pluginCtx->InitProcessing(m_sampleRate,  
-                                m_inputBusRouting.c_str(), 
-                                m_outputBusRouting.c_str());
-    }
-    return err == 0;
+        this->selectModule(0);
+    return m_pluginCtx != nullptr;
 }
 
 void
@@ -42,7 +39,15 @@ VST3Chugin::getNumModules()
 int 
 VST3Chugin::selectModule(int m)
 {
-    return m_pluginCtx->ActivateModule(m, m_sampleRate); // 0 == success, 
+    if(m != m_activeModule)
+    {
+        int err = m_pluginCtx->ActivateModule(m, m_sampleRate); 
+        if(!err)
+            m_activeModule = m;
+        return err;
+    }
+    else
+        return 0; // already active
 }
 
 std::string 

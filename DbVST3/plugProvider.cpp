@@ -104,33 +104,46 @@ bool dbPlugProvider::setupPlugin(FUnknown* hostContext)
 	{
 		// initialize the component with our context
 		res = (component->initialize(hostContext) == Steinberg::kResultOk);
+        if(!res)
+        {
+            std::cerr << "Problem initializing plugin component "
+                      << classInfo.name() << "\n";
+            return false;
+        }
 
-		// try to create the controller part from the component
-		// (for Plug-ins which did not succeed to separate component from controller)
-		if(component->queryInterface(IEditController::iid, (void**)&controller) != Steinberg::kResultTrue)
-		{
-			TUID controllerCID;
-
-			// ask for the associated controller class ID
-			if(component->getControllerClassId (controllerCID) == Steinberg::kResultTrue)
+        // check if component is controller
+        bool controllerIsComponent = true;
+        controller = Steinberg::FUnknownPtr<IEditController>(component).getInterface();
+        if(!controller)
+        {
+            controllerIsComponent = false;
+            TUID controllerCID;
+			if(component->getControllerClassId(controllerCID) == Steinberg::kResultTrue)
 			{
 				// create its controller part created from the factory
 				controller = factory.createInstance<IEditController>(VST3::UID(controllerCID));
-				if(controller)
-				{
-					// initialize the component with our context
-					res = (controller->initialize (hostContext) == Steinberg::kResultOk);
-				}
+				if(!controller)
+                {
+                    std::cerr << "Problem initializing plugin controller(0) "
+                            << classInfo.name() << "\n";
+                    return false;
+                }
 			}
-		}
+            else
+            {
+                std::cerr << "Problem initializing plugin controller(1) "
+                            << classInfo.name() << "\n";
+                return false;
+            }
+        }
+        controller->initialize(hostContext); // may be a double-init, but okay
+		connectComponents();
 	}
-	else if(errorStream)
+	else 
+    if(errorStream)
 	{
 		*errorStream << "Failed to create instance of " << classInfo.name() << "!\n";
 	}
-
-	if(res)
-		connectComponents();
 
 	return res;
 }
@@ -154,12 +167,14 @@ bool dbPlugProvider::connectComponents()
 	if(componentCP->connect(contrICP) != Steinberg::kResultTrue)
 	{
 		// TODO: Alert or what for non conformant plugin ?
+        std::cerr << "Plugin is nonconformant " << classInfo.name() << "\n";
 	}
 	else
 	{
 		if(controllerCP->connect(compICP) != Steinberg::kResultTrue)
 		{
 			// TODO: Alert or what for non conformant plugin ?
+            std::cerr << "Plugin is nonconformant " << classInfo.name() << " (1)\n";
 		}
 		else
 			res = true;
