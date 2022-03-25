@@ -147,13 +147,13 @@ public:
             this->modules[i]->Print(ostr, "  ", i, detailed);
     }
 
-    ProcessingCtx &getProcessingCtx()
+    PluginInstance &getPluginInstance()
     {
         if(this->activeModule.get())
             return this->activeModule->processingCtx;
         else
         {
-            static ProcessingCtx s_pctx; // empty
+            static PluginInstance s_pctx; // empty
             return s_pctx;
         }
     }
@@ -162,11 +162,11 @@ public:
         char const *inputBusRouting = nullptr, 
         char const *outputBusRouting = nullptr)
     {
-        ProcessingCtx &pctx = this->getProcessingCtx();
+        PluginInstance &pctx = this->getPluginInstance();
         if(!pctx.error)
         {
             pctx.InitProcessing(sampleRate, inputBusRouting, outputBusRouting);
-            // ~ProcessingCtx handles teardown
+            // ~PluginInstance handles teardown
         }
         return pctx.error;
     }
@@ -228,14 +228,14 @@ public:
         if(this->activeModule.get())
         {
             // processingCtx's job to add the midi event to its eventslist
-            err = this->getProcessingCtx().MidiEvent(status, data1, data2);
+            err = this->getPluginInstance().MidiEvent(status, data1, data2);
         }
         return err;
     }
 
     void ProcessSamples(float *in, int inCh, float *out, int outCh, int nframes)
     {
-        ProcessingCtx &pctx = this->getProcessingCtx();
+        PluginInstance &pctx = this->getPluginInstance();
         if(pctx.error)
             return; // error reported earlier
         
@@ -254,7 +254,7 @@ private:
         {
             if(this->verbosity > 1)
                 std::cerr << "ProgramChange " << val << "\n";
-            err = this->getProcessingCtx().SetParamValue(id, val, false);
+            err = this->getPluginInstance().SetParamValue(id, val, false);
         }
         else
         if(info->automatable()) // mda-PitchBend etc aren't automatable
@@ -265,7 +265,7 @@ private:
                     << val << "\n";
                     // " (id:" << info->id << ")\n";
             }
-            err = this->getProcessingCtx().SetParamValue(id, val, true);
+            err = this->getPluginInstance().SetParamValue(id, val, true);
         }
         else
         {
@@ -274,7 +274,7 @@ private:
                 std::cerr << "SetParameter " << info->name << " " 
                     << val << " (id:" << info->id << ")\n";
             }
-            err = this->getProcessingCtx().SetParamValue(id, val, true);
+            err = this->getPluginInstance().SetParamValue(id, val, true);
             if(err)
                 std::cerr << "parameter " << info->name << " can't be automated.\n";
         }

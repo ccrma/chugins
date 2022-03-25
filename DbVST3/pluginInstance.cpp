@@ -1,10 +1,10 @@
-#include "processingCtx.h"
+#include "pluginInstance.h"
 
 #include <public.sdk/source/common/memorystream.h>
 #include <iostream>
 #include <unordered_map>
 
-ProcessingCtx::ProcessingCtx()
+PluginInstance::PluginInstance()
 {
     this->error = 0;
     this->debug = 0;
@@ -16,7 +16,7 @@ ProcessingCtx::ProcessingCtx()
 }
 
 void
-ProcessingCtx::Init(
+PluginInstance::Init(
     const dbPlugProvider::PluginFactory &factory,
     VST3::Hosting::ClassInfo &classInfo,
     std::vector<ParamInfo> &parameters)
@@ -30,7 +30,7 @@ ProcessingCtx::Init(
 }
 
 void
-ProcessingCtx::InitProcessing(float sampleRate, 
+PluginInstance::InitProcessing(float sampleRate, 
                     char const *inputBusRouting, 
                     char const *outputBusRouting)
 {
@@ -87,7 +87,7 @@ ProcessingCtx::InitProcessing(float sampleRate,
 
 // 'param id' it's paramID !== index
 int 
-ProcessingCtx::SetParamValue(Steinberg::Vst::ParamID pid,
+PluginInstance::SetParamValue(Steinberg::Vst::ParamID pid,
     float value, bool asAutomation) /* as automation means register it via processData */
 {
     // https://developer.steinberg.help/display/VST/Parameters+and+Automation
@@ -105,7 +105,7 @@ ProcessingCtx::SetParamValue(Steinberg::Vst::ParamID pid,
 }
 
 Steinberg::Vst::ParamID
-ProcessingCtx::GetMidiMapping(int data1)
+PluginInstance::GetMidiMapping(int data1)
 {
     if(this->midiMapping)
     {
@@ -119,7 +119,7 @@ ProcessingCtx::GetMidiMapping(int data1)
 }
 
 int 
-ProcessingCtx::MidiEvent(int status, int data1, int data2)
+PluginInstance::MidiEvent(int status, int data1, int data2)
 {
     int err;
     if(this->controller)
@@ -140,7 +140,7 @@ ProcessingCtx::MidiEvent(int status, int data1, int data2)
 }
 
 void 
-ProcessingCtx::Process(float *in, int inCh, float *out, int outCh, int nframes)
+PluginInstance::Process(float *in, int inCh, float *out, int outCh, int nframes)
 {
     this->activate(); 
     // beginAudioProcessing plugs chuck pointers to the arrays
@@ -156,7 +156,7 @@ ProcessingCtx::Process(float *in, int inCh, float *out, int outCh, int nframes)
 }
 
 void
-ProcessingCtx::deinitProcessing()
+PluginInstance::deinitProcessing()
 {
     if(this->audioEffect)
     {
@@ -202,7 +202,7 @@ ProcessingCtx::deinitProcessing()
  * may or may not already be initialized.
  */
 void
-ProcessingCtx::initComponent()
+PluginInstance::initComponent()
 {
     this->component = this->provider->getComponent();	
     this->controller = this->provider->getController();
@@ -229,7 +229,7 @@ ProcessingCtx::initComponent()
 }
 
 bool
-ProcessingCtx::synchronizeStates()
+PluginInstance::synchronizeStates()
 {
     assert(this->component);
     Steinberg::MemoryStream stream;
@@ -256,7 +256,7 @@ ProcessingCtx::synchronizeStates()
 }
 
 bool
-ProcessingCtx::activate()
+PluginInstance::activate()
 {
     if(this->activated)
         return true;
@@ -272,7 +272,7 @@ ProcessingCtx::activate()
 }
 
 bool
-ProcessingCtx::deactivate()
+PluginInstance::deactivate()
 {
     if(!this->activated)
         return true;
@@ -289,7 +289,7 @@ ProcessingCtx::deactivate()
 }
 
 void
-ProcessingCtx::readAllParameters(bool andPush)
+PluginInstance::readAllParameters(bool andPush)
 {
     int nparams = this->controller->getParameterCount();
     this->paramValues.resize(nparams);
@@ -320,7 +320,7 @@ ProcessingCtx::readAllParameters(bool andPush)
 // our job is merely to pull the values of its update params
 // into our brain (aka shadow parameters)
 tresult PLUGIN_API 
-ProcessingCtx::restartComponent(int32 flags)
+PluginInstance::restartComponent(int32 flags)
 {
     bool forcePush = true;
     if(flags & Steinberg::Vst::kReloadComponent)
@@ -355,7 +355,7 @@ ProcessingCtx::restartComponent(int32 flags)
 // default behavior:
 // - greedily allocate 2 channels prioritizing Main over Aux buses.
 void 
-ProcessingCtx::initBuses(char const *inputBusRouting, char const *outputBusRouting)
+PluginInstance::initBuses(char const *inputBusRouting, char const *outputBusRouting)
 {
     // countChannels initializes busConfig.
     int nbusIn, nbusOut;
@@ -622,7 +622,7 @@ ProcessingCtx::initBuses(char const *inputBusRouting, char const *outputBusRouti
 }
 
 void
-ProcessingCtx::setEventBusState(bool enable)
+PluginInstance::setEventBusState(bool enable)
 {
     int inEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kInput);
     int outEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kOutput);
@@ -642,7 +642,7 @@ ProcessingCtx::setEventBusState(bool enable)
 /* --------------------------------------------------------------------- */
 
 tresult PLUGIN_API 
-ProcessingCtx::beginEdit(ParamID id)
+PluginInstance::beginEdit(ParamID id)
 {
     if(this->debug)
         std::cout << "beginEdit called " << id << "\n";
@@ -650,7 +650,7 @@ ProcessingCtx::beginEdit(ParamID id)
 }
 
 tresult PLUGIN_API 
-ProcessingCtx::performEdit(ParamID id, ParamValue valueNormalized)
+PluginInstance::performEdit(ParamID id, ParamValue valueNormalized)
 {
     if(this->debug)
     {
@@ -662,14 +662,14 @@ ProcessingCtx::performEdit(ParamID id, ParamValue valueNormalized)
 }
 
 tresult PLUGIN_API 
-ProcessingCtx::endEdit(ParamID id)
+PluginInstance::endEdit(ParamID id)
 {
     //std::cout << "endEdit called " << id << "\n";
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API 
-ProcessingCtx::queryInterface(const Steinberg::TUID iid, void** obj)
+PluginInstance::queryInterface(const Steinberg::TUID iid, void** obj)
 {
     // TUID's are 16-char arrays
 
@@ -694,7 +694,7 @@ ProcessingCtx::queryInterface(const Steinberg::TUID iid, void** obj)
  * before quitting. 
  */
 tresult PLUGIN_API 
-ProcessingCtx::setDirty(Steinberg::TBool state)
+PluginInstance::setDirty(Steinberg::TBool state)
 {
     return Steinberg::kResultOk;
 }
@@ -704,7 +704,7 @@ ProcessingCtx::setDirty(Steinberg::TBool state)
  * the program flow (especially on loading projects). 
  */
 tresult PLUGIN_API 
-ProcessingCtx::requestOpenEditor(Steinberg::FIDString name)
+PluginInstance::requestOpenEditor(Steinberg::FIDString name)
 {
     return Steinberg::kNotImplemented;
 }
@@ -715,27 +715,27 @@ ProcessingCtx::requestOpenEditor(Steinberg::FIDString name)
  */
 
 tresult PLUGIN_API 
-ProcessingCtx::startGroupEdit()
+PluginInstance::startGroupEdit()
 {
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API 
-ProcessingCtx::finishGroupEdit()
+PluginInstance::finishGroupEdit()
 {
     return Steinberg::kNotImplemented;
 }
 
 /* IUnitHandler API */
 tresult PLUGIN_API 
-ProcessingCtx::notifyUnitSelection(Steinberg::Vst::UnitID id)
+PluginInstance::notifyUnitSelection(Steinberg::Vst::UnitID id)
 {
     std::cout << "unit selected: " << id << "\n";
     return Steinberg::kResultOk;
 }
 
 tresult PLUGIN_API 
-ProcessingCtx::notifyProgramListChange(
+PluginInstance::notifyProgramListChange(
     Steinberg::Vst::ProgramListID listId, 
     Steinberg::int32 programIndex)
 {
@@ -747,7 +747,7 @@ ProcessingCtx::notifyProgramListChange(
 
 /* --------------------------------------------------------------------- */
 void
-ProcessingCtx::countChannels(Steinberg::Vst::MediaType media, 
+PluginInstance::countChannels(Steinberg::Vst::MediaType media, 
     Steinberg::Vst::BusDirection dir, 
     std::vector<BusUsage::Bus> &chansPerBus,
     int &totalChannels)
@@ -771,7 +771,7 @@ ProcessingCtx::countChannels(Steinberg::Vst::MediaType media,
  *  - should be performed after we've synchronzized state.
  */
 void
-ProcessingCtx::initParams(std::vector<ParamInfo> &parameters)
+PluginInstance::initParams(std::vector<ParamInfo> &parameters)
 {
     assert(this->component); // managed by provider
     assert(this->controller); // managed by provider

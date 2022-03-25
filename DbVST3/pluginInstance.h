@@ -1,5 +1,5 @@
-#ifndef ProcessingCtx_h
-#define ProcessingCtx_h
+#ifndef PluginInstance_h
+#define PluginInstance_h
 
 #include "vst3.h"
 #include "processingData.h"
@@ -9,7 +9,7 @@
 #include <cassert>
 
 // see comments in processingCtx.cpp
-class ProcessingCtx : 
+class PluginInstance : 
     public Steinberg::Vst::IComponentHandler,
 	public Steinberg::Vst::IComponentHandler2,
 	public Steinberg::Vst::IUnitHandler // notification of program change
@@ -36,9 +36,9 @@ private:
     int verbosity;
 
 public:
-    ProcessingCtx();
+    PluginInstance();
 
-    ~ProcessingCtx()
+    ~PluginInstance()
     {
         this->deinitProcessing();
     }

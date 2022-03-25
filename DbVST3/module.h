@@ -2,7 +2,7 @@
 #define Module_h
 
 #include "param.h"
-#include "processingCtx.h"
+#include "pluginInstance.h"
 
 #include <string>
 #include <vector>
@@ -25,7 +25,7 @@ public:
     std::string version;
     std::string sdkVersion;
     std::vector<ParamInfo> parameters;
-    ProcessingCtx processingCtx;
+    PluginInstance processingCtx;
     std::unordered_map<std::string, int> nameToIndex;
     std::unordered_map<Steinberg::Vst::ParamID, int> idToIndex;
 

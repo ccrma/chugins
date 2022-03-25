@@ -13,7 +13,7 @@
 class Host : 
     public Steinberg::FObject,
     public Steinberg::Vst::IHostApplication
-    /* more appropriate for (but not needed for) processingCtx.h
+    /* more appropriate for (but not needed for) pluginInstance.h
     public Steinberg::Vst::IComponentHandler, // react to restart request
     public Steinberg::Vst::IComponentHandler2, // group edit
     public Steinberg::Vst::IUnitHandler // notification when programlist changed
