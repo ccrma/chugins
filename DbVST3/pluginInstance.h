@@ -70,9 +70,7 @@ private:
     void initComponent();
     bool activate();
     bool deactivate();
-    void readAllParameters(bool andPush);
-	tresult PLUGIN_API restartComponent(int32 flags) override;
-    // tresult PLUGIN_API setComponentState (IBStream* stream) override
+    void readAllParameters(bool andPushToProcessor);
 
     // optional routing hints
     //  - string with len == num input or output bus.
@@ -81,14 +79,15 @@ private:
     //    universally correct answer.
     // default behavior:
     // - greedily allocate 2 channels prioritizing Main over Aux buses.
-    void 
-    initBuses(char const *inputBusRouting, char const *outputBusRouting);
+    void initBuses(char const *inputBusRouting, char const *outputBusRouting);
     void setEventBusState(bool enable);
 
     /* --------------------------------------------------------------------- */
+    // since we're our EditController's IComponentHandler
 	tresult PLUGIN_API beginEdit(ParamID id) override;
 	tresult PLUGIN_API performEdit(ParamID id, ParamValue valueNormalized) override;
 	tresult PLUGIN_API endEdit(ParamID id) override;
+	tresult PLUGIN_API restartComponent(int32 flags) override;
 	tresult PLUGIN_API queryInterface(const Steinberg::TUID _iid, void** obj) override;
 	uint32 PLUGIN_API addRef() override { return 1000; }
 	uint32 PLUGIN_API release() override { return 1000; }

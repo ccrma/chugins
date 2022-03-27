@@ -8,18 +8,49 @@ ProcessingData::ProcessingData()
 {
     this->debug = 0;
     this->verbosity = this->debug;
+    this->eventSampleOffset = 0;
 }
 
 ProcessingData::~ProcessingData()
 {
+    // inputs, outputs are array of AudioBusBuffers
+    // inside each AudioBusBuffer is an array of float* (of lenght numChannels)
     if(this->inputs)
     {
-        delete [] this->inputs->channelBuffers32; // array of float *
+        for(int i=0;i<this->numInputs;i++)
+        {
+            Steinberg::Vst::AudioBusBuffers *x = this->inputs + i;
+            #if 0
+            for(int j=0;j<x->numChannels;j++)
+            {
+                /* currently we plug chuck data into these slots 
+                */
+                if(x->channelBuffers32[j])
+                    delete [] x->channelBuffers32[j]; // array of float
+            }
+            #endif
+
+            delete [] x->channelBuffers32; // array of float *
+        }
         delete [] this->inputs; // array of AudioBusBuffers
     }
     if(this->outputs)
     {
-        delete [] this->outputs->channelBuffers32;
+        for(int i=0;i<this->numOutputs;i++)
+        {
+            Steinberg::Vst::AudioBusBuffers *x = this->outputs + i;
+            #if 0
+            for(int j=0;j<x->numChannels;j++)
+            {
+                /* currently we plug chuck data into these slots 
+                 * or we free them via chucKInstBuffer
+                 */
+                if(x->channelBuffers32[j])
+                    delete [] x->channelBuffers32[j]; // array of float
+            }
+            #endif
+            delete [] x->channelBuffers32;
+        }
         delete [] this->outputs;
     }
 }
@@ -31,7 +62,7 @@ ProcessingData::SetVerbosity(int v)
 }
 
 void 
-ProcessingData::initialize(Steinberg::Vst::ProcessSetup &pd)
+ProcessingData::Initialize(Steinberg::Vst::ProcessSetup &pd)
 {
     // these are superclass member variables (Vst::ProcessData)
     this->processMode = pd.processMode;
@@ -57,11 +88,20 @@ ProcessingData::initialize(Steinberg::Vst::ProcessSetup &pd)
             this->inputs[i].numChannels = nchan;
             this->inputs[i].channelBuffers32 = new float*[nchan];
             for(int j=0;j<nchan;j++)
+            {
                 this->inputs[i].channelBuffers32[j] = nullptr;
+            }
         }
     }
+
     if(this->numOutputs > 0)
     {
+        bool bufferInst = (this->numInputs == 0
+                           && this->numOutputs == 1 
+                           && this->busUsage.outAudioChan[0].nch == 2);
+        if(bufferInst)
+            this->instBuffer.Init(pd.maxSamplesPerBlock);
+
         this->outputs = new Steinberg::Vst::AudioBusBuffers[this->numOutputs];
         for(int i=0;i<this->numOutputs;i++) // foreach bus
         {
@@ -76,8 +116,16 @@ ProcessingData::initialize(Steinberg::Vst::ProcessSetup &pd)
             this->outputs[i].silenceFlags = 0;
             this->outputs[i].numChannels = nchan;
             this->outputs[i].channelBuffers32 = new float*[nchan];
-            for(int j=0;j<nchan;j++)
-                this->outputs[i].channelBuffers32[j] = nullptr;
+            if(bufferInst)
+            {
+                for(int j=0;j<nchan;j++)
+                    this->outputs[i].channelBuffers32[j] = this->instBuffer.buffers[j];
+            }
+            else
+            {
+                for(int j=0;j<nchan;j++)
+                    this->outputs[i].channelBuffers32[j] = nullptr;
+            }
         }
     }
     this->inputParameterChanges = &this->inPChanges;
@@ -92,8 +140,9 @@ ProcessingData::initialize(Steinberg::Vst::ProcessSetup &pd)
     this->processCtx.frameRate.framesPerSecond = 30;
     this->processCtx.frameRate.flags = 0; // for frame pulldown, etc
     this->processCtx.state = Steinberg::Vst::ProcessContext::kPlaying |
-                                Steinberg::Vst::ProcessContext::kTempoValid |
-                                Steinberg::Vst::ProcessContext::kTimeSigValid; 
+                            Steinberg::Vst::ProcessContext::kTempoValid |
+                            Steinberg::Vst::ProcessContext::kTimeSigValid |
+                            Steinberg::Vst::ProcessContext::kSmpteValid; 
     this->processContext = &this->processCtx;
 
     if(this->verbosity)
@@ -113,7 +162,7 @@ ProcessingData::initialize(Steinberg::Vst::ProcessSetup &pd)
 }
 
 void 
-ProcessingData::prepareParamChange(Steinberg::Vst::ParamID paramId, 
+ProcessingData::PrepareParamChange(Steinberg::Vst::ParamID paramId, 
                 Steinberg::Vst::ParamValue value)
 {
     Steinberg::int32 queueIndex;
@@ -121,12 +170,14 @@ ProcessingData::prepareParamChange(Steinberg::Vst::ParamID paramId,
         this->inPChanges.addParameterData(paramId, queueIndex);
     if(this->verbosity > 2)
     {
-        std::cerr << "prepareParamChange " << paramId << " " << value 
-            << " len:" <<  q->getPointCount() <<  "\n";
+        std::cerr << "pchange " << paramId << " " << value 
+            << " len:" <<  q->getPointCount() 
+            << " soff:" << this->eventSampleOffset 
+            << "\n";
     }
     
     Steinberg::int32 ptIndex;
-    q->addPoint(0, value, ptIndex);
+    q->addPoint(this->eventSampleOffset, value, ptIndex);
 }
 
 // LABS:
@@ -144,10 +195,11 @@ ProcessingData::prepareParamChange(Steinberg::Vst::ParamID paramId,
 //    AudioIn routing '2'
 //    AudioOut routing '2'
 void
-ProcessingData::prepareMidiEvent(int status, int data1, int data2,
+ProcessingData::PrepareMidiEvent(int status, int data1, int data2,
             Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping> midiMap)
 {
-    int ch = 0; // tbd
+    Steinberg::int16 ch = status & 0x0F;
+    status &= 0xF0;
     auto evt = Steinberg::Vst::midiToEvent(status, ch, data1, data2);
     if(evt)
     {
@@ -155,10 +207,10 @@ ProcessingData::prepareMidiEvent(int status, int data1, int data2,
         evt->busIndex = 0; // the midi event bus..
         evt->flags = Steinberg::Vst::Event::kIsLive;
         // sample frames related to the current block start sample position 
-        evt->sampleOffset = 0; 
-        if(this->verbosity || this->debug)
+        evt->sampleOffset = this->eventSampleOffset; 
+        if(this->verbosity)
         {
-            std::cout << "MIDI event: " << status 
+            std::cerr << "ProcessingData MIDI event: " << status 
                 << " note: " << data1 << " vel: " << data2 
                 << " qlen: " << this->inEvents.getEventCount() 
                 << " flags: " << evt->flags
@@ -175,9 +227,8 @@ ProcessingData::prepareMidiEvent(int status, int data1, int data2,
     if(midiMap)
     {
         int bus = 0; // some plugins support multiple Event busses?
-        Steinberg::int16 ch = 0;  // some plugins support multiple channels
 
-        // Rirst look for non CCs like PitchBend and AfterTouch ---------
+        // First look for non CCs like PitchBend and AfterTouch ---------
         // these are converted to CC-format (since ParamValues are double)
         auto callback = [bus, midiMap](Steinberg::int32 ch, 
                                         uint8_t data1) -> Steinberg::Vst::ParamID 
@@ -186,11 +237,13 @@ ProcessingData::prepareMidiEvent(int status, int data1, int data2,
             midiMap->getMidiControllerAssignment(bus, ch, data1, tag);
             return tag;
         };
+        // This routine applies remapping of standard non-cc (betd, pressure)
+        // as well as CC:
         auto optParamChange = Steinberg::Vst::midiToParameter(status, ch, 
                                 data1, data2, callback);
         if(optParamChange)
         {
-            this->prepareParamChange(optParamChange->first, optParamChange->second);
+            this->PrepareParamChange(optParamChange->first, optParamChange->second);
             return;
         }
         else
@@ -203,79 +256,118 @@ ProcessingData::prepareMidiEvent(int status, int data1, int data2,
         std::cout << "no midimapping found\n";
 }
 
-// caller (Processing) simply does
-//      this->beginAudioProcessing()
-//      caller->plugin->process()
-//      this->endAudioProcessing()
-// so all the goodies are in this file.
-void 
-ProcessingData::beginAudioProcessing(
-    float *in, int inCh, 
-    float *out, int outCh, int nframes)
+/* Process is called from ChucK multitick.
+ * Currently nframes is always 1 and inCh and outCh are always 2 
+ */
+void
+ProcessingData::Process(
+    Steinberg::Vst::IAudioProcessor* audioEffect,
+    float *in, int inCh, float *out, int outCh, int nframes)
 {
+    assert((inCh == 2 || inCh == 0) && outCh == 2 && nframes == 1);
     static float zero = 0.f;
-    this->numSamples = nframes;
-
-    // this->processCtx.systemTime += nframe;
-    // this->processCtx.state |= Steinberg::Vst::ProcessContext::kSystemTimeValid;
+    bool clearEvents = true;
     if(nframes == 1)
     {
-        // For now we'll only fill the first in and out bus
-        // this approach uses ChucK's buffers. In theory inCh
-        // could be larger than 2 and in this way we'd support
-        // side-chaining, etc. For now, we're hard-wired for 
-        // inCh == 2, outCh == 2,
-        if(this->numInputs > 0)
+        if(this->instBuffer.Active())
         {
-            int nbind=0;
-            for(int i=0;i<this->busUsage.inputRouting.size();i++)
+            if(this->instBuffer.Empty())
             {
-                int nch = this->busUsage.inAudioChan[i].nch;
-                int nused = this->busUsage.inputRouting[i];
-                for(int j=0;j<nch;j++)
-                {
-                    if(j < nused && nbind < 2)
-                        this->inputs[i].channelBuffers32[j] = in+nbind++;
-                    else
-                        this->inputs[i].channelBuffers32[j] = &zero;
-                }
+                this->numSamples = this->instBuffer.size;
+                tresult result = audioEffect->process(*this);
+                if(result != Steinberg::kResultOk)
+                    std::cerr << "VST3 audioEffect process error\n";
+                else
+                    this->instBuffer.index = 0;
+                this->eventSampleOffset = 0;
             }
-            assert(nbind <= 2);
+            else
+            {
+                // Incoming midi events must preserve relative ordering.
+                // They are only processed by the audioEffect (above).
+                clearEvents = false;
+                this->eventSampleOffset++;
+            }
+            int i = this->instBuffer.index;
+            out[0] = this->instBuffer.buffers[0][i];
+            out[1] = this->instBuffer.buffers[1][i];
+            this->instBuffer.index++;
         }
-        if(this->numOutputs > 0)
+        else
         {
-            int nbind=0;
-            for(int i=0;i<this->busUsage.outputRouting.size();i++)
+
+            // For now we'll only fill the first in and out bus
+            // this approach uses ChucK's buffers. In theory inCh
+            // could be larger than 2 and in this way we'd support
+            // side-chaining, etc. For now, we're hard-wired for 
+            // inCh == 2, outCh == 2,
+            this->numSamples = nframes;
+            if(this->numInputs > 0)
             {
-                int nch = this->busUsage.outAudioChan[i].nch;
-                int nused = this->busUsage.outputRouting[i];
-                for(int j=0;j<nch;j++)
+                int nbind=0;
+                for(int i=0;i<this->busUsage.inputRouting.size();i++)
                 {
-                    if(j < nused && nbind < 2)
-                        this->outputs[i].channelBuffers32[j] = out+nbind++;
-                    else
-                        this->outputs[i].channelBuffers32[j] = &zero;
+                    int nch = this->busUsage.inAudioChan[i].nch;
+                    int nused = this->busUsage.inputRouting[i];
+                    for(int j=0;j<nch;j++)
+                    {
+                        if(j < nused && nbind < 2)
+                            this->inputs[i].channelBuffers32[j] = in+nbind++;
+                        else
+                            this->inputs[i].channelBuffers32[j] = &zero;
+                    }
                 }
+                assert(nbind <= 2);
             }
-            assert(nbind <= 2);
+            if(this->numOutputs > 0)
+            {
+                int nbind=0;
+                for(int i=0;i<this->busUsage.outputRouting.size();i++)
+                {
+                    int nch = this->busUsage.outAudioChan[i].nch;
+                    int nused = this->busUsage.outputRouting[i];
+                    for(int j=0;j<nch;j++)
+                    {
+                        if(j < nused && nbind < 2)
+                            this->outputs[i].channelBuffers32[j] = out+nbind++;
+                        else
+                            this->outputs[i].channelBuffers32[j] = &zero;
+                    }
+                }
+                assert(nbind <= 2);
+            }
+            // active: true, processing: true
+            tresult result = audioEffect->process(*this);
+            if(result != Steinberg::kResultOk)
+                std::cerr << "VST3 audioEffect process error\n";
         }
     }
     else
         std::cerr << "Need to copy in+out of allocated buffers";
-}
 
-void 
-ProcessingData::endAudioProcessing()
-{
-    if(this->outEvents.getEventCount())
-    {
-        if(this->verbosity)
+	if (clearEvents)
+	{
+		if (this->inPChanges.getParameterCount() > 0)
+		{
+            // Parameter changes commonly occur during "startup",
+            // due to the fact that the .ck file requests them.
+            if(this->verbosity)
+            {
+                std::cerr << "Processed " 
+                    << this->inPChanges.getParameterCount() 
+                    << " pchanges\n";
+            }
+		}
+        if(this->outEvents.getEventCount())
         {
-            std::cerr << "endAudioProcessing ignoring output events " 
-                << this->outEvents.getEventCount() << "\n";
+            if(this->verbosity)
+            {
+                std::cerr << "endAudioProcessing ignoring output events " 
+                    << this->outEvents.getEventCount() << "\n";
+            }
+            this->outEvents.clear();
         }
-        this->outEvents.clear();
+        this->inEvents.clear();
+        this->inPChanges.clearQueue();
     }
-    this->inEvents.clear();
-    this->inPChanges.clearQueue();
 }

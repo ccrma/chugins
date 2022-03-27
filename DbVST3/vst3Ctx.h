@@ -150,7 +150,7 @@ public:
     PluginInstance &getPluginInstance()
     {
         if(this->activeModule.get())
-            return this->activeModule->processingCtx;
+            return this->activeModule->pluginInstance;
         else
         {
             static PluginInstance s_pctx; // empty
@@ -177,7 +177,7 @@ public:
         int err = -1;
         if(this->activeModule.get())
         {
-            // processingCtx's job to add ithe parameter change
+            // pluginInstance's job to add ithe parameter change
             // to the automation setup.
             ParamInfo *info = this->activeModule->GetParamInfo(index);
             if(info)
@@ -195,7 +195,7 @@ public:
         int err = -1;
         if(this->activeModule.get())
         {
-            // processingCtx's job to add the parameter change
+            // pluginInstance's job to add the parameter change
             // to the automation setup.
             // std::cerr << "SetParameter parameter " << nm << "\n";
             ParamInfo *info = this->activeModule->GetParamInfo(nm);
@@ -227,7 +227,7 @@ public:
         int err = -1;
         if(this->activeModule.get())
         {
-            // processingCtx's job to add the midi event to its eventslist
+            // pluginInstance's job to add the midi event to its eventslist
             err = this->getPluginInstance().MidiEvent(status, data1, data2);
         }
         return err;

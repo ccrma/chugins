@@ -7,8 +7,8 @@
 PluginInstance::PluginInstance()
 {
     this->error = 0;
-    this->debug = 0;
-    this->verbosity = this->debug;
+    this->debug = 1;
+    this->verbosity = 0;
     this->component = nullptr;
     this->controller = nullptr;
     this->audioEffect = nullptr;
@@ -27,6 +27,11 @@ PluginInstance::Init(
     this->initComponent();
     this->synchronizeStates();
     this->initParams(parameters);
+
+    if(this->debug || true)
+    {
+        std::cerr << "PluginInstance.Init " << this->provider->GetName() << "\n";
+    }
 }
 
 void
@@ -71,7 +76,7 @@ PluginInstance::InitProcessing(float sampleRate,
             this->initBuses(inputBusRouting, outputBusRouting);
             // initialize process data (allocate AudioBuffers, etc)
             // nb: processData owns busUsage which we've just initialized above.
-            this->processData.initialize(this->processSetup); 
+            this->processData.Initialize(this->processSetup); 
             // syncState between controller and processor
             // via component->getState(&stream), stream.rewind
             //     controller->setComponentState()
@@ -83,21 +88,39 @@ PluginInstance::InitProcessing(float sampleRate,
         }
     }
     this->activate();
+    if(this->debug || true)
+    {
+        std::cerr << "PluginInstance.InitProcessing " 
+                  << this->provider->GetName() << "\n";
+    }
+
 }
 
 // 'param id' it's paramID !== index
+// NB: callsers (vst3Ctx.h, readAllParameters) know the logic behind 
+//   setting pushToProcessor (and have access to the flags 
+//   (kCanAutomate, ~kIsProgramChange)
 int 
 PluginInstance::SetParamValue(Steinberg::Vst::ParamID pid,
-    float value, bool asAutomation) /* as automation means register it via processData */
+    float value, bool pushToProcessor) /* as automation means register it via processData */
 {
     // https://developer.steinberg.help/display/VST/Parameters+and+Automation
+    if(this->debug > 1)
+        std::cerr << "SetParamValue " << pid << "\n";
     int err = 0;
     if(this->controller)
     {
-        if(asAutomation)
-            this->processData.prepareParamChange(pid, value);
+        if(pushToProcessor)
+        {
+            // assert kCanAutomate && kIsProgramChange
+            if(this->verbosity > 1)
+                std::cerr << "Update " << pid << ": " << value << "\n";
+            this->processData.PrepareParamChange(pid, value);
+        }
         else
+        {
             this->controller->setParamNormalized(pid, value);
+        }
     }
     else
         err = -1;
@@ -124,9 +147,7 @@ PluginInstance::MidiEvent(int status, int data1, int data2)
     int err;
     if(this->controller)
     {
-        if(this->debug)
-            std::cerr << "MidiEvent " << status << " "  << data1 << "\n";
-        this->processData.prepareMidiEvent(status, data1, data2, 
+        this->processData.PrepareMidiEvent(status, data1, data2, 
                                         this->midiMapping);
         err = 0;
     }
@@ -143,15 +164,7 @@ void
 PluginInstance::Process(float *in, int inCh, float *out, int outCh, int nframes)
 {
     this->activate(); 
-    // beginAudioProcessing plugs chuck pointers to the arrays
-    this->processData.beginAudioProcessing(in, inCh, out, outCh, nframes);
-    // active: true, processing: true
-    tresult result = this->audioEffect->process(this->processData);
-    this->processData.endAudioProcessing();
-
-    if(result != Steinberg::kResultOk)
-        std::cerr << "Problem processing data...\n";
-
+    this->processData.Process(this->audioEffect, in, inCh, out, outCh, nframes);
     // this->deactivate(); // only needed when we modify processMode, sampleRate,
 }
 
@@ -204,28 +217,18 @@ PluginInstance::deinitProcessing()
 void
 PluginInstance::initComponent()
 {
+    // provider takes care of proper initialization and ref-counting.
     this->component = this->provider->getComponent();	
     this->controller = this->provider->getController();
-    // XXX: --- this->controller->initialize();
+
+    // we're the component handler means that we must handle
+    // begin/endEdit and restartComponent.
     if(Steinberg::kResultOk != this->controller->setComponentHandler(this))
     {
         std::cerr << "Problem setting componenthandler for " 
                   << this->provider->GetName() << "\n";
     }
     this->midiMapping = Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping>(this->controller);
-    if(this->debug && false)
-    {
-        // mda-synth plus LABS both didn't allow, so hrm 
-        // (we're operating as a console app so no gui context (ie: editor)
-        //  should be viable).
-        // otherwise: IPlugView* view = _controller->createView (Vst::ViewType::kEditor);
-        Steinberg::FUnknownPtr<Steinberg::Vst::IEditControllerHostEditing> 
-            host_editing(this->controller);
-        if(host_editing)
-            std::cerr << "HostEditing allowed\n";
-        else
-            std::cerr << "No HostEditing allowed\n";
-    }
 }
 
 bool
@@ -235,9 +238,6 @@ PluginInstance::synchronizeStates()
     Steinberg::MemoryStream stream;
     if(this->component->getState(&stream) == Steinberg::kResultTrue) 
     {
-        if(this->verbosity)
-            std::cerr << "Read " << stream.getSize() << " bytes from component state\n";
-
         stream.seek(0, Steinberg::IBStream::kIBSeekSet, nullptr);
         // setComponentState triggers restartComponent (below)
         Steinberg::tresult res = this->controller->setComponentState(&stream);
@@ -245,6 +245,11 @@ PluginInstance::synchronizeStates()
         {
             std::cerr << "Couldn't synchronize VST3 component with controller state\n";
             this->readAllParameters(false);
+        }
+        if(this->verbosity || this->debug)
+        {
+            std::cerr << this->provider->GetName() << 
+                " synchronized " << stream.getSize() << " bytes of state\n";
         }
         return res == Steinberg::kResultOk;
     }
@@ -260,6 +265,8 @@ PluginInstance::activate()
 {
     if(this->activated)
         return true;
+    if(this->debug)
+        std::cerr << "Activating " << this->provider->GetName() << "\n";
     Steinberg::tresult res = this->component->setActive(true);
     if (!(res == Steinberg::kResultOk || res == Steinberg::kNotImplemented)) 
         return false;
@@ -267,6 +274,8 @@ PluginInstance::activate()
     res = this->audioEffect->setProcessing(true);
     if (!(res == Steinberg::kResultOk || res == Steinberg::kNotImplemented))
         return false;
+    if(this->debug)
+        std::cerr << "(activating succeeded)\n";
     this->activated = true;
     return true;
 }
@@ -276,6 +285,8 @@ PluginInstance::deactivate()
 {
     if(!this->activated)
         return true;
+    if(this->debug)
+        std::cerr << "Deactivating\n";
     Steinberg::tresult res = this->audioEffect->setProcessing(false);
     if(!(res == Steinberg::kResultOk || res == Steinberg::kNotImplemented)) 
         return false;
@@ -288,6 +299,9 @@ PluginInstance::deactivate()
     return true; 
 }
 
+// readAllParameters is called in two conditions:
+//  1) after state synchronization (andPush == false)
+//  2) after program change (andPush == true)
 void
 PluginInstance::readAllParameters(bool andPush)
 {
@@ -305,10 +319,12 @@ PluginInstance::readAllParameters(bool andPush)
         {
             if(this->verbosity > 1)
                 std::cerr << i << ": " << val << "\n";
-            this->SetParamValue(info.id, val, true /*andPush*/);
+            this->SetParamValue(info.id, val, true /*updateProc*/);
         }
         else
         {
+            // We don't event register changes to program since it can
+            // triggers infinite loop.
             if(!(info.flags & Steinberg::Vst::ParameterInfo::kIsProgramChange))
                 this->SetParamValue(info.id, val, false);
         }
@@ -317,30 +333,37 @@ PluginInstance::readAllParameters(bool andPush)
 
 // restartComponent is commonly triggered by VST when we issue
 // this->controller->setComponentState(&stream) (above).
-// our job is merely to pull the values of its update params
-// into our brain (aka shadow parameters)
+// Our job is merely to pull the values of its update params
+// into our brain (aka shadow parameters). Things get a little
+// more complex when it comes to a special parameter known as
+// the program change parameter. Changing it triggers a 
+// restartComponent. In theory we shouldn't ever need to
+// "push" newly changed parameters.
 tresult PLUGIN_API 
 PluginInstance::restartComponent(int32 flags)
 {
-    bool forcePush = true;
     if(flags & Steinberg::Vst::kReloadComponent)
     {
         if(this->verbosity)
             std::cerr << "restartComponent ReloadComponent\n";
-        forcePush = false;
         this->deactivate();
         this->activate();
     }
     if(flags & Steinberg::Vst::kParamValuesChanged)
     {
-        if(this->verbosity)
-            std::cerr << "restartComponent ParamValuesChanged\n";
-        this->readAllParameters(forcePush);
+        bool pushToProcessor = (this->audioEffect != nullptr);
+        if(this->verbosity || true)
+        {
+            std::cerr << "restartComponent ParamValuesChanged, "
+                << "updateProc:" << pushToProcessor
+                << "\n";
+        }
+        this->readAllParameters(pushToProcessor);
     }
     if(flags & Steinberg::Vst::kLatencyChanged)
     {
         if(this->verbosity)
-            std::cerr << "restartComponent LatencyChanged " << forcePush << "\n";
+            std::cerr << "restartComponent LatencyChanged\n";
         this->deactivate();
         this->activate();
     }
@@ -566,7 +589,10 @@ PluginInstance::initBuses(char const *inputBusRouting, char const *outputBusRout
                 sa |= (1 << k);
             outSA[i] = sa;
             if(this->debug)
+            {
+                // stereo is 0x03  (ie: 0b00000011)
                 std::cerr << "activate output bus " << i << " " << sa << "\n";
+            }
             this->component->activateBus(Steinberg::Vst::kAudio,
                                     Steinberg::Vst::kOutput, i, true);
         }
@@ -674,7 +700,7 @@ PluginInstance::queryInterface(const Steinberg::TUID iid, void** obj)
     // TUID's are 16-char arrays
 
     if(this->debug)
-        dumpTUID("processingCtx query ", iid);
+        dumpTUID("pluginInstance query ", iid);
 
     QUERY_INTERFACE(iid, obj, Steinberg::FUnknown::iid, Steinberg::Vst::IComponentHandler);
 

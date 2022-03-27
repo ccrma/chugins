@@ -25,14 +25,14 @@ public:
     std::string version;
     std::string sdkVersion;
     std::vector<ParamInfo> parameters;
-    PluginInstance processingCtx;
+    PluginInstance pluginInstance;
     std::unordered_map<std::string, int> nameToIndex;
     std::unordered_map<Steinberg::Vst::ParamID, int> idToIndex;
 
 public:
     // constructed by pluginCtx in building up its list of kVstAudioEffectClass
     // (modules).  Plugin's factory is passed in. Comp
-    // of our processingCtx until is is needed via its nomination as the 
+    // of our pluginInstance until is is needed via its nomination as the 
     // activemodule.
     Module(VST3::Hosting::ClassInfo &classInfo, 
         const dbPlugProvider::PluginFactory &factory,
@@ -47,7 +47,7 @@ public:
         this->subCategories = classInfo.subCategoriesString();
         this->version = classInfo.version();
         this->sdkVersion = classInfo.sdkVersion();
-        this->processingCtx.Init(factory, classInfo, this->parameters);
+        this->pluginInstance.Init(factory, classInfo, this->parameters);
         this->programChangeIndex = -1;
         this->verbosity = 0 ;
     }
@@ -56,7 +56,7 @@ public:
     SetVerbosity(int v)
     {
         this->verbosity = v;
-        this->processingCtx.SetVerbosity(v);
+        this->pluginInstance.SetVerbosity(v);
     }
 
     ParamInfo *
@@ -101,19 +101,19 @@ public:
                     // std::cerr << *val <<" -> "<<newval<<"\n";
                     *val = newval;
                 }
-                id = this->processingCtx.GetMidiMapping(Steinberg::Vst::kPitchBend);
+                id = this->pluginInstance.GetMidiMapping(Steinberg::Vst::kPitchBend);
             }
             else
             if(nm == "AfterTouch")
             {
-                id = this->processingCtx.GetMidiMapping(Steinberg::Vst::kAfterTouch);
+                id = this->pluginInstance.GetMidiMapping(Steinberg::Vst::kAfterTouch);
             }
             // "AfterTouch.poly" is an event in VST3 (tbd)
             else
             if(nm.rfind("CC", 0) == 0) // eg. CC74
             {
                 int midiCC = std::stoi(nm.substr(2));
-                id = this->processingCtx.GetMidiMapping(midiCC);
+                id = this->pluginInstance.GetMidiMapping(midiCC);
             }
             if(id != Steinberg::Vst::kNoParamId)
             {

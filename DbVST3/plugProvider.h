@@ -5,6 +5,7 @@
 
 #include "vst3.h"
 #include <public.sdk/source/vst/hosting/connectionproxy.h>
+#include <iostream>
 
 //------------------------------------------------------------------------
 /** Helper for creating and initializing component.
@@ -60,6 +61,7 @@ protected:
 	Steinberg::OPtr<Steinberg::Vst::ConnectionProxy> controllerCP;
 
 	bool plugIsGlobal;
+    bool componentIsController;
 };
 
 class dbPluginContextFactory
@@ -70,6 +72,12 @@ public:
 		static dbPluginContextFactory factory;
 		return factory;
 	}
+
+    dbPluginContextFactory() {}
+    ~dbPluginContextFactory() 
+    {
+        std::cerr << "dbPluginContextFactory says adieu\n";
+    }
 	
 	void setPluginContext(Steinberg::FUnknown* obj) { context = obj; }
 	Steinberg::FUnknown* getPluginContext() const { return context; }

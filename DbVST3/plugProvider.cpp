@@ -37,31 +37,31 @@ dbPlugProvider::~dbPlugProvider()
 IComponent* PLUGIN_API 
 dbPlugProvider::getComponent()
 {
-	if(!component)
-		setupPlugin(dbPluginContextFactory::instance().getPluginContext());
+	if(!this->component)
+		this->setupPlugin(dbPluginContextFactory::instance().getPluginContext());
 
-	if(component)
-		component->addRef();
+	if(this->component)
+		this->component->addRef();
 
-	return component;
+	return this->component;
 }
 
 //------------------------------------------------------------------------
 IEditController* PLUGIN_API 
 dbPlugProvider::getController()
 {
-	if(controller)
-		controller->addRef();
+	if(this->controller)
+		this->controller->addRef();
 
 	// 'iController == 0' is allowed! In this case the plug has no controller
-	return controller;
+	return this->controller;
 }
 
 //------------------------------------------------------------------------
 Steinberg::IPluginFactory* PLUGIN_API 
 dbPlugProvider::getPluginFactory()
 {
-	if(auto f = factory.get())
+	if(auto f = this->factory.get())
 		return f.get();
 	return nullptr;
 }
@@ -70,7 +70,7 @@ dbPlugProvider::getPluginFactory()
 tresult PLUGIN_API 
 dbPlugProvider::getComponentUID(FUID& uid) const
 {
-	uid = FUID::fromTUID(classInfo.ID().data());
+	uid = FUID::fromTUID(this->classInfo.ID().data());
 	return Steinberg::kResultOk;
 }
 
@@ -99,50 +99,52 @@ bool dbPlugProvider::setupPlugin(FUnknown* hostContext)
 
 	//---create Plug-in here!--------------
 	// create its component part
-	component = factory.createInstance<IComponent>(classInfo.ID());
-	if(component)
+	this->component = factory.createInstance<IComponent>(this->classInfo.ID());
+	if(this->component)
 	{
 		// initialize the component with our context
-		res = (component->initialize(hostContext) == Steinberg::kResultOk);
+		res = (this->component->initialize(hostContext) == Steinberg::kResultOk);
         if(!res)
         {
             std::cerr << "Problem initializing plugin component "
-                      << classInfo.name() << "\n";
+                      << this->classInfo.name() << "\n";
             return false;
         }
 
         // check if component is controller
-        bool controllerIsComponent = true;
-        controller = Steinberg::FUnknownPtr<IEditController>(component).getInterface();
-        if(!controller)
+        this->componentIsController = true;
+        this->controller = Steinberg::FUnknownPtr<IEditController>(component).getInterface();
+        if(!this->controller)
         {
-            controllerIsComponent = false;
+            this->componentIsController = false;
             TUID controllerCID;
-			if(component->getControllerClassId(controllerCID) == Steinberg::kResultTrue)
+			if(this->component->getControllerClassId(controllerCID) == Steinberg::kResultTrue)
 			{
 				// create its controller part created from the factory
-				controller = factory.createInstance<IEditController>(VST3::UID(controllerCID));
-				if(!controller)
+				this->controller = this->factory.createInstance<IEditController>(VST3::UID(controllerCID));
+				if(!this->controller)
                 {
                     std::cerr << "Problem initializing plugin controller(0) "
-                            << classInfo.name() << "\n";
+                            << this->classInfo.name() << "\n";
                     return false;
                 }
 			}
             else
             {
                 std::cerr << "Problem initializing plugin controller(1) "
-                            << classInfo.name() << "\n";
+                            << this->classInfo.name() << "\n";
                 return false;
             }
         }
-        controller->initialize(hostContext); // may be a double-init, but okay
-		connectComponents();
+        if(!this->componentIsController)
+            this->controller->initialize(hostContext);
+		this->connectComponents();
 	}
 	else 
     if(errorStream)
 	{
-		*errorStream << "Failed to create instance of " << classInfo.name() << "!\n";
+		*errorStream << "Failed to create instance of " 
+                     << this->classInfo.name() << "!\n";
 	}
 
 	return res;
@@ -161,17 +163,17 @@ bool dbPlugProvider::connectComponents()
 
 	bool res = false;
 
-	componentCP = NEW Steinberg::Vst::ConnectionProxy(compICP);
-	controllerCP = NEW Steinberg::Vst::ConnectionProxy(contrICP);
+	this->componentCP = NEW Steinberg::Vst::ConnectionProxy(compICP);
+	this->controllerCP = NEW Steinberg::Vst::ConnectionProxy(contrICP);
 
-	if(componentCP->connect(contrICP) != Steinberg::kResultTrue)
+	if(this->componentCP->connect(contrICP) != Steinberg::kResultTrue)
 	{
 		// TODO: Alert or what for non conformant plugin ?
         std::cerr << "Plugin is nonconformant " << classInfo.name() << "\n";
 	}
 	else
 	{
-		if(controllerCP->connect(compICP) != Steinberg::kResultTrue)
+		if(this->controllerCP->connect(compICP) != Steinberg::kResultTrue)
 		{
 			// TODO: Alert or what for non conformant plugin ?
             std::cerr << "Plugin is nonconformant " << classInfo.name() << " (1)\n";
@@ -185,14 +187,14 @@ bool dbPlugProvider::connectComponents()
 //------------------------------------------------------------------------
 bool dbPlugProvider::disconnectComponents()
 {
-	if(!componentCP || !controllerCP)
+	if(!this->componentCP || !this->controllerCP)
 		return false;
 
-	bool res = componentCP->disconnect();
-	res &= controllerCP->disconnect();
+	bool res = this->componentCP->disconnect();
+	res &= this->controllerCP->disconnect();
 
-	componentCP = nullptr;
-	controllerCP = nullptr;
+	this->componentCP = nullptr;
+	this->controllerCP = nullptr;
 
 	return res;
 }
@@ -202,15 +204,11 @@ void dbPlugProvider::terminatePlugin()
 {
 	disconnectComponents();
 
-	bool controllerIsComponent = false;
-	if(component)
-	{
-		controllerIsComponent = Steinberg::FUnknownPtr<IEditController>(component).getInterface() != nullptr;
-		component->terminate();
-	}
+	if(this->component)
+		this->component->terminate();
 
-	if(controller && controllerIsComponent == false)
-		controller->terminate();
+	if(this->controller && this->componentIsController == false)
+		this->controller->terminate();
 
 	component = nullptr;
 	controller = nullptr;
