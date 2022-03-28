@@ -7,11 +7,10 @@
 PluginInstance::PluginInstance()
 {
     this->error = 0;
-    this->debug = 1;
+    this->debug = 0;
     this->verbosity = 0;
     this->component = nullptr;
     this->controller = nullptr;
-    this->audioEffect = nullptr;
     this->activated = false;
 }
 
@@ -46,7 +45,8 @@ PluginInstance::InitProcessing(float sampleRate,
     if(this->verbosity)
         std::cerr << "initialize nparams: " << this->controller->getParameterCount() << "\n";
 
-	if(!(this->audioEffect = Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor>(this->component)))
+	Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> processor = component;
+	if(!processor)
     {
         std::cerr << "oops: no audioeffect in " <<
             this->provider->GetName() << "\n";
@@ -69,7 +69,7 @@ PluginInstance::InitProcessing(float sampleRate,
         // override by the host.
         if(this->debug)
             fprintf(stderr, "SetupProcessing\n");
-        if(this->audioEffect->setupProcessing(this->processSetup) 
+        if(processor->setupProcessing(this->processSetup) 
             == Steinberg::kResultTrue)
         {
             // synchronizeState has already been called
@@ -164,38 +164,15 @@ void
 PluginInstance::Process(float *in, int inCh, float *out, int outCh, int nframes)
 {
     this->activate(); 
-    this->processData.Process(this->audioEffect, in, inCh, out, outCh, nframes);
+	Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> processor = component;
+    this->processData.Process(processor, in, inCh, out, outCh, nframes);
     // this->deactivate(); // only needed when we modify processMode, sampleRate,
 }
 
 void
 PluginInstance::deinitProcessing()
 {
-    if(this->audioEffect)
-    {
-        this->audioEffect->release();
-        // buffers are freed in processData destructor
-        // std::cout << "Unwinding!!!\n";
-        this->audioEffect = nullptr;
-    }
-    #if 0
-    if(this->controller)
-    {
-        this->controller->setComponentHandler(0);
-        this->controller->terminate();
-        this->controller->release();
-    }
-    if(this->component)
-    {
-        this->component->setActive(false); 
-        this->component->terminate();
-        this->component->release();
-    }
-    #else
     this->provider->releasePlugIn(this->component, this->controller);
-    #endif
-    this->controller = nullptr;
-    this->component = nullptr;
 }
 
 // After scratching heads for many days, trying to get
@@ -271,7 +248,8 @@ PluginInstance::activate()
     if (!(res == Steinberg::kResultOk || res == Steinberg::kNotImplemented)) 
         return false;
 
-    res = this->audioEffect->setProcessing(true);
+	Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> processor = component;
+    res = processor->setProcessing(true);
     if (!(res == Steinberg::kResultOk || res == Steinberg::kNotImplemented))
         return false;
     if(this->debug)
@@ -287,7 +265,8 @@ PluginInstance::deactivate()
         return true;
     if(this->debug)
         std::cerr << "Deactivating\n";
-    Steinberg::tresult res = this->audioEffect->setProcessing(false);
+	Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> processor = component;
+    Steinberg::tresult res = processor->setProcessing(false);
     if(!(res == Steinberg::kResultOk || res == Steinberg::kNotImplemented)) 
         return false;
 
@@ -351,7 +330,7 @@ PluginInstance::restartComponent(int32 flags)
     }
     if(flags & Steinberg::Vst::kParamValuesChanged)
     {
-        bool pushToProcessor = (this->audioEffect != nullptr);
+        bool pushToProcessor = true;
         if(this->verbosity || true)
         {
             std::cerr << "restartComponent ParamValuesChanged, "
@@ -605,7 +584,8 @@ PluginInstance::initBuses(char const *inputBusRouting, char const *outputBusRout
     // 1. accept our request (return true)
     // 2. reject but attempt to negotiate (return false)
     // 3. reject outright, revert to default behavior (return false)
-    if(this->audioEffect->setBusArrangements(
+	Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> processor = component;
+    if(processor->setBusArrangements(
         inSA.size() ? &inSA[0] : nullptr, inSA.size(),
         outSA.size() ? &outSA[0] : nullptr , outSA.size())
         != Steinberg::kResultTrue)

@@ -1,6 +1,29 @@
 #include "chugin.h"
+#include <functional>
 
-std::shared_ptr<Host> VST3Chugin::s_hostPtr; // shared across multiple instances
+std::unique_ptr<Host> VST3Chugin::s_hostPtr; // shared across multiple instances
+
+static void deferredDelete(VST3Ctx *ctx)
+{
+    delete ctx;
+}
+
+VST3Chugin::VST3Chugin(t_CKFLOAT srate)
+{
+    if(s_hostPtr.get() == nullptr)
+        s_hostPtr.reset(new Host(true));
+    m_sampleRate = srate;
+    m_verbosity = 0;
+    m_midiEvents = 0;
+    m_vst3Ctx = nullptr;
+    m_activeModule = -1;
+}
+
+VST3Chugin::~VST3Chugin()
+{
+    std::function<void(void)> fn = std::bind(&deferredDelete, m_vst3Ctx);
+    s_hostPtr->Delegate(fn);
+}
 
 bool VST3Chugin::loadPlugin(const std::string& filepath)
 {
@@ -9,17 +32,30 @@ bool VST3Chugin::loadPlugin(const std::string& filepath)
         delete m_vst3Ctx;
         m_vst3Ctx = nullptr;
     }
-    m_vst3Ctx = s_hostPtr->OpenPlugin(filepath, this->m_verbosity);
+    auto fn = std::bind(&VST3Chugin::onPluginLoaded, this, std::placeholders::_1);
+    s_hostPtr->OpenPlugin(filepath, fn, this->m_verbosity);
+    return true; // XXX async open has no response
+}
+
+bool VST3Chugin::ready()
+{
+    return this->m_vst3Ctx != nullptr && this->m_vst3Ctx->Ready();
+}
+
+void
+VST3Chugin::onPluginLoaded(VST3Ctx *ctx)
+{
     // so as to not require activateModule, we activateModule(0)
     // since it's the 95% case.
+    m_vst3Ctx = ctx;
     if(m_vst3Ctx)
         this->selectModule(0);
-    return m_vst3Ctx != nullptr;
 }
 
 void
 VST3Chugin::setVerbosity(int v)
 {
+    if(!m_vst3Ctx) return;
     m_verbosity = v;
     m_vst3Ctx->SetVerbosity(v);
 }
@@ -27,18 +63,21 @@ VST3Chugin::setVerbosity(int v)
 void 
 VST3Chugin::printModules()
 {
+    if(!m_vst3Ctx) return;
     m_vst3Ctx->Print(std::cout, false/*detailed*/);
 }
 
 int 
 VST3Chugin::getNumModules()
 {
+    if(!m_vst3Ctx) return 0;
     return m_vst3Ctx->GetNumModules();
 }
 
 int 
 VST3Chugin::selectModule(int m)
 {
+    if(!m_vst3Ctx) return 0;
     if(m != m_activeModule)
     {
         int err = m_vst3Ctx->ActivateModule(m, m_sampleRate); 
@@ -53,18 +92,21 @@ VST3Chugin::selectModule(int m)
 std::string 
 VST3Chugin::getModuleName()
 {
+    if(!m_vst3Ctx) return std::string("<no module>");
     return m_vst3Ctx->GetModuleName();
 }
 
 int 
 VST3Chugin::getNumParameters() 
 {
+    if(!m_vst3Ctx) return 0;
     return m_vst3Ctx->GetNumParameters();
 }
 
 int 
 VST3Chugin::getParameterName(int index, std::string &nm) 
 {
+    if(!m_vst3Ctx) return -1;
     return m_vst3Ctx->GetParameterName(index, nm);
 }
 
@@ -77,24 +119,28 @@ VST3Chugin::getParameter(int index)
 bool 
 VST3Chugin::setParameter(int index, float v) 
 {
+    if(!m_vst3Ctx) return false;
     return m_vst3Ctx->SetParamValue(index, v);
 }
 
 bool 
 VST3Chugin::setParameter(std::string const &nm, float v) 
 {
+    if(!m_vst3Ctx) return false;
     return m_vst3Ctx->SetParamValue(nm, v);
 }
 
 void
 VST3Chugin::setInputRouting(std::string const &r)
 {
+    if(!m_vst3Ctx) return;
     this->m_inputBusRouting = r;
 }
 
 void
 VST3Chugin::setOutputRouting(std::string const &r)
 {
+    if(!m_vst3Ctx) return;
     this->m_outputBusRouting = r;
 }
 
@@ -122,6 +168,7 @@ VST3Chugin::midiEvent(int status, int data1, int data2, float dur)
     // std::cout << "VST3Chugin::midiEvent " /*  */<< status << " " << data1 
      // << " " << data2 << " " << dur << " " << this->m_midiEvents << "\n"; 
     // dur is zero unless playing from file
+    if(!m_vst3Ctx) return false;
     return m_vst3Ctx->MidiEvent(status, data1, data2);
 }
 
@@ -129,7 +176,7 @@ VST3Chugin::midiEvent(int status, int data1, int data2, float dur)
 void 
 VST3Chugin::multitick(SAMPLE* in, SAMPLE* out, int nframes)
 {
-    if(!m_vst3Ctx->Ready())
+    if(!m_vst3Ctx || !m_vst3Ctx->Ready())
     {
         // fprintf(stderr, "dbVST3Ctx isn't ready\n");
         if(nframes == 1) // actual case

@@ -9,6 +9,9 @@
 // https://developer.steinberg.help/display/VST/Edit+Controller+Call+Sequence
 
 #include "vst3.h"
+#include "concurrentQ.h"
+#include <thread>
+#include <future>  // packaged_task
 
 class Host : 
     public Steinberg::FObject,
@@ -35,9 +38,8 @@ private:
     int m_debug;
 
 public:
-    Host();
-    ~Host() override
-    {}
+    Host(bool createMsgThread=false);
+    ~Host() override;
 
 	OBJ_METHODS(Host, FObject);
 	REFCOUNT_METHODS(FObject);
@@ -49,14 +51,16 @@ public:
     int
     GetKnownPlugins(std::vector<std::string> &knownPlugins);
 
-    class VST3Ctx *
-    OpenPlugin(std::string const &path, int verbosity=0);
+    void
+    OpenPlugin(std::string const &path, 
+        std::function<void(class VST3Ctx *)> onCompletion,
+        int verbosity=0);
 
     char const *
-    GetName()
-    {
-        return m_name;
-    }
+    GetName() { return m_name; }
+
+    void Delegate(std::function<void(void)>); // to worker thread
+    bool IsWorkerThread();
 
 private: // --------------------------------------------------------------
     Plugin
@@ -73,6 +77,15 @@ private: // --------------------------------------------------------------
     queryInterface(const char* iid, void** obj) override;
 
     bool endsWith(std::string const &fullpath, std::string const &partpath);
+
+private: // --------------------------------------------------------------
+    ConcurrentQ<std::function<void(void)>> m_queue;
+    std::thread::id m_mainThreadId, m_workerThreadId;
+    std::thread m_workerThread;
+    void initHostEnv();
+
+    static void workerThread(Host *h);
+
 };
 
 #endif

@@ -1,8 +1,9 @@
 ## Known Issues
 
-* Currently we don't save/stash plugin state.
-* Presets may not appear to persist/function if they
-  are emitted prior to other value-updates.
+* Currently we don't save/stash plugin state. Plugin presets loaded
+  by VST3Fiddler cause parameter updates to be stashed in the .chg file.
+  Plugins that support preset parameters trigger a complete update of
+  parameters when its value is set.
 * MIDI events may produce stuck keys.
 
 ## Our Terms and Class Hierarchy
@@ -54,9 +55,47 @@ ProcessCtxData is-a  Vst::ProcessData
 
 ## Why won't LABS and ROLI Player work?
 
-- something to do with threads?
-    - messagethread
-    - processingthread
+From JUCE:
+
+It's highly advisable to create your plugins using the message thread.
+The VST3 spec requires that many of the functions called during
+initialisation are only called from the message thread.
+
+* plugin initialization
+* get/set state calls 
+* restartComponent
+* prepareToPlay (setupProcessing)
+
+ChucK:
+
+* executes plugin-load and all its methods in the audio thread.
+* the tick method is the only one that properly resides in the 
+  audio thread
+
+Solution:
+
+* when we create the host (singleton) object, we also create
+  a message thread.  All plugin instances route all but the tick method
+  to that thread.  We need to know when a plugin is ready-to-roll.
+* in the dumpVST3 condition, no threads need be constructed.
+
+Details (from https://stackoverflow.com/questions/68438145)
+
+Passing tasks to background thread could be accomplished by a 
+producer-consumer queue. Simple C++11 implementation, that 
+does not depend on 3rd party libraries would have std::condition_variable 
+which is waited by the background thread and notified by main thead, 
+std::queue of tasks, and std::mutex to guard these.
+
+Getting the result back to main thread can be done by std::promise/std::future. 
+The simplest way is to make std::packaged_task as queue objects, so that main 
+thread creates packaged_task, puts it to the queue, notifies condition_variable 
+and waits on packaged_task's future.
+
+You would not actually need std::queue if you will create tasks by one at 
+once, from one thread - just one std::unique_ptr<std::packaged_task>> would 
+be enough. The queue adds flexibility to simultaneosly add many backround 
+tasks.
 
 ### JUCE Host, LABS
 

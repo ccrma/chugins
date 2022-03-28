@@ -1,5 +1,6 @@
 // A modified version of the vst3 file:
 //  public.sdk/source/vst/hosting/plugprovider.h
+// A plugprovider is associated with each module/pluginInstance
 #ifndef plugprovider_h
 #define plugprovider_h
 
@@ -53,9 +54,9 @@ protected:
 	void terminatePlugin();
 
 	PluginFactory factory;
-	ClassInfo classInfo;
 	Steinberg::IPtr<IComponent> component;
 	Steinberg::IPtr<IEditController> controller;
+	ClassInfo classInfo;
 
 	Steinberg::OPtr<Steinberg::Vst::ConnectionProxy> componentCP;
 	Steinberg::OPtr<Steinberg::Vst::ConnectionProxy> controllerCP;
@@ -76,7 +77,7 @@ public:
     dbPluginContextFactory() {}
     ~dbPluginContextFactory() 
     {
-        std::cerr << "dbPluginContextFactory says adieu\n";
+        // std::cerr << "dbPluginContextFactory says adieu\n";
     }
 	
 	void setPluginContext(Steinberg::FUnknown* obj) { context = obj; }

@@ -8,32 +8,22 @@
 class VST3Chugin
 {
 private:
-    static std::shared_ptr<Host> s_hostPtr; // shared across multiple instances
+    static std::unique_ptr<Host> s_hostPtr; // shared across multiple instances
 
 public:
     // constructor
-    VST3Chugin(t_CKFLOAT srate)
-    {
-        if(s_hostPtr.get() == nullptr)
-            s_hostPtr.reset(new Host());
-        m_sampleRate = srate;
-        m_verbosity = 0;
-        m_midiEvents = 0;
-        m_vst3Ctx = nullptr;
-        m_activeModule = -1;
-    }
-
-    ~VST3Chugin()
-    {
-        delete m_vst3Ctx;
-    }
+    VST3Chugin(t_CKFLOAT srate);
+    ~VST3Chugin();
 
     bool loadPlugin(const std::string& filename);
+    bool ready();
+
     void printModules();
     void setVerbosity(int);
     int getNumModules();
     int selectModule(int index); // returns 0 on success
     std::string getModuleName(); // of current module
+    void onPluginLoaded(VST3Ctx *ctx);
 
     int getNumParameters();
     int getParameterName(int index, std::string &pnm);

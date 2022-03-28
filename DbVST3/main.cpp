@@ -17,6 +17,7 @@ CK_DLL_CTOR(dbvst3_ctor);
 CK_DLL_DTOR(dbvst3_dtor);
 
 CK_DLL_MFUN(dbvst3_loadPlugin);
+CK_DLL_MFUN(dbvst3_ready);
 CK_DLL_MFUN(dbvst3_setVerbosity);
 CK_DLL_MFUN(dbvst3_printModules);
 CK_DLL_MFUN(dbvst3_getNumModules);
@@ -79,6 +80,8 @@ CK_DLL_QUERY(DbVST3Chugin) // macro produces string, needn't match class names.
 
     QUERY->add_mfun(QUERY, dbvst3_loadPlugin, "int", "loadPlugin");
     QUERY->add_arg(QUERY, "string", "filename");
+
+    QUERY->add_mfun(QUERY, dbvst3_ready, "int", "ready");
 
     QUERY->add_mfun(QUERY, dbvst3_setVerbosity, "void", "setVerbosity");
     QUERY->add_arg(QUERY, "int", "level");
@@ -161,7 +164,7 @@ CK_DLL_CTOR(dbvst3_ctor)
 // implementation for the destructor
 CK_DLL_DTOR(dbvst3_dtor)
 {
-    std::cerr << "DbVST3 cleanup\n"; // not called?
+    // std::cerr << "VST3Chugin cleanup\n"; // not called in performance, but simple tests, yes
     // get our c++ class pointer
     VST3Chugin* b_obj = (VST3Chugin *) OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     // check it
@@ -182,6 +185,12 @@ CK_DLL_MFUN(dbvst3_loadPlugin)
     VST3Chugin* b = (VST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
 
     RETURN->v_int = b->loadPlugin(filename);
+}
+
+CK_DLL_MFUN(dbvst3_ready)
+{
+    VST3Chugin* b = (VST3Chugin*)OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
+    RETURN->v_int = b->ready();
 }
 
 CK_DLL_MFUN(dbvst3_setVerbosity)

@@ -14,16 +14,19 @@
 class VST3Ctx
 {
 private:
+    Host *host;
     VST3::Hosting::Module::Ptr plugin;
     std::string vendor;
     std::string filepath;
     std::vector<ModulePtr> modules;
     ModulePtr activeModule;
     int verbosity = 0;
+    bool ready = false;
 
 public:
-    VST3Ctx(VST3::Hosting::Module::Ptr p, std::string const &path)
+    VST3Ctx(Host *h, VST3::Hosting::Module::Ptr p, std::string const &path)
     {
+        this->host = h;
         this->plugin = p;
         this->filepath = p->getPath();
         if(this->filepath.size() == 0)
@@ -62,20 +65,32 @@ public:
 
     bool Ready()
     {
-        return this->activeModule.get() != nullptr;
+        return this->ready;
     }
 
     int ActivateModule(int index, float sampleRate)
     {
-        if(this->modules.size() > index)
+        this->ready = false;
+        if(this->host->IsWorkerThread())
         {
-            this->activeModule = this->modules[index];
-            this->activeModule->SetVerbosity(this->verbosity);
-            this->InitProcessing(sampleRate);
-            return 0;
+            if(this->modules.size() > index)
+            {
+                this->activeModule = this->modules[index];
+                this->activeModule->SetVerbosity(this->verbosity);
+                this->InitProcessing(sampleRate);
+                this->ready = true;
+                return 0;
+            }
+            else
+                return -1; // error
         }
         else
-            return -1; // error
+        {
+            std::function<void(void)> fn = std::bind(&VST3Ctx::ActivateModule, 
+                                                this, index, sampleRate);
+            this->host->Delegate(fn);
+            return 0; // async
+        }
     }
 
     int GetNumModules()

@@ -1,8 +1,10 @@
 DbVST3 x;
-
 "mda-vst3.vst3" => string pluginName;
 x.loadPlugin(pluginName);
+while(!x.ready())
+    1::ms => now;
 <<< pluginName, "loaded">>>;
+
 x.getNumModules() => int nmods;
 if(nmods > 1)
 {
@@ -29,8 +31,13 @@ if(nmods > 1)
 fun void selectModule(int i)
 {
     if(i != -1)
+    {
         x.selectModule(i); 
-    <<< "Set module:", x.getModuleName(), "----" >>>;
+        while(!x.ready())
+            1::ms => now;
+
+        <<< "Set module:", x.getModuleName(), "----" >>>;
+    }
     for(int i; i<x.getNumParameters();i++)
     {
         <<<"  ", i, x.getParameterName(i)>>>;

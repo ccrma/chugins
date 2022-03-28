@@ -22,11 +22,9 @@ public:
     int error;
 
 private:
-    std::shared_ptr<dbPlugProvider> provider; // manages loading and cleanup of plugin
+    std::unique_ptr<dbPlugProvider> provider; // manages loading and cleanup of plugin
     Steinberg::Vst::IComponent* component;
     Steinberg::Vst::IEditController* controller;
-    Steinberg::Vst::IAudioProcessor* audioEffect;
-    // Steinberg::FUnknownPtr<Steinberg::Vst::EditControllerEx1> controllerEx1;
     Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping> midiMapping;
     std::vector<float> paramValues;
     Steinberg::Vst::ProcessSetup processSetup;

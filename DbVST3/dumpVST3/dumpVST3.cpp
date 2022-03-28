@@ -15,13 +15,24 @@ public:
     int DumpOne(char const *path, std::ostream &ostream)
     {
         std::string modpath(path);
-        VST3Ctx *ctx = this->OpenPlugin(modpath);
-        if(ctx) 
+        this->OpenPlugin(modpath, [&ostream](VST3Ctx *ctx) /* control capture by value or reference */
+        {
+            if(ctx)
+            {
+                ctx->Print(ostream, true/*detailed*/);
+                delete ctx;
+            }
+        });
+        return 0;
+    }
+
+    void onPluginLoaded(std::ostream &ostream, VST3Ctx *ctx)
+    {
+        if(ctx)
         {
             ctx->Print(ostream, true/*detailed*/);
             delete ctx;
-        }
-        return 0;
+        };
     }
 
 };
