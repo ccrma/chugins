@@ -99,7 +99,7 @@ VST3PluginInstance::InitProcessing(float sampleRate,
         }
     }
     this->activate();
-    if(this->debug || true)
+    if(this->debug)
     {
         std::cerr << "VST3PluginInstance.InitProcessing " 
                   << this->provider->GetName() << "\n";
@@ -148,6 +148,9 @@ VST3PluginInstance::SetParamValue(Steinberg::Vst::ParamID pid,
 Steinberg::Vst::ParamID
 VST3PluginInstance::GetMidiMapping(int data1)
 {
+    // method is part of the controller and should therefore only
+    // be invoked in the same thread it was created (WorkerThread)
+    assert(this->host->IsWorkerThread());
     if(this->midiMapping)
     {
         Steinberg::Vst::ParamID pid;
@@ -162,20 +165,27 @@ VST3PluginInstance::GetMidiMapping(int data1)
 int 
 VST3PluginInstance::MidiEvent(int status, int data1, int data2)
 {
-    assert(this->host->IsProcessingThread());
-    const std::lock_guard<LockType> lk(this->processingLock); 
-    int err;
-    if(this->controller)
+    int err = 0;
+    if(this->host->IsWorkerThread())
     {
-        this->processData.PrepareMidiEvent(status, data1, data2, 
-                                        this->midiMapping);
-        err = 0;
+        if(this->controller)
+        {
+            const std::lock_guard<LockType> lk(this->processingLock); 
+            this->processData.PrepareMidiEvent(status, data1, data2, this->midiMapping);
+            err = 0;
+        }
+        else
+        {
+            if(this->debug)
+                std::cerr << "NO controller for MidiEvent " << status << " "  << data1 << "\n";
+            err = -1;
+        }
     }
     else
     {
-        if(this->debug)
-            std::cerr << "NO controller for MidiEvent " << status << " "  << data1 << "\n";
-        err = -1;
+        std::function<void(void)> fn = std::bind(&VST3PluginInstance::MidiEvent, 
+                                            this, status, data1, data2);
+        this->host->Delegate(fn);
     }
     return err; 
 }
@@ -217,6 +227,8 @@ VST3PluginInstance::deinitProcessing()
 void
 VST3PluginInstance::initComponent()
 {
+    assert(this->host->IsWorkerThread());
+
     // provider takes care of proper initialization and ref-counting.
     this->component = this->provider->getComponent();	
     this->controller = this->provider->getController();
@@ -228,6 +240,9 @@ VST3PluginInstance::initComponent()
         std::cerr << "Problem setting componenthandler for " 
                   << this->provider->GetName() << "\n";
     }
+
+    // midiMapping methods should be invoked in the same thread as the
+    // controller was created, eg WorkerThread.
     this->midiMapping = Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping>(this->controller);
 }
 
@@ -927,7 +942,8 @@ VST3PluginInstance::createInstance(Steinberg::TUID cid, Steinberg::TUID iid, voi
     if(classID == Steinberg::Vst::IMessage::iid && 
         interfaceID == Steinberg::Vst::IMessage::iid)
     {
-        std::cerr << "VSTPluginInstance.createInstance HostMessage\n";
+        if(this->debug)
+            std::cerr << "VSTPluginInstance.createInstance HostMessage\n";
         *obj = new Steinberg::Vst::HostMessage;
         return Steinberg::kResultTrue;
     }
@@ -935,7 +951,8 @@ VST3PluginInstance::createInstance(Steinberg::TUID cid, Steinberg::TUID iid, voi
     if(classID == Steinberg::Vst::IAttributeList::iid && 
         interfaceID == Steinberg::Vst::IAttributeList::iid)
     {
-        std::cerr << "VSTPluginInstance.createInstance HostAttributeList\n";
+        if(this->debug)
+            std::cerr << "VSTPluginInstance.createInstance HostAttributeList\n";
         if(auto al = Steinberg::Vst::HostAttributeList::make())
         {
             *obj = al.take();

@@ -160,7 +160,7 @@ CK_DLL_CTOR(dbvst3_ctor)
 // implementation for the destructor
 CK_DLL_DTOR(dbvst3_dtor)
 {
-    std::cerr << "VST3Chugin dtor\n"; // not called in performance, but simple tests, yes
+    // std::cerr << "VST3Chugin dtor\n"; // dtor isn't called if shred invokes me.exit()
     // get our c++ class pointer
     VST3Chugin* b_obj = (VST3Chugin *) OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     // check it

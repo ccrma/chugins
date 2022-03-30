@@ -40,6 +40,7 @@ public:
 
 private:
     int m_verbosity;
+    int m_debug;
     t_CKFLOAT m_sampleRate;
     std::string m_pluginPath;
     VST3Ctx *m_vst3Ctx;

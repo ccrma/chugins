@@ -10,6 +10,7 @@ VST3Chugin::VST3Chugin(t_CKFLOAT srate)
 {
     m_sampleRate = srate;
     m_verbosity = 0;
+    m_debug = 0;
     m_midiEvents = 0;
     m_vst3Ctx = nullptr;
     m_activeModule = -1;
@@ -22,10 +23,12 @@ VST3Chugin::~VST3Chugin()
     // implies some use of thread-local-store?
     std::function<void(void)> fn = std::bind(&deferredDelete, m_vst3Ctx);
     VST3Host::Singleton(true)->Delegate(fn);
-    std::cerr << "VST3Chugin deleted (defer VST3Ctx)\n";
+    if(this->m_debug)
+        std::cerr << "VST3Chugin deleted (defer VST3Ctx)\n";
 #else
     delete m_vst3Ctx;
-    std::cerr << "VST3Chugin deleted (including VST3Ctx)\n";
+    if(this->m_debug)
+        std::cerr << "VST3Chugin deleted (including VST3Ctx)\n";
 #endif
 }
 

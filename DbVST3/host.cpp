@@ -72,12 +72,12 @@ static _CrtMemState s_mem1, s_mem2;
 /* ------------------------------------------------------------------- */
 VST3Host::VST3Host(bool createMsgThread) // private method
 {
-    std::cerr << "VST3Host constructed\n";
-
     memcheck1;
     m_name = "DbVST3";
     m_mainThreadId = std::this_thread::get_id();
     m_debug = 0;
+    if(m_debug)
+        std::cerr << "VST3Host constructed\n";
     if(createMsgThread)
     {
         m_workerThread = std::thread(workerThread, this);
@@ -110,7 +110,7 @@ VST3Host::~VST3Host()
         m_queue.Bail();
         m_workerThread.join();
     }
-    if(this->m_debug || true)
+    if(this->m_debug)
         std::cerr << "VST3Host deleted\n";
 
     memcheck2;
@@ -170,7 +170,8 @@ VST3Host::OpenPlugin(std::string const &path, std::function<void(VST3Ctx*)> call
 {
     if(this->IsWorkerThread())
     {
-        std::cerr << "OpenPlugin " << path << "\n";
+        if(this->m_debug)
+            std::cerr << "OpenPlugin " << path << "\n";
         std::string error;
         ModulePtr plugin = this->loadPlugin(path, error); // implemented in parent class
         if(!plugin.get())

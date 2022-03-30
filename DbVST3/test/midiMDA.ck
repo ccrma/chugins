@@ -14,8 +14,11 @@ fun void doit(int id, dur maxwait)
 
     DbVST3 x => dac;
     x.loadPlugin("mda-vst3.vst3");
-    x.selectModule(12);
-    // x.loadPlugin("LABS.vst3");
+    while(!x.ready())
+        1::ms => now;
+    x.selectModule(10);
+    while(!x.ready())
+        1::ms => now;
     now => time start;
     while(now - start < maxwait)
     {
@@ -29,7 +32,7 @@ fun void doit(int id, dur maxwait)
     <<< "shred", id, "done" >>>;
 }
 
-45::second => dur d;
+15::second => dur d;
 spork ~ doit(1, d);
 
 d => now;
