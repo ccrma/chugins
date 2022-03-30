@@ -7,9 +7,6 @@
 
 class VST3Chugin
 {
-private:
-    static std::unique_ptr<Host> s_hostPtr; // shared across multiple instances
-
 public:
     // constructor
     VST3Chugin(t_CKFLOAT srate);

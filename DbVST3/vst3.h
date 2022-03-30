@@ -21,11 +21,13 @@
 #include <pluginterfaces/vst/ivsteditcontroller.h>
 #include <pluginterfaces/vst/ivstmidicontrollers.h>
 #include <pluginterfaces/vst/ivstevents.h>
+#include <pluginterfaces/vst/ivstunits.h>
 #include <pluginterfaces/vst/vsttypes.h>
+#include <pluginterfaces/vst/ivstcontextmenu.h>
 #include <pluginterfaces/vst/ivsttestplugprovider.h>
 #include <base/source/fobject.h>
 
-using Plugin = VST3::Hosting::Module::Ptr;
+using ModulePtr = VST3::Hosting::Module::Ptr;
 using tresult = Steinberg::tresult;
 using ParamID = Steinberg::Vst::ParamID;
 using ParamValue = Steinberg::Vst::ParamValue;

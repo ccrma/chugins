@@ -20,8 +20,9 @@ public:
 	using PluginFactory = VST3::Hosting::PluginFactory;
 
 	//--- ---------------------------------------------------------------------
-	dbPlugProvider(const PluginFactory& factory, ClassInfo info, 
-                   bool plugIsGlobal = true);
+	dbPlugProvider(Steinberg::Vst::IHostApplication *hostCtx,
+                   const PluginFactory& factory, ClassInfo info, 
+                   bool plugIsGlobal=true);
 	~dbPlugProvider() override;
 
 	//--- from ITestPlugProvider ------------------
@@ -54,6 +55,7 @@ protected:
 	void terminatePlugin();
 
 	PluginFactory factory;
+    Steinberg::Vst::IHostApplication *hostContext;
 	Steinberg::IPtr<IComponent> component;
 	Steinberg::IPtr<IEditController> controller;
 	ClassInfo classInfo;
@@ -63,28 +65,6 @@ protected:
 
 	bool plugIsGlobal;
     bool componentIsController;
-};
-
-class dbPluginContextFactory
-{
-public:
-	static dbPluginContextFactory& instance()
-	{
-		static dbPluginContextFactory factory;
-		return factory;
-	}
-
-    dbPluginContextFactory() {}
-    ~dbPluginContextFactory() 
-    {
-        // std::cerr << "dbPluginContextFactory says adieu\n";
-    }
-	
-	void setPluginContext(Steinberg::FUnknown* obj) { context = obj; }
-	Steinberg::FUnknown* getPluginContext() const { return context; }
-
-private:
-	Steinberg::FUnknown* context;
 };
 
 #endif

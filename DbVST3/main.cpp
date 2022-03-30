@@ -1,9 +1,5 @@
 // this should align with the correct versions of these ChucK files
 #include "chuck_dl.h"
-#include "chuck_def.h"
-#include "chuck_instr.h"
-#include "chuck_vm.h"
-#include "chuck_type.h"
 
 #include <stdio.h>
 #include <limits.h>
@@ -164,7 +160,7 @@ CK_DLL_CTOR(dbvst3_ctor)
 // implementation for the destructor
 CK_DLL_DTOR(dbvst3_dtor)
 {
-    // std::cerr << "VST3Chugin cleanup\n"; // not called in performance, but simple tests, yes
+    std::cerr << "VST3Chugin dtor\n"; // not called in performance, but simple tests, yes
     // get our c++ class pointer
     VST3Chugin* b_obj = (VST3Chugin *) OBJ_MEMBER_INT(SELF, dbvst3_data_offset);
     // check it

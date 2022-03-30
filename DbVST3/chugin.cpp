@@ -1,8 +1,6 @@
 #include "chugin.h"
 #include <functional>
 
-std::unique_ptr<Host> VST3Chugin::s_hostPtr; // shared across multiple instances
-
 static void deferredDelete(VST3Ctx *ctx)
 {
     delete ctx;
@@ -10,8 +8,6 @@ static void deferredDelete(VST3Ctx *ctx)
 
 VST3Chugin::VST3Chugin(t_CKFLOAT srate)
 {
-    if(s_hostPtr.get() == nullptr)
-        s_hostPtr.reset(new Host(true));
     m_sampleRate = srate;
     m_verbosity = 0;
     m_midiEvents = 0;
@@ -21,8 +17,16 @@ VST3Chugin::VST3Chugin(t_CKFLOAT srate)
 
 VST3Chugin::~VST3Chugin()
 {
+#if 1 
+    // verified to be required for LABS (hangs in the other variant)
+    // implies some use of thread-local-store?
     std::function<void(void)> fn = std::bind(&deferredDelete, m_vst3Ctx);
-    s_hostPtr->Delegate(fn);
+    VST3Host::Singleton(true)->Delegate(fn);
+    std::cerr << "VST3Chugin deleted (defer VST3Ctx)\n";
+#else
+    delete m_vst3Ctx;
+    std::cerr << "VST3Chugin deleted (including VST3Ctx)\n";
+#endif
 }
 
 bool VST3Chugin::loadPlugin(const std::string& filepath)
@@ -33,7 +37,7 @@ bool VST3Chugin::loadPlugin(const std::string& filepath)
         m_vst3Ctx = nullptr;
     }
     auto fn = std::bind(&VST3Chugin::onPluginLoaded, this, std::placeholders::_1);
-    s_hostPtr->OpenPlugin(filepath, fn, this->m_verbosity);
+    VST3Host::Singleton(true)->OpenPlugin(filepath, fn, this->m_verbosity);
     return true; // XXX async open has no response
 }
 
@@ -45,6 +49,7 @@ bool VST3Chugin::ready()
 void
 VST3Chugin::onPluginLoaded(VST3Ctx *ctx)
 {
+    // NB: this runs in the "workerthread", not the chugin/audio thread.
     // so as to not require activateModule, we activateModule(0)
     // since it's the 95% case.
     m_vst3Ctx = ctx;

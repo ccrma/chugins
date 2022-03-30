@@ -15,6 +15,10 @@ public:
     {
         m_bailing.store(false);
     }
+    ~ConcurrentQ()
+    {
+        // std::cerr << "Q deleted\n";
+    }
     ConcurrentQ(const ConcurrentQ&) = delete; // disable copying
     ConcurrentQ& operator=(const ConcurrentQ&) = delete; // disable assignment
 
@@ -64,6 +68,11 @@ public:
     void Bail()
     {
         m_bailing.store(true);
+        // jigger the condvar
+        this->Push([]() 
+        {
+            std::cerr << "ConcurrentQ bail request serviced\n";
+        });
     }
 
     bool IsActive()

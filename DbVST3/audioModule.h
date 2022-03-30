@@ -1,5 +1,5 @@
-#ifndef Module_h
-#define Module_h
+#ifndef AudioModule_h
+#define AudioModule_h
 
 #include "param.h"
 #include "pluginInstance.h"
@@ -10,13 +10,14 @@
 
 // A plugin file (which is accessed as a VST::Module) can contain 1 or more
 // interfaces (AudioEffects, Controllers, ...).  This class represents one 
-// of these. IE: it maps to the user's definition of module.
+// of these. IE: it maps to the user's definition of AudioModule.
 //
-class Module 
+class VST3AudioModule 
 {
 private:
     int programChangeIndex; // some modules support 0, some 1, some > 1
-    int verbosity;
+    int debug = 0;
+    int verbosity = 0;
 
 public:
     std::string name;
@@ -25,7 +26,7 @@ public:
     std::string version;
     std::string sdkVersion;
     std::vector<ParamInfo> parameters;
-    PluginInstance pluginInstance;
+    VST3PluginInstance pluginInstance;
     std::unordered_map<std::string, int> nameToIndex;
     std::unordered_map<Steinberg::Vst::ParamID, int> idToIndex;
 
@@ -34,12 +35,11 @@ public:
     // (modules).  Plugin's factory is passed in. Comp
     // of our pluginInstance until is is needed via its nomination as the 
     // activemodule.
-    Module(VST3::Hosting::ClassInfo &classInfo, 
+    VST3AudioModule(VST3::Hosting::ClassInfo &classInfo, 
         const dbPlugProvider::PluginFactory &factory,
         int verboseness=0)
     {
         this->programChangeIndex = -1;
-        this->verbosity = 0;
         if(verboseness != 0)
             this->SetVerbosity(verboseness);
         this->name = classInfo.name();
@@ -49,7 +49,14 @@ public:
         this->sdkVersion = classInfo.sdkVersion();
         this->pluginInstance.Init(factory, classInfo, this->parameters);
         this->programChangeIndex = -1;
-        this->verbosity = 0 ;
+        if(this->debug)
+            std::cerr << "VST3AudioModule " << this->name << " created\n";
+    }
+
+    ~VST3AudioModule()
+    {
+        if(this->debug)
+            std::cerr << "VST3AudioModule " << this->name << " deleted\n";
     }
 
     void
@@ -177,6 +184,6 @@ private:
 
 };
 
-typedef std::shared_ptr<Module> ModulePtr;
+typedef std::shared_ptr<VST3AudioModule> VST3AudioModulePtr;
 
 #endif

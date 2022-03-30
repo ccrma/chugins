@@ -1,22 +1,22 @@
-#ifndef PluginInstance_h
-#define PluginInstance_h
+#ifndef VST3PluginInstance_h
+#define VST3PluginInstance_h
 
 #include "vst3.h"
 #include "processingData.h"
 #include "plugProvider.h"
 #include "param.h"
+#include "choc_SpinLock.h"
+#include <mutex>
 
 #include <cassert>
 
-// see comments in processingCtx.cpp
-class PluginInstance : 
+// see comments in pluginInstance.cpp
+class VST3PluginInstance : 
+    public Steinberg::FObject,
     public Steinberg::Vst::IComponentHandler,
 	public Steinberg::Vst::IComponentHandler2,
-	public Steinberg::Vst::IUnitHandler // notification of program change
-    /*
-	public Steinberg::IPlugFrame,
-	public Steinberg::IContextInfoProvider3,
-    */
+	public Steinberg::Vst::IUnitHandler, // notification of program change
+    public Steinberg::Vst::IHostApplication // we do act as host to this plugin
 {
 public: 
     int error;
@@ -32,14 +32,15 @@ private:
     bool activated;
     int debug;
     int verbosity;
+    class VST3Host *host;
+
+    using LockType = SpinLock; // from choc
+    // using LockType = std::mutex;
+    LockType processingLock;
 
 public:
-    PluginInstance();
-
-    ~PluginInstance()
-    {
-        this->deinitProcessing();
-    }
+    VST3PluginInstance();
+    ~VST3PluginInstance();
 
     void
     SetVerbosity(int v)
@@ -81,12 +82,19 @@ private:
     void setEventBusState(bool enable);
 
     /* --------------------------------------------------------------------- */
+	tresult PLUGIN_API getName(Steinberg::Vst::String128 name) override;
+	tresult PLUGIN_API createInstance(Steinberg::TUID cid, Steinberg::TUID iid, 
+                        void **obj) override;
+
+    /* --------------------------------------------------------------------- */
     // since we're our EditController's IComponentHandler
 	tresult PLUGIN_API beginEdit(ParamID id) override;
 	tresult PLUGIN_API performEdit(ParamID id, ParamValue valueNormalized) override;
 	tresult PLUGIN_API endEdit(ParamID id) override;
 	tresult PLUGIN_API restartComponent(int32 flags) override;
 	tresult PLUGIN_API queryInterface(const Steinberg::TUID _iid, void** obj) override;
+ 
+    // we don't want our plugin to affect our memory managment.
 	uint32 PLUGIN_API addRef() override { return 1000; }
 	uint32 PLUGIN_API release() override { return 1000; }
 
@@ -106,8 +114,7 @@ private:
         Steinberg::int32 programIndex) override;
 
     /* --------------------------------------------------------------------- */
-    void
-    countChannels(Steinberg::Vst::MediaType media, 
+    void countChannels(Steinberg::Vst::MediaType media, 
         Steinberg::Vst::BusDirection dir, 
         std::vector<BusUsage::Bus> &chansPerBus,
         int &totalChannels);

@@ -27,22 +27,24 @@ within a single Plugin.
 > a plugin. We currently indentify a module by its index 
 > in that file. 
 
-main/chugin
-    has-a singleton app
+main
+    creates chugin instances, one for each DbVST3 instance.
+
+VST3Host is-a VST::IHostApplication
+    implements OpenPlugin (returns VST3Ctx *)
+    implements loadPlugin (returns ModulePtr)
+
+chugin
+    has-a singleton Host
     has-a PluginCtx (after OpenPlugin)
 
-App is-a VST::IHostApplication
-    implements OpenPlugin (returns PluginCtx)
-    implements loadPlugin (returns Plugin)
-
-PluginCtx (was DbVST3Ctx)
+VST3Ctx
     has an instance of the open Plugin
-    has a list of available modules
-    has a current module (ActivateModule)
+    has a list of available modules std::vector<VST3AudioModulePtr>
+    has a current module (VST3AudioModulePtr)
 
-Module, ModulePtr (was DbVST3Plugin)
+VST3AudioModule, VST3AudioModulePtr
     has-a list of parameters
-    has-a
 
 ProcessCtx is a IComponentHandler, etc (was DbVST3Module)
     represents the state associated with executing
@@ -54,6 +56,21 @@ ProcessCtxData is-a  Vst::ProcessData
     represents the data associated with the ProcessCtx
 
 ## Why won't LABS and ROLI Player work?
+
+### mystery JUCE Example Audio Host
+
+Application has-many VST3ComponentHolder
+
+VST3ComponentHolder hasa VST3HostContext
+
+VST3HostContext isa IHostApplication, (implements restartComponent)
+HostContext hasa single plugin and a single componentHolder
+    implements createInstance(cid, iid) // for IMessage and IAttributeList
+
+
+
+
+### Need a message thread
 
 From JUCE:
 
@@ -261,3 +278,140 @@ VST3PluginInstance releaseResources
 
 14:18 note [chuck] Performance Begin 0
 14:18 note [chuck] Opened MIDI device: 0 -> A-Series Keyboard
+
+
+## testCleanup.ck with early out
+
+*** Leaked objects detected: 3 instance(s) of class Param
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class JuceVST3EditController
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class AudioParameterBool
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class JuceAudioProcessor
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class HashMap
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class JuceVST3Component
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class SynthesiserSound
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 8 instance(s) of class SynthesiserVoice
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class JuceDemoPluginAudioProcessor
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class Synthesiser
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class OwnedArray
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 2 instance(s) of class AudioBuffer
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 10 instance(s) of class AudioBuffer
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 4 instance(s) of class SharedObject
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 2 instance(s) of class AudioProcessorParameterNode
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class TimerThread
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 2 instance(s) of class AsyncUpdater
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class Thread
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 3 instance(s) of class WaitableEvent
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class AudioProcessorValueTreeState
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 2 instance(s) of class AudioParameterFloat
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 3 instance(s) of class AudioProcessorParameterWithID
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 3 instance(s) of class AudioProcessorParameter
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class MidiKeyboardState
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 2 instance(s) of class MidiBuffer
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class AudioProcessor
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 2 instance(s) of class AudioProcessorParameterGroup
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 2 instance(s) of class OwnedArray
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 2 instance(s) of class OwnedArray
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 8 instance(s) of class BigInteger
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class InternalMessageQueue
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 1 instance(s) of class MessageManager
+JUCE Assertion failure in juce_leakedobjectdetector.h:92
+chuck.exe has triggered a breakpoint.
+
+JUCE Assertion failure in juce_singleton.h:50
+chuck.exe has triggered a breakpoint.
+
+*** Leaked objects detected: 5 instance(s) of class StringArray
+JUCE Assertion failure in juce_leakedobjectdetector.h:92

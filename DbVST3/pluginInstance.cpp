@@ -1,11 +1,15 @@
 #include "pluginInstance.h"
+#include "host.h"
 
 #include <public.sdk/source/common/memorystream.h>
 #include <iostream>
 #include <unordered_map>
+#include <cassert>
 
-PluginInstance::PluginInstance()
+VST3PluginInstance::VST3PluginInstance()
 {
+    this->host = VST3Host::Singleton();
+    assert(this->host->IsWorkerThread());
     this->error = 0;
     this->debug = 0;
     this->verbosity = 0;
@@ -14,36 +18,43 @@ PluginInstance::PluginInstance()
     this->activated = false;
 }
 
+VST3PluginInstance::~VST3PluginInstance()
+{
+    if(this->debug)
+        std::cerr << "VST3PluginInstance deleted\n";
+    this->deinitProcessing();
+}
+
 void
-PluginInstance::Init(
+VST3PluginInstance::Init(
     const dbPlugProvider::PluginFactory &factory,
     VST3::Hosting::ClassInfo &classInfo,
     std::vector<ParamInfo> &parameters)
 {
     // VST3Provider aka: PlugProvider here:
     //  source/vst/hosting/plugprovider.cpp
-    this->provider.reset(new dbPlugProvider(factory, classInfo, true/*useGlobalInstance*/));
+    this->provider.reset(new dbPlugProvider(this, factory, classInfo, true/*useGlobalInstance*/));
     this->initComponent();
     this->synchronizeStates();
     this->initParams(parameters);
 
-    if(this->debug || true)
+    if(this->debug)
     {
-        std::cerr << "PluginInstance.Init " << this->provider->GetName() << "\n";
+        std::cerr << "VST3PluginInstance.Init " << this->provider->GetName() << "\n";
     }
 }
 
 void
-PluginInstance::InitProcessing(float sampleRate, 
+VST3PluginInstance::InitProcessing(float sampleRate, 
                     char const *inputBusRouting, 
                     char const *outputBusRouting)
 {
-    if(!this->component)
-        this->initComponent();
+    assert(this->component);
+    assert(this->host->IsWorkerThread());
 
     // this->controllerEx1 = Steinberg::FUnknownPtr<Steinberg::Vst::EditControllerEx1>(this->controller);
     if(this->verbosity)
-        std::cerr << "initialize nparams: " << this->controller->getParameterCount() << "\n";
+        std::cerr << "PluginInstance.initialize nparams: " << this->controller->getParameterCount() << "\n";
 
 	Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> processor = component;
 	if(!processor)
@@ -90,24 +101,31 @@ PluginInstance::InitProcessing(float sampleRate,
     this->activate();
     if(this->debug || true)
     {
-        std::cerr << "PluginInstance.InitProcessing " 
+        std::cerr << "VST3PluginInstance.InitProcessing " 
                   << this->provider->GetName() << "\n";
     }
 
 }
 
 // 'param id' it's paramID !== index
-// NB: callsers (vst3Ctx.h, readAllParameters) know the logic behind 
+// NB: callers (vst3Ctx.h, readAllParameters) know the logic behind 
 //   setting pushToProcessor (and have access to the flags 
 //   (kCanAutomate, ~kIsProgramChange)
 int 
-PluginInstance::SetParamValue(Steinberg::Vst::ParamID pid,
+VST3PluginInstance::SetParamValue(Steinberg::Vst::ParamID pid,
     float value, bool pushToProcessor) /* as automation means register it via processData */
 {
     // https://developer.steinberg.help/display/VST/Parameters+and+Automation
+    int err = 0;
+
+    // NB: the following case occurs when a preset is requested.
+    //  Since we'd like to group-change the parameters we require
+    //  that the processingLock be acquired in readAllParameters(andPush=true).
+    // case: pushToProcessor && this->host->IsWorkerThread()
+
     if(this->debug > 1)
         std::cerr << "SetParamValue " << pid << "\n";
-    int err = 0;
+
     if(this->controller)
     {
         if(pushToProcessor)
@@ -128,7 +146,7 @@ PluginInstance::SetParamValue(Steinberg::Vst::ParamID pid,
 }
 
 Steinberg::Vst::ParamID
-PluginInstance::GetMidiMapping(int data1)
+VST3PluginInstance::GetMidiMapping(int data1)
 {
     if(this->midiMapping)
     {
@@ -142,8 +160,10 @@ PluginInstance::GetMidiMapping(int data1)
 }
 
 int 
-PluginInstance::MidiEvent(int status, int data1, int data2)
+VST3PluginInstance::MidiEvent(int status, int data1, int data2)
 {
+    assert(this->host->IsProcessingThread());
+    const std::lock_guard<LockType> lk(this->processingLock); 
     int err;
     if(this->controller)
     {
@@ -161,8 +181,11 @@ PluginInstance::MidiEvent(int status, int data1, int data2)
 }
 
 void 
-PluginInstance::Process(float *in, int inCh, float *out, int outCh, int nframes)
+VST3PluginInstance::Process(float *in, int inCh, float *out, int outCh, int nframes)
 {
+    // lk guards against changes to MidiEventList and Parameter Automation.
+    assert(this->host->IsProcessingThread());
+    const std::lock_guard<LockType> lk(this->processingLock); 
     this->activate(); 
 	Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> processor = component;
     this->processData.Process(processor, in, inCh, out, outCh, nframes);
@@ -170,7 +193,7 @@ PluginInstance::Process(float *in, int inCh, float *out, int outCh, int nframes)
 }
 
 void
-PluginInstance::deinitProcessing()
+VST3PluginInstance::deinitProcessing()
 {
     this->provider->releasePlugIn(this->component, this->controller);
 }
@@ -192,7 +215,7 @@ PluginInstance::deinitProcessing()
  * may or may not already be initialized.
  */
 void
-PluginInstance::initComponent()
+VST3PluginInstance::initComponent()
 {
     // provider takes care of proper initialization and ref-counting.
     this->component = this->provider->getComponent();	
@@ -209,7 +232,7 @@ PluginInstance::initComponent()
 }
 
 bool
-PluginInstance::synchronizeStates()
+VST3PluginInstance::synchronizeStates()
 {
     assert(this->component);
     Steinberg::MemoryStream stream;
@@ -238,7 +261,7 @@ PluginInstance::synchronizeStates()
 }
 
 bool
-PluginInstance::activate()
+VST3PluginInstance::activate()
 {
     if(this->activated)
         return true;
@@ -259,7 +282,7 @@ PluginInstance::activate()
 }
 
 bool
-PluginInstance::deactivate()
+VST3PluginInstance::deactivate()
 {
     if(!this->activated)
         return true;
@@ -282,7 +305,7 @@ PluginInstance::deactivate()
 //  1) after state synchronization (andPush == false)
 //  2) after program change (andPush == true)
 void
-PluginInstance::readAllParameters(bool andPush)
+VST3PluginInstance::readAllParameters(bool andPush)
 {
     int nparams = this->controller->getParameterCount();
     this->paramValues.resize(nparams);
@@ -292,20 +315,31 @@ PluginInstance::readAllParameters(bool andPush)
         this->controller->getParameterInfo(i, info);
         float val = this->controller->getParamNormalized(info.id);
         this->paramValues[i] = val;
-        if(!andPush) continue;
-        // else a preset has changed and we need to update the processor
-        if(info.flags & Steinberg::Vst::ParameterInfo::kCanAutomate)
+    }
+    if(andPush)
+    {
+        // a preset has changed and we need to update the processor.
+        assert(this->host->IsWorkerThread());
+        // NB: we shouldn't call SetParamValue(..., true) without a lock.
+        const std::lock_guard<LockType> lk(this->processingLock); 
+        for(int i=0;i<nparams;i++)
         {
-            if(this->verbosity > 1)
-                std::cerr << i << ": " << val << "\n";
-            this->SetParamValue(info.id, val, true /*updateProc*/);
-        }
-        else
-        {
-            // We don't event register changes to program since it can
-            // triggers infinite loop.
-            if(!(info.flags & Steinberg::Vst::ParameterInfo::kIsProgramChange))
-                this->SetParamValue(info.id, val, false);
+            Steinberg::Vst::ParameterInfo info;
+            this->controller->getParameterInfo(i, info);
+            float val = this->controller->getParamNormalized(info.id);
+            if(info.flags & Steinberg::Vst::ParameterInfo::kCanAutomate)
+            {
+                if(this->verbosity > 1)
+                    std::cerr << i << ": " << val << "\n";
+                this->SetParamValue(info.id, val, true /*updateProc*/);
+            }
+            else
+            {
+                // We don't register changes to program since it can trigger 
+                // infinite restarts.
+                if(!(info.flags & Steinberg::Vst::ParameterInfo::kIsProgramChange))
+                    this->SetParamValue(info.id, val, true);
+            }
         }
     }
 }
@@ -319,22 +353,30 @@ PluginInstance::readAllParameters(bool andPush)
 // restartComponent. In theory we shouldn't ever need to
 // "push" newly changed parameters.
 tresult PLUGIN_API 
-PluginInstance::restartComponent(int32 flags)
+VST3PluginInstance::restartComponent(int32 flags)
 {
+    if(!this->host->IsWorkerThread())
+    {
+        std::function<void(void)> fn = std::bind(&VST3PluginInstance::restartComponent, 
+                                                this, flags);
+        this->host->Delegate(fn);
+        return Steinberg::kResultOk;
+    }
+
     if(flags & Steinberg::Vst::kReloadComponent)
     {
         if(this->verbosity)
-            std::cerr << "restartComponent ReloadComponent\n";
+            std::cerr << "VSTPluginInstance.restartComponent ReloadComponent\n";
         this->deactivate();
         this->activate();
     }
     if(flags & Steinberg::Vst::kParamValuesChanged)
     {
         bool pushToProcessor = true;
-        if(this->verbosity || true)
+        if(this->verbosity)
         {
-            std::cerr << "restartComponent ParamValuesChanged, "
-                << "updateProc:" << pushToProcessor
+            std::cerr << "VST3PluginInstance.restartComponent ParamValuesChanged, "
+                << "updateProcessor:" << pushToProcessor
                 << "\n";
         }
         this->readAllParameters(pushToProcessor);
@@ -342,7 +384,7 @@ PluginInstance::restartComponent(int32 flags)
     if(flags & Steinberg::Vst::kLatencyChanged)
     {
         if(this->verbosity)
-            std::cerr << "restartComponent LatencyChanged\n";
+            std::cerr << "VST3PluginInstance.restartComponent LatencyChanged\n";
         this->deactivate();
         this->activate();
     }
@@ -357,7 +399,7 @@ PluginInstance::restartComponent(int32 flags)
 // default behavior:
 // - greedily allocate 2 channels prioritizing Main over Aux buses.
 void 
-PluginInstance::initBuses(char const *inputBusRouting, char const *outputBusRouting)
+VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBusRouting)
 {
     // countChannels initializes busConfig.
     int nbusIn, nbusOut;
@@ -628,7 +670,7 @@ PluginInstance::initBuses(char const *inputBusRouting, char const *outputBusRout
 }
 
 void
-PluginInstance::setEventBusState(bool enable)
+VST3PluginInstance::setEventBusState(bool enable)
 {
     int inEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kInput);
     int outEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kOutput);
@@ -648,7 +690,7 @@ PluginInstance::setEventBusState(bool enable)
 /* --------------------------------------------------------------------- */
 
 tresult PLUGIN_API 
-PluginInstance::beginEdit(ParamID id)
+VST3PluginInstance::beginEdit(ParamID id)
 {
     if(this->debug)
         std::cout << "beginEdit called " << id << "\n";
@@ -656,7 +698,7 @@ PluginInstance::beginEdit(ParamID id)
 }
 
 tresult PLUGIN_API 
-PluginInstance::performEdit(ParamID id, ParamValue valueNormalized)
+VST3PluginInstance::performEdit(ParamID id, ParamValue valueNormalized)
 {
     if(this->debug)
     {
@@ -668,28 +710,32 @@ PluginInstance::performEdit(ParamID id, ParamValue valueNormalized)
 }
 
 tresult PLUGIN_API 
-PluginInstance::endEdit(ParamID id)
+VST3PluginInstance::endEdit(ParamID id)
 {
     //std::cout << "endEdit called " << id << "\n";
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API 
-PluginInstance::queryInterface(const Steinberg::TUID iid, void** obj)
+VST3PluginInstance::queryInterface(const Steinberg::TUID iid, void** obj)
 {
     // TUID's are 16-char arrays
 
     if(this->debug)
-        dumpTUID("pluginInstance query ", iid);
-
-    QUERY_INTERFACE(iid, obj, Steinberg::FUnknown::iid, Steinberg::Vst::IComponentHandler);
+        dumpTUID("VST3PluginInstance query ", iid);
 
     QUERY_INTERFACE(iid, obj, Steinberg::Vst::IComponentHandler::iid, Steinberg::Vst::IComponentHandler);
 
     QUERY_INTERFACE(iid, obj, Steinberg::Vst::IComponentHandler2::iid, Steinberg::Vst::IComponentHandler2);
-    // QUERY_INTERFACE(_iid, obj, Steinberg::Vst::IUnitHandler::iid, Steinberg::Vst::IUnitHandler);
-    // QUERY_INTERFACE(_iid, obj, IPlugFrame::iid, IPlugFrame)
-    std::cerr << "  (not supported)" << iid << "\n";
+
+    QUERY_INTERFACE(iid, obj, Steinberg::Vst::IHostApplication::iid, Steinberg::Vst::IHostApplication);
+
+    QUERY_INTERFACE(iid, obj, Steinberg::Vst::IUnitHandler::iid, Steinberg::Vst::IUnitHandler);
+
+    QUERY_INTERFACE(iid, obj, Steinberg::FUnknown::iid, Steinberg::Vst::IComponentHandler);
+
+    // nb: we could do more as in hostclasses.cpp
+    dumpTUID("VST3PluginInstance doesn't support ", iid);
     *obj = nullptr;
     return Steinberg::kNoInterface;
 }
@@ -700,7 +746,7 @@ PluginInstance::queryInterface(const Steinberg::TUID iid, void** obj)
  * before quitting. 
  */
 tresult PLUGIN_API 
-PluginInstance::setDirty(Steinberg::TBool state)
+VST3PluginInstance::setDirty(Steinberg::TBool state)
 {
     return Steinberg::kResultOk;
 }
@@ -710,7 +756,7 @@ PluginInstance::setDirty(Steinberg::TBool state)
  * the program flow (especially on loading projects). 
  */
 tresult PLUGIN_API 
-PluginInstance::requestOpenEditor(Steinberg::FIDString name)
+VST3PluginInstance::requestOpenEditor(Steinberg::FIDString name)
 {
     return Steinberg::kNotImplemented;
 }
@@ -721,27 +767,27 @@ PluginInstance::requestOpenEditor(Steinberg::FIDString name)
  */
 
 tresult PLUGIN_API 
-PluginInstance::startGroupEdit()
+VST3PluginInstance::startGroupEdit()
 {
     return Steinberg::kNotImplemented;
 }
 
 tresult PLUGIN_API 
-PluginInstance::finishGroupEdit()
+VST3PluginInstance::finishGroupEdit()
 {
     return Steinberg::kNotImplemented;
 }
 
 /* IUnitHandler API */
 tresult PLUGIN_API 
-PluginInstance::notifyUnitSelection(Steinberg::Vst::UnitID id)
+VST3PluginInstance::notifyUnitSelection(Steinberg::Vst::UnitID id)
 {
     std::cout << "unit selected: " << id << "\n";
     return Steinberg::kResultOk;
 }
 
 tresult PLUGIN_API 
-PluginInstance::notifyProgramListChange(
+VST3PluginInstance::notifyProgramListChange(
     Steinberg::Vst::ProgramListID listId, 
     Steinberg::int32 programIndex)
 {
@@ -753,7 +799,7 @@ PluginInstance::notifyProgramListChange(
 
 /* --------------------------------------------------------------------- */
 void
-PluginInstance::countChannels(Steinberg::Vst::MediaType media, 
+VST3PluginInstance::countChannels(Steinberg::Vst::MediaType media, 
     Steinberg::Vst::BusDirection dir, 
     std::vector<BusUsage::Bus> &chansPerBus,
     int &totalChannels)
@@ -777,7 +823,7 @@ PluginInstance::countChannels(Steinberg::Vst::MediaType media,
  *  - should be performed after we've synchronzized state.
  */
 void
-PluginInstance::initParams(std::vector<ParamInfo> &parameters)
+VST3PluginInstance::initParams(std::vector<ParamInfo> &parameters)
 {
     assert(this->component); // managed by provider
     assert(this->controller); // managed by provider
@@ -866,3 +912,38 @@ PluginInstance::initParams(std::vector<ParamInfo> &parameters)
     // this->provider->releasePlugIn(this->component, this->controller);
 }
 
+tresult PLUGIN_API
+VST3PluginInstance::getName(Steinberg::Vst::String128 name)
+{
+    return VST3::StringConvert::convert(this->host->GetName(), name) ? 
+        Steinberg::kResultTrue : Steinberg::kInternalError;
+}
+
+tresult PLUGIN_API
+VST3PluginInstance::createInstance(Steinberg::TUID cid, Steinberg::TUID iid, void** obj)
+{
+    Steinberg::FUID classID = Steinberg::FUID::fromTUID(cid);
+    Steinberg::FUID interfaceID = Steinberg::FUID::fromTUID(iid);
+    if(classID == Steinberg::Vst::IMessage::iid && 
+        interfaceID == Steinberg::Vst::IMessage::iid)
+    {
+        std::cerr << "VSTPluginInstance.createInstance HostMessage\n";
+        *obj = new Steinberg::Vst::HostMessage;
+        return Steinberg::kResultTrue;
+    }
+    else 
+    if(classID == Steinberg::Vst::IAttributeList::iid && 
+        interfaceID == Steinberg::Vst::IAttributeList::iid)
+    {
+        std::cerr << "VSTPluginInstance.createInstance HostAttributeList\n";
+        if(auto al = Steinberg::Vst::HostAttributeList::make())
+        {
+            *obj = al.take();
+            return Steinberg::kResultTrue;
+        }
+        return Steinberg::kOutOfMemory;
+    }
+    std::cerr << "VST3PluginInstance::createInstance FAILED!!\n";
+    *obj = nullptr;
+    return Steinberg::kResultFalse;
+}

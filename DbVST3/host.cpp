@@ -8,11 +8,23 @@
 // The VST3 spec requires that IComponent::setupProcessing() is called on the message
 // thread. If you call it from a different thread, some plugins may break.
 
-/* ------------------------------------------------------------------- */
-std::atomic<int> s_state;
+// managed host is auto-contructed and torn down on dll-unload
+std::unique_ptr<VST3Host> VST3Host::s_managedHost; 
+// unmanagedHost is for subclasses (dumpVST3)
+VST3Host * VST3Host::s_unmanagedHost;
 
+VST3Host *
+VST3Host::Singleton(bool createMsgThread)
+{
+    if(s_unmanagedHost) return s_unmanagedHost;
+    if(!s_managedHost.get())
+        s_managedHost.reset(new VST3Host(createMsgThread));
+    return s_managedHost.get();
+}
+
+/* ------------------------------------------------------------------- */
 void
-Host::workerThread(Host *h) // consumer
+VST3Host::workerThread(VST3Host *h) // consumer
 {
     while(h->m_queue.IsActive())
     {
@@ -24,7 +36,8 @@ Host::workerThread(Host *h) // consumer
         }
         item();  
         if(h->m_debug)
-            std::cerr << "workerThread delegateEnd ---------------------\n";
+            std::cerr << "workerThread delegateEnd active:" 
+                     << h->m_queue.IsActive() << "---------------------\n";
     }
     if(h->m_debug)
         std::cerr << "workerThread exiting\n";
@@ -33,9 +46,35 @@ Host::workerThread(Host *h) // consumer
 #define ASSERT_WORKER_THREAD assert(this->IsWorkerThread())
     // thread not joinable means it hasn't been constructed
 
+#if 0 || defined(WIN32)
+// background: loading the juce example plugin (AudioPluginDemo) it triggered 
+// massive memory leak report.  Apparently their unloader on windows+DEBUG
+// enables the Crt leak detector described here: https://docs.microsoft.com/en-us/previous-versions/visualstudio/visual-studio-2015/debugger/finding-memory-leaks-using-the-crt-library?view=vs-2015&redirectedfrom=MSDN
+// After some investigation, the conclusion is that it's chuck's fault.
+// When enabled and run on dumpVST3 we appear clean.
+// 
+static _CrtMemState s_mem1, s_mem2;
+#define memchk_break() { auto& _ab = _crtBreakAlloc; _ab = 549; __debugbreak();}
+#define memcheck1 _CrtMemCheckpoint(&s_mem1);  
+#define memcheck2 \
+{ \
+    _CrtMemCheckpoint( &s_mem2 );  \
+    _CrtMemState sdiff; \
+    if(_CrtMemDifference( &sdiff, &s_mem1, &s_mem2)) \
+        _CrtMemDumpStatistics( &sdiff ); \
+}
+#else
+#define memchk_break
+#define memcheck1
+#define memcheck2
+#endif
+
 /* ------------------------------------------------------------------- */
-Host::Host(bool createMsgThread)
+VST3Host::VST3Host(bool createMsgThread) // private method
 {
+    std::cerr << "VST3Host constructed\n";
+
+    memcheck1;
     m_name = "DbVST3";
     m_mainThreadId = std::this_thread::get_id();
     m_debug = 0;
@@ -43,7 +82,7 @@ Host::Host(bool createMsgThread)
     {
         m_workerThread = std::thread(workerThread, this);
         m_workerThreadId = m_workerThread.get_id();
-        std::function<void(void)> fn = std::bind(&Host::initHostEnv, this);
+        std::function<void(void)> fn = std::bind(&VST3Host::initHostEnv, this);
         this->Delegate(fn); // initialize system in worker (not audio) thread.
     }
     else
@@ -53,34 +92,44 @@ Host::Host(bool createMsgThread)
     }
     if(m_debug)
     {
-        std::cerr << "Host constructed in thread " <<  m_mainThreadId << "\n";
-        std::cerr << "Host workerthread " << m_workerThread.get_id() << "\n";
+        std::cerr << "VST3Host constructed in thread " <<  m_mainThreadId << "\n";
+        std::cerr << "VST3Host workerthread " << m_workerThread.get_id() << "\n";
     }
 }
 
-void
-Host::initHostEnv()
+VST3Host::~VST3Host()
 {
-    m_plugInterfaceSupport = owned(new Steinberg::Vst::PlugInterfaceSupport);
-    dbPluginContextFactory::instance().setPluginContext(this->unknownCast());
-}
-
-Host::~Host()
-{
-    std::cerr << "Host delete\n";
-
+    // Since we are a singleton, shared across all instances,
+    // this destructor runs as part of the shutdown process of
+    // the entire dll.  This is under the control of Chuck and
+    // is integrally tied into platform-specific teardown.
+    // On windows our workerthread appears to be destroyed
+    // prior to this point (and we never see "workerThread exiting")
     if(m_workerThread.joinable())
+    {
+        m_queue.Bail();
         m_workerThread.join();
+    }
+    if(this->m_debug || true)
+        std::cerr << "VST3Host deleted\n";
+
+    memcheck2;
 }
 
 void
-Host::Delegate(std::function<void(void)> delFn)
+VST3Host::initHostEnv()
+{
+    // placeholder for stuff that needs to execute in the main thread.
+}
+
+void
+VST3Host::Delegate(std::function<void(void)> delFn)
 {
     m_queue.Push(delFn);
 }
 
 void 
-Host::PrintAllInstalledPlugins(std::ostream &ostr)
+VST3Host::PrintAllInstalledPlugins(std::ostream &ostr)
 {
     ASSERT_WORKER_THREAD;
     std::vector<std::string> knownPlugins;
@@ -93,7 +142,7 @@ Host::PrintAllInstalledPlugins(std::ostream &ostr)
 }
 
 int
-Host::GetKnownPlugins(std::vector<std::string> &knownPlugins)
+VST3Host::GetKnownPlugins(std::vector<std::string> &knownPlugins)
 {
     ASSERT_WORKER_THREAD;
     knownPlugins = VST3::Hosting::Module::getModulePaths();
@@ -101,20 +150,29 @@ Host::GetKnownPlugins(std::vector<std::string> &knownPlugins)
 }
 
 bool
-Host::IsWorkerThread()
+VST3Host::IsWorkerThread()
 {
     return m_workerThreadId == std::this_thread::get_id();
 }
 
+bool
+VST3Host::IsProcessingThread()
+{
+    return m_mainThreadId == std::this_thread::get_id();
+}
+
+// OptionPlugin merely opens the plugin file, but doesn't instantiate any
+// other objects (ie ModulePtr contains DLL-open context). In each plugin
+// is a "factory" function that is used later to construct plugin components.
 void
-Host::OpenPlugin(std::string const &path, std::function<void(VST3Ctx*)> callback,
+VST3Host::OpenPlugin(std::string const &path, std::function<void(VST3Ctx*)> callback,
                 int verbosity)
 {
     if(this->IsWorkerThread())
     {
         std::cerr << "OpenPlugin " << path << "\n";
         std::string error;
-        VST3::Hosting::Module::Ptr plugin = this->loadPlugin(path, error); // implemented in parent class
+        ModulePtr plugin = this->loadPlugin(path, error); // implemented in parent class
         if(!plugin.get())
         {
             std::string reason = "could not load vstplugin in file:";
@@ -131,21 +189,21 @@ Host::OpenPlugin(std::string const &path, std::function<void(VST3Ctx*)> callback
     }
     else
     {
-        std::function<void(void)> fn = std::bind(&Host::OpenPlugin, this, path,     
+        std::function<void(void)> fn = std::bind(&VST3Host::OpenPlugin, this, path,     
                                                 callback, verbosity);
         this->Delegate(fn);
     }
 }
 
-Plugin
-Host::loadPlugin(std::string const &path, std::string &error)
+ModulePtr
+VST3Host::loadPlugin(std::string const &path, std::string &error)
 {
-    assert(this->IsWorkerThread());
+    ASSERT_WORKER_THREAD;
 
     // first assume path is fully q
     this->m_loadingPath = path;
-    Plugin plugin = VST3::Hosting::Module::create(path, error); 
-    if(!plugin)
+    ModulePtr modPtr = VST3::Hosting::Module::create(path, error); 
+    if(!modPtr)
     {
         // see if it matches any installed plugins
         auto paths = VST3::Hosting::Module::getModulePaths();
@@ -153,99 +211,16 @@ Host::loadPlugin(std::string const &path, std::string &error)
         {
             if(this->endsWith(plug, path))
             {
-                plugin = VST3::Hosting::Module::create(plug, error);
+                modPtr = VST3::Hosting::Module::create(plug, error);
                 break;
             }
         }
     }
-    return plugin;
-}
-
-tresult PLUGIN_API
-Host::getName(Steinberg::Vst::String128 name)
-{
-    return VST3::StringConvert::convert(m_name, name) ? 
-        Steinberg::kResultTrue : Steinberg::kInternalError;
-}
-
-tresult PLUGIN_API
-Host::createInstance(Steinberg::TUID cid, Steinberg::TUID iid, void** obj)
-{
-    // std::cout << "createInstance for cid:" << cid << " iid:" << iid << "\n";
-    Steinberg::FUID classID = Steinberg::FUID::fromTUID(cid);
-    Steinberg::FUID interfaceID = Steinberg::FUID::fromTUID(iid);
-    if(classID == Steinberg::Vst::IMessage::iid && 
-        interfaceID == Steinberg::Vst::IMessage::iid)
-    {
-        *obj = new Steinberg::Vst::HostMessage;
-        return Steinberg::kResultTrue;
-    }
-    else 
-    if(classID == Steinberg::Vst::IAttributeList::iid && 
-        interfaceID == Steinberg::Vst::IAttributeList::iid)
-    {
-        if(auto al = Steinberg::Vst::HostAttributeList::make())
-        {
-            *obj = al.take();
-            return Steinberg::kResultTrue;
-        }
-        return Steinberg::kOutOfMemory;
-    }
-    std::cerr << "VST3Host::createInstance FAILED!!\n";
-    *obj = nullptr;
-    return Steinberg::kResultFalse;
-}
-
-tresult PLUGIN_API
-// Host::queryInterface(const char* iid, void** obj)
-Host::queryInterface(const Steinberg::TUID iid, void** obj)
-{
-    if(m_debug > 1)
-        dumpTUID("Host query call for", iid);
-
-    // default implemantion as of 3.7.3 (source/vst/hosting/pluginterfacesupport.cpp)
-    /*
-    ////---VST 3.0.0--------------------------------
-    addPlugInterfaceSupported (IComponent::iid);
-    addPlugInterfaceSupported (IAudioProcessor::iid);
-    addPlugInterfaceSupported (IEditController::iid);
-    addPlugInterfaceSupported (IConnectionPoint::iid);
-
-    addPlugInterfaceSupported (IUnitInfo::iid);
-    addPlugInterfaceSupported (IUnitData::iid);
-    addPlugInterfaceSupported (IProgramListData::iid);
-
-    //---VST 3.0.1--------------------------------
-    addPlugInterfaceSupported (IMidiMapping::iid);
-
-    //---VST 3.1----------------------------------
-    addPlugInterfaceSupported (IEditController2::iid);
-    */
-
-    QUERY_INTERFACE(iid, obj, Steinberg::FUnknown::iid, 
-                    Steinberg::Vst::IHostApplication);
-
-    QUERY_INTERFACE(iid, obj, Steinberg::Vst::IHostApplication::iid, 
-                    Steinberg::Vst::IHostApplication);
-
-    if (m_plugInterfaceSupport && 
-        m_plugInterfaceSupport->queryInterface(iid, obj) == Steinberg::kResultTrue)
-    {
-        return Steinberg::kResultOk;
-    }
-    else
-    {
-        std::string s("VST3Host: queryInterface went unanswered for ");
-        s.append(this->m_loadingPath);
-        dumpTUID(s.c_str(), iid);
-        
-        *obj = nullptr;
-        return Steinberg::kResultFalse;
-    }
+    return modPtr;
 }
 
 bool 
-Host::endsWith(std::string const &fullpath, std::string const &partpath)
+VST3Host::endsWith(std::string const &fullpath, std::string const &partpath)
 {
     if(partpath.size() > fullpath.size()) return false;
     int dlen = fullpath.length() - partpath.length(); 

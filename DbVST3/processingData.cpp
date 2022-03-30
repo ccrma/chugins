@@ -99,7 +99,7 @@ ProcessingData::Initialize(Steinberg::Vst::ProcessSetup &pd)
         bool bufferInst = (this->numInputs == 0
                            && this->numOutputs == 1 
                            && this->busUsage.outAudioChan[0].nch == 2);
-        if(bufferInst)
+        if(bufferInst && false)
             this->instBuffer.Init(pd.maxSamplesPerBlock);
 
         this->outputs = new Steinberg::Vst::AudioBusBuffers[this->numOutputs];

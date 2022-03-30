@@ -13,17 +13,19 @@ static std::ostream* errorStream = &std::cout;
 //------------------------------------------------------------------------
 // dbPlugProvider
 //------------------------------------------------------------------------
-dbPlugProvider::dbPlugProvider(const PluginFactory& factory, 
-                               ClassInfo classInfo, bool plugIsGlobal) : 
+dbPlugProvider::dbPlugProvider(
+    Steinberg::Vst::IHostApplication *hostCtx,
+    const PluginFactory& factory, ClassInfo classInfo, bool plugIsGlobal) : 
     factory(factory), 
     classInfo(classInfo),
     component(nullptr),
     controller(nullptr),
     plugIsGlobal(plugIsGlobal)
 {
+    this->hostContext = hostCtx;
 	if(plugIsGlobal)
 	{
-		setupPlugin(dbPluginContextFactory::instance().getPluginContext());
+		setupPlugin(this->hostContext);
 	}
 }
 
@@ -38,7 +40,7 @@ IComponent* PLUGIN_API
 dbPlugProvider::getComponent()
 {
 	if(!this->component)
-		this->setupPlugin(dbPluginContextFactory::instance().getPluginContext());
+		this->setupPlugin(this->hostContext);
 
 	if(this->component)
 		this->component->addRef();

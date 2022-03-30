@@ -7,10 +7,16 @@
 #include <ctime>
 
 // produces a yaml dump of the requested plugin on stdout
-class Dumpit : public Host
+class Dumpit : public VST3Host
 {
 public:
-    Dumpit() {}
+    Dumpit() 
+    {
+        s_unmanagedHost = this;
+    }
+    ~Dumpit() 
+    {
+    }
 
     int DumpOne(char const *path, std::ostream &ostream)
     {
@@ -122,4 +128,5 @@ int main(int argc, char* argv[])
         else
             std::cerr << "No VST3 plugins found!\n";
     }
+    // _CrtDumpMemoryLeaks();
 }

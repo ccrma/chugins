@@ -2,7 +2,7 @@
 #define VST3Ctx_h
 
 #include "host.h"
-#include "module.h"
+#include "audioModule.h"
 #include <unordered_map>
 
 /* -------------------------------------------------------------------------- */
@@ -14,18 +14,21 @@
 class VST3Ctx
 {
 private:
-    Host *host;
+    VST3Host *host;
     VST3::Hosting::Module::Ptr plugin;
     std::string vendor;
     std::string filepath;
-    std::vector<ModulePtr> modules;
-    ModulePtr activeModule;
+    std::vector<VST3AudioModulePtr> modules;
+    VST3AudioModulePtr activeModule;
     int verbosity = 0;
+    int debug = 0;
     bool ready = false;
 
 public:
-    VST3Ctx(Host *h, VST3::Hosting::Module::Ptr p, std::string const &path)
+    VST3Ctx(VST3Host *h, VST3::Hosting::Module::Ptr p, std::string const &path)
     {
+        if(this->debug)
+            std::cerr << "VST3Ctx construction\n";
         this->host = h;
         this->plugin = p;
         this->filepath = p->getPath();
@@ -42,7 +45,7 @@ public:
         {
             if(classInfo.category() == kVstAudioEffectClass)
             {
-                ModulePtr imod(new Module(classInfo, factory, verbosity));
+                VST3AudioModulePtr imod(new VST3AudioModule(classInfo, factory, verbosity));
                 this->modules.emplace_back(imod);
             }
             else
@@ -56,11 +59,18 @@ public:
             }
         }
         this->Finalize();
+        if(this->debug)
+            std::cerr << "VST3Ctx created\n";
     }
 
     ~VST3Ctx()
     {
-        // plugin should be cleaned up by ref-count
+        // this->plugin should be cleaned up by ref-count
+        if(this->debug)
+        {
+            std::cerr << "VST3Ctx deleted. ModulePtr use_count " 
+                << this->plugin.use_count() << "\n";
+        }
     }
 
     bool Ready()
@@ -153,22 +163,22 @@ public:
         ostr << "VST3Plugin:\n";
         ostr << "  filepath: '" << this->filepath << "'\n";
         ostr << "  vendor: '" << this->vendor << "'\n";
-        ostr << "  nmodules: " << this->modules.size() << "\n";
+        ostr << "  naudiomodules: " << this->modules.size() << "\n";
         if(!detailed)
-            ostr << "Modules:\n";
+            ostr << "VST3AudioModules:\n";
         else
             ostr << "FiddleNodes:\n";
         for(int i=0;i<this->modules.size();i++)
             this->modules[i]->Print(ostr, "  ", i, detailed);
     }
 
-    PluginInstance &getPluginInstance()
+    VST3PluginInstance &getPluginInstance()
     {
         if(this->activeModule.get())
             return this->activeModule->pluginInstance;
         else
         {
-            static PluginInstance s_pctx; // empty
+            static VST3PluginInstance s_pctx; // empty
             return s_pctx;
         }
     }
@@ -177,7 +187,7 @@ public:
         char const *inputBusRouting = nullptr, 
         char const *outputBusRouting = nullptr)
     {
-        PluginInstance &pctx = this->getPluginInstance();
+        VST3PluginInstance &pctx = this->getPluginInstance();
         if(!pctx.error)
         {
             pctx.InitProcessing(sampleRate, inputBusRouting, outputBusRouting);
@@ -200,7 +210,7 @@ public:
                 this->setParamValue(info, val);
             }
             else
-                std::cerr << "invalide parameter index " << index << "\n";
+                std::cerr << "invalid parameter index " << index << "\n";
         }
         return err;
     }
@@ -250,7 +260,7 @@ public:
 
     void ProcessSamples(float *in, int inCh, float *out, int outCh, int nframes)
     {
-        PluginInstance &pctx = this->getPluginInstance();
+        VST3PluginInstance &pctx = this->getPluginInstance();
         if(pctx.error)
             return; // error reported earlier
         
