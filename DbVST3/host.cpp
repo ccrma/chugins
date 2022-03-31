@@ -82,7 +82,7 @@ VST3Host::VST3Host(bool createMsgThread) // private method
     {
         m_workerThread = std::thread(workerThread, this);
         m_workerThreadId = m_workerThread.get_id();
-        std::function<void(void)> fn = std::bind(&VST3Host::initHostEnv, this);
+        std::function<void()> fn = std::bind(&VST3Host::initHostEnv, this);
         this->Delegate(fn); // initialize system in worker (not audio) thread.
     }
     else
@@ -123,7 +123,7 @@ VST3Host::initHostEnv()
 }
 
 void
-VST3Host::Delegate(std::function<void(void)> delFn)
+VST3Host::Delegate(std::function<void()> delFn)
 {
     m_queue.Push(delFn);
 }
@@ -190,7 +190,7 @@ VST3Host::OpenPlugin(std::string const &path, std::function<void(VST3Ctx*)> call
     }
     else
     {
-        std::function<void(void)> fn = std::bind(&VST3Host::OpenPlugin, this, path,     
+        std::function<void()> fn = std::bind(&VST3Host::OpenPlugin, this, path,     
                                                 callback, verbosity);
         this->Delegate(fn);
     }

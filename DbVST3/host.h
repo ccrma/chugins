@@ -48,7 +48,7 @@ public:
 
     char const * GetName() { return m_name; }
 
-    void Delegate(std::function<void(void)>); // to worker thread
+    void Delegate(std::function<void()>); // to worker thread
     bool IsWorkerThread();
     bool IsProcessingThread();
 
@@ -59,7 +59,7 @@ private: // --------------------------------------------------------------
     bool endsWith(std::string const &fullpath, std::string const &partpath);
 
 private: // --------------------------------------------------------------
-    ConcurrentQ<std::function<void(void)>> m_queue;
+    ConcurrentQ<std::function<void()>> m_queue;
     std::thread::id m_mainThreadId, m_workerThreadId;
     std::thread m_workerThread;
     static void workerThread(VST3Host *h);

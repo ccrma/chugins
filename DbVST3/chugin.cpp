@@ -21,7 +21,7 @@ VST3Chugin::~VST3Chugin()
 #if 1 
     // verified to be required for LABS (hangs in the other variant)
     // implies some use of thread-local-store?
-    std::function<void(void)> fn = std::bind(&deferredDelete, m_vst3Ctx);
+    std::function<void()> fn = std::bind(&deferredDelete, m_vst3Ctx);
     VST3Host::Singleton(true)->Delegate(fn);
     if(this->m_debug)
         std::cerr << "VST3Chugin deleted (defer VST3Ctx)\n";

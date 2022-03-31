@@ -96,7 +96,7 @@ public:
         }
         else
         {
-            std::function<void(void)> fn = std::bind(&VST3Ctx::ActivateModule, 
+            std::function<void()> fn = std::bind(&VST3Ctx::ActivateModule, 
                                                 this, index, sampleRate);
             this->host->Delegate(fn);
             return 0; // async
