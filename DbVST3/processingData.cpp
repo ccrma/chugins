@@ -6,7 +6,7 @@
 
 ProcessingData::ProcessingData()
 {
-    this->debug = 0;
+    this->debug = 1;
     this->verbosity = this->debug;
     this->eventSampleOffset = 0;
 }

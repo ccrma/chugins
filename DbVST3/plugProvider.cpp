@@ -8,7 +8,7 @@
 #include <cstdio>
 #include <iostream>
 
-static std::ostream* errorStream = &std::cout;
+static std::ostream* s_errorStream = &std::cerr;
 
 //------------------------------------------------------------------------
 // dbPlugProvider
@@ -19,7 +19,7 @@ dbPlugProvider::dbPlugProvider(
     factory(factory), 
     classInfo(classInfo),
     component(nullptr),
-    controller(nullptr),
+    editController(nullptr),
     plugIsGlobal(plugIsGlobal)
 {
     this->hostContext = hostCtx;
@@ -52,11 +52,11 @@ dbPlugProvider::getComponent()
 IEditController* PLUGIN_API 
 dbPlugProvider::getController()
 {
-	if(this->controller)
-		this->controller->addRef();
+	if(this->editController)
+		this->editController->addRef();
 
 	// 'iController == 0' is allowed! In this case the plug has no controller
-	return this->controller;
+	return this->editController;
 }
 
 //------------------------------------------------------------------------
@@ -115,21 +115,24 @@ bool dbPlugProvider::setupPlugin(FUnknown* hostContext)
 
         // check if component is controller
         this->componentIsController = true;
-        this->controller = Steinberg::FUnknownPtr<IEditController>(component).getInterface();
-        if(!this->controller)
+        this->editController = Steinberg::FUnknownPtr<IEditController>(component).getInterface();
+        if(!this->editController)
         {
             this->componentIsController = false;
             TUID controllerCID;
 			if(this->component->getControllerClassId(controllerCID) == Steinberg::kResultTrue)
 			{
 				// create its controller part created from the factory
-				this->controller = this->factory.createInstance<IEditController>(VST3::UID(controllerCID));
-				if(!this->controller)
+                // std::cerr << "editController cid " << controllerCID << "\n";
+				this->editController = this->factory.createInstance<IEditController>(VST3::UID(controllerCID));
+				if(!this->editController)
                 {
                     std::cerr << "Problem initializing plugin controller(0) "
                             << this->classInfo.name() << "\n";
                     return false;
                 }
+                else
+                    this->editController->initialize(hostContext);
 			}
             else
             {
@@ -138,28 +141,63 @@ bool dbPlugProvider::setupPlugin(FUnknown* hostContext)
                 return false;
             }
         }
-        if(!this->componentIsController)
-            this->controller->initialize(hostContext);
+        else
+        {
+            // ardour claims that we may need to double-initialize in
+            // the case where the component can act as editcontroller
+            // tried this to to avail with LABS.
+            // this->editController->initialize(hostContext);
+        }
+        this->setupExtra();
 		this->connectComponents();
 	}
 	else 
-    if(errorStream)
+    if(s_errorStream)
 	{
-		*errorStream << "Failed to create instance of " 
-                     << this->classInfo.name() << "!\n";
+		*s_errorStream << "PlugProvider failed to create instance of " 
+                       << this->classInfo.name() << "!\n";
 	}
 
 	return res;
 }
 
 //------------------------------------------------------------------------
+bool dbPlugProvider::setupExtra()
+{
+	if(!this->component || !this->editController)
+		return false;
+    
+    // FUnknownPtr magic follows
+	this->editController2 = this->component; 
+	this->midiMapping = this->component;
+	this->audioProcessor = this->component;
+	this->componentHandler = this->component;
+	this->componentHandler2 = this->component;
+	this->unitInfo = this->component;
+	this->unitData = this->component;
+    this->programListData = this->component;
+    if(!this->componentIsController)
+    {
+        if(!this->editController2) this->editController2 = this->editController; 
+        if(!this->midiMapping) this->midiMapping = this->editController;
+        if(!this->audioProcessor) this->audioProcessor = this->editController;
+        if(!this->componentHandler) this->componentHandler = this->editController;
+        if(!this->componentHandler2) this->componentHandler2 = this->editController;
+        if(!this->unitInfo) this->unitInfo = this->editController;
+        if(!this->unitData) this->unitData = this->editController;
+        if(!this->programListData) this->programListData = this->editController;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------
 bool dbPlugProvider::connectComponents()
 {
-	if(!component || !controller)
+	if(!this->component || !this->editController)
 		return false;
 
-	Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> compICP(component);
-	Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> contrICP(controller);
+	Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> compICP(this->component);
+	Steinberg::FUnknownPtr<Steinberg::Vst::IConnectionPoint> contrICP(this->editController);
 	if(!compICP || !contrICP)
 		return false;
 
@@ -204,14 +242,26 @@ bool dbPlugProvider::disconnectComponents()
 //------------------------------------------------------------------------
 void dbPlugProvider::terminatePlugin()
 {
+    this->editController->setComponentHandler(nullptr); // defensive
+
 	disconnectComponents();
+
+    // release hold on all these..
+    this->editController2 = nullptr;
+    this->midiMapping = nullptr;
+    this->audioProcessor = nullptr;
+    this->componentHandler = nullptr;
+    this->componentHandler2 = nullptr;
+    this->unitInfo = nullptr;
+    this->unitData = nullptr;
+    this->programListData = nullptr;
 
 	if(this->component)
 		this->component->terminate();
 
-	if(this->controller && this->componentIsController == false)
-		this->controller->terminate();
+	if(this->editController && !this->componentIsController)
+		this->editController->terminate();
 
-	component = nullptr;
-	controller = nullptr;
+	this->component = nullptr;
+	this->editController = nullptr;
 }

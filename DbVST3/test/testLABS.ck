@@ -5,8 +5,8 @@ new DbVST3 @=> x;
 x.loadPlugin(pluginName);
 while(!x.ready())
     1::ms => now;
-<<< "testLABS.ck", pluginName, "loaded, ", x.getNumModules(), "modules.">>>;
-x.printModules();
+// <<< "testLABS.ck", pluginName, "loaded, ", x.getNumModules(), "modules.">>>;
+// x.printModules();
 
 <<< "make a sound", "please">>>;
 x => dac;

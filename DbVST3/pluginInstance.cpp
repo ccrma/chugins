@@ -78,7 +78,7 @@ VST3PluginInstance::InitProcessing(float sampleRate,
         // indications are that we should also follow the guidance
         // of the plugin rather than request Speaker-Arrangement 
         // override by the host.
-        if(this->debug)
+        if(this->debug || true)
             fprintf(stderr, "SetupProcessing\n");
         if(processor->setupProcessing(this->processSetup) 
             == Steinberg::kResultTrue)
@@ -249,7 +249,8 @@ VST3PluginInstance::initComponent()
 bool
 VST3PluginInstance::synchronizeStates()
 {
-    assert(this->component);
+    std::cerr << "synchronizeStates\n";
+    assert(this->component && this->host->IsWorkerThread());
     Steinberg::MemoryStream stream;
     if(this->component->getState(&stream) == Steinberg::kResultTrue) 
     {
@@ -387,8 +388,8 @@ VST3PluginInstance::restartComponent(int32 flags)
     }
     if(flags & Steinberg::Vst::kParamValuesChanged)
     {
-        bool pushToProcessor = true;
-        if(this->verbosity)
+        bool pushToProcessor = false;
+        if(this->verbosity || 1)
         {
             std::cerr << "VST3PluginInstance.restartComponent ParamValuesChanged, "
                 << "updateProcessor:" << pushToProcessor
@@ -416,8 +417,9 @@ VST3PluginInstance::restartComponent(int32 flags)
 void 
 VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBusRouting)
 {
+    std::cerr << "PluginInstance.InitBuses\n";
+
     // countChannels initializes busConfig.
-    int nbusIn, nbusOut;
     this->processData.busUsage.Reset();
 
     /* audio buses -- */
@@ -425,7 +427,7 @@ VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBus
                         Steinberg::Vst::kInput, 
                         this->processData.busUsage.inAudioChan,
                         this->processData.busUsage.numInputChannels);
-    nbusIn = this->processData.busUsage.inAudioChan.size();
+    int nbusIn = this->processData.busUsage.inAudioChan.size();
     if(nbusIn > 0)
         this->processData.busUsage.inputRouting.resize(nbusIn, 0);
 
@@ -433,7 +435,7 @@ VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBus
                         Steinberg::Vst::kOutput, 
                         this->processData.busUsage.outAudioChan,
                         this->processData.busUsage.numOutputChannels);
-    nbusOut = this->processData.busUsage.outAudioChan.size();
+    int nbusOut = this->processData.busUsage.outAudioChan.size();
     if(nbusOut > 0)
         this->processData.busUsage.outputRouting.resize(nbusOut, 0);
 
@@ -595,6 +597,7 @@ VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBus
         if(nch == 0)
         {
             inSA[i] = 0;
+            std::cerr << "activate inbus " << i << "false\n";
             this->component->activateBus(Steinberg::Vst::kAudio,
                                     Steinberg::Vst::kInput, i, false);
         }
@@ -604,6 +607,7 @@ VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBus
             for(int k=0;k<nch;k++)
                 sa |= (1 << k);
             inSA[i] = sa;
+            std::cerr << "activate inbus " << i << "true\n";
             this->component->activateBus(Steinberg::Vst::kAudio,
                                     Steinberg::Vst::kInput, i, true);
         }
@@ -615,6 +619,7 @@ VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBus
         if(nch == 0)
         {
             outSA[i] = 0;
+            std::cerr << "activate outbus " << i << "false\n";
             this->component->activateBus(Steinberg::Vst::kAudio,
                                     Steinberg::Vst::kOutput, i, false);
         }
@@ -624,10 +629,10 @@ VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBus
             for(int k=0;k<nch;k++)
                 sa |= (1 << k);
             outSA[i] = sa;
-            if(this->debug)
+            if(this->debug || 1)
             {
                 // stereo is 0x03  (ie: 0b00000011)
-                std::cerr << "activate output bus " << i << " " << sa << "\n";
+                std::cerr << "activate output bus " << i << " sa:" << sa << "\n";
             }
             this->component->activateBus(Steinberg::Vst::kAudio,
                                     Steinberg::Vst::kOutput, i, true);
@@ -641,6 +646,7 @@ VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBus
     // 1. accept our request (return true)
     // 2. reject but attempt to negotiate (return false)
     // 3. reject outright, revert to default behavior (return false)
+    std::cerr << "setBusArrangements in:(" << inSA.size() << "), out(" << outSA.size() <<")\n";
 	Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> processor = component;
     if(processor->setBusArrangements(
         inSA.size() ? &inSA[0] : nullptr, inSA.size(),
@@ -661,7 +667,7 @@ VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBus
             Steinberg::Vst::kEvent, Steinberg::Vst::kOutput);
     if(this->processData.busUsage.numInputEventBuses > 0)
     {
-        if(this->verbosity)
+        if(this->verbosity || 1)
         {
             std::cerr << "Input event busses\n";
             Steinberg::Vst::BusInfo binfo;
@@ -678,7 +684,7 @@ VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBus
     }
     else
     {
-        if(this->verbosity)
+        if(this->verbosity || 1)
             std::cerr << "No event-in busses\n"; // usually accept events anyway
     }
     setEventBusState(true);
@@ -690,7 +696,7 @@ VST3PluginInstance::setEventBusState(bool enable)
     int inEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kInput);
     int outEvt = this->component->getBusCount(Steinberg::Vst::kEvent, Steinberg::Vst::kOutput);
 
-    if(this->debug)
+    if(this->debug || 1)
     {
         std::cerr << this->provider->GetName() << " setEventBusState " 
             << enable << " nin:" << inEvt << " nout:" << outEvt << "\n";
@@ -736,7 +742,7 @@ VST3PluginInstance::queryInterface(const Steinberg::TUID iid, void** obj)
 {
     // TUID's are 16-char arrays
 
-    if(this->debug)
+    if(this->debug || true)
         dumpTUID("VST3PluginInstance query ", iid);
 
     QUERY_INTERFACE(iid, obj, Steinberg::Vst::IComponentHandler::iid, Steinberg::Vst::IComponentHandler);

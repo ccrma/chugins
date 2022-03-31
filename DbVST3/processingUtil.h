@@ -4,11 +4,35 @@
 #include <vector>
 #include "vst3.h"
 #include <cstdio>
+#include <iostream>
 
-inline void dumpTUID(char const *msg, const Steinberg::TUID x)
+inline void dumpTUID(char const *msg, const Steinberg::TUID x, bool ret=1)
 {
-    Steinberg::uint32 * const f = (Steinberg::uint32 *) x;
-    fprintf(stderr, "%s %x%x%x%x\n", msg, f[0], f[1], f[2], f[3]);
+    char buf[128];
+    Steinberg::FUID xx = Steinberg::FUID::fromTUID(x);
+    if(xx == Steinberg::Vst::IHostApplication::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IHostApplication", ret);
+    else
+    if(xx == Steinberg::Vst::IComponentHandler::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IComponentHandler", ret);
+    else
+    if(xx == Steinberg::Vst::IComponentHandler2::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IComponentHandler2", ret);
+    else
+    if(xx == Steinberg::Vst::IComponentHandler3::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IComponentHandler3", ret);
+    else
+    if(xx == Steinberg::Vst::IContextMenuTarget::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IContextMenuTarget", ret);
+    else
+    if(xx == Steinberg::Vst::IUnitHandler::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IUnithandler", ret);
+    else
+    {
+        Steinberg::uint32 * const f = (Steinberg::uint32 *) x;
+        sprintf(buf, "%s %x%x%x%x (%d)\n", msg, f[0], f[1], f[2], f[3], ret);
+    }
+    std::cerr << buf << "\n";
 }
 
 struct BusUsage

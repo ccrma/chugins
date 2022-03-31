@@ -48,8 +48,9 @@ public:
     std::string const &GetName() { return this->classInfo.name(); }
 	
 //------------------------------------------------------------------------
-protected:
+private:
 	bool setupPlugin(Steinberg::FUnknown* hostContext);
+    bool setupExtra();
 	bool connectComponents();
 	bool disconnectComponents();
 	void terminatePlugin();
@@ -57,11 +58,25 @@ protected:
 	PluginFactory factory;
     Steinberg::Vst::IHostApplication *hostContext;
 	Steinberg::IPtr<IComponent> component;
-	Steinberg::IPtr<IEditController> controller;
+	Steinberg::IPtr<IEditController> editController;
 	ClassInfo classInfo;
 
 	Steinberg::OPtr<Steinberg::Vst::ConnectionProxy> componentCP;
 	Steinberg::OPtr<Steinberg::Vst::ConnectionProxy> controllerCP;
+
+    // misc handles to grab hold of during construction to ensure
+    // consistency (in the worker thread) (defensive).
+    // These are all the potential interfaces we can expect our
+    // audioplugin to provide (either via component or controller).
+    Steinberg::FUnknownPtr<Steinberg::Vst::IEditController2> editController2;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping> midiMapping;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> audioProcessor;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IComponentHandler> componentHandler;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IComponentHandler2> componentHandler2;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IUnitInfo> unitInfo;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IUnitData> unitData;
+    Steinberg::FUnknownPtr<Steinberg::Vst::IProgramListData> programListData;
+    // Steinberg::IPtr<Steinberg::Vst::ChannelContext::IInfoListener> trackInfoListener;
 
 	bool plugIsGlobal;
     bool componentIsController;
