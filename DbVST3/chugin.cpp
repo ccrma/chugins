@@ -55,17 +55,21 @@ VST3Chugin::onPluginLoaded(VST3Ctx *ctx)
     // NB: this runs in the "workerthread", not the chugin/audio thread.
     // so as to not require activateModule, we activateModule(0)
     // since it's the 95% case.
+    // std::cerr << "OnPluginLoaded\n";
     m_vst3Ctx = ctx;
     if(m_vst3Ctx)
+    {
+        m_vst3Ctx->SetVerbosity(this->m_verbosity);
         this->selectModule(0);
+    }
 }
 
 void
 VST3Chugin::setVerbosity(int v)
 {
-    if(!m_vst3Ctx) return;
     m_verbosity = v;
-    m_vst3Ctx->SetVerbosity(v);
+    if(m_vst3Ctx)
+        m_vst3Ctx->SetVerbosity(v);
 }
 
 void 
@@ -85,16 +89,33 @@ VST3Chugin::getNumModules()
 int 
 VST3Chugin::selectModule(int m)
 {
-    if(!m_vst3Ctx) return 0;
-    if(m != m_activeModule)
+    int err = 0;
+    if(!m_vst3Ctx)
     {
-        int err = m_vst3Ctx->ActivateModule(m, m_sampleRate); 
-        if(!err)
-            m_activeModule = m;
-        return err;
+        err = -1;
+        std::cerr << "VST3Chugin selectModule in invalid state\n";
     }
     else
-        return 0; // already active
+    if(m != m_activeModule)
+    {
+        err = m_vst3Ctx->ActivateModule(m, m_sampleRate); 
+        if(!err)
+        {
+            m_activeModule = m;
+            if(this->m_verbosity)
+                std::cerr << "VST3Chugin changed module " << m << "\n";
+        }
+        else
+        if(this->m_verbosity)
+            std::cerr << "VST3Chugin couldn't selectModule " << m << "\n";
+    }
+    else
+    if(this->m_verbosity)
+    {
+        std::cerr << "VST3Chugin module " << m << " active\n";
+        err = 0;
+    }
+    return err;
 }
 
 std::string 

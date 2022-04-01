@@ -4,14 +4,16 @@ Mix2 mix;
 SqrOsc osc;
 DbVST3 vocoder;
 
-vocoder.setVerbosity(1);
+// vocoder.setVerbosity(1);
 vocoder.loadPlugin("TAL-Vocoder-2.vst3");
 while(!vocoder.ready())
     1::ms => now;
-<<<"Vocoder loaded,", vocoder.getNumParameters(), "parameters.">>>;
+vocoder.selectModule(0);
+<<<"Vocoder loaded, has", vocoder.getNumParameters(), "parameters.">>>;
 vocoder.setParameter("Bypass", 0);
 vocoder.setParameter("inputmode", 1);  // 0 means use its own carrier, 1 means L+R
 vocoder.setParameter("sidechain", 0);
+vocoder.setParameter("Program", 0.4);
 
 // WIP:
 // inputRouting must be set prior to plugin-load

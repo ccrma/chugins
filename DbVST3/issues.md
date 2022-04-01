@@ -341,3 +341,82 @@ VST3PluginInstance releaseResources
 ### See Also
 
 https://github.com/Spacechild1/vstplugin/blob/master/sc/src/VSTPlugin.cpp
+
+
+### TALVocoder-in-Fiddle
+
+
+VST3PluginInstance query IHostApplication (1)
+VST3PluginInstance query IHostApplication (1)
+VSTPluginInstance.createInstance HostMessage
+VST3PluginInstance query IComponentHandler2 (1)
+synchronizeStates
+VST3PluginInstance.restartComponent ParamValuesChanged, updateProcessor:1
+TAL-Vocoder-2 synchronized 7380 bytes of state
+VST3PluginInstance.Init TAL-Vocoder-2
+SetupProcessing
+PluginInstance.InitBuses
+activate inbus 0 true
+activate inbus 1 false
+activate output bus 0 sa:3
+setBusArrangements in:(2), out(1)
+TAL-Vocoder-2 setEventBusState 1 nin:1 nout:0
+Activating TAL-Vocoder-2
+(activating succeeded)
+VST3PluginInstance.InitProcessing TAL-Vocoder-2
+
+vs test/vocoder.ck
+
+VST3PluginInstance query  IHostApplication (1)
+VST3PluginInstance query  IHostApplication (1)
+VSTPluginInstance.createInstance HostMessage
+VST3PluginInstance query  IComponentHandler2 (1)
+synchronizeStates
+VST3PluginInstance.restartComponent ParamValuesChanged, updateProcessor:1
+TAL-Vocoder-2 synchronized 7437 bytes of state
+VST3PluginInstance.Init TAL-Vocoder-2
+SetupProcessing
+PluginInstance.InitBuses
+activate inbus 0 true
+activate inbus 1 false
+activate output bus 0 sa:3
+setBusArrangements in:(2), out(1)
+TAL-Vocoder-2 setEventBusState 1 nin:1 nout:0
+Activating TAL-Vocoder-2
+(activating succeeded)
+VST3PluginInstance.InitProcessing TAL-Vocoder-2
+Vocoder loaded, 36 parameters.
+performEdit called 1862642762 0
+performEdit called 1336600346 0.416
+performEdit called 1727365094 0
+performEdit called 248894132 0
+performEdit called 790965235 0.512
+performEdit called 1572884547 1
+performEdit called 1039623321 0.664
+performEdit called 1877784346 1
+performEdit called 1916191535 0
+performEdit called 968503834 0
+performEdit called 1929258769 0.54
+performEdit called 1874206561 0
+performEdit called 1100839755 0.436
+performEdit called 906021787 0.592
+performEdit called 1524350849 0.616
+performEdit called 561974127 1
+performEdit called 270278353 0
+performEdit called 3571704 0.5
+performEdit called 106433143 0
+performEdit called 1707711597 0
+performEdit called 786268582 0
+performEdit called 1366601271 0.328
+performEdit called 1754441473 0.1
+performEdit called 1754441474 0.232
+performEdit called 1754441475 0.268
+performEdit called 1754441476 0.424
+performEdit called 1754441477 0.5
+performEdit called 1754441478 0.5
+performEdit called 1754441479 0.46
+performEdit called 1754441480 0.5
+performEdit called 1754441481 0.5
+performEdit called 1754441482 0.5
+performEdit called 1754441504 0.424
+performEdit called 302364618 0
