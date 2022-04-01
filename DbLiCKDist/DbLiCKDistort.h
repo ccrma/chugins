@@ -142,7 +142,7 @@ public:
 /* LiCK's Chew effect has two triangular LFOs running 
  * by default at 4400 hz and depth of .1. These are
  * used to define a top and bottom envelope against
- * which to clip the signal in teh clip region we
+ * which to clip the signal in the clip region we
  * replace the signal with the triwave.
  */
 class Chew : public DbLiCKDistort
