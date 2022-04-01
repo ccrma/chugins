@@ -3,7 +3,10 @@
 DbLiCKLFO is a chugin that implements [LiCK's](https://github.com/heuermh/lick/tree/master/lick/lfo)
 LFO chugen's natively.
 
-LiCK's LFO is a linear combination of eight oscillators:
+LiCK's LFO is a linear combination of eight oscillators. In this implementation
+only those oscillators with non-zero weights are actually evaluated. Convenience
+methods are provided in the common case where only one oscillator is required.
+The chugin also supports
 
 * saw
 * sine
@@ -19,6 +22,9 @@ LiCK's LFO is a linear combination of eight oscillators:
 `freq(float f)` sets the oscillator frequency.
 
 `setrange(float min, float max)` sets the oscillator output range.
+
+`modulate(int onoff)` causes the optional input signal to be amplitude-modulated
+(multiplied) by the LFO.
 
 `setmix(float saw, float sine, float sqr, float tri, float hyper, float sh, float ssh, float fnoise)` sets the linear 
 combination of oscillators.  Weights are auto-normalized to sum to 1.

@@ -90,6 +90,8 @@ spork ~ doit(1, 45::second);
 * Some plugins, eg Spitfire LABS, don't work due to unresolved issues with
   their security features. 
 * Bypass is unimplemented (but on the schedule).
+* Program-changes may trigger parameter resets that differ from 
+  values coded into your .ck files.
 
 ## See Also
 
