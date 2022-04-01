@@ -89,7 +89,8 @@ spork ~ doit(1, 45::second);
 * MIDI events may produce stuck keys.
 * Some plugins, eg Spitfire LABS, don't work due to unresolved issues with
   their security features. 
+* Bypass is unimplemented (but on the schedule).
 
 ## See Also
 
-https://cannerycoders.com/docs/Fiddle/topics/vst3.html
+https://cannerycoders.com/docs/fiddle/topics/vst3.html

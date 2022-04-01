@@ -1,10 +1,8 @@
-## Known Issues
+## Coding Issues
 
-* Currently we don't save/stash plugin state. Plugin presets loaded
-  by VST3Fiddler cause parameter updates to be stashed in the .chg file.
-  Plugins that support preset parameters trigger a complete update of
-  parameters when its value is set.
-* MIDI events may produce stuck keys.
+## hot
+
+* TALVocoder regression.
 
 ## Our Terms and Class Hierarchy
 
@@ -340,138 +338,6 @@ VST3PluginInstance releaseResources
 14:18 note [chuck] Opened MIDI device: 0 -> A-Series Keyboard
 
 
-## testCleanup.ck with early out
+### See Also
 
-*** Leaked objects detected: 3 instance(s) of class Param
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class JuceVST3EditController
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class AudioParameterBool
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class JuceAudioProcessor
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class HashMap
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class JuceVST3Component
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class SynthesiserSound
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 8 instance(s) of class SynthesiserVoice
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class JuceDemoPluginAudioProcessor
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class Synthesiser
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class OwnedArray
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 2 instance(s) of class AudioBuffer
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 10 instance(s) of class AudioBuffer
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 4 instance(s) of class SharedObject
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 2 instance(s) of class AudioProcessorParameterNode
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class TimerThread
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 2 instance(s) of class AsyncUpdater
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class Thread
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 3 instance(s) of class WaitableEvent
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class AudioProcessorValueTreeState
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 2 instance(s) of class AudioParameterFloat
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 3 instance(s) of class AudioProcessorParameterWithID
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 3 instance(s) of class AudioProcessorParameter
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class MidiKeyboardState
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 2 instance(s) of class MidiBuffer
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class AudioProcessor
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 2 instance(s) of class AudioProcessorParameterGroup
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 2 instance(s) of class OwnedArray
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 2 instance(s) of class OwnedArray
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 8 instance(s) of class BigInteger
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class InternalMessageQueue
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 1 instance(s) of class MessageManager
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
-chuck.exe has triggered a breakpoint.
-
-JUCE Assertion failure in juce_singleton.h:50
-chuck.exe has triggered a breakpoint.
-
-*** Leaked objects detected: 5 instance(s) of class StringArray
-JUCE Assertion failure in juce_leakedobjectdetector.h:92
+https://github.com/Spacechild1/vstplugin/blob/master/sc/src/VSTPlugin.cpp

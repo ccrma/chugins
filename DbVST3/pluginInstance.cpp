@@ -11,8 +11,8 @@ VST3PluginInstance::VST3PluginInstance()
     this->host = VST3Host::Singleton();
     assert(this->host->IsWorkerThread());
     this->error = 0;
-    this->debug = 0;
-    this->verbosity = 0;
+    this->debug = 1;
+    this->verbosity = this->debug; // overridable via SetVerbosity in header
     this->component = nullptr;
     this->controller = nullptr;
     this->activated = false;
@@ -21,7 +21,7 @@ VST3PluginInstance::VST3PluginInstance()
 VST3PluginInstance::~VST3PluginInstance()
 {
     if(this->debug)
-        std::cerr << "VST3PluginInstance deleted\n";
+        std::cerr << "VST3PluginInstance deleted " << this->provider->GetName() << "\n";
     this->deinitProcessing();
 }
 
@@ -249,7 +249,8 @@ VST3PluginInstance::initComponent()
 bool
 VST3PluginInstance::synchronizeStates()
 {
-    std::cerr << "synchronizeStates\n";
+    if(this->debug)
+        std::cerr << "synchronizeStates\n";
     assert(this->component && this->host->IsWorkerThread());
     Steinberg::MemoryStream stream;
     if(this->component->getState(&stream) == Steinberg::kResultTrue) 
@@ -388,7 +389,7 @@ VST3PluginInstance::restartComponent(int32 flags)
     }
     if(flags & Steinberg::Vst::kParamValuesChanged)
     {
-        bool pushToProcessor = false;
+        bool pushToProcessor = true; // this->activated;
         if(this->verbosity)
         {
             std::cerr << "VST3PluginInstance.restartComponent ParamValuesChanged, "
@@ -417,7 +418,8 @@ VST3PluginInstance::restartComponent(int32 flags)
 void 
 VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBusRouting)
 {
-    std::cerr << "PluginInstance.InitBuses\n";
+    if(this->debug)
+        std::cerr << "PluginInstance.InitBuses\n";
 
     // countChannels initializes busConfig.
     this->processData.busUsage.Reset();
@@ -597,7 +599,8 @@ VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBus
         if(nch == 0)
         {
             inSA[i] = 0;
-            std::cerr << "activate inbus " << i << "false\n";
+            if(this->debug)
+                std::cerr << "activate inbus " << i << " false\n";
             this->component->activateBus(Steinberg::Vst::kAudio,
                                     Steinberg::Vst::kInput, i, false);
         }
@@ -607,7 +610,8 @@ VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBus
             for(int k=0;k<nch;k++)
                 sa |= (1 << k);
             inSA[i] = sa;
-            std::cerr << "activate inbus " << i << "true\n";
+            if(this->debug)
+                std::cerr << "activate inbus " << i << " true\n";
             this->component->activateBus(Steinberg::Vst::kAudio,
                                     Steinberg::Vst::kInput, i, true);
         }
@@ -619,7 +623,8 @@ VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBus
         if(nch == 0)
         {
             outSA[i] = 0;
-            std::cerr << "activate outbus " << i << "false\n";
+            if(this->debug)
+                std::cerr << "activate outbus " << i << " false\n";
             this->component->activateBus(Steinberg::Vst::kAudio,
                                     Steinberg::Vst::kOutput, i, false);
         }
@@ -646,7 +651,8 @@ VST3PluginInstance::initBuses(char const *inputBusRouting, char const *outputBus
     // 1. accept our request (return true)
     // 2. reject but attempt to negotiate (return false)
     // 3. reject outright, revert to default behavior (return false)
-    std::cerr << "setBusArrangements in:(" << inSA.size() << "), out(" << outSA.size() <<")\n";
+    if(this->debug)
+        std::cerr << "setBusArrangements in:(" << inSA.size() << "), out(" << outSA.size() <<")\n";
 	Steinberg::FUnknownPtr<Steinberg::Vst::IAudioProcessor> processor = component;
     if(processor->setBusArrangements(
         inSA.size() ? &inSA[0] : nullptr, inSA.size(),

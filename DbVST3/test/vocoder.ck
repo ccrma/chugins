@@ -1,37 +1,48 @@
-
-
 int done;
+SndBuf buf;
+Mix2 mix;
+SqrOsc osc;
+DbVST3 vocoder;
+
+vocoder.setVerbosity(1);
+vocoder.loadPlugin("TAL-Vocoder-2.vst3");
+while(!vocoder.ready())
+    1::ms => now;
+<<<"Vocoder loaded,", vocoder.getNumParameters(), "parameters.">>>;
+vocoder.setParameter("Bypass", 0);
+vocoder.setParameter("inputmode", 1);  // 0 means use its own carrier, 1 means L+R
+vocoder.setParameter("sidechain", 0);
+
+// WIP:
+// inputRouting must be set prior to plugin-load
+// left is modulator, right is sidechain/carrier (?)
+// vocoder.setInputRouting("11"); 
+// 1 input event busses
+// Event bus 0: MIDI Input
+// AudioIn bus:Main.0 nchan:2
+// AudioIn bus:Main.1 nchan:0
+// Configuring audio _buses_: in 2 out:1
+// Configure audio _channels_: in 2 out 2
+
+mix => vocoder => dac;
+.8 => mix.gain;
+
+buf.read("../../PitchTrack/data/obama.wav");
+buf.loop(1);
+buf.rate(1);
+buf => mix.right; // modulator
+
+osc => mix.left; // carrier
+100 => osc.freq;
+.5 => osc.gain;
+.5 => buf.gain;
 
 fun void doit()
 {
-    DbVST3 vocoder;
-    vocoder.setVerbosity(1);
-
-    vocoder.loadPlugin("TAL-Vocoder-2.vst3");
-    <<<"Vocoder loaded,", vocoder.getNumParameters(), "parameters.">>>;
-    vocoder.setParameter("Bypass", 0);
-    vocoder.setParameter("inputmode", 1);  // L+R
-    vocoder.setParameter("sidechain", 0);
-
-    Mix2 mix => vocoder => dac;
-    .8 => mix.gain;
-
-    SndBuf buf;
-    buf.read("../../PitchTrack/data/obama.wav");
-    buf.loop(1);
-    buf.rate(1);
-
-    buf => mix.right; // modulator
-    SawOsc o => mix.left; // carrier
-    100 => o.freq;
-    .5 => o.gain;
-
-    for(int i;i<2;i++)
+    for(int i;i<10;i++)
     {
-        buf.rate(1 + i * .2);
-        buf.phase(0);
-        for(int j;j<10;j++)
-            1::second =>now;
+        Math.mtof(40+i) => osc.freq;
+        10::second => now;
     }
     1 => done;
 }
@@ -46,48 +57,6 @@ fun void doitMidi()
         me.exit();
     }
     <<< "MIDI device:", min.num(), " -> ", min.name() >>>;
-
-    DbVST3 vocoder;
-    vocoder.setVerbosity(1);
-
-    // inputRouting must be set prior to plugin-load
-    // left is modulator, right is sidechain/carrier (?)
-    // vocoder.setInputRouting("11"); 
-
-    // 1 input event busses
-    // Event bus 0: MIDI Input
-    // AudioIn bus:Main.0 nchan:2
-    // AudioIn bus:Main.1 nchan:0
-    // Configuring audio _buses_: in 2 out:1
-    // Configure audio _channels_: in 2 out 2
-
-    vocoder.loadPlugin("TAL-Vocoder-2.vst3");
-    <<<"Vocoder loaded,", vocoder.getNumParameters(), "parameters.">>>;
-    vocoder.setParameter("Bypass", 0);
-
-    Mix2 mix => vocoder => dac;
-    SndBuf buf;
-    buf.read("../../PitchTrack/data/obama.wav");
-    buf.loop(1);
-    buf.rate(1);
-
-    // 0 means use its own carrier, then midievents should matter?
-    //   without which there should be no output. (no success to date).
-    1 => float inputMode; 
-    vocoder.setParameter("inputmode", inputMode); 
-    vocoder.setParameter("sidechain", 0);
-    if(inputMode == 0 && 0)
-    {
-        buf => mix.right; // modulator, internal carrier
-        buf => mix.left;
-    }
-    else
-    {
-        buf => mix.right; // modulator
-        SawOsc o => mix.left; // carrier
-        100 => o.freq;
-        .5 => o.gain;
-    }
 
     for(int i;i<1;i++)
     {
@@ -108,8 +77,8 @@ fun void doitMidi()
     <<<"Done">>>;
 }
 
-// spork ~ timeKeeper();
 spork ~ doit();
+// spork ~ doitMidi();
 
 int seconds;
 while(!done)
