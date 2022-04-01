@@ -1,7 +1,7 @@
 #ifdef __arm__
-inline void ddn(float &x) {}
+inline void denorm(float &x) {}
 #else
-inline void ddn(float &x) 
+inline void denorm(float &x) 
 {
     if(x >= 0.f)
     {
@@ -14,7 +14,7 @@ inline void ddn(float &x)
 }
 #endif
 
-class DbOnePole // for "natural" modulation, derived from Stk
+class DbOnePole // a one pole digital filter
 {
 public:
     DbOnePole(float pole=.999f)
@@ -38,7 +38,7 @@ public:
         this->in0 = this->gain * x;
         this->out0 = this->b0 * this->in0 - this->a1 * this->out1;
         this->out1 = this->out0;
-        ddn(this->out1);
+        denorm(this->out1);
         return this->out0;
     }
 
