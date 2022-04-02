@@ -13,7 +13,7 @@ now GPL2 and MIT licensed.
 
 `int getNumPresets()` returns the number of presets.
  
-`selectPreset(int)` selects the indexed preset.
+`selectPreset(int i)` selects the indexed preset.
 
 #### Parameters
 
@@ -27,7 +27,7 @@ now GPL2 and MIT licensed.
 
 #### Events
 
-`handleMidiEvent(int status, int data1, int data2)` sends midi events to the plugin.
+`handleMidiEvent(MidiMsg msg)` sends midi events to the plugin.
 
 `noteOn(int mnote, float vel)` sends a note-on event to the plugin.
 
