@@ -6,7 +6,7 @@ LFO chugen's natively.
 LiCK's LFO is a linear combination of eight oscillators. In this implementation
 only those oscillators with non-zero weights are actually evaluated. Convenience
 methods are provided in the common case where only one oscillator is required.
-The chugin also supports
+The chugin supports these oscillators:
 
 * saw
 * sine
@@ -21,7 +21,8 @@ The chugin also supports
 
 `freq(float f)` sets the oscillator frequency.
 
-`setrange(float min, float max)` sets the oscillator output range.
+`setrange(float min, float max)` sets the oscillator output range. Default
+is min: -1, max: 1.
 
 `modulate(int onoff)` causes the optional input signal to be amplitude-modulated
 (multiplied) by the LFO.
@@ -66,10 +67,10 @@ measured in Hz.
 
  ### Examples
 
- Normally you'll use DbLiCKLFO in the usual assortment of envelope modification
- or parameter-automatiion applications. Here we route the LFO output 
- straight to the DAC.  In the Fiddle environment you can plot the results
- to visualize your configuration.
+Normally you'll use DbLiCKLFO in the usual assortment of envelope modification
+or parameter-automatiion applications. Here we route the LFO output 
+straight to the DAC.  In the Fiddle environment you can plot the results
+to visualize your configuration.
 
 #### testall.ck
 
