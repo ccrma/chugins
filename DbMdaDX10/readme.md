@@ -7,21 +7,31 @@ now GPL2 and MIT licensed.
 
 ### API
 
- `printPresets(int)` prints all known presets to the console.
+#### Presets
 
- `selectPreset(int)` selects indexed preset.
+`printPresets(int)` prints all known presets to the console.
 
- `printParams()` prints all know parameters to the console.
+`int getNumPresets()` returns the number of presets.
+ 
+`selectPreset(int)` selects the indexed preset.
 
- `int getNumParams()` returns the number of parameters.
+#### Parameters
 
- `setParamValue(int i, float value)` sets the indexed parameter to value.
+`printParams()` prints all known parameters and values to the console.
 
- `handleMidiEvent(int status, int data1, int data2)` sends midi events to the plugin.
+`int getNumParams()` returns the number of parameters.
 
- `noteOn(int mnote, float vel)` sends a note-on event to the plugin.
+`float getParamValue(int i)` returns the value of the indexed parameter.
 
- `noteOff(int mnote, float vel)` sends a note-off event to the plugin.
+`setParamValue(int i, float value)` sets the indexed parameter to value.
+
+#### Events
+
+`handleMidiEvent(int status, int data1, int data2)` sends midi events to the plugin.
+
+`noteOn(int mnote, float vel)` sends a note-on event to the plugin.
+
+`noteOff(int mnote, float vel)` sends a note-off event to the plugin.
 
 ### Example
 
