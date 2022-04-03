@@ -3,10 +3,17 @@
 The DbMdaTalkbox chugin is a port of Paul Keller's open-source
 vst plugin here: http://mda.smartelectronix.com/ and
 here: https://sourceforge.net/projects/mda-vst. It is
-now GPL2 and MIT licensed.
+GPL2 and MIT licensed.
 
 mda-Talkbox implements an LPC (linear-predictive-coding) vocoder to
-produce wonderfully robotic sounds.
+produce wonderfully robotic sounds.  
+
+Vocoders combine two inputs, the carrier and the modulator, to produce
+an output signal.  Typically, the carrier is a musical instrument output
+and the modulator is a speech-like-signal.  In this implementation,
+the DbMdaTalkbox access a single stereo input signal with the modulator
+in the left channel and the carrier in the right.  ChucK's `Pan2` ugen
+can be used to produce a stereo channel from two mono inputs.
 
 ### API
 
@@ -28,34 +35,37 @@ produce wonderfully robotic sounds.
 
 `setParamValue(int i, float value)` sets the indexed parameter to value.
 
-#### Events
-
-`handleMidiEvent(MidiMsg msg)` sends midi events to the plugin.
-
-`noteOn(int mnote, float vel)` sends a note-on event to the plugin.
-
-`noteOff(int mnote, float vel)` sends a note-off event to the plugin.
-
 ### Example
 
 test.ck
 
- ```ck
-DbMdaDX10 inst => dac;
+```ck
+Pan2 pan => DbMdaTalkbox talk => dac;
+talk.printParams();
 
-<<<"Presets", "">>>;
-inst.printPresets();
+SqrOsc sqr;
+sqr => pan.right; // carrier
+sqr.gain(.5);
 
-for(int j;j<inst.getNumPresets();j++)
+SndBuf buf;
+buf => pan.left;  // modulator
+buf.gain(.5);
+buf.loop(1);
+buf.read("../../PitchTrack/data/obama.wav");
+buf.pos(0);
+
+0.1 => float dry;
+talk.setParam(1, dry);
+<<<"dry", dry>>>;
+for(1=>int j;j<=10;j++)
 {
-    <<<"Preset", j>>>;
-    inst.selectPreset(j);
-    for(int i;i<20;i++)
+    j/10. => float wet; 
+    talk.setParam(0, wet);
+    <<<"wet", wet>>>;
+    for(int i;i<10;i++)
     {
-        Math.random2(40, 60) => int mnote;
-        inst.noteOn(mnote, 1.);
-        .1::second => now;
-        inst.noteOff(mnote, 1.);
+        Math.random2f(50, 200) => sqr.freq;
+        .60::second => now;
     }
 }
 ```

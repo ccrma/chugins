@@ -116,11 +116,23 @@ void TalkboxProcessor::multiProcessing(
 			x = o - e;  e = o;  //6dB/oct pre-emphasis
 
             // 50% overlapping hanning windows
-			w = window[p0]; fx = buf0[p0] * w;  buf0[p0] = x * w;  
-			if (++p0 >= N) { lpc(buf0, car0, N, O);  p0 = 0; }
+			w = window[p0]; 
+            fx = buf0[p0] * w;  
+            buf0[p0] = x * w;  
+			if(++p0 >= N) 
+            { 
+                lpc(buf0, car0, N, O);  
+                p0 = 0; 
+            }
 
-			w = 1.0f - w;  fx += buf1[p1] * w;  buf1[p1] = x * w;
-			if (++p1 >= N) { lpc(buf1, car1, N, O);  p1 = 0; }
+			w = 1.0f - w;  
+            fx += buf1[p1] * w;  
+            buf1[p1] = x * w;
+			if(++p1 >= N) 
+            { 
+                lpc(buf1, car1, N, O);  
+                p1 = 0; 
+            }
 		}
 
 		p = u0 + h0 * fx; u0 = u1;  u1 = fx - h0 * p;

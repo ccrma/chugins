@@ -1,15 +1,13 @@
-DbMdaTalkbox talk => dac;
+Pan2 pan => DbMdaTalkbox talk => dac;
 talk.printParams();
 
-Pan2 pan; 
-SndBuf buf;
 SqrOsc sqr;
-buf => pan.left;
-sqr => pan.right;
+sqr => pan.right; // carrier
 sqr.gain(.5);
 
-pan => talk;
-
+SndBuf buf;
+buf => pan.left;  // modulator
+buf.gain(.5);
 buf.loop(1);
 buf.read("../../PitchTrack/data/obama.wav");
 buf.pos(0);
@@ -17,7 +15,7 @@ buf.pos(0);
 0.1 => float dry;
 talk.setParam(1, dry);
 <<<"dry", dry>>>;
-for(1=>int j;j<9;j++)
+for(1=>int j;j<=10;j++)
 {
     j/10. => float wet; 
     talk.setParam(0, wet);
@@ -25,6 +23,6 @@ for(1=>int j;j<9;j++)
     for(int i;i<10;i++)
     {
         Math.random2f(50, 200) => sqr.freq;
-        .5::second => now;
+        .60::second => now;
     }
 }
