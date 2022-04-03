@@ -11,9 +11,10 @@ produce wonderfully robotic sounds.
 Vocoders combine two inputs, the carrier and the modulator, to produce
 an output signal.  Typically, the carrier is a musical instrument output
 and the modulator is a speech-like-signal.  In this implementation,
-the DbMdaTalkbox access a single stereo input signal with the modulator
+the DbMdaTalkbox accepts a single stereo input signal with the modulator
 in the left channel and the carrier in the right.  ChucK's `Pan2` ugen
-can be used to produce a stereo channel from two mono inputs.
+can be used to produce a stereo channel from two mono inputs. This
+is demonstrated in the [example below](#Example).
 
 ### API
 
