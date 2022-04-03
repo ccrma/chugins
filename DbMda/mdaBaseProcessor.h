@@ -82,22 +82,32 @@ protected:
         int data1;
         int data2;
         int sampleOffset;
+
+        bool IsValid() { return status != 0; }
+        int Channel() { return (status & 0x0F); }
         bool IsNoteOn() { return (status & 0xF0) == 144; }
         bool IsNoteOff() { return (status & 0xF0) == 128; }
         bool IsPitchWheel() { return (status &0xF0) == 224; }
+        bool IsCC() { return (status &0xF0) == 176; }
         bool IsPitchBend() { return IsCC() && data1 == 128; } // non-standard
         bool IsModWheel() { return IsCC() && data1 == 1; }
-        float ModWheelFVal() { return data2 / 127.f; }
+        bool IsBreath() { return IsCC() && data1 == 2; }
+        bool IsFilterCutoff() { return IsCC() && data1 == 71; }
+        bool IsFilterResonance() { return IsCC() && data1 == 74; }
+        bool IsChannelAftertouch() { return (status & 0xF0) == 208; }
+
         int ModWheelVal() { return data2; }
-        int PitchWheelVal() { return ((data2 << 16) & data1) - 8192; } // -8192 - 8191
-        int PitchBendVal() { return data2; }
-        bool IsCC() { return (status &0xF0) == 176; }
-        bool IsValid() { return status != 0; }
-        int Channel() { return (status & 0x0F); }
+        float ModWheelFVal() { return data2 / 127.f; }
+        int AftertouchVal() { return data1; }
+        int PitchWheelVal() { return ((data2 << 8) | data1) - 8192; } // -8192 - 8191
+        int PitchBendVal() { return CCVal(); }
+        int CCVal() { return data2; }
 
         // iff IsNoteOn/Off
         unsigned GetNote() { return this->data1; }
         unsigned GetVelocity() { return this->data2; }
+        /* XXX, cbb? */
+        unsigned GetNoteId() { return (IsNoteOn() || IsNoteOff()) ? this->data1 : kInvalidNote; } 
     };
 
 	static constexpr int eventBufferSize = 64;
