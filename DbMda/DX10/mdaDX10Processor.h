@@ -16,8 +16,8 @@
 #ifndef mdaDX10Processor_h
 #define mdaDX10Processor_h
 
-#include "mdaBaseProcessor.h"
-#include "mdaParam.h"
+#include "../mdaBaseProcessor.h"
+#include "../mdaParam.h"
 
 class DX10Processor : public BaseProcessor
 {
@@ -42,6 +42,7 @@ public:
 protected:
     void processParamChanges() override;
     void monoProcessing(float *in, float *out, int nframes) override;
+    void multiProcessing(float *in, int nIn, float *out, int nout, int nframes) override {} // no-op
 	
 private:
     void update();

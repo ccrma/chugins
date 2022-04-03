@@ -18,8 +18,8 @@
 #ifndef mdaTalkboxProcessor_h
 #define mdaTalkboxProcessor_h
 
-#include "mdaBaseProcessor.h"
-#include "mdaParam.h"
+#include "../mdaBaseProcessor.h"
+#include "../mdaParam.h"
 
 class TalkboxProcessor : public BaseProcessor
 {
