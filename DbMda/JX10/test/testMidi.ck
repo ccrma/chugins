@@ -28,7 +28,8 @@ fun void doit(int id, dur maxwait)
 }
 
 45::second => dur d;
-spork ~ doit(2, d);
+0 => int midiDevice;
+spork ~ doit(midiDevice, d);
 
 d => now;
 
