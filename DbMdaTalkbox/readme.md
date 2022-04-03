@@ -1,13 +1,12 @@
-## DbMdaDX10 chugin
+## DbMdaTalkbox chugin
 
-The DbMdaDX10 chugin is a port of Paul Keller's open-source
+The DbMdaTalkbox chugin is a port of Paul Keller's open-source
 vst plugin here: http://mda.smartelectronix.com/ and
 here: https://sourceforge.net/projects/mda-vst. It is
 now GPL2 and MIT licensed.
 
-mda-DX10 emulates a subset of the estimable Yamaha DX10 synthesizer.
-It comes with 32 convenient presets which you can modify to suit
-your tastes.
+mda-Talkbox implements an LPC (linear-predictive-coding) vocoder to
+produce wonderfully robotic sounds.
 
 ### API
 

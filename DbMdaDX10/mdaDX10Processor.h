@@ -38,6 +38,8 @@ public:
     void printPresets() override;
     void selectPreset(int i) override;
     int getNumPresets() override { return kNumPrograms; }
+
+protected:
     void processParamChanges() override;
     void monoProcessing(float *in, float *out, int nframes) override;
 	
