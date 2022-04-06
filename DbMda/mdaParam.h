@@ -58,7 +58,7 @@ struct ParamDef
     {
         name = n;
         midiRole = mr;
-        default = def;
+        dflt = def;
         range = r;
         units = u;
         flags = f;
@@ -66,7 +66,7 @@ struct ParamDef
     };
     char const *name;
     char const *midiRole; // eg: "PitchBend" "ModWheel", "CCXX"
-    float default; // could be a union
+    float dflt; // could be a union
     Range range;
     Units units;
     Flags flags;

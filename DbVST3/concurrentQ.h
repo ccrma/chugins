@@ -6,6 +6,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+#include <iostream>
 
 template <typename T>
 class ConcurrentQ

@@ -32,7 +32,7 @@ BaseProcessor::BaseProcessor(double sampleRate,
     for(int i=0;i<numParams;i++)
     {
         m_params[i].def = pdefs+i;
-        m_params[i].value = pdefs[i].default;
+        m_params[i].value = pdefs[i].dflt;
     }
     m_paramsDirty = true;
 }
