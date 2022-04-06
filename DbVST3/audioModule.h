@@ -135,9 +135,9 @@ public:
     void Print(std::ostream &ostr, char const *indent, int index, bool detailed)
     {
         if(!detailed)
-            ostr << indent << "- " << this->name << "\n";
+            ostr << indent << "- " << this->name << " # " << index << "\n";
         else
-            ostr << indent << "- RegistryName: '" << this->name << "'\n";
+            ostr << indent << "- RegistryName: '" << this->name << " # " << index << "'\n";
         if(!detailed) return;
         // category is always "Audio Module Class"
         ostr << indent << "  Categories:\n";

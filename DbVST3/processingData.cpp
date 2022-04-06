@@ -96,10 +96,11 @@ ProcessingData::Initialize(Steinberg::Vst::ProcessSetup &pd)
 
     if(this->numOutputs > 0)
     {
-        bool bufferInst = (this->numInputs == 0
+        bool bufferInst = false && // WIP atm: bug drops midi events
+                          (this->numInputs == 0
                            && this->numOutputs == 1 
                            && this->busUsage.outAudioChan[0].nch == 2);
-        if(bufferInst && false) // atm: bug drops midi events
+        if(bufferInst)
             this->instBuffer.Init(pd.maxSamplesPerBlock);
 
         this->outputs = new Steinberg::Vst::AudioBusBuffers[this->numOutputs];
@@ -134,6 +135,7 @@ ProcessingData::Initialize(Steinberg::Vst::ProcessSetup &pd)
 
     /* setup processCtx, may be needed by, eg LABS (apparently not) ---- */
     this->processCtx.tempo = 120.0f;
+    this->processCtx.sampleRate = pd.sampleRate;
     this->processCtx.projectTimeSamples = 0; // update on each call
     this->processCtx.timeSigNumerator = 4;
     this->processCtx.timeSigDenominator = 4;

@@ -46,7 +46,7 @@ public:
 static void
 usage(char const *appnm)
 {
-    std::cout << appnm << " usage:\n"
+    std::cout << "dumpVST3 usage:\n"
         << "   (noargs): prints all known plugins (to stdout)\n"
         << "   <pluginfile.vst3>: dumps yaml overview of a single .vstfile (to stdout)\n"
         << "  -dstdir <dirname>: writes a new .yaml file for each plugin into dstdir\n"
@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
     std::string dstdir;
     for(int i=1;i<argc;i++)
     {
-        if(!strcmp(argv[i], "-h"))
+        if(!strncmp(argv[i], "-h", 2) || !strncmp(argv[i], "--", 2))
         {
             usage(argv[0]);
             return 1;

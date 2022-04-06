@@ -326,12 +326,17 @@ VST3PluginInstance::readAllParameters(bool andPush)
 {
     int nparams = this->controller->getParameterCount();
     this->paramValues.resize(nparams);
+    if(this->debug)
+        std::cerr << "readAllParameters " << andPush << "\n";
     for(int i=0;i<nparams;i++)
     {
         Steinberg::Vst::ParameterInfo info;
         this->controller->getParameterInfo(i, info);
         float val = this->controller->getParamNormalized(info.id);
         this->paramValues[i] = val;
+
+        if(this->debug)
+            std::cerr << " " << i << ": " << val << "\n";
     }
     if(andPush)
     {
@@ -363,12 +368,16 @@ VST3PluginInstance::readAllParameters(bool andPush)
 
 // restartComponent is commonly triggered by VST when we issue
 // this->controller->setComponentState(&stream) (above).
-// Our job is merely to pull the values of its update params
-// into our brain (aka shadow parameters). Things get a little
-// more complex when it comes to a special parameter known as
-// the program change parameter. Changing it triggers a 
-// restartComponent. In theory we shouldn't ever need to
-// "push" newly changed parameters.
+// It can also occur as a side-effect of a "program change".
+// Our job is merely to pull the values of its updated params
+// into our brain (aka shadow parameters). 
+// Things get a little more complex when it comes to a special 
+// parameter known as the program change parameter. Changing it 
+// triggers a restartComponent. Now, we must update our "shadow"
+// parameters to match the newly established values.  In the
+// processing context, program changes shouldn't need to be fed 
+// back to the processor. Unfortunately this is a bit of a morass.
+//      * mdaDX10 presets need to be fed to the processor
 tresult PLUGIN_API 
 VST3PluginInstance::restartComponent(int32 flags)
 {
@@ -389,7 +398,10 @@ VST3PluginInstance::restartComponent(int32 flags)
     }
     if(flags & Steinberg::Vst::kParamValuesChanged)
     {
-        bool pushToProcessor = true; // this->activated;
+        // mda-DX10 does require this..
+        // in theory it shouldn't be needed when restartComponent is issued
+        // but it doesn't appear to harm/help the LABS problems.
+        bool pushToProcessor = true; 
         if(this->verbosity)
         {
             std::cerr << "VST3PluginInstance.restartComponent ParamValuesChanged, "
@@ -904,6 +916,8 @@ VST3PluginInstance::initParams(std::vector<ParamInfo> &parameters)
                 << "has invalid id: " << pinfo.id << "\n";
             continue;
         }
+        // ParamInfo is used by the GUI and JUCE injects a bunch of
+        // non-GUI params.  Generally these are last.
         if(VST3::StringConvert::convert(pinfo.title).find("MIDI CC ")
             != std::string::npos)
             continue;
@@ -932,6 +946,9 @@ VST3PluginInstance::initParams(std::vector<ParamInfo> &parameters)
                 std::cerr << "Multiple program-changes? " << i << "\n";
             }
         }
+        // XXX: paramInfo.defaultNormalizedValue wasn't set by Dexed.
+        float val = this->controller->getParamNormalized(paramInfo.id);
+        paramInfo.currentValue = val;
         parameters.push_back(paramInfo); // issues copy-constructor
     }
 

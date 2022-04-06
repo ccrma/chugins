@@ -1,6 +1,6 @@
 ## DbMdaTalkbox chugin
 
-The DbMdaTalkbox chugin is a port of Paul Keller's open-source
+The DbMdaTalkbox chugin is a port of Paul Kellett's open-source
 vst plugin here: http://mda.smartelectronix.com/ and
 here: https://sourceforge.net/projects/mda-vst. It is
 GPL2 and MIT licensed.

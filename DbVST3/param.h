@@ -65,11 +65,16 @@ public:
 
         ostr << indent << "- name: \"" << this->name << "\"\n";
         ostr << indent << "  id: " << this->id << "\n";
-        ostr << indent << "  default: " << this->defaultNormalizedValue << "\n";
 
         bool emitEditHints = true;
         if(this->programChange())
         {
+            // We establish a non-valid index as the default. 
+            // NB: these are normalized and -1 signifies invalid.
+            ostr << indent << "  default: -1\n";
+            ostr << indent << "  description: >-\n";
+            ostr << indent << "    When not set to (none), a preset may override\n";
+            ostr << indent << "    all or some of the other parameter values.\n";
             ostr << indent << "  programchange:  1\n";
             if(this->menuItems && this->menuItems->size())
             {
@@ -85,6 +90,12 @@ public:
                 std::cerr << this->name << " (" <<
                     this->id << ") has no menuitems ########################\n";
             }
+        }
+        else
+        {
+            // Vexed only has zeros in the defaultValue. Seems
+            // like the actualValue might be better anyways.
+            ostr << indent << "  default: " << this->currentValue << "\n";
         }
         if(emitEditHints)
         {
