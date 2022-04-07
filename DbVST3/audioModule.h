@@ -137,7 +137,7 @@ public:
         if(!detailed)
             ostr << indent << "- " << this->name << " # " << index << "\n";
         else
-            ostr << indent << "- RegistryName: '" << this->name << " # " << index << "'\n";
+            ostr << indent << "- RegistryName: '" << this->name << "' # " << index << "\n";
         if(!detailed) return;
         // category is always "Audio Module Class"
         ostr << indent << "  Categories:\n";
