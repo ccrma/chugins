@@ -98,8 +98,8 @@ void TalkboxProcessor::multiProcessing(
 	--out2;
 	while(--sampleFrames >= 0)
 	{
-		o = *++in1;
-		x = *++in2;
+		o = *++in1; // left, carrier (voice)
+		x = *++in2; // right, modulator
 		dr = o;
 
 		p = d0 + h0 *  x; d0 = d1;  d1 = x  - h0 * p;
@@ -111,7 +111,7 @@ void TalkboxProcessor::multiProcessing(
 		{
 			K = 0;
 
-			car0[p0] = car1[p1] = x; //carrier input
+			car0[p0] = car1[p1] = x; // modulator input
 
 			x = o - e;  e = o;  //6dB/oct pre-emphasis
 

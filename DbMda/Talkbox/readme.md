@@ -6,54 +6,51 @@ here: https://sourceforge.net/projects/mda-vst. It is
 GPL2 and MIT licensed.
 
 mda-Talkbox implements an LPC (linear-predictive-coding) vocoder to
-produce wonderfully robotic sounds.  
+produce wonderfully robotic sounds.  Vocoders combine two inputs, the 
+carrier and the modulator, to produce an output signal.  
 
-Vocoders combine two inputs, the carrier and the modulator, to produce
-an output signal.  Typically, the carrier is a musical instrument output
-and the modulator is a speech-like-signal.  In this implementation,
-the DbMdaTalkbox accepts a single stereo input signal with the modulator
-in the left channel and the carrier in the right.  ChucK's `Pan2` ugen
-can be used to produce a stereo channel from two mono inputs. This
-is demonstrated in the [example below](#Example).
+> Typically the carrier is a speech-like signal and the modulator
+> is a musical tone/instrument.  
+ 
+In this implementation, the DbMdaTalkbox accepts a single stereo input 
+signal with the carrier in the left channel and the modulator in the right
+Since it is a UGen_Stereo subclass, you can connect independent mono signals 
+to its left and right inlets, as demonstrated in the [example below](#Example).
 
 ### API
-
-#### Presets
-
-`printPresets(int)` prints all known presets to the console.
-
-`int getNumPresets()` returns the number of presets.
- 
-`selectPreset(int i)` selects the indexed preset.
 
 #### Parameters
 
 `printParams()` prints all known parameters and values to the console.
 
-`int getNumParams()` returns the number of parameters.
+`float getParam(int i)` returns the value of the indexed parameter.
 
-`float getParamValue(int i)` returns the value of the indexed parameter.
+`setParam(int i, float value)` sets the indexed parameter to value.
 
-`setParamValue(int i, float value)` sets the indexed parameter to value.
+| Parameter | Name    | Default | Description                                            |
+| --------: | :------ | :------ | :----------------------------------------------------- |
+|         0 | Wet     | .5      | the amount of the processed signal in the output [0-1] |
+|         1 | Dry     | 0.      | the amount of the dry signal in the output [0-1]       |
+|         2 | Quality | 1.      | the quality of the result.  [0-1]                      |
 
 ### Example
 
 test.ck
 
 ```ck
-Pan2 pan => DbMdaTalkbox talk => dac;
+DbMdaTalkbox talk => dac;
 talk.printParams();
 
-SqrOsc sqr;
-sqr => pan.right; // carrier
-sqr.gain(.5);
-
 SndBuf buf;
-buf => pan.left;  // modulator
+buf => talk.left;  // carrier
 buf.gain(.5);
 buf.loop(1);
-buf.read("../../PitchTrack/data/obama.wav");
+buf.read("../../../PitchTrack/data/obama.wav");
 buf.pos(0);
+
+SqrOsc sqr;
+sqr => talk.right; // modulator
+sqr.gain(.5);
 
 0.1 => float dry;
 talk.setParam(1, dry);

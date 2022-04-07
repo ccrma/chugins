@@ -1,16 +1,16 @@
-Pan2 pan => DbMdaTalkbox talk => dac;
+DbMdaTalkbox talk => dac;
 talk.printParams();
 
-SqrOsc sqr;
-sqr => pan.right; // carrier
-sqr.gain(.5);
-
 SndBuf buf;
-buf => pan.left;  // modulator
+buf => talk.left;  // carrier
 buf.gain(.5);
 buf.loop(1);
-buf.read("../../PitchTrack/data/obama.wav");
+buf.read("../../../PitchTrack/data/obama.wav");
 buf.pos(0);
+
+SqrOsc sqr;
+sqr => talk.right; // modulator
+sqr.gain(.5);
 
 0.1 => float dry;
 talk.setParam(1, dry);
