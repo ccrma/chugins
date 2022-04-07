@@ -1,8 +1,9 @@
 #ifndef processingUtil_h
 #define processingUtil_h
 
-#include <vector>
 #include "vst3.h"
+
+#include <vector>
 #include <cstdio>
 #include <iostream>
 
@@ -13,6 +14,9 @@ inline void dumpTUID(char const *msg, const Steinberg::TUID x, bool ret=1)
     if(xx == Steinberg::Vst::IHostApplication::iid)
         sprintf(buf, "%s %s (%d)", msg, "IHostApplication", ret);
     else
+    if(xx == Steinberg::Vst::IPlugInterfaceSupport::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IPlugInterfaceSupport", ret);
+    else
     if(xx == Steinberg::Vst::IComponentHandler::iid)
         sprintf(buf, "%s %s (%d)", msg, "IComponentHandler", ret);
     else
@@ -22,15 +26,61 @@ inline void dumpTUID(char const *msg, const Steinberg::TUID x, bool ret=1)
     if(xx == Steinberg::Vst::IComponentHandler3::iid)
         sprintf(buf, "%s %s (%d)", msg, "IComponentHandler3", ret);
     else
+    if(xx == Steinberg::Vst::IComponentHandlerBusActivation::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IComponentHandlerBusActivation", ret);
+    else
     if(xx == Steinberg::Vst::IContextMenuTarget::iid)
         sprintf(buf, "%s %s (%d)", msg, "IContextMenuTarget", ret);
     else
     if(xx == Steinberg::Vst::IUnitHandler::iid)
         sprintf(buf, "%s %s (%d)", msg, "IUnithandler", ret);
     else
+	if(xx == Steinberg::Vst::IAudioProcessor::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IAudioProcessor", ret);
+    else
+	if(xx == Steinberg::Vst::IEditController::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IEditController", ret);
+    else
+	if(xx == Steinberg::Vst::IEditController2::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IEditController2", ret);
+    else
+	if(xx == Steinberg::Vst::IConnectionPoint::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IConnectionPoint", ret);
+    else
+	if(xx == Steinberg::Vst::IUnitInfo::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IUnitInfo", ret);
+    else
+	if(xx == Steinberg::Vst::IUnitData::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IUnitData", ret);
+    else
+	if(xx == Steinberg::Vst::IMidiMapping::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IMidiMapping", ret);
+    else
+	if(xx == Steinberg::Vst::IProgress::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IProgress", ret);
+    else
+	if(xx == Steinberg::Vst::IVst3WrapperMPESupport::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IVst3WrapperMPESupport", ret);
+    else
+	if(xx == Steinberg::Vst::IVst3ToVst2Wrapper::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IVst3ToVst2Wrapper", ret);
+    else
+	if(xx == Steinberg::Vst::IVst3ToAAXWrapper::iid)
+        sprintf(buf, "%s %s (%d)", msg, "IVst3ToAAXWrapper", ret);
+    else
+    if(xx == Steinberg::FUnknown::iid)
+        sprintf(buf, "%s %s (%d)", msg, "Unknown", ret);
+    else
     {
-        Steinberg::uint32 * const f = (Steinberg::uint32 *) x;
-        sprintf(buf, "%s %x%x%x%x (%d)\n", msg, f[0], f[1], f[2], f[3], ret);
+        /* can be matched against defs in pluinterfaces/vst */
+        Steinberg::uint8 * const f = (Steinberg::uint8 *) x;
+        sprintf(buf, "%s 0x%X%X%X%X 0x%X%X%X%X 0x%X%X%X%X 0x%X%X%X%X (%d)\n", 
+            msg, 
+            f[0], f[1], f[2], f[3], 
+            f[4], f[5], f[6], f[7], 
+            f[8], f[9], f[10], f[11], 
+            f[12], f[13], f[14], f[15], 
+            ret);
     }
     std::cerr << buf << "\n";
 }

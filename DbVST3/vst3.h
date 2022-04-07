@@ -25,6 +25,7 @@
 #include <pluginterfaces/vst/vsttypes.h>
 #include <pluginterfaces/vst/ivstcontextmenu.h>
 #include <pluginterfaces/vst/ivsttestplugprovider.h>
+#include <pluginterfaces/vst/ivsthostapplication.h>
 #include <base/source/fobject.h>
 
 using ModulePtr = VST3::Hosting::Module::Ptr;

@@ -28,8 +28,17 @@ public:
             if(ctx)
             {
                 // we *are* the message thread so must pop the queue 
-                auto item = this->m_msgQueue.Pop();
-                item();
+                // NB: pluginInstance::restartComponent *must* Delegate
+                // a single method.
+                if(this->m_msgQueue.Size())
+                {
+                    auto item = this->m_msgQueue.Pop();
+                    item();
+                }
+                else
+                {
+                    // std::cerr << "No component restart\n";
+                }
                 ctx->Print(ostream, true/*detailed*/);
                 delete ctx;
             }

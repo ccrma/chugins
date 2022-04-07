@@ -399,10 +399,14 @@ VST3PluginInstance::readAllParameters(bool andPush)
 tresult PLUGIN_API 
 VST3PluginInstance::restartComponent(int32 flags)
 {
+    const int32 kPluginIsThreadedFlag = 1 << 24; // (currently VST sdk uses 10 bits)
     if(!this->host->IsMessageThread())
     {
+        // need to signal ourselves that we don't need to perform
+        // another Delegate call (below). Only a single call to Delegate
+        // is required/assume of restartComponent.
         std::function<void()> fn = std::bind(&VST3PluginInstance::restartComponent, 
-                                                this, flags);
+                                                this, flags&kPluginIsThreadedFlag);
         this->host->Delegate(fn);
         return Steinberg::kResultOk;
     }
@@ -435,11 +439,19 @@ VST3PluginInstance::restartComponent(int32 flags)
         this->deactivate();
         this->activate();
     }
-    this->host->Delegate([this]() 
-    { 
+    if(!(flags & kPluginIsThreadedFlag))
+    {
+        this->host->Delegate([this]() 
+        { 
+            if(this->verbosity)
+                std::cerr << "componentRestarted (single-threaded)\n"; 
+        });
+    }
+    else
+    {
         if(this->verbosity)
-            std::cerr << "componentRestarted\n"; 
-    });
+            std::cerr << "componentRestarted (multi-threaded)\n"; 
+    }
     return Steinberg::kResultOk;
 }
 
@@ -794,10 +806,10 @@ VST3PluginInstance::queryInterface(const Steinberg::TUID iid, void** obj)
 
     QUERY_INTERFACE(iid, obj, Steinberg::Vst::IUnitHandler::iid, Steinberg::Vst::IUnitHandler);
 
-    QUERY_INTERFACE(iid, obj, Steinberg::FUnknown::iid, Steinberg::Vst::IComponentHandler);
+    /* for more, see: hosting/pluginterfacessupport */
 
-    // nb: we could do more as in hostclasses.cpp
-    dumpTUID("VST3PluginInstance doesn't support ", iid);
+    if(this->debug)
+        dumpTUID("VST3PluginInstance doesn't support ", iid);
     *obj = nullptr;
     return Steinberg::kNoInterface;
 }
