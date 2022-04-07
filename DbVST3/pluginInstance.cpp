@@ -435,7 +435,11 @@ VST3PluginInstance::restartComponent(int32 flags)
         this->deactivate();
         this->activate();
     }
-    this->host->Delegate([]() { std::cerr << "componentResarted\n"; });
+    this->host->Delegate([this]() 
+    { 
+        if(this->verbosity)
+            std::cerr << "componentRestarted\n"; 
+    });
     return Steinberg::kResultOk;
 }
 
