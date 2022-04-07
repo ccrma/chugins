@@ -9,7 +9,7 @@
 VST3PluginInstance::VST3PluginInstance()
 {
     this->host = VST3Host::Singleton();
-    assert(this->host->IsWorkerThread());
+    assert(this->host->IsMessageThread());
     this->error = 0;
     this->debug = 0;
     this->verbosity = this->debug; // overridable via SetVerbosity in header
@@ -50,7 +50,7 @@ VST3PluginInstance::InitProcessing(float sampleRate,
                     char const *outputBusRouting)
 {
     assert(this->component);
-    assert(this->host->IsWorkerThread());
+    assert(this->host->IsMessageThread());
 
     // this->controllerEx1 = Steinberg::FUnknownPtr<Steinberg::Vst::EditControllerEx1>(this->controller);
     if(this->verbosity)
@@ -121,7 +121,7 @@ VST3PluginInstance::SetParamValue(Steinberg::Vst::ParamID pid,
     // NB: the following case occurs when a preset is requested.
     //  Since we'd like to group-change the parameters we require
     //  that the processingLock be acquired in readAllParameters(andPush=true).
-    // case: pushToProcessor && this->host->IsWorkerThread()
+    // case: pushToProcessor && this->host->IsMessageThread()
 
     if(this->debug > 1)
         std::cerr << "SetParamValue " << pid << "\n";
@@ -150,7 +150,7 @@ VST3PluginInstance::GetMidiMapping(int data1)
 {
     // method is part of the controller and should therefore only
     // be invoked in the same thread it was created (WorkerThread)
-    assert(this->host->IsWorkerThread());
+    assert(this->host->IsMessageThread());
     if(this->midiMapping)
     {
         Steinberg::Vst::ParamID pid;
@@ -165,8 +165,25 @@ VST3PluginInstance::GetMidiMapping(int data1)
 int 
 VST3PluginInstance::MidiEvent(int status, int data1, int data2)
 {
+    static int forceProcessorThread = false; // debugging tool
     int err = 0;
-    if(this->host->IsWorkerThread())
+    if(forceProcessorThread)
+    {
+        assert(this->host->IsProcessingThread());
+        if(this->controller)
+        {
+            this->processData.PrepareMidiEvent(status, data1, data2, this->midiMapping);
+            err = 0;
+        }
+        else
+        {
+            if(this->debug)
+                std::cerr << "NO controller for MidiEvent " << status << " "  << data1 << "\n";
+            err = -1;
+        }
+    }
+    else
+    if(this->host->IsMessageThread())
     {
         if(this->controller)
         {
@@ -227,7 +244,7 @@ VST3PluginInstance::deinitProcessing()
 void
 VST3PluginInstance::initComponent()
 {
-    assert(this->host->IsWorkerThread());
+    assert(this->host->IsMessageThread());
 
     // provider takes care of proper initialization and ref-counting.
     this->component = this->provider->getComponent();	
@@ -251,12 +268,13 @@ VST3PluginInstance::synchronizeStates()
 {
     if(this->debug)
         std::cerr << "synchronizeStates\n";
-    assert(this->component && this->host->IsWorkerThread());
+    assert(this->component && this->host->IsMessageThread());
     Steinberg::MemoryStream stream;
     if(this->component->getState(&stream) == Steinberg::kResultTrue) 
     {
         stream.seek(0, Steinberg::IBStream::kIBSeekSet, nullptr);
-        // setComponentState triggers restartComponent (below)
+        // setComponentState triggers restartComponent (below). 
+        // NB: potentially in another thread!!
         Steinberg::tresult res = this->controller->setComponentState(&stream);
         if((res != Steinberg::kResultOk) && (res != Steinberg::kNotImplemented))
         {
@@ -341,7 +359,7 @@ VST3PluginInstance::readAllParameters(bool andPush)
     if(andPush)
     {
         // a preset has changed and we need to update the processor.
-        assert(this->host->IsWorkerThread());
+        assert(this->host->IsMessageThread());
         // NB: we shouldn't call SetParamValue(..., true) without a lock.
         const std::lock_guard<LockType> lk(this->processingLock); 
         for(int i=0;i<nparams;i++)
@@ -381,7 +399,7 @@ VST3PluginInstance::readAllParameters(bool andPush)
 tresult PLUGIN_API 
 VST3PluginInstance::restartComponent(int32 flags)
 {
-    if(!this->host->IsWorkerThread())
+    if(!this->host->IsMessageThread())
     {
         std::function<void()> fn = std::bind(&VST3PluginInstance::restartComponent, 
                                                 this, flags);
@@ -417,6 +435,7 @@ VST3PluginInstance::restartComponent(int32 flags)
         this->deactivate();
         this->activate();
     }
+    this->host->Delegate([]() { std::cerr << "componentResarted\n"; });
     return Steinberg::kResultOk;
 }
 

@@ -1,6 +1,10 @@
 #ifndef concurrentQ_h
 #define concurrentQ_h
 
+// A simple (lockful) concurrent, single-producer, single-consumer Q.
+// Used to pass functor from processing thread to message thread.
+// 
+
 #include <queue>
 #include <thread>
 #include <mutex>
@@ -29,7 +33,7 @@ public:
         while(m_queue.empty() && IsActive()) 
             m_cond.wait(lk); // <----------- block
         
-        if(!IsActive()) return [](){}; // empty 
+        if(!IsActive()) return [](){}; // empty item
         auto val = m_queue.front();
         m_queue.pop();
         lk.unlock(); // before notify_one
@@ -43,7 +47,8 @@ public:
         while(m_queue.empty() && IsActive())
             m_cond.wait(lk);
 
-        if(!IsActive()) return [](){}; // empty 
+        if(!IsActive()) return; // bail
+
         item = m_queue.front();
         m_queue.pop();
         lk.unlock();
@@ -62,7 +67,7 @@ public:
 
     int Size()
     {
-        // std::unique_lock<std::mutex> lk(m_mutex);
+        std::unique_lock<std::mutex> lk(m_mutex);
         return m_queue.size();
     }
 

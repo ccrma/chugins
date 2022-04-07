@@ -26,24 +26,24 @@ VST3Host::Singleton(bool createMsgThread)
 void
 VST3Host::workerThread(VST3Host *h) // consumer
 {
-    while(h->m_queue.IsActive())
+    while(h->m_msgQueue.IsActive())
     {
-        auto item = h->m_queue.Pop(); // should block when empty
+        auto item = h->m_msgQueue.Pop(); // should block when empty
         if(h->m_debug)
         {
             std::cerr << "workerThread delegateBegin " 
-                     << h->m_queue.Size() << "-------------------\n";
+                     << h->m_msgQueue.Size() << "-------------------\n";
         }
         item();  
         if(h->m_debug)
             std::cerr << "workerThread delegateEnd active:" 
-                     << h->m_queue.IsActive() << "---------------------\n";
+                     << h->m_msgQueue.IsActive() << "---------------------\n";
     }
     if(h->m_debug)
         std::cerr << "workerThread exiting\n";
 }
 
-#define ASSERT_WORKER_THREAD assert(this->IsWorkerThread())
+#define ASSERT_MESSAGE_THREAD assert(this->IsMessageThread())
     // thread not joinable means it hasn't been constructed
 
 #if 0 || defined(WIN32)
@@ -70,7 +70,7 @@ static _CrtMemState s_mem1, s_mem2;
 #endif
 
 /* ------------------------------------------------------------------- */
-VST3Host::VST3Host(bool createMsgThread) // private method
+VST3Host::VST3Host(bool inProcessingThread) // private method
 {
     memcheck1;
     m_name = "DbVST3";
@@ -78,22 +78,26 @@ VST3Host::VST3Host(bool createMsgThread) // private method
     m_debug = 0;
     if(m_debug)
         std::cerr << "VST3Host constructed\n";
-    if(createMsgThread)
+    if(inProcessingThread)
     {
-        m_workerThread = std::thread(workerThread, this);
-        m_workerThreadId = m_workerThread.get_id();
+        // creation occurred in the processing thread so we create
+        // a messaging thread.
+        m_msgThread = std::thread(workerThread, this);
+        m_msgThreadId = m_msgThread.get_id();
         std::function<void()> fn = std::bind(&VST3Host::initHostEnv, this);
         this->Delegate(fn); // initialize system in worker (not audio) thread.
     }
     else
     {
-        m_workerThreadId = m_mainThreadId;
+        // creation occured in the "main" thread (dumpVST3), therefore we *are*
+        // the messaging thread.
+        m_msgThreadId = m_mainThreadId;
         this->initHostEnv();
     }
     if(m_debug)
     {
         std::cerr << "VST3Host constructed in thread " <<  m_mainThreadId << "\n";
-        std::cerr << "VST3Host workerthread " << m_workerThread.get_id() << "\n";
+        std::cerr << "VST3Host workerthread " << m_msgThread.get_id() << "\n";
     }
 }
 
@@ -105,10 +109,10 @@ VST3Host::~VST3Host()
     // is integrally tied into platform-specific teardown.
     // On windows our workerthread appears to be destroyed
     // prior to this point (and we never see "workerThread exiting")
-    if(m_workerThread.joinable())
+    if(m_msgThread.joinable())
     {
-        m_queue.Bail();
-        m_workerThread.join();
+        m_msgQueue.Bail();
+        m_msgThread.join();
     }
     if(this->m_debug)
         std::cerr << "VST3Host deleted\n";
@@ -125,13 +129,13 @@ VST3Host::initHostEnv()
 void
 VST3Host::Delegate(std::function<void()> delFn)
 {
-    m_queue.Push(delFn);
+    m_msgQueue.Push(delFn);
 }
 
 void 
 VST3Host::PrintAllInstalledPlugins(std::ostream &ostr)
 {
-    ASSERT_WORKER_THREAD;
+    ASSERT_MESSAGE_THREAD;
     std::vector<std::string> knownPlugins;
     this->GetKnownPlugins(knownPlugins);
     if(knownPlugins.size() == 0)
@@ -144,15 +148,15 @@ VST3Host::PrintAllInstalledPlugins(std::ostream &ostr)
 int
 VST3Host::GetKnownPlugins(std::vector<std::string> &knownPlugins)
 {
-    ASSERT_WORKER_THREAD;
+    ASSERT_MESSAGE_THREAD;
     knownPlugins = VST3::Hosting::Module::getModulePaths();
     return (knownPlugins.size() > 0) ? 0 : -1;
 }
 
 bool
-VST3Host::IsWorkerThread()
+VST3Host::IsMessageThread()
 {
-    return m_workerThreadId == std::this_thread::get_id();
+    return m_msgThreadId == std::this_thread::get_id();
 }
 
 bool
@@ -168,7 +172,7 @@ void
 VST3Host::OpenPlugin(std::string const &path, std::function<void(VST3Ctx*)> callback,
                 int verbosity)
 {
-    if(this->IsWorkerThread())
+    if(this->IsMessageThread())
     {
         if(this->m_debug)
             std::cerr << "OpenPlugin " << path << "\n";
@@ -185,7 +189,8 @@ VST3Host::OpenPlugin(std::string const &path, std::function<void(VST3Ctx*)> call
         }
         else
         {
-            callback(new VST3Ctx(this, plugin, path));
+            VST3Ctx *vctx = new VST3Ctx(this, plugin, path); // VST3PluginInstance.Init inside
+            callback(vctx);
         }
     }
     else
@@ -199,7 +204,7 @@ VST3Host::OpenPlugin(std::string const &path, std::function<void(VST3Ctx*)> call
 ModulePtr
 VST3Host::loadPlugin(std::string const &path, std::string &error)
 {
-    ASSERT_WORKER_THREAD;
+    ASSERT_MESSAGE_THREAD;
 
     // first assume path is fully q
     this->m_loadingPath = path;

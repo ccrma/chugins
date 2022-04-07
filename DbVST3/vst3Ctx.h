@@ -81,7 +81,7 @@ public:
     int ActivateModule(int index, float sampleRate)
     {
         this->ready = false;
-        if(this->host->IsWorkerThread())
+        if(this->host->IsMessageThread())
         {
             if(this->modules.size() > index)
             {

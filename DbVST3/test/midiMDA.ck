@@ -25,7 +25,7 @@ fun void doit(int id, dur maxwait)
         min => now;
         while(min.recv(msg))
         {
-            <<< "chuck midievent" , msg.data1 >>>;
+            // <<< "chuck midievent" , msg.data1 >>>;
             x.midiEvent(msg);
         }
     }

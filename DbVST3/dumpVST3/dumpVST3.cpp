@@ -6,7 +6,9 @@
 #include <iomanip> // std::put_time
 #include <ctime>
 
-// produces a yaml dump of the requested plugin on stdout
+// Produces a yaml dump of the requested plugin on stdout
+// See important comments in host.h regarding proper handling 
+// of multi-threaded plugins.
 class Dumpit : public VST3Host
 {
 public:
@@ -21,10 +23,13 @@ public:
     int DumpOne(char const *path, std::ostream &ostream)
     {
         std::string modpath(path);
-        this->OpenPlugin(modpath, [&ostream](VST3Ctx *ctx) /* control capture by value or reference */
+        this->OpenPlugin(modpath, [this, &ostream](VST3Ctx *ctx) /* control capture by value or reference */
         {
             if(ctx)
             {
+                // we *are* the message thread so must pop the queue 
+                auto item = this->m_msgQueue.Pop();
+                item();
                 ctx->Print(ostream, true/*detailed*/);
                 delete ctx;
             }
