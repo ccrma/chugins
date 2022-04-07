@@ -406,7 +406,7 @@ VST3PluginInstance::restartComponent(int32 flags)
         // another Delegate call (below). Only a single call to Delegate
         // is required/assume of restartComponent.
         std::function<void()> fn = std::bind(&VST3PluginInstance::restartComponent, 
-                                                this, flags&kPluginIsThreadedFlag);
+                                                this, flags|kPluginIsThreadedFlag);
         this->host->Delegate(fn);
         return Steinberg::kResultOk;
     }

@@ -5,6 +5,7 @@ while(!x.ready())
     1::ms => now;
 
 x.printModules();
+// x.setVerbosity(1);
 x => dac;
 
 .25::second => dur noteDur;
@@ -17,6 +18,7 @@ for(int j;j<2;j++)
 
     while(!x.ready())
         1::ms => now;
+    <<<"Module ",  j==0 ? "DX10" : "JX10" >>>;
 
     x.setParameter("Factory Presets", 0.15);
     for(int i;i<10;i++)
