@@ -6,8 +6,8 @@ here: https://sourceforge.net/projects/mda-vst. It is
 now GPL2 and MIT licensed.
 
 mda-JX10 emulates a subset of the vintage Roland JX10 synthesizer.
-It comes with 52 convenient presets which you can modify to suit
-your tastes.
+It comes with 52 convenient presets which you can select to quickly
+explore its possibilities.
 
 ### API
 
@@ -80,9 +80,9 @@ your tastes.
 
 `int getNumParams()` returns the number of parameters.
 
-`float getParamValue(int i)` returns the value of the indexed parameter.
+`float getParam(int i)` returns the value of the indexed parameter.
 
-`setParamValue(int i, float value)` sets the indexed parameter to value.
+`setParam(int i, float value)` sets the indexed parameter to value.
 
 | Param Id | Name          |
 | -------: | :------------ |

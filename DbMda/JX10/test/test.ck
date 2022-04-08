@@ -6,16 +6,18 @@ inst.printParams();
 <<<"Presets", "">>>;
 inst.printPresets();
 
+.75 => float vel;
 for(int j;j<inst.getNumPresets();j++)
 {
     <<<"Preset", j>>>;
     inst.selectPreset(j);
+
     for(int i;i<20;i++)
     {
         Math.random2(40, 60) => int mnote;
-        inst.noteOn(mnote, 1.);
+        inst.noteOn(mnote, vel);
         .1::second => now;
-        inst.noteOff(mnote, 1.);
+        inst.noteOff(mnote, vel);
     }
 }
 
