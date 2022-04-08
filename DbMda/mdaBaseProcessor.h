@@ -64,7 +64,7 @@ public:
 
 protected:
 	BaseProcessor(double sampleRate, int nparams, ParamDef const *);
-	~BaseProcessor();
+	virtual ~BaseProcessor();
 
     virtual void processParamChanges() = 0;
     virtual void monoProcessing(float *in, float *out, int nframes) = 0;

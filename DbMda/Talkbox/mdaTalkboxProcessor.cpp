@@ -21,6 +21,7 @@
 #include <cmath>
 #include <iostream>
 #include <cassert>
+#include <cstring>
 
 #define BUF_MAX         1600
 #define ORD_MAX           50

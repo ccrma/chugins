@@ -19,6 +19,7 @@
 #include <cmath>
 #include <iostream>
 #include <cassert>
+#include <cstring>
 
 #define NOUTS    2       //number of outputs
 #define SILENCE 0.0003f  //voice choking

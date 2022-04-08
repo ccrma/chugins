@@ -19,6 +19,7 @@
 #include <cmath>
 #include <iostream>
 #include <cassert>
+#include <cstring>
 
 #define SILENCE  0.001f  //voice choking
 #define PI       3.1415927f /* floats have < 8 digits of precision */
@@ -454,9 +455,6 @@ JX10Processor::processEvents(int &eventPos, int frame)
 void 
 JX10Processor::processEvent(MidiEvent& event)
 {
-	float l = 1.0f;
-	int vl=0;
-
 	if(event.IsNoteOn())
 	{
 		unsigned pitch = event.GetNote();
@@ -579,7 +577,6 @@ JX10Processor::processEvent(MidiEvent& event)
         bool doglide = !(mode == 0 || mode == 3);
         bool legato = (mode == 1 || mode == 5);
         bool polyMode = (mode < 3);
-        unsigned pitch = event.GetNote();
 		if((!polyMode) && (m_synthData.voice[0].noteID==event.GetNoteId())) //monophonic (and current note)
 		{
 			for(v=(m_synthData.numVoices-1); v>0; v--) 
