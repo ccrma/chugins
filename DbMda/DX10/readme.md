@@ -20,39 +20,39 @@ explore its possibilities.
 `selectPreset(int i)` selects the indexed preset.
 
 | Index | Name           |
-| :---- | :------------- |
-| 0     | Bright E.Piano |
-| 1     | Jazz E.Piano   |
-| 2     | E.Piano Pad    |
-| 3     | Fuzzy E.Piano  |
-| 4     | Soft Chimes    |
-| 5     | Harpsichord    |
-| 6     | Funk Clav      |
-| 7     | Sitar          |
-| 8     | Chiff Organ    |
-| 9     | Tinkle         |
-| 10    | Space Pad      |
-| 11    | Koto           |
-| 12    | Harp           |
-| 13    | Jazz Guitar    |
-| 14    | Steel Drum     |
-| 15    | Log Drum       |
-| 16    | Trumpet        |
-| 17    | Horn           |
-| 18    | Reed 1         |
-| 19    | Reed 2         |
-| 20    | Violin         |
-| 21    | Chunky Bass    |
-| 22    | E.Bass         |
-| 23    | Clunk Bass     |
-| 24    | Thick Bass     |
-| 25    | Sine Bass      |
-| 26    | Square Bass    |
-| 27    | Upright Bass 1 |
-| 28    | Upright Bass 2 |
-| 29    | Harmonics      |
-| 30    | Scratch        |
-| 31    | Syn Tom        |
+| ----: | :------------- |
+|     0 | Bright E.Piano |
+|     1 | Jazz E.Piano   |
+|     2 | E.Piano Pad    |
+|     3 | Fuzzy E.Piano  |
+|     4 | Soft Chimes    |
+|     5 | Harpsichord    |
+|     6 | Funk Clav      |
+|     7 | Sitar          |
+|     8 | Chiff Organ    |
+|     9 | Tinkle         |
+|    10 | Space Pad      |
+|    11 | Koto           |
+|    12 | Harp           |
+|    13 | Jazz Guitar    |
+|    14 | Steel Drum     |
+|    15 | Log Drum       |
+|    16 | Trumpet        |
+|    17 | Horn           |
+|    18 | Reed 1         |
+|    19 | Reed 2         |
+|    20 | Violin         |
+|    21 | Chunky Bass    |
+|    22 | E.Bass         |
+|    23 | Clunk Bass     |
+|    24 | Thick Bass     |
+|    25 | Sine Bass      |
+|    26 | Square Bass    |
+|    27 | Upright Bass 1 |
+|    28 | Upright Bass 2 |
+|    29 | Harmonics      |
+|    30 | Scratch        |
+|    31 | Syn Tom        |
 
 #### Parameters
 
