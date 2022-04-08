@@ -39,6 +39,7 @@
 #include "concurrentQ.h"
 #include <thread>
 #include <iostream>
+#include <functional>
 
 class VST3Host 
 {

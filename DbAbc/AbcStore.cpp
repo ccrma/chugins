@@ -1506,7 +1506,7 @@ AbcStore::flattenPartSpec(char const *spec, std::string *partspec)
                         for(int j=0; j<((int) (stop-start)); j++) 
                         {
                             char c = partspec->at(start+j);
-                            partspec->push_back(partspec->at(start+j));
+                            partspec->push_back(c);
                         }
                     }
                 } 

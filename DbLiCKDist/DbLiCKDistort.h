@@ -309,6 +309,7 @@ public:
             float xx = this->threshold + (this->threshold - x) + this->bias;
             if(xx > 1.f)
                 xx = 1.f - xx; // another flip
+            return xx;
         }
     }
 };
@@ -539,6 +540,7 @@ public:
         else
             return in;
     }
+
     DbLiCKDistort *currentDistortion;
     std::string name;
 };
