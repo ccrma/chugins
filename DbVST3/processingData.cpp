@@ -200,25 +200,28 @@ void
 ProcessingData::PrepareMidiEvent(int status, int data1, int data2,
             Steinberg::FUnknownPtr<Steinberg::Vst::IMidiMapping> midiMap)
 {
-    Steinberg::int16 ch = status & 0x0F;
+    Steinberg::int16 ch = status & 0x000F;
     status &= 0xF0;
     auto evt = Steinberg::Vst::midiToEvent(status, ch, data1, data2);
     if(evt)
     {
         /* events are NoteOn/Off & PolyPressure ------------------- */ 
         evt->busIndex = 0; // the midi event bus..
-        evt->flags = Steinberg::Vst::Event::kIsLive;
+        evt->flags = 0; // Steinberg::Vst::Event::kIsLive;
         // sample frames related to the current block start sample position 
         evt->sampleOffset = this->eventSampleOffset; 
-        if(this->verbosity)
+        if(this->verbosity || 1)
         {
-            std::cerr << "ProcessingData MIDI event: " << status 
-                << " note: " << data1 << " vel: " << data2 
-                << " qlen: " << this->inEvents.getEventCount() 
-                << " flags: " << evt->flags
-                << " sampleOffset: " << evt->sampleOffset
-                << " busIndex: " << evt->busIndex
-                << "\n";
+            std::cerr << "ProcessingData MIDI event: " 
+                    << status  << "\n"
+                    << " chan: " << ch 
+                    << " note: " << data1 
+                    << " vel: " << data2 
+                    << " qlen: " << this->inEvents.getEventCount() 
+                    << " type: " << evt->type
+                    << " sampleOffset: " << evt->sampleOffset
+                    << " busIndex: " << evt->busIndex
+                    << "\n";
         }
         if(this->inEvents.addEvent(*evt) != Steinberg::kResultOk)
             std::cerr  << "Problem adding MIDI event to eventlist\n";
@@ -266,6 +269,7 @@ ProcessingData::Process(
     Steinberg::Vst::IAudioProcessor* audioEffect,
     float *in, int inCh, float *out, int outCh, int nframes)
 {
+    // locks are managed by caller.
     assert((inCh == 2 || inCh == 0) && outCh == 2 && nframes == 1);
     static float zero = 0.f;
     bool clearEvents = true;
@@ -347,13 +351,13 @@ ProcessingData::Process(
     else
         std::cerr << "Need to copy in+out of allocated buffers";
 
-	if (clearEvents)
+	if(clearEvents)
 	{
 		if (this->inPChanges.getParameterCount() > 0)
 		{
             // Parameter changes commonly occur during "startup",
             // due to the fact that the .ck file requests them.
-            if(this->verbosity)
+            if(this->verbosity || true)
             {
                 std::cerr << "Processed " 
                     << this->inPChanges.getParameterCount() 
@@ -368,6 +372,15 @@ ProcessingData::Process(
                     << this->outEvents.getEventCount() << "\n";
             }
             this->outEvents.clear();
+        }
+        if(this->verbosity || true) 
+        {
+            if(this->inEvents.getEventCount() > 0)
+            {
+                std::cerr << "Processed " 
+                    << this->inEvents.getEventCount() 
+                    << " midiEvents\n";
+            }
         }
         this->inEvents.clear();
         this->inPChanges.clearQueue();

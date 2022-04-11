@@ -11,7 +11,7 @@ VST3PluginInstance::VST3PluginInstance()
     this->host = VST3Host::Singleton();
     assert(this->host->IsMessageThread());
     this->error = 0;
-    this->debug = 0;
+    this->debug = 1;
     this->verbosity = this->debug; // overridable via SetVerbosity in header
     this->component = nullptr;
     this->controller = nullptr;
@@ -196,7 +196,7 @@ VST3PluginInstance::MidiEvent(int status, int data1, int data2)
             if(this->debug)
                 std::cerr << "NO controller for MidiEvent " << status << " "  << data1 << "\n";
             err = -1;
-        }
+       }
     }
     else
     {
@@ -352,9 +352,12 @@ VST3PluginInstance::readAllParameters(bool andPush)
         this->controller->getParameterInfo(i, info);
         float val = this->controller->getParamNormalized(info.id);
         this->paramValues[i] = val;
-
-        if(this->debug)
-            std::cerr << " " << i << ": " << val << "\n";
+        if(this->debug && val != 0.f)
+        {
+            std::cerr << " " << i << " " 
+                << VST3::StringConvert::convert(info.title)
+                << ": " << val << "\n";
+        }
     }
     if(andPush)
     {
@@ -367,18 +370,16 @@ VST3PluginInstance::readAllParameters(bool andPush)
             Steinberg::Vst::ParameterInfo info;
             this->controller->getParameterInfo(i, info);
             float val = this->controller->getParamNormalized(info.id);
+            std::string nm = VST3::StringConvert::convert(info.title);
+            bool push = (nm.rfind("MIDI CC", 0) == 0) ? false : true; // startswith
             if(info.flags & Steinberg::Vst::ParameterInfo::kCanAutomate)
-            {
-                if(this->verbosity > 1)
-                    std::cerr << i << ": " << val << "\n";
-                this->SetParamValue(info.id, val, true /*updateProc*/);
-            }
+                this->SetParamValue(info.id, val, push /*updateProc*/);
             else
             {
                 // We don't register changes to program since it can trigger 
                 // infinite restarts.
                 if(!(info.flags & Steinberg::Vst::ParameterInfo::kIsProgramChange))
-                    this->SetParamValue(info.id, val, true);
+                    this->SetParamValue(info.id, val, push);
             }
         }
     }

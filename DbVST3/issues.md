@@ -569,8 +569,94 @@ VST3PluginInstance releaseResources
 14:18 note [chuck] Performance Begin 0
 14:18 note [chuck] Opened MIDI device: 0 -> A-Series Keyboard
 
+|Apr 8, JuceHost | Chugin |
+|:-- |:-- |
+|VST3HostContext queryInterface IHostApplication (1)| VST3PluginInstance query  IHostApplication (1), HostMessage |
+|VST3PluginInstance constructor| |
+|VST3PluginInstance init| |
+|EditController != Component| |
+|VST3HostContext queryInterface IComponentHandler2 (1)| |
+|Host accessing plugin's processor interface| |
+|Host accessing plugin's unitInfo interface| |
+|Host accessing plugin's editController2 interface| |
+|Host acessing plugin's midiMapping interface| |
+|host accessing plugin's trackInfoListener interface| |
+|Host:refreshParameterList| |
+|Host::synchronizeStates| synchronizeStates |
+|setComponentStateAndResetParameters begin #################|   |
+|HOST: restartComponent| VST3PluginInstance.restartComponent ParamValuesChanged, updateProcessor:1|
+|VST3HostContext.restartComponentOnMessageThread begin ----------------||
+|restartComponent paramvalueschanged||
+|Host:resetParameters|readAllParameters 1 (andpush)|
+|Expression 0: 1| 0 Expression: 1|
+|Dynamics 1: 1| 1 Dynamics: 1|
+|Release 3: 0.5| 3 Release: 0.5 |
+|Tightness 4: 0.5| 4 Tightness: 0.5 |
+|Simple Mix 6: 0.5| 6 Simple Mix: 0.5|
+|Stereo Pan 7: 0.5| 7 Stereo Pan: 0.5 |
+|ADSR-Attack 8: 0.310353| 8 ADSR-Attack: 0.310353 |
+|ADSR-Decay 9: 0.341778| 9 ADSR-Decay: 0.341778 |
+|ADSR-Sustain 10: 1| 10 ADSR-Sustain: 1 |
+|ADSR-Release 11: 0.341778| 11 ADSR-Release: 0.341778 |
+|Global Gain 12: 0.629922| 12 Global Gain: 0.629922 |
+|Global Pan 13: 0.5| 13 Global Pan: 0.5 |
+|Global Tune 14: 0.5| 14 Global Tune: 0.5 |
+|Stereo Spread 16: 0.5| 16 Stereo Spread: 0.5 |
+|Mic: Alt1 45: 1| 45 Mic: Alt1: 1 |
+|VST3HostContext.restartComponentOnMessageThread end--------------------| LABS synchronized 292 bytes of state |
+|setComponentStateAndResetParameters end ###################| | VST3PluginInstance.Init LABS |
+|VST3PluginInstance.setupIO (setupProcessing)| VST3PluginInstance.SetupProcessing |
+|activateEventBuses (in)| PluginInstance.InitBuses |
+|activateEventBuses (out)| activate output bus 0 sa:3 |
+|VST3PluginInstance prepareToPlay (setupProcessing)| setBusArrangements in:(0), out(1) |
+|activateAudioOutputBus| |
+|activateEventBuses (in)| LABS setEventBusState 1 nin:1 nout:0 |
+|activateEventBuses (out)| Activating LABS (audio bus)|
+|prepareToPlay complete (isActive:true)| (activating succeeded) |
+|VST3HostContext queryInterface IHostApplication (1)|
+|midi 1|
+|midi 1|
+|midi 1|
+|midi 1|
 
 ### See Also
 
 https://github.com/Spacechild1/vstplugin/blob/master/sc/src/VSTPlugin.cpp
 
+
+### sick.log
+
+these message appear to be tied to our resetAnPush approach to parameters
+namely, many of LABs parameter values are CC value.  Removing the initial
+push produced a log without these messages, but still no sound.
+
+[8 Apr 2022 15:27:33.845]	(tid:0000000000003508) Unhandled MIDI channel mode message : cc=125
+[8 Apr 2022 15:27:33.846]	(tid:0000000000003508) Unhandled MIDI channel mode message : cc=126
+[8 Apr 2022 15:27:33.846]	(tid:0000000000003508) Unhandled MIDI channel mode message : cc=127
+
+### lesssick.log
+
+                            (tid:0000000000002ac4) Instance Started
+[8 Apr 2022 16:08:10.509]   (tid:0000000000002ac4) Labs: prepare to play (messagethread)
+[8 Apr 2022 16:08:10.523]   (tid:0000000000002ac4) Labs: prepare to play  
+[8 Apr 2022 16:08:10.524]   (tid:0000000000002ac4) Labs: prepare to play
+[8 Apr 2022 16:08:10.531]   (tid:00000000000006f0) Transport Reset
+[8 Apr 2022 16:08:10.531]   (tid:00000000000006f0) Transport Reset
+[8 Apr 2022 16:08:14.533]   (tid:0000000000002ac4) Labs: reset  // <------------ messagethread
+[8 Apr 2022 16:08:14.535]   (tid:0000000000002ac4) Terminating threads
+[8 Apr 2022 16:08:14.535]   (tid:0000000000002ac4) Waiting for threads to exit : time = 0.20 ms
+[8 Apr 2022 16:08:14.536]   (tid:0000000000002ac4) Threads finished            : time = 1.53 ms
+
+### healthy.log
+
+[9 Apr 2022 8:04:13.568]        (tid:0000000000000b5c) Instance Started
+[9 Apr 2022 8:04:23.598]        (tid:0000000000000b5c) Labs: prepare to play
+[9 Apr 2022 8:04:46.489]        (tid:0000000000000b5c) Labs: prepare to play
+[9 Apr 2022 8:04:46.490]        (tid:0000000000000b5c) Labs: prepare to play
+[9 Apr 2022 8:04:46.490]        (tid:0000000000003eb8) Transport Reset
+[9 Apr 2022 8:04:46.490]        (tid:0000000000003eb8) Transport Reset
+[9 Apr 2022 8:15:12.886]        (tid:0000000000000b5c) Attempting to Load Patch: LABS_Electric_Piano_Chorus (v1.0.3)
+[9 Apr 2022 8:15:12.886]        (tid:0000000000000b5c)                Got Patch: LABS_Electric_Piano_Chorus (v1.0.3)
+[9 Apr 2022 8:15:12.886]        (tid:0000000000000b5c) Impulse response file: <ID:308304>
+[9 Apr 2022 8:15:12.899]        (tid:0000000000000b5c)                Patch ID : 15
+[9 Apr 2022 8:15:12.901]        (tid:0000000000000b5c) Loaded factory preset

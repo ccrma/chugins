@@ -60,9 +60,6 @@ public:
 
     void Print(std::ostream &ostr, char const *indent, int index)
     {
-        if(this->flags & Steinberg::Vst::ParameterInfo::kIsHidden)
-            return;
-
         ostr << indent << "- name: \"" << this->name << "\"\n";
         ostr << indent << "  id: " << this->id << "\n";
 
@@ -128,6 +125,7 @@ public:
             ostr << indent << "  enum:  1\n";
         if(this->hidden())
             ostr << indent << "  hidden:  1\n";
+
     }
 };
 
