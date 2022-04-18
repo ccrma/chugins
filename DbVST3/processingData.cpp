@@ -210,7 +210,7 @@ ProcessingData::PrepareMidiEvent(int status, int data1, int data2,
         evt->flags = 0; // Steinberg::Vst::Event::kIsLive;
         // sample frames related to the current block start sample position 
         evt->sampleOffset = this->eventSampleOffset; 
-        if(this->verbosity || 1)
+        if(this->verbosity)
         {
             std::cerr << "ProcessingData MIDI event: " 
                     << status  << "\n"
@@ -357,7 +357,7 @@ ProcessingData::Process(
 		{
             // Parameter changes commonly occur during "startup",
             // due to the fact that the .ck file requests them.
-            if(this->verbosity || true)
+            if(this->verbosity)
             {
                 std::cerr << "Processed " 
                     << this->inPChanges.getParameterCount() 
@@ -373,7 +373,7 @@ ProcessingData::Process(
             }
             this->outEvents.clear();
         }
-        if(this->verbosity || true) 
+        if(this->verbosity) 
         {
             if(this->inEvents.getEventCount() > 0)
             {
