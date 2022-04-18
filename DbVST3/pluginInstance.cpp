@@ -11,7 +11,7 @@ VST3PluginInstance::VST3PluginInstance()
     this->host = VST3Host::Singleton();
     assert(this->host->IsMessageThread());
     this->error = 0;
-    this->debug = 1;
+    this->debug = 0;
     this->verbosity = this->debug; // overridable via SetVerbosity in header
     this->component = nullptr;
     this->controller = nullptr;
