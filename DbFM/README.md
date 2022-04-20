@@ -5,9 +5,8 @@ project (Apache license) to the ChucK/chugin environment.  The DbMdaDX10
 chugin is similar but much less rigorous in its DX10 emulation.
 
 The synth is designed to replicate the DX7 audio processing pipeline which
-is a 6-unit pipelined FM system.  We migrated the 16-bit audio pipeline
-to floating point (losing many of the associated performance optimization)
-favoring generic/portable simplicity over fixed-pt, NEON-tuned implementation.
+is a 6-unit pipelined FM system.  We shim the 16-bit audio synth into
+ChucK's floating point tick.
 
 The goal is to ensure that existing DX7 presets/patches produce a useable 
 result in this environment.
