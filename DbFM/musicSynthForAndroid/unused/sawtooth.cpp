@@ -190,7 +190,7 @@ Sawtooth::process(const int32_t **inbufs, const int32_t *control_in,
     // choose a strategy based on the frequency
     if (actual_logf < LOW_FREQ_LIMIT - (1 << (SLICE_SHIFT - SLICE_EXTRA))) 
     {
-        for(int i = 0; i < k_MaxSamples; i++) 
+        for(int i = 0; i < k_RenderChunkSize; i++) 
         {
             obuf[i] = compute(p);
             p += f;
@@ -203,7 +203,7 @@ Sawtooth::process(const int32_t **inbufs, const int32_t *control_in,
         // interpolate between computed and lookup
         int slice = (LOW_FREQ_LIMIT + SLICE_BASE + (1 << SLICE_SHIFT) - 1) >> SLICE_SHIFT;
         int slice_lowbits = actual_logf - LOW_FREQ_LIMIT + (1 << (SLICE_SHIFT - SLICE_EXTRA));
-        for(int i = 0; i < k_MaxSamples; i++) 
+        for(int i = 0; i < k_RenderChunkSize; i++) 
         {
             int32_t yc = compute(p);
             int32_t yl = lookup_1(p, slice + 1);
@@ -228,7 +228,7 @@ Sawtooth::process(const int32_t **inbufs, const int32_t *control_in,
         }
         if(slice_lowbits <= 0) 
         {
-            for(int i = 0; i < k_MaxSamples; i++) 
+            for(int i = 0; i < k_RenderChunkSize; i++) 
             {
                 obuf[i] = lookup_1(p, slice);
                 p += f;
@@ -237,7 +237,7 @@ Sawtooth::process(const int32_t **inbufs, const int32_t *control_in,
         } 
         else 
         {
-            for (int i = 0; i < k_MaxSamples; i++) 
+            for (int i = 0; i < k_RenderChunkSize; i++) 
             {
                 obuf[i] = lookup_2(p, slice, slice_lowbits);
                 p += f;

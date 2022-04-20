@@ -123,6 +123,6 @@ Env::advance(int newix)
         int qrate = (m_rates[m_ix] * 41) >> 6;
         qrate += m_rate_scaling;
         qrate = std::min(qrate, 63);
-        m_inc = (4 + (qrate & 3)) << (2 + LG_N + (qrate >> 2));
+        m_inc = (4 + (qrate & 3)) << (2 + k_LogChunkSize + (qrate >> 2));
     }
 }

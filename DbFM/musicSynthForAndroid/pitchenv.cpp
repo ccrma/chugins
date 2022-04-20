@@ -24,7 +24,7 @@ int PitchEnv::s_unit;
 /*static*/ void 
 PitchEnv::init(double sample_rate) 
 {
-    s_unit = k_MaxSamples * (1 << 24) / (21.3 * sample_rate) + 0.5;
+    s_unit = k_RenderChunkSize * (1 << 24) / (21.3 * sample_rate) + 0.5;
 }
 
 static uint8_t s_ratetab[] = 

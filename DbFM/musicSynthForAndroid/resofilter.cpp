@@ -201,7 +201,7 @@ void ResoFilter::process(const int32_t **inbufs, const int32_t *control_in,
 
     if (overdrive < 0.01f) 
     {
-        for(int i = 0; i < k_MaxSamples; i++)
+        for(int i = 0; i < k_RenderChunkSize; i++)
         {
             float signal = ibuf[i];
             float tmp[4];
@@ -222,7 +222,7 @@ void ResoFilter::process(const int32_t **inbufs, const int32_t *control_in,
             a.get()[4 + 5 * i] -= 1.0;
             a.get()[16 + i] += k * a.get()[i];
         }
-        for (int i = 0; i < k_MaxSamples; i++) 
+        for (int i = 0; i < k_RenderChunkSize; i++) 
         {
             float signal = ibuf[i];
             float tmp[4];

@@ -77,7 +77,7 @@ private:
     bool m_sustain;
 
     // Extra buffering for when GetSamples wants a buffer not a multiple of N
-    int16_t m_extra_buf[N];
+    int16_t m_extra_buf[k_RenderChunkSize];
     int m_extra_buf_size;
 };
 

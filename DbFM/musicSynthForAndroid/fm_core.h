@@ -35,7 +35,7 @@ public:
     void compute(int32_t *output, FmOpParams *params, int algorithm,
                  int32_t *fb_buf, int32_t feedback_gain);
 private:
-    AlignedBuf<int32_t, k_MaxSamples> m_buf[2];
+    AlignedBuf<int32_t, k_RenderChunkSize> m_buf[2];
 };
 
 #endif  // __FM_CORE_H

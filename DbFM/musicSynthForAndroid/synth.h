@@ -21,10 +21,10 @@ typedef float t_sample;
 
 #define k_NumFMOps 6 /* number in a true DX7 is 6 */
 
-#define LG_N 6
-#define N (1 << LG_N) /* 64, maxsamples per invocation */
+//#define LG_N 6
+////#define N (1 << LG_N) /* 64, maxsamples per invocation */
 
-#define k_MaxSamples N
-#define k_LogMaxSamples LG_N
+#define k_LogChunkSize 6
+#define k_RenderChunkSize (1 << k_LogChunkSize)
 
 #endif 

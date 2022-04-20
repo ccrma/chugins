@@ -27,7 +27,7 @@ uint32_t Lfo::s_unit;
 Lfo::init(double sample_rate) 
 {
     // constant is 1 << 32 / 15.5s / 11
-    Lfo::s_unit = (int32_t)(k_MaxSamples * 25190424 / sample_rate + 0.5);
+    Lfo::s_unit = (int32_t)(k_RenderChunkSize * 25190424 / sample_rate + 0.5);
 }
 
 void 

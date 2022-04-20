@@ -307,11 +307,11 @@ SynthUnit::GetSamples(int n_samples, int16_t *buffer)
         return;
     }
 
-    for (; i < n_samples; i += N) 
+    for (; i < n_samples; i += k_RenderChunkSize) 
     {
-        AlignedBuf<int32_t, N> audiobuf;
-        AlignedBuf<int32_t, N> audiobuf2;
-        for(int j = 0; j < N; ++j) 
+        AlignedBuf<int32_t, k_RenderChunkSize> audiobuf;
+        AlignedBuf<int32_t, k_RenderChunkSize> audiobuf2;
+        for(int j = 0; j < k_RenderChunkSize; ++j) 
         {
             audiobuf.get()[j] = 0;
         }
@@ -329,7 +329,7 @@ SynthUnit::GetSamples(int n_samples, int16_t *buffer)
         int32_t *bufs2[] = { audiobuf2.get() };
         m_filter.process(bufs, m_filter_control, m_filter_control, bufs2);
         int jmax = n_samples - i;
-        for (int j = 0; j < k_MaxSamples; ++j) 
+        for (int j = 0; j < k_RenderChunkSize; ++j) 
         {
             int32_t val = audiobuf2.get()[j] >> 4;
             int clip_val = val < -(1 << 24) ? 0x8000 : val >= (1 << 24) ? 0x7fff :

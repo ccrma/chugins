@@ -169,6 +169,6 @@ FmCore::compute(int32_t *output, FmOpParams *params, int algorithm,
         {
             has_contents[outbus] = false;
         }
-        param.phase += param.freq << k_LogMaxSamples;
+        param.phase += param.freq << k_LogChunkSize;
     }
 }
