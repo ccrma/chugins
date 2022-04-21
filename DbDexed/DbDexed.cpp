@@ -1,4 +1,4 @@
-#include "DbFM.h"
+#include "DbDexed.h"
 
 #include "dexed/Dexed.h"
 #include "dexed/msfa/synth.h"
@@ -15,7 +15,7 @@
 
 const float s_invMax = 1.0f / (1<<24);
 
-DbFM::DbFM(double sampleRate)
+DbDexed::DbDexed(double sampleRate)
 {
     Freqlut::init(sampleRate);
     Lfo::init(sampleRate);
@@ -32,6 +32,7 @@ DbFM::DbFM(double sampleRate)
     m_controllers.values_[kControllerPitchRangeDn] = 3;
     m_controllers.values_[kControllerPitchStep] = 0;
     m_controllers.masterTune = 0;
+    m_controllers.core = &m_engine;
     
     this->SetCurrentProgram(0);
 
@@ -51,7 +52,7 @@ DbFM::DbFM(double sampleRate)
     m_lfo.reset(m_currentProgram + 137);
 }
 
-DbFM::~DbFM()
+DbDexed::~DbDexed()
 {
     for(int note = 0; note < k_MaxActiveVoices; ++note) 
     {
@@ -60,19 +61,19 @@ DbFM::~DbFM()
 }
 
 void 
-DbFM::AddNoteOn(int note, float vel)
+DbDexed::AddNoteOn(int note, float vel)
 {
     this->AddMidiEvent(144, note, (int)(vel*127.f));
 }
 
 void 
-DbFM::AddNoteOff(int note, float vel)
+DbDexed::AddNoteOff(int note, float vel)
 {
     this->AddMidiEvent(128, note, (int)(vel*127.f));
 }
 
 void 
-DbFM::AddMidiEvent(uint8_t status, uint8_t data1, uint8_t data2)
+DbDexed::AddMidiEvent(uint8_t status, uint8_t data1, uint8_t data2)
 {
     // bypass ringbuffer, proceed straight to ProcessMidiMessage
     // We can do this because chugins execute in the processing thread.
@@ -204,7 +205,7 @@ DbFM::AddMidiEvent(uint8_t status, uint8_t data1, uint8_t data2)
 } // add midi event
 
 void
-DbFM::GetSamples(int numSamples, float *outbuf)
+DbDexed::GetSamples(int numSamples, float *outbuf)
 {
     int i;
     // flush first events
@@ -228,6 +229,7 @@ DbFM::GetSamples(int numSamples, float *outbuf)
     else 
     {
         // finally we synthesize
+        const float invMax = 1.0f / (1 << 23);
         for(; i < numSamples; i += N) 
         {
             AlignedBuf<int32_t, N> audiobuf;
@@ -250,11 +252,15 @@ DbFM::GetSamples(int numSamples, float *outbuf)
                     {
                         // XXX: we convert to signed 15bits before float (yuk)
                         int32_t val = audiobuf.get()[j];
+                        #if 0
                         val = val >> 4;
                         int clip_val = val < -(1 << 24) ? 0x8000 : val >= (1 << 24) ? 0x7fff : val >> 9;
                         float f = ((float) clip_val) / (float) 0x8000;
-                        if(f > 1) f = 1;
-                        if(f < -1) f = -1;
+                        #else
+                        float f = val * invMax;
+                        #endif
+                        if(f > 1.f) f = 1.f;
+                        if(f < -1.f) f = -1.f;
                         sumbuf[j] += f;
                         audiobuf.get()[j] = 0;
                     }
@@ -283,13 +289,13 @@ DbFM::GetSamples(int numSamples, float *outbuf)
 }
 
 void
-DbFM::LoadCartridge(char const *path)
+DbDexed::LoadCartridge(char const *path)
 {
     assert(!"Implement me!");
 }
 
 void 
-DbFM::unpackOpSwitch(char packOpValue) 
+DbDexed::unpackOpSwitch(char packOpValue) 
 {
     m_controllers.opSwitch[5] = ((packOpValue >> 5) &1) + 48;
     m_controllers.opSwitch[4] = ((packOpValue >> 4) &1) + 48;
@@ -300,7 +306,7 @@ DbFM::unpackOpSwitch(char packOpValue)
 }
 
 void 
-DbFM::SetCurrentProgram(int index) 
+DbDexed::SetCurrentProgram(int index) 
 {
     TRACE("setting program %d state", index);
     m_currentProgramIndex = index > 31 ? 31 : index;
@@ -311,7 +317,7 @@ DbFM::SetCurrentProgram(int index)
 }
 
 void 
-DbFM::keydown(uint8_t channel, uint8_t pitch, uint8_t velo) 
+DbDexed::keydown(uint8_t channel, uint8_t pitch, uint8_t velo) 
 {
     if(velo == 0) 
     {
@@ -389,7 +395,7 @@ DbFM::keydown(uint8_t channel, uint8_t pitch, uint8_t velo)
 }
 
 void 
-DbFM::keyup(uint8_t chan, uint8_t pitch, uint8_t velo) 
+DbDexed::keyup(uint8_t chan, uint8_t pitch, uint8_t velo) 
 {
     pitch += tuningTranspositionShift();
 
@@ -445,7 +451,7 @@ DbFM::keyup(uint8_t chan, uint8_t pitch, uint8_t velo)
 }
 
 int 
-DbFM::tuningTranspositionShift()
+DbDexed::tuningTranspositionShift()
 {
     if(m_synthTuningState->is_standard_tuning() || 
        !m_controllers.transpose12AsScale)

@@ -1,5 +1,5 @@
-#ifndef DbFM_h
-#define DbFM_h
+#ifndef DbDexed_h
+#define DbDexed_h
 
 #include "dexed/EngineMkI.h"
 #include "dexed/PluginFx.h"
@@ -8,11 +8,11 @@
 
 #include <memory>
 
-class DbFM
+class DbDexed
 {
 public:
-    DbFM(double sampleRate);
-    ~DbFM();
+    DbDexed(double sampleRate);
+    ~DbDexed();
 
     void AddNoteOn(int note, float vel);
     void AddNoteOff(int note, float vel);

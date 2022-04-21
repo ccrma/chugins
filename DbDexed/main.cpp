@@ -1,9 +1,9 @@
 /* ----------------------------------------------------------------
- The DbFM chugin is a port of google's open-source fm synth.
+ The DbDexed chugin is a port of GPl3 dexed FM synth.
  Set README.md for more.
  ---------------------------------------------------------------------
 */
-#include "DbFM.h" /* this must preceed chuck includes */
+#include "DbDexed.h" /* this must preceed chuck includes */
 
 #include "chuck_dl.h"
 #include "chuck_def.h"
@@ -24,10 +24,10 @@ t_CKINT dbld_data_offset = 0;
 
 /* -------------------------------------------------------------------- */
 
-CK_DLL_QUERY(DbFM)
+CK_DLL_QUERY(DbDexed)
 {
-    QUERY->setname(QUERY, "DbFM");
-    QUERY->begin_class(QUERY, "DbFM", "UGen");
+    QUERY->setname(QUERY, "DbDexed");
+    QUERY->begin_class(QUERY, "DbDexed", "UGen");
     QUERY->add_ctor(QUERY, dbld_ctor);
     QUERY->add_dtor(QUERY, dbld_dtor);
 
@@ -56,13 +56,13 @@ CK_DLL_CTOR(dbld_ctor)
 {
     OBJ_MEMBER_INT(SELF, dbld_data_offset) = 0;
     float srate = API->vm->get_srate(API, SHRED);
-    DbFM *x = new DbFM(srate);
+    DbDexed *x = new DbDexed(srate);
     OBJ_MEMBER_INT(SELF, dbld_data_offset) = (t_CKINT) x;
 }
 
 CK_DLL_DTOR(dbld_dtor)
 {
-    DbFM *x = (DbFM *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DbDexed *x = (DbDexed *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     if(x)
     {
         delete x;
@@ -74,7 +74,7 @@ CK_DLL_MFUN( dbld_noteOn )
 {
     t_CKINT note = GET_NEXT_INT(ARGS);
     t_CKFLOAT vel = GET_NEXT_FLOAT(ARGS);
-    DbFM *x = (DbFM *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DbDexed *x = (DbDexed *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     x->AddNoteOn(note, vel);
 }
 
@@ -82,13 +82,13 @@ CK_DLL_MFUN( dbld_noteOff )
 {
     t_CKINT note = GET_NEXT_INT(ARGS);
     t_CKFLOAT vel = GET_NEXT_FLOAT(ARGS);
-    DbFM *x = (DbFM *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DbDexed *x = (DbDexed *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     x->AddNoteOff(note, vel);
 }
 
 CK_DLL_MFUN( dbld_midiEvent )
 {
-    DbFM *x = (DbFM *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DbDexed *x = (DbDexed *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     Chuck_Object *msg = GET_NEXT_OBJECT(ARGS);
 
     /* object mvar offsets for MidiMsg not exported by chuck
@@ -105,7 +105,7 @@ CK_DLL_MFUN( dbld_midiEvent )
 
 CK_DLL_TICK(dbld_tick)
 {
-    DbFM *x = (DbFM *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DbDexed *x = (DbDexed *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     x->GetSamples(1, out);
     return TRUE;
 }

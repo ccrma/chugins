@@ -1,5 +1,4 @@
-DbFM inst => dac;
-.5 => inst.gain;
+DbDexed inst => dac;
 
 inst.noteOn(40, 1);
 inst.noteOn(43, 1);
