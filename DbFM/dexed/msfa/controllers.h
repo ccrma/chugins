@@ -24,10 +24,6 @@
 #include <cstring>
 #include <algorithm>
 
-#ifdef _WIN32
-#define snprintf _snprintf
-#endif
-
 // State of MIDI controllers
 const int kControllerPitch = 128;
 const int kControllerPitchRangeUp = 129;

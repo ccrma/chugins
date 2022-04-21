@@ -3,10 +3,10 @@
  Set README.md for more.
  ---------------------------------------------------------------------
 */
+#include "DbFM.h" /* this must preceed chuck includes */
+
 #include "chuck_dl.h"
 #include "chuck_def.h"
-
-#include "DbFM.h"
 
 CK_DLL_CTOR( dbld_ctor );
 CK_DLL_DTOR( dbld_dtor );
@@ -18,16 +18,13 @@ CK_DLL_DTOR( dbld_dtor );
 
 CK_DLL_MFUN( dbld_noteOn );
 CK_DLL_MFUN( dbld_noteOff );
-
 CK_DLL_MFUN( dbld_midiEvent );
-
 CK_DLL_TICK( dbld_tick );
-
 t_CKINT dbld_data_offset = 0;
 
 /* -------------------------------------------------------------------- */
 
-CK_DLL_QUERY(DbMdaDX10)
+CK_DLL_QUERY(DbFM)
 {
     QUERY->setname(QUERY, "DbFM");
     QUERY->begin_class(QUERY, "DbFM", "UGen");

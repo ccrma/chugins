@@ -21,7 +21,9 @@
 #ifndef __ALIGNED_BUF_H
 #define __ALIGNED_BUF_H
 
-#include<stddef.h>
+#include <cstddef>
+
+#pragma warning( disable : 4146 ) /* line 32 */
 
 template<typename T, size_t size, size_t alignment = 16>
 class AlignedBuf {
