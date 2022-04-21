@@ -252,15 +252,18 @@ DbDexed::GetSamples(int numSamples, float *outbuf)
                     {
                         // XXX: we convert to signed 15bits before float (yuk)
                         int32_t val = audiobuf.get()[j];
-                        #if 0
+                        #if 1
                         val = val >> 4;
                         int clip_val = val < -(1 << 24) ? 0x8000 : val >= (1 << 24) ? 0x7fff : val >> 9;
                         float f = ((float) clip_val) / (float) 0x8000;
                         #else
                         float f = val * invMax;
                         #endif
-                        if(f > 1.f) f = 1.f;
-                        if(f < -1.f) f = -1.f;
+                        if(f > 1.f) 
+                            f = 1.f;
+                        else
+                        if(f < -1.f) 
+                            f = -1.f;
                         sumbuf[j] += f;
                         audiobuf.get()[j] = 0;
                     }
