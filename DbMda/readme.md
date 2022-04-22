@@ -9,4 +9,5 @@ See the readmes in each subdirectory for more details.
 
 See also:
 
-[http://mda.smartelectronix.com/vst/help/mdaplugs.htm](Plugin Reference)
+[Plugin Reference](http://mda.smartelectronix.com/vst/help/mdaplugs.htm)
+
