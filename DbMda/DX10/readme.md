@@ -5,7 +5,7 @@ vst plugin here: http://mda.smartelectronix.com/ and
 here: https://sourceforge.net/projects/mda-vst. It is
 now GPL2 and MIT licensed.
 
-mda-DX10 emulates a subset of the estimable Yamaha DX10 synthesizer.
+mda-DX10 emulates a subset of the estimable (and theoretical) Yamaha DX10 synthesizer.
 It comes with 32 convenient presets which you can select to quickly
 explore its possibilities.
 
