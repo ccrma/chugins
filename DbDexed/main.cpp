@@ -143,7 +143,7 @@ CK_DLL_MFUN( dbld_midiEvent )
     int data1 = OBJ_MEMBER_INT(msg, 8); // MidiMsg_offset_data1
     int data2 = OBJ_MEMBER_INT(msg, 16); // MidiMsg_offset_data2
     int data3 = OBJ_MEMBER_INT(msg, 24); // MidiMsg_offset_data3
-    t_CKDUR when = OBJ_MEMBER_DUR(msg, 32); // MidiMsg_offset_when);
+    // t_CKDUR when = OBJ_MEMBER_DUR(msg, 32); // MidiMsg_offset_when);
     // when is currently ignored.
     x->AddMidiEvent(data1, data2, data3);
 }

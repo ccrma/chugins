@@ -192,9 +192,9 @@ Cartridge::normalizePgmName(const char *sysexName)
 }
 
 int 
-Cartridge::load(const char *stream, int size) 
+Cartridge::load(const uint8_t *stream, int size) 
 {
-    const char *pos = stream;
+    const uint8_t *pos = stream;
     
     if(size < 4096) 
     {

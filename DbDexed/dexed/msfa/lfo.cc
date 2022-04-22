@@ -48,7 +48,9 @@ void Lfo::reset(const uint8_t params[6]) {
     sync_ = params[4] != 0;
 }
 
+#ifdef WIN32
 #pragma warning( disable : 4146 ) /* line 59 */
+#endif
 
 int32_t Lfo::getsample() {
     phase_ += delta_;

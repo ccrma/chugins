@@ -15,8 +15,6 @@
 
 #include <cstdarg>
 
-const float s_invMax = 1.0f / (1<<24);
-
 void 
 dexed_trace(const char *source, const char *fmt, ...) 
 {

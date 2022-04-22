@@ -23,7 +23,9 @@
 
 #include <cstddef>
 
+#ifdef WIN32
 #pragma warning( disable : 4146 ) /* line 32 */
+#endif
 
 template<typename T, size_t size, size_t alignment = 16>
 class AlignedBuf {

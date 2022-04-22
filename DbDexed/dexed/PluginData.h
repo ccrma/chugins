@@ -76,11 +76,11 @@ public:
      */
     int load(std::ifstream &fis) 
     {
-        char buffer[65535];
+        uint8_t buffer[65535];
         fis.seekg(0, fis.end);
         int sz = fis.tellg();
         fis.seekg(0, fis.beg);
-        fis.read(buffer, sz);
+        fis.read((char *) buffer, sz);
         if(!fis)
             return -1;
         return load(buffer, sz);
@@ -92,7 +92,7 @@ public:
      * Returns 1 if sysex checksum didn't match
      * Returns 2 if no sysex data found, probably random data
      */
-    int load(const char *stream, int size);
+    int load(const uint8_t *stream, int size);
     
     int saveVoice(char const *fn);
     void saveVoice(uint8_t *sysex) 
