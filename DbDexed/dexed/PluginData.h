@@ -28,6 +28,8 @@
 #include <fstream>
 #include <cassert>
 #include <vector>
+#include <cstdio>
+#include <iostream>
 
 #define SYSEX_HEADER { 0xF0, 0x43, 0x00, 0x09, 0x20, 0x00 }
 #define SYSEX_SIZE 4104 /* size of a cartridge (see ../presets) */
@@ -60,12 +62,11 @@ public:
     
     int load(char const *filepath) 
     {
-        std::ifstream istr;
-        istr.open(filepath);
-        if(!istr.good())
+        FILE * fd = fopen(filepath, "rb");
+        if(!fd)
             return -1;
-        int rc = load(istr);
-        istr.close();
+        int rc = load(fd);
+        fclose(fd);
         return rc;
     }
     
@@ -74,16 +75,20 @@ public:
      * Returns 0 if it was parsed successfully
      * Returns -1 if it cannot open the stream
      */
-    int load(std::ifstream &fis) 
+    int load(FILE *fd) 
     {
         uint8_t buffer[65535];
-        fis.seekg(0, fis.end);
-        int sz = fis.tellg();
-        fis.seekg(0, fis.beg);
-        fis.read((char *) buffer, sz);
-        if(!fis)
+        fseek(fd, 0, SEEK_END);
+        int sz = ftell(fd);
+        fseek(fd, 0, SEEK_SET);
+        size_t rsz = fread((char *) buffer, 1, sz, fd);
+        if(errno || rsz != sz)
+        {
+            std::cerr << std::strerror(errno) << "\n";
             return -1;
-        return load(buffer, sz);
+        }
+        else
+            return load(buffer, sz);
     }
     
     /**
@@ -108,6 +113,11 @@ public:
     {
         setHeader();
         return (char *) m_voiceData;
+    }
+
+    void getProgramName(int index, std::string &nm)
+    {
+        nm = normalizePgmName(getRawVoice() + ((index * 128) + 118));
     }
     
     void getProgramNames(std::vector<std::string> &dest) 

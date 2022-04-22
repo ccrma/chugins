@@ -17,18 +17,20 @@ CK_DLL_DTOR( dbld_dtor );
 
 CK_DLL_MFUN( dbld_getNumPresets );
 CK_DLL_MFUN( dbld_selectPreset );
+CK_DLL_MFUN( dbld_getPresetName );
 CK_DLL_MFUN( dbld_printPresets );
-// load cartridge, 
+CK_DLL_MFUN( dbld_loadCartridge );
 
 // printParams?
 // getparam, setparam
-
 
 CK_DLL_MFUN( dbld_noteOn );
 CK_DLL_MFUN( dbld_noteOff );
 CK_DLL_MFUN( dbld_midiEvent );
 CK_DLL_TICK( dbld_tick );
-t_CKINT dbld_data_offset = 0;
+
+static t_CKINT dbld_data_offset = 0;
+static t_CKINT dbld_datastr_offset = 0;
 
 /* -------------------------------------------------------------------- */
 
@@ -49,7 +51,11 @@ CK_DLL_QUERY(DbDexed)
     QUERY->add_mfun(QUERY, dbld_selectPreset, "void", "selectPreset");
     QUERY->add_arg(QUERY, "int", "presetNumber");
 
-    // loadCartridge
+    QUERY->add_mfun(QUERY, dbld_getPresetName, "string", "getPresetName");
+    QUERY->add_arg(QUERY, "int", "presetNumber");
+
+    QUERY->add_mfun(QUERY, dbld_loadCartridge, "int", "loadCartridge");
+    QUERY->add_arg(QUERY, "string", "filename");
 
     // midi ----------------------------------------------------
     QUERY->add_mfun(QUERY, dbld_noteOn, "int", "noteOn");
@@ -68,6 +74,10 @@ CK_DLL_QUERY(DbDexed)
     QUERY->add_ugen_func(QUERY, dbld_tick, NULL, 0, 1);
 
     dbld_data_offset = QUERY->add_mvar(QUERY, "int", "@dbld_data", false);
+
+    // hack to return a string, might be a better way?
+    dbld_datastr_offset = QUERY->add_mvar(QUERY, "string", "str", false);
+
     QUERY->end_class(QUERY);
     return TRUE;
 }
@@ -78,6 +88,10 @@ CK_DLL_CTOR(dbld_ctor)
     float srate = API->vm->get_srate(API, SHRED);
     DbDexed *x = new DbDexed(srate);
     OBJ_MEMBER_INT(SELF, dbld_data_offset) = (t_CKINT) x;
+
+    std::string defval;
+    OBJ_MEMBER_STRING(SELF, dbld_datastr_offset) = (Chuck_String *)
+        API->object->create_string(API, SHRED, defval);
 }
 
 CK_DLL_DTOR(dbld_dtor)
@@ -98,6 +112,17 @@ CK_DLL_MFUN( dbld_getNumPresets )
     RETURN->v_int = 32;
 }
 
+CK_DLL_MFUN( dbld_getPresetName )
+{
+    DbDexed *x = (DbDexed *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int i = GET_NEXT_INT(ARGS); // 
+    std::string nm;
+    x->GetProgramName(i, nm);
+    Chuck_String *ckstr = OBJ_MEMBER_STRING(SELF, dbld_datastr_offset);
+    ckstr->set(nm);
+    RETURN->v_string = ckstr;
+}
+
 CK_DLL_MFUN( dbld_selectPreset )
 {
     DbDexed *x = (DbDexed *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
@@ -112,6 +137,16 @@ CK_DLL_MFUN( dbld_printPresets )
     x->GetProgramNames(nms);
     for(int i=0;i<nms.size();i++)
         std::cerr << i << ": " << nms[i] << "\n";
+}
+
+CK_DLL_MFUN( dbld_loadCartridge )
+{
+    DbDexed *x = (DbDexed *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    std::string filename = GET_NEXT_STRING_SAFE(ARGS);
+    int err = x->LoadCartridge(filename.c_str());
+    if(err != 0)
+        std::cerr << "DbDexed problem opening " << filename << " " << err  << "\n";
+    RETURN->v_int = err;
 }
 
 /* ------------------------------------------------------------------------ */

@@ -78,6 +78,12 @@ DbDexed::~DbDexed()
 }
 
 void
+DbDexed::GetProgramName(int index, std::string &nm)
+{
+    this->m_cartridge.getProgramName(index, nm);
+}
+
+void
 DbDexed::GetProgramNames(std::vector<std::string> &nms)
 {
     this->m_cartridge.getProgramNames(nms);
@@ -314,10 +320,10 @@ DbDexed::GetSamples(int numSamples, float *outbuf)
     m_fx.process(outbuf, numSamples);
 }
 
-void
+int
 DbDexed::LoadCartridge(char const *path)
 {
-    assert(!"Implement me!");
+    return this->m_cartridge.load(path);
 }
 
 void 

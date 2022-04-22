@@ -20,8 +20,9 @@ public:
     void AddNoteOff(int note, float vel);
     void AddMidiEvent(uint8_t status, uint8_t data1, uint8_t data2);
 
-    void LoadCartridge(char const *path);
+    int LoadCartridge(char const *path);
     void SetCurrentProgram(int index);
+    void GetProgramName(int index, std::string &nm);
 
     void GetSamples(int numSamples, float *buffer);
 
