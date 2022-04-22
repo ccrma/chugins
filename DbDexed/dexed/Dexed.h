@@ -25,7 +25,7 @@ void dexed_trace(const char *source, const char *fmt, ...);
 
 #define DEXED_ID "DEVBUILD"
 
-#ifdef DEBUG
+#if defined(DEBUG)
     #define DEXED_VERSION DEXED_ID " DEBUG"
     #ifdef _MSC_VER
         #define TRACE(fmt, ...) dexed_trace(__FUNCTION__,fmt,##__VA_ARGS__)

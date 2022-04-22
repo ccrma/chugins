@@ -7,6 +7,8 @@
 #include "dexed/msfa/lfo.h"
 
 #include <memory>
+#include <vector>
+#include <string>
 
 class DbDexed
 {
@@ -22,6 +24,8 @@ public:
     void SetCurrentProgram(int index);
 
     void GetSamples(int numSamples, float *buffer);
+
+    void GetProgramNames(std::vector<std::string> &names);
 
 private:
     double m_sampleRate;

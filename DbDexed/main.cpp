@@ -8,13 +8,21 @@
 #include "chuck_dl.h"
 #include "chuck_def.h"
 
+#include <iostream>
+
+/* -------------------------------------------------------------------- */
+
 CK_DLL_CTOR( dbld_ctor );
 CK_DLL_DTOR( dbld_dtor );
 
+CK_DLL_MFUN( dbld_getNumPresets );
+CK_DLL_MFUN( dbld_selectPreset );
+CK_DLL_MFUN( dbld_printPresets );
 // load cartridge, 
-// select preset
-// enumerate presets?
+
+// printParams?
 // getparam, setparam
+
 
 CK_DLL_MFUN( dbld_noteOn );
 CK_DLL_MFUN( dbld_noteOff );
@@ -30,6 +38,18 @@ CK_DLL_QUERY(DbDexed)
     QUERY->begin_class(QUERY, "DbDexed", "UGen");
     QUERY->add_ctor(QUERY, dbld_ctor);
     QUERY->add_dtor(QUERY, dbld_dtor);
+
+    // presets ----------------------------------------------------
+    QUERY->add_mfun(QUERY, dbld_getNumPresets, "int", "getNumPresets");
+    // no args
+
+    QUERY->add_mfun(QUERY, dbld_printPresets, "void", "printPresets");
+    // no args
+
+    QUERY->add_mfun(QUERY, dbld_selectPreset, "void", "selectPreset");
+    QUERY->add_arg(QUERY, "int", "presetNumber");
+
+    // loadCartridge
 
     // midi ----------------------------------------------------
     QUERY->add_mfun(QUERY, dbld_noteOn, "int", "noteOn");
@@ -70,6 +90,31 @@ CK_DLL_DTOR(dbld_dtor)
     }
 }
 
+/* ------------------------------------------------------------------------ */
+
+CK_DLL_MFUN( dbld_getNumPresets )
+{
+    // a cartridge always has 32 presets
+    RETURN->v_int = 32;
+}
+
+CK_DLL_MFUN( dbld_selectPreset )
+{
+    DbDexed *x = (DbDexed *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int i = GET_NEXT_INT(ARGS); // 
+    x->SetCurrentProgram(i);
+}
+
+CK_DLL_MFUN( dbld_printPresets )
+{
+    DbDexed *x = (DbDexed *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    std::vector<std::string> nms;
+    x->GetProgramNames(nms);
+    for(int i=0;i<nms.size();i++)
+        std::cerr << i << ": " << nms[i] << "\n";
+}
+
+/* ------------------------------------------------------------------------ */
 CK_DLL_MFUN( dbld_noteOn )
 {
     t_CKINT note = GET_NEXT_INT(ARGS);

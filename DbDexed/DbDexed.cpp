@@ -13,7 +13,20 @@
 #include "dexed/tuning-library/include/Tunings.h"
 #include "dexed/msfa/tuning.h"
 
+#include <cstdarg>
+
 const float s_invMax = 1.0f / (1<<24);
+
+void 
+dexed_trace(const char *source, const char *fmt, ...) 
+{
+    char output[4096];
+    va_list argptr;
+    va_start(argptr, fmt);
+    vsnprintf(output, 4095, fmt, argptr);
+    va_end(argptr);
+    fprintf(stderr, "%s\n", output);
+}
 
 DbDexed::DbDexed(double sampleRate)
 {
@@ -27,15 +40,7 @@ DbDexed::DbDexed(double sampleRate)
     Sin::init();
 
     m_synthTuningState = createStandardTuning();
-
-    m_controllers.values_[kControllerPitchRangeUp] = 3;
-    m_controllers.values_[kControllerPitchRangeDn] = 3;
-    m_controllers.values_[kControllerPitchStep] = 0;
-    m_controllers.masterTune = 0;
-    m_controllers.core = &m_engine;
     
-    this->SetCurrentProgram(0);
-
     // prepare to play
     m_currentNote = 0;
     m_sustain = false;
@@ -49,7 +54,21 @@ DbDexed::DbDexed(double sampleRate)
         m_voices[note].sustained = false;
         m_voices[note].live = false;
     }
+    m_controllers.values_[kControllerPitchRangeUp] = 3;
+    m_controllers.values_[kControllerPitchRangeDn] = 3;
+    m_controllers.values_[kControllerPitchStep] = 0;
+    m_controllers.values_[kControllerPitch] = 0x2000;
+    m_controllers.masterTune = 0;
+    m_controllers.core = &m_engine;
+    m_controllers.modwheel_cc = 0;
+    m_controllers.foot_cc = 0;
+    m_controllers.breath_cc = 0;
+    m_controllers.aftertouch_cc = 0;
+	m_controllers.refresh(); 
     m_lfo.reset(m_currentProgram + 137);
+
+    this->SetCurrentProgram(3); // pharoh, call after m_voices are initialized
+
 }
 
 DbDexed::~DbDexed()
@@ -58,6 +77,12 @@ DbDexed::~DbDexed()
     {
         delete m_voices[note].dx7_note;
     }
+}
+
+void
+DbDexed::GetProgramNames(std::vector<std::string> &nms)
+{
+    this->m_cartridge.getProgramNames(nms);
 }
 
 void 
@@ -229,7 +254,7 @@ DbDexed::GetSamples(int numSamples, float *outbuf)
     else 
     {
         // finally we synthesize
-        const float invMax = 1.0f / (1 << 23);
+        const float invMax = 1.0f / (1 << 24); // fixed point 1.0
         for(; i < numSamples; i += N) 
         {
             AlignedBuf<int32_t, N> audiobuf;
@@ -250,14 +275,14 @@ DbDexed::GetSamples(int numSamples, float *outbuf)
                         lfovalue, lfodelay, &m_controllers);
                     for (int j=0; j < N; ++j) 
                     {
-                        // XXX: we convert to signed 15bits before float (yuk)
                         int32_t val = audiobuf.get()[j];
-                        #if 1
-                        val = val >> 4;
+                        val = val >> 4; // 28 => 24...
+                        #if 0
+                        // XXX: we convert to signed 15bits before float (yuk)
                         int clip_val = val < -(1 << 24) ? 0x8000 : val >= (1 << 24) ? 0x7fff : val >> 9;
                         float f = ((float) clip_val) / (float) 0x8000;
                         #else
-                        float f = val * invMax;
+                        float f = val * invMax; // preserve ~24 bits
                         #endif
                         if(f > 1.f) 
                             f = 1.f;
@@ -316,7 +341,16 @@ DbDexed::SetCurrentProgram(int index)
     m_cartridge.unpackProgram(m_currentProgram, index);
     unpackOpSwitch(0x3F);
     m_lfo.reset(m_currentProgram + 137);
-    
+    // following applies only to live notes, new note always get the
+    // current program on keydown
+    for(int i=0;i<k_MaxActiveVoices;i++)
+    {
+        if(m_voices[i].live)
+        {
+            m_voices[i].dx7_note->update(m_currentProgram, m_voices[i].midi_note,
+                                        m_voices[i].velocity);
+        }
+    }
 }
 
 void 
@@ -392,9 +426,14 @@ DbDexed::keydown(uint8_t channel, uint8_t pitch, uint8_t velo)
             }
         }
     }
- 
     m_voices[note].live = true;
-	//TRACE("activate %d [ %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d ]", pitch, ACT(voices[0]), ACT(voices[1]), ACT(voices[2]), ACT(voices[3]), ACT(voices[4]), ACT(voices[5]), ACT(voices[6]), ACT(voices[7]), ACT(voices[8]), ACT(voices[9]), ACT(voices[10]), ACT(voices[11]), ACT(voices[12]), ACT(voices[13]), ACT(voices[14]), ACT(voices[15]));
+    #define ACT(v) (v.keydown ? v.midi_note : -1)
+	TRACE("activate %d [ %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d ]", 
+        pitch, 
+        ACT(m_voices[0]), ACT(m_voices[1]), ACT(m_voices[2]), ACT(m_voices[3]), 
+        ACT(m_voices[4]), ACT(m_voices[5]), ACT(m_voices[6]), ACT(m_voices[7]), 
+        ACT(m_voices[8]), ACT(m_voices[9]), ACT(m_voices[10]), ACT(m_voices[11]), 
+        ACT(m_voices[12]), ACT(m_voices[13]), ACT(m_voices[14]), ACT(m_voices[15]));
 }
 
 void 
@@ -418,7 +457,13 @@ DbDexed::keyup(uint8_t chan, uint8_t pitch, uint8_t velo)
     // note not found ?
     if(note >= k_MaxActiveVoices) 
     {
-		TRACE("note found ??? %d [ %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d ]", pitch, ACT(voices[0]), ACT(voices[1]), ACT(voices[2]), ACT(voices[3]), ACT(voices[4]), ACT(voices[5]), ACT(voices[6]), ACT(voices[7]), ACT(voices[8]), ACT(voices[9]), ACT(voices[10]), ACT(voices[11]), ACT(voices[12]), ACT(voices[13]), ACT(voices[14]), ACT(voices[15]));
+		fprintf(stderr, 
+            "note found ??? %d [ %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d ]", 
+            pitch, ACT(m_voices[0]), ACT(m_voices[1]), ACT(m_voices[2]), 
+            ACT(m_voices[3]), ACT(m_voices[4]), ACT(m_voices[5]), ACT(m_voices[6]), 
+            ACT(m_voices[7]), ACT(m_voices[8]), ACT(m_voices[9]), ACT(m_voices[10]), 
+            ACT(m_voices[11]), ACT(m_voices[12]), ACT(m_voices[13]), ACT(m_voices[14]), 
+            ACT(m_voices[15]));
         return;
     }
     

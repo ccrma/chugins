@@ -1,9 +1,14 @@
 DbDexed inst => dac;
 
+inst.printPresets();
+
 .1::second => dur noteDur;
 [60, 62, 64, 65, 67, 69, 71] @=> int notes[];
-for(int l;l<5;l++)
+
+for(int l;l<inst.getNumPresets();l++)
 {
+    <<<"Preset", l>>>;
+    inst.selectPreset(l);
     for(int i;i<notes.size();i++)
     {
         notes[i] => int n;
