@@ -226,7 +226,7 @@ DbDexed::AddMidiEvent(uint8_t status, uint8_t data1, uint8_t data2)
             m_controllers.refresh();
             return;
         
-		case 0xe0 :
+		case 0xe0 : /* pitchbend */
 			m_controllers.values_[kControllerPitch] = data1 | (data2 << 7);
             return;
         }

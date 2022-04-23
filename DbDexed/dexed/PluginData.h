@@ -82,7 +82,7 @@ public:
         int sz = ftell(fd);
         fseek(fd, 0, SEEK_SET);
         size_t rsz = fread((char *) buffer, 1, sz, fd);
-        if(errno || rsz != sz)
+        if(rsz != sz)
         {
             std::cerr << std::strerror(errno) << "\n";
             return -1;
