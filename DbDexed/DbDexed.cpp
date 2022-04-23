@@ -15,6 +15,8 @@
 
 #include <cstdarg>
 
+#define ACT(v) (v.keydown ? v.midi_note : -1)
+
 void 
 dexed_trace(const char *source, const char *fmt, ...) 
 {
@@ -431,7 +433,6 @@ DbDexed::keydown(uint8_t channel, uint8_t pitch, uint8_t velo)
         }
     }
     m_voices[note].live = true;
-    #define ACT(v) (v.keydown ? v.midi_note : -1)
 	TRACE("activate %d [ %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d ]", 
         pitch, 
         ACT(m_voices[0]), ACT(m_voices[1]), ACT(m_voices[2]), ACT(m_voices[3]), 
@@ -462,7 +463,7 @@ DbDexed::keyup(uint8_t chan, uint8_t pitch, uint8_t velo)
     if(note >= k_MaxActiveVoices) 
     {
 		fprintf(stderr, 
-            "note found ??? %d [ %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d ]", 
+            "note not found ??? %d [ %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d ]", 
             pitch, ACT(m_voices[0]), ACT(m_voices[1]), ACT(m_voices[2]), 
             ACT(m_voices[3]), ACT(m_voices[4]), ACT(m_voices[5]), ACT(m_voices[6]), 
             ACT(m_voices[7]), ACT(m_voices[8]), ACT(m_voices[9]), ACT(m_voices[10]), 
