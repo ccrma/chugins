@@ -26,6 +26,7 @@ CK_DLL_MFUN( dbld_loadCartridge );
 
 CK_DLL_MFUN( dbld_noteOn );
 CK_DLL_MFUN( dbld_noteOff );
+CK_DLL_MFUN( dbld_midiMsg );
 CK_DLL_MFUN( dbld_midiEvent );
 CK_DLL_TICK( dbld_tick );
 
@@ -66,8 +67,13 @@ CK_DLL_QUERY(DbDexed)
     QUERY->add_arg(QUERY, "int", "noteNumber");
     QUERY->add_arg(QUERY, "float", "velocity");
 
-    QUERY->add_mfun(QUERY, dbld_midiEvent, "void", "midiEvent");
+    QUERY->add_mfun(QUERY, dbld_midiMsg, "void", "midiMsg");
     QUERY->add_arg(QUERY, "MidiMsg", "msg");
+
+    QUERY->add_mfun(QUERY, dbld_midiEvent, "void", "midiEvent");
+    QUERY->add_arg(QUERY, "int", "data1");
+    QUERY->add_arg(QUERY, "int", "data2");
+    QUERY->add_arg(QUERY, "int", "data3");
 
     // mono tick --------------------------------------------------
     // vs: add_ugen_funcf
@@ -166,7 +172,7 @@ CK_DLL_MFUN( dbld_noteOff )
     x->AddNoteOff(note, vel);
 }
 
-CK_DLL_MFUN( dbld_midiEvent )
+CK_DLL_MFUN( dbld_midiMsg )
 {
     DbDexed *x = (DbDexed *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     Chuck_Object *msg = GET_NEXT_OBJECT(ARGS);
@@ -180,6 +186,15 @@ CK_DLL_MFUN( dbld_midiEvent )
     int data3 = OBJ_MEMBER_INT(msg, 24); // MidiMsg_offset_data3
     // t_CKDUR when = OBJ_MEMBER_DUR(msg, 32); // MidiMsg_offset_when);
     // when is currently ignored.
+    x->AddMidiEvent(data1, data2, data3);
+}
+
+CK_DLL_MFUN( dbld_midiEvent )
+{
+    DbDexed *x = (DbDexed *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int data1 = GET_NEXT_INT(ARGS);
+    int data2 = GET_NEXT_INT(ARGS);
+    int data3 = GET_NEXT_INT(ARGS);
     x->AddMidiEvent(data1, data2, data3);
 }
 

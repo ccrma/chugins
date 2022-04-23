@@ -54,11 +54,12 @@ for(int i;i<notes.size();i++)
 
 ### Making Sound
 
-| Method                                  | Description                 |
-| :-------------------------------------- | :-------------------------- |
-| `midiEvent(MidiMsg msg)`                | Performs the MIDI event.    |
-| `noteOn(int midiNote, float velocity)`  | Simpler way to play a note. |
-| `noteOff(int midiNote, float velocity)` |                             |
+| Method                                       | Description                 |
+| :------------------------------------------- | :-------------------------- |
+| `midiMsg(MidiMsg msg)`                       | Performs the MIDI event.    |
+| `midiEvent(int data1, int data2, int data3)` | Performs the MIDI event.    |
+| `noteOn(int midiNote, float velocity)`       | Simpler way to play a note. |
+| `noteOff(int midiNote, float velocity)`      |                             |
 
 ### Presets and Voices
 
