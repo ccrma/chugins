@@ -39,9 +39,9 @@ struct Grain
         {
             // remap pan from [-1,1] to [0,pi/2]
             float panme = (pan+1.0)/2.f * ONE_PI/2.f;
-            // pan it (NEW: constant-power panning; fixed 1.4.1.0)
-            this->panLeft = cos(panme);
-            this->panRight = sin(panme);
+            // pan it "constant-power" panning.
+            this->panLeft = cosf(panme);
+            this->panRight = sinf(panme);
         }
 
         // std::cout << "New Grain at " << this->pos << std::endl;
