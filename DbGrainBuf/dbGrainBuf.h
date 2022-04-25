@@ -25,7 +25,7 @@ public:
     dbGrainBuf(float sampleRate) :
         sampleRate(sampleRate),
         sndbuf(sampleRate),
-        grainMgr(512),
+        grainMgr(512), // max of 512 grains */
         phasor(sampleRate),
         bypassGrains(false),
         windowFilter(dbWindowing::kBlackman),
