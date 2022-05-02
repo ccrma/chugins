@@ -28,7 +28,7 @@ public:
         grainMgr(512), // max of 512 grains */
         phasor(sampleRate),
         bypassGrains(false),
-        windowFilter(dbWindowing::kBlackman),
+        windowFilter(dbWindowing::k_Blackman),
         grainRate(1.f),
         grainPeriod(.2f * sampleRate), // 200 ms
         currentGrainPeriod(.2f * sampleRate), // 200 ms
@@ -74,23 +74,23 @@ public:
     {
         int err = 0;
         if(filtername == "blackman")
-            this->windowFilter = dbWindowing::kBlackman;
+            this->windowFilter = dbWindowing::k_Blackman;
         else
         if(filtername == "hanning")
-            this->windowFilter = dbWindowing::kHanning;
+            this->windowFilter = dbWindowing::k_Hann;
         else
         if(filtername == "hamming")
-            this->windowFilter = dbWindowing::kHamming;
+            this->windowFilter = dbWindowing::k_Hamming;
         else
         if(filtername == "bartlett")
-            this->windowFilter = dbWindowing::kBartlett;
+            this->windowFilter = dbWindowing::k_Bartlett;
         else
         if(filtername == "plancktaper85" ||
            filtername == "plancktaper")
-            this->windowFilter = dbWindowing::kPlanckTaper85;
+            this->windowFilter = dbWindowing::k_PlanckTaper85;
         else
         if(filtername == "plancktaper95")
-            this->windowFilter = dbWindowing::kPlanckTaper95;
+            this->windowFilter = dbWindowing::k_PlanckTaper95;
         else
         {
             std::cout << "Unknown windowing filter:" << filtername << std::endl;
