@@ -12,7 +12,7 @@ DbSpectral::DbSpectral(float sampleRate) :
     m_spectralImage(nullptr),
     m_computeSize(512),
     m_overlap(128),
-    m_spectralRate(1.f), // columns per unit-work
+    m_spectralRate(.00001f), // image-width per unit work (ie 512/4 samples)
     m_spectralTime(0.f),
     m_verbosity(1)
 {
@@ -134,6 +134,10 @@ DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthrea
     // now we must accumulate all these samples onto the output.
     // we only step by overlap on each unit of work
     m_outputBuffer.writeBuff(computeBuf, computeSize, m_overlap, true/*accum*/);
+
+    m_spectralTime += m_spectralRate;
+    if(m_spectralTime >= 1.f)
+        m_spectralTime = m_spectralTime - 1.f;
 }
 
 void
@@ -143,6 +147,7 @@ DbSpectral::setImage(SpectralImage *i)
     if(m_spectralImage)
         delete m_spectralImage;
     m_spectralImage = i;
+    std::cerr << m_spectralImage->GetName()  << " ready to roll.\n";
 }
 
 SpectralImage *
