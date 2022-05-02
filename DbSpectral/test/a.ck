@@ -1,5 +1,7 @@
 Noise snd => DbSpectral filt => dac;
-snd.gain(.5);
+SqrOsc sqr => filt;
+snd.gain(.3);
+sqr.gain(.3);
 
 <<<"filtered">>>;
 5::second => now;

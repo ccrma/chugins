@@ -64,6 +64,17 @@ public:
         }
     }
 
+    inline void Apply(float *data, int len, float factor) const
+    {
+        float dphase = 1.0f / (len-1);
+        float phase = 0.f;
+        for(int i=0;i<len;i++)
+        {
+            data[i] *= this->Sample(phase) * factor;
+            phase += dphase;
+        }
+    }
+
     ~dbWindowing() // for unique_ptr destruction
     {
         delete [] m_window;

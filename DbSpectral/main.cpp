@@ -8,15 +8,10 @@
 #include "chuck_def.h"
 
 
-/* our parameters ---
- *   loadSpectrogram
- *   loadTiming (?)
- */
-
 CK_DLL_CTOR( dbld_ctor );
 CK_DLL_DTOR( dbld_dtor );
 CK_DLL_MFUN( dbld_init );
-CK_DLL_MFUN( dbld_loadSpectrogram );
+CK_DLL_MFUN( dbld_loadImage );
 CK_DLL_TICK( dbld_tick );
 
 t_CKINT dbld_data_offset = 0;
@@ -34,6 +29,9 @@ CK_DLL_QUERY(DbSpectral)
     QUERY->add_mfun(QUERY, dbld_init, "void", "init");
     QUERY->add_arg(QUERY, "int", "fftSize");
     QUERY->add_arg(QUERY, "int", "overlapSize");
+
+    QUERY->add_mfun(QUERY, dbld_loadImage, "void", "loadImage");
+    QUERY->add_arg(QUERY, "string", "imageFile");
 
     dbld_data_offset = QUERY->add_mvar(QUERY, "int", "@dbld_data", false);
     QUERY->end_class(QUERY);
@@ -74,9 +72,9 @@ CK_DLL_TICK(dbld_tick)
     return TRUE;
 }
 
-CK_DLL_MFUN(dbld_loadSpectrogram)
+CK_DLL_MFUN(dbld_loadImage)
 {
     DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     std::string filename = GET_NEXT_STRING_SAFE(ARGS);
-    c->LoadSpectogram(filename.c_str()); // async, no return code
+    c->LoadSpectralImage(filename.c_str()); // asynchronous, so no return
 }

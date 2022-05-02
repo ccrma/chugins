@@ -1,6 +1,5 @@
 #ifndef DbSpectral_h
 #define DbSpectral_h
-
 /**
  *
  * Copyright (c) 2022 Dana Batali
@@ -18,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
  */
 
 #include "concurrentQ.h"
 #include "fftsg.h"
 #include "ringbuffer.h"
+#include "image.h"
 
 #include <thread>
 #include <mutex>
@@ -51,32 +50,22 @@ public:
     DbSpectral(float sampleRate);
     ~DbSpectral();
     void Init(int computeSize, int overlap);
-    void LoadSpectogram(char const *filename); // asynchronous
-
+    void LoadSpectralImage(char const *filename); // asynchronous
     float Tick(float in);
 
 private:
     float m_sampleRate;
-    class Spectogram
-    {
-    public:
-        Spectogram();
-        ~Spectogram();
-        int width; 
-        int height;
-        float *fftdata; // fft "width" is determined by input image height.
-    };
-    Spectogram *m_spectrogram; // may swap out between "frames"
 
     static const int k_MaxComputeSize = 4096; // fftsize
+    static void workThreadFunc(DbSpectral *);
+    static void loadThreadFunc(DbSpectral *);
+
     // inputBuffer: only accessed by audio thread. We copy-out when
     // a compute-size chunk is available, then reuse some of the input
     // for the next compute according to overlap.  Ringbuffer just helps
     // iron out the edge conditions.
     Ringbuffer<FFTSg::t_Sample,  2 * k_MaxComputeSize> m_inputBuffer;
 
-    //  ...|
-    //     head
     // outputBuffer: producer is workThread, consumer is audioThread.
     // When a compute-size chunk is produced, accumulate over compute-sized
     // contents.
@@ -89,21 +78,23 @@ private:
     FFTSg m_fft;
     class dbWindowing const *m_window;
 
-    float m_rate; // to loop through spectogram, columns/second.
+    float m_spectralRate; // to loop update spectralTime
+    float m_spectralTime; // measured in pct-width
     int m_verbosity;
 
     std::thread::id m_mainThreadId, m_workThreadId, m_loadThreadId;
     std::thread m_loadThread;
     std::thread m_workThread;
-    std::mutex m_processingLock;
     ConcurrentQ<std::function<void()>> m_loadQueue;
     ConcurrentQ<std::function<void()>> m_workQueue;
 
     void loadImage(std::string filename); // in loadThread
-    void doWork(FFTSg::t_Sample *computeBuff, int bufSize);                    
+    void doWork(FFTSg::t_Sample *computeBuff, int bufSize);
 
-    static void workThreadFunc(DbSpectral *);
-    static void loadThreadFunc(DbSpectral *);
+    std::mutex m_loadImageLock;
+    SpectralImage *getImage();
+    SpectralImage *m_spectralImage;
+    void setImage(SpectralImage *);
 };
 
 #endif

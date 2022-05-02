@@ -1,22 +1,19 @@
-
 #define _USE_MATH_DEFINES
 #include "DbSpectral.h"
 #include "dbWindowing.h"
 #include "fftsg.h"
 
-#define STBI_ONLY_PNG
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 #include <iostream>
 #include <functional>
+#include <cassert>
 
 DbSpectral::DbSpectral(float sampleRate) :
     m_sampleRate(sampleRate),
-    m_spectrogram(nullptr),
+    m_spectralImage(nullptr),
     m_computeSize(512),
     m_overlap(128),
-    m_rate(0.f),
+    m_spectralRate(1.f), // columns per unit-work
+    m_spectralTime(0.f),
     m_verbosity(1)
 {
     m_mainThreadId = std::this_thread::get_id();
@@ -40,6 +37,9 @@ DbSpectral::~DbSpectral()
         m_loadQueue.Bail();
         m_loadThread.join();
     }
+
+    if(m_spectralImage)
+        delete m_spectralImage;
 }
 
 void
@@ -64,44 +64,29 @@ DbSpectral::Init(int computeSize, int overlap)
 float
 DbSpectral::Tick(float in)
 {
-    static unsigned long tick = 0;
-    // const std::lock_guard<std::mutex> lock(m_processingLock); // scoped
-    tick++;
-    if(!m_spectrogram && false)
-        return in;
-    else
+    // We buffer input 'til m_inputBuffer contains one unit of work.
+    // Then we async-compute our filtered results into the output buffer.
+    // Latency is m_fft.Size()/sampleRate + fftTime.
+    // fftTime must be << m_fft.Size()/sampleRate.
+    m_inputBuffer.insert(in);
+    size_t avail = m_inputBuffer.readAvailable(); 
+    if(avail == m_fft.Size())
     {
-        // We buffer input 'til m_inputBuffer contains one unit of work.
-        // Then we async-compute our filtered results into the output buffer.
-        // Latency is m_fft.Size()/sampleRate + fftTime.
-        // fftTime must be << m_fft.Size()/sampleRate.
-        m_inputBuffer.insert(in);
-        size_t avail = m_inputBuffer.readAvailable(); 
-        if(avail == m_fft.Size())
-        {
-            if(m_verbosity > 1)
-                std::cerr << "before compute: " << avail << " t:" << tick << "\n";
-            FFTSg::t_Sample *computeBuf = &m_computeBuf[0];
-            // here we read computeSize, but move head by overlap (eg 512, 128)
-            size_t numRead = m_inputBuffer.readBuff(computeBuf, m_computeSize, m_overlap);
-            std::function<void()> fn = std::bind(&DbSpectral::doWork, this,
-                                                computeBuf, m_computeSize);
-            m_workQueue.Push(fn);
-        }
-        float out;
-        if(m_verbosity > 1)
-            std::cerr << "out: " << m_outputBuffer.readAvailable() << "\n";
-        if(!m_outputBuffer.remove(&out, 0.f))
-        {
-            std::cerr << "Out of data " << tick << "\n";
-            out = 0.f;
-        }
-        return out;
+        FFTSg::t_Sample *computeBuf = &m_computeBuf[0];
+        // here we read computeSize, but move head by overlap (eg 512, 128)
+        size_t numRead = m_inputBuffer.readBuff(computeBuf, m_computeSize, m_overlap);
+        std::function<void()> fn = std::bind(&DbSpectral::doWork, this,
+                                            computeBuf, m_computeSize);
+        m_workQueue.Push(fn);
     }
+    float out;
+    if(!m_outputBuffer.remove(&out, 0.f))
+        out = 0.f;
+    return out;
 }
 
 void
-DbSpectral::LoadSpectogram(char const *filename) // asynchronous
+DbSpectral::LoadSpectralImage(char const *filename)
 {
     std::string nm(filename);
     std::function<void()> fn = std::bind(&DbSpectral::loadImage, 
@@ -113,31 +98,58 @@ void
 DbSpectral::loadImage(std::string nm)
 {
     assert(std::this_thread::get_id() == m_loadThreadId);
-    int x, y, nch;
-    stbi_us *result = stbi_load_16(nm.c_str(), &x, &y, &nch, 3/*desired channels*/);
-    if(result)
-    {
-        // convert 3-channel image to single float for speed doing work
-        stbi_image_free(result);
-    }
+    SpectralImage *newImg = new SpectralImage();
+    newImg->LoadFile(nm.c_str(), m_computeSize/2); // FFTSize produces FFTSize/2 freqs
+    this->setImage(newImg);
 }
 
 void 
 DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthread
 {
     assert(std::this_thread::get_id() == m_workThreadId);
+    // rescale: computeSize since fft/ifft isn't normalized
+    //  3/2 due to windowing.
+    const float rescale = 1.f / (1.5f * computeSize); 
+
     m_window->Apply(computeBuf, computeSize);
     m_fft.RealFFT(computeBuf); // half of the output samps are real, half imag
-    // check for spectogram, multiply weights by 
-    m_fft.RealIFFT(computeBuf);
-    m_window->Apply(computeBuf, computeSize);
 
+    int nfreq = computeSize / 2;
+    SpectralImage *image = this->getImage();
+    float const *spectralWeights = image ? 
+                    image->GetColumnWeights(m_spectralTime) : nullptr;
+    if(spectralWeights)
+    {
+        float *real=computeBuf;
+        float *imag=computeBuf+nfreq;
+        for(int i=0; i<nfreq; i++)
+        {
+            float w = *spectralWeights++;
+            *real++ *= w;
+            *imag++ *= w;
+        }
+    }
+    m_fft.RealIFFT(computeBuf);
+    m_window->Apply(computeBuf, computeSize, rescale);
     // now we must accumulate all these samples onto the output.
     // we only step by overlap on each unit of work
     m_outputBuffer.writeBuff(computeBuf, computeSize, m_overlap, true/*accum*/);
+}
 
-    if(m_verbosity > 1)
-        std::cerr << "doneFFT outbufSize: " << m_outputBuffer.readAvailable() << "\n";
+void
+DbSpectral::setImage(SpectralImage *i)
+{
+    std::lock_guard<std::mutex> lock(m_loadImageLock);
+    if(m_spectralImage)
+        delete m_spectralImage;
+    m_spectralImage = i;
+}
+
+SpectralImage *
+DbSpectral::getImage()
+{
+    std::lock_guard<std::mutex> lock(m_loadImageLock);
+    return m_spectralImage;
 }
 
 /* static */ void
