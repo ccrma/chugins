@@ -16,7 +16,9 @@
 >   on its side.
 > * now "stack" a bunch (10, 100, 1000) of equalizers next to each other with 
 >   different settings for each segment of your composition.
-> * the brightness a pixel represents the equalizers slider position.
+> * a pixel's brightness represents the equalizer's slider position.
+> * take out your favorite paint package (or use Fiddle's built-in one)
+>   and start painting or drawing patterns that represent the filter changes.
 
 ## Details
 
