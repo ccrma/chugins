@@ -52,6 +52,9 @@ public:
     void Init(int computeSize, int overlap);
     void LoadSpectralImage(char const *filename); // asynchronous
     float Tick(float in);
+    void SetScanRate(int rate); // image columns per second
+    void SetScanMode(int mode); // 0: fwdloop, 1: revloop, 2: fwdrevloop
+    int GetColumn();
 
 private:
     float m_sampleRate;
@@ -73,13 +76,22 @@ private:
 
     int m_computeSize;
     int m_overlap;
+    float m_scanTime; // measured in pct-width (ie [0, 1])
+    int m_scanRate;   // measured in cols per second
+    float m_scanRatePct; // derived from m_scanRate and current image, pct per sample
+    int m_currentColumn;
+    enum ScanMode
+    {
+        k_ScanFwd,
+        k_ScanRev,
+        k_ScanFwdRev, // bounce
+        k_ScanModeCount
+    } m_scanMode;
     std::vector<FFTSg::t_Sample> m_computeBuf;
 
     FFTSg m_fft;
     class dbWindowing const *m_window;
 
-    float m_spectralRate; // to loop update spectralTime
-    float m_spectralTime; // measured in pct-width
     int m_verbosity;
 
     std::thread::id m_mainThreadId, m_workThreadId, m_loadThreadId;
@@ -88,13 +100,19 @@ private:
     ConcurrentQ<std::function<void()>> m_loadQueue;
     ConcurrentQ<std::function<void()>> m_workQueue;
 
-    void loadImage(std::string filename); // in loadThread
+private:
+    void updateScanRate();
+
+private: // FFT calcs
     void doWork(FFTSg::t_Sample *computeBuff, int bufSize);
 
-    std::mutex m_loadImageLock;
+private: // image loading
+    void loadImage(std::string filename); // in loadThread
     SpectralImage *getImage();
-    SpectralImage *m_spectralImage;
     void setImage(SpectralImage *);
+
+    std::mutex m_loadImageLock;
+    SpectralImage *m_spectralImage;
 };
 
 #endif

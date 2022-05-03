@@ -3,7 +3,7 @@ SqrOsc sqr => filt;
 snd.gain(.3);
 sqr.gain(.3);
 
-<<<"filtered">>>;
+<<<"through filter with no image (fft->ifft)">>>;
 5::second => now;
 
 <<<"bypass">>>;

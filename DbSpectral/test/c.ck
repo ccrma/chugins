@@ -1,19 +1,20 @@
 
-SndBuf snd => DbSpectral filt => dac;
-
+DbSpectral filt => dac;
 Noise noise => filt;
-noise.gain(.1);
-
 SqrOsc sqr => filt;
+noise.gain(.25);
 sqr.gain(.25);
 
-snd.gain(.1);
-snd.loop(1);
-snd.read("../../PitchTrack/data/obama.wav");
-
-filt.loadImage(me.dir() + "about.png"); // async
+filt.loadImage(me.dir() + "img0.png"); // async
 filt.gain(2);
 
-snd.phase(0);
-30::second => now;
+for(int i;i<20;i++)
+{
+    filt.scanRate( Math.random2(100, 200) );
+    for(int j;j<10;j++)
+    {
+        .2::second => now;
+        Math.mtof(Math.random2(40, 60)) => sqr.freq;
+    }
+}
 

@@ -1,3 +1,4 @@
+/* see comments in README.md */
 #define _USE_MATH_DEFINES
 #include "DbSpectral.h"
 #include "dbWindowing.h"
@@ -6,14 +7,17 @@
 #include <iostream>
 #include <functional>
 #include <cassert>
+#include <string>
 
 DbSpectral::DbSpectral(float sampleRate) :
     m_sampleRate(sampleRate),
     m_spectralImage(nullptr),
     m_computeSize(512),
     m_overlap(128),
-    m_spectralRate(.00001f), // image-width per unit work (ie 512/4 samples)
-    m_spectralTime(0.f),
+    m_scanTime(0.f),
+    m_scanRate(100), /* columns per second */
+    m_scanRatePct(0.), /* computed after we know image width */
+    m_currentColumn(0), // depends on image
     m_verbosity(1)
 {
     m_mainThreadId = std::this_thread::get_id();
@@ -92,6 +96,42 @@ DbSpectral::LoadSpectralImage(char const *filename)
     std::function<void()> fn = std::bind(&DbSpectral::loadImage, 
                                         this, nm/*pass by value*/);
     m_loadQueue.Push(fn);
+    this->updateScanRate();
+}
+
+void
+DbSpectral::SetScanRate(int rate)
+{
+    this->m_scanRate = rate;
+    this->updateScanRate();
+}
+
+int
+DbSpectral::GetColumn()
+{
+    return m_currentColumn;
+}
+
+void
+DbSpectral::updateScanRate()
+{
+    // potential race? when loading an image? (vs user setting scanrate?)
+    int imageWidth = m_spectralImage ? m_spectralImage->GetWidth() : 512; 
+    float pctPerSecond = m_scanRate / (float) imageWidth;
+
+    // the columns weights are currently updated once per unit-of work
+    // for FFT of 512 with overlap of 128:  128 samples / (samples/Second)
+    float secondsPerUpdate = m_overlap / m_sampleRate; // seconds
+    m_scanRatePct = pctPerSecond * secondsPerUpdate;
+
+    // std::cerr << "updateScanRate " << m_scanRate << " => " << m_scanRatePct << "\n";
+}
+
+void
+DbSpectral::SetScanMode(int mode)
+{
+    if(mode >= 0 && mode < k_ScanModeCount)
+        this->m_scanMode = (ScanMode) mode;
 }
 
 void
@@ -99,8 +139,11 @@ DbSpectral::loadImage(std::string nm)
 {
     assert(std::this_thread::get_id() == m_loadThreadId);
     SpectralImage *newImg = new SpectralImage();
-    newImg->LoadFile(nm.c_str(), m_computeSize/2); // FFTSize produces FFTSize/2 freqs
-    this->setImage(newImg);
+    int err = newImg->LoadFile(nm.c_str(), m_computeSize/2); // FFTSize produces FFTSize/2 freqs
+    if(!err)
+        this->setImage(newImg);
+    else
+        std::cerr << "DbSpectral problem opening file " << nm << "\n";
 }
 
 void 
@@ -115,29 +158,44 @@ DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthrea
     m_fft.RealFFT(computeBuf); // half of the output samps are real, half imag
 
     int nfreq = computeSize / 2;
-    SpectralImage *image = this->getImage();
-    float const *spectralWeights = image ? 
-                    image->GetColumnWeights(m_spectralTime) : nullptr;
-    if(spectralWeights)
-    {
-        float *real=computeBuf;
-        float *imag=computeBuf+nfreq;
-        for(int i=0; i<nfreq; i++)
+
+    { // scope for access to image
+        std::lock_guard<std::mutex> lock(m_loadImageLock);
+        assert(m_scanTime >= 0.f && m_scanTime <= 1.f);
+        float const *spectralWeights = this->m_spectralImage ? 
+                    this->m_spectralImage->GetColumnWeights(m_scanTime, 
+                                                        &m_currentColumn) 
+                    : nullptr;
+        if(spectralWeights)
         {
-            float w = *spectralWeights++;
-            *real++ *= w;
-            *imag++ *= w;
+            float *real=computeBuf;
+            float *imag=computeBuf+nfreq;
+            for(int i=0; i<nfreq; i++)
+            {
+                float w = *spectralWeights++;
+                *real++ *= w;
+                *imag++ *= w;
+            }
         }
     }
+
     m_fft.RealIFFT(computeBuf);
     m_window->Apply(computeBuf, computeSize, rescale);
     // now we must accumulate all these samples onto the output.
     // we only step by overlap on each unit of work
     m_outputBuffer.writeBuff(computeBuf, computeSize, m_overlap, true/*accum*/);
 
-    m_spectralTime += m_spectralRate;
-    if(m_spectralTime >= 1.f)
-        m_spectralTime = m_spectralTime - 1.f;
+    m_scanTime += m_scanRatePct;
+    if(m_scanMode == k_ScanFwdRev)
+    {
+        if(m_scanTime < 0.f || m_scanTime > 1.f)
+        {
+            m_scanRatePct = -m_scanRatePct;
+            m_scanTime += m_scanRatePct;
+        }
+    }
+    if(m_scanTime > 1.f)
+        m_scanTime = fmodf(m_scanTime, 1.f);
 }
 
 void
@@ -147,7 +205,9 @@ DbSpectral::setImage(SpectralImage *i)
     if(m_spectralImage)
         delete m_spectralImage;
     m_spectralImage = i;
-    std::cerr << m_spectralImage->GetName()  << " ready to roll.\n";
+    this->updateScanRate();
+
+    // std::cerr << m_spectralImage->GetName()  << " ready to roll.\n";
 }
 
 SpectralImage *

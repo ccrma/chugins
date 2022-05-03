@@ -9,9 +9,12 @@ public:
     SpectralImage();
     ~SpectralImage();
 
-    int LoadFile(char const *filename, int resizeY=0);
-    float const *GetColumnWeights(float xPct);
+    int LoadFile(char const *filename, int resizeY=0, bool verbose=false);
+    float const *GetColumnWeights(float xPct, int *column);
+
     char const *GetName() { return m_imageName.c_str(); }
+    int GetWidth() { return m_width; }
+    int GetHeight() { return m_height; }
 
 private:
     int m_width; 

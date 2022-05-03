@@ -11,6 +11,8 @@
 #include <cstring>
 
 /* -------------------------------------------------------------------- */
+
+/* -------------------------------------------------------------------- */
 SpectralImage::SpectralImage() :
     m_data(nullptr)
 {
@@ -23,7 +25,7 @@ SpectralImage::~SpectralImage()
 }
 
 int
-SpectralImage::LoadFile(char const *filename, int resizeY)
+SpectralImage::LoadFile(char const *filename, int resizeY, bool verbose)
 {
     int err=0;
     if(m_data != nullptr)
@@ -65,8 +67,11 @@ SpectralImage::LoadFile(char const *filename, int resizeY)
         }
         if(!err)
         {
-            std::cerr << filename << " opened w, h, nch: " 
-                << m_width << ", " << m_height << ", " << m_channels <<"\n";
+            if(verbose)
+            {
+                std::cerr << filename << " opened w, h, nch: " 
+                    << m_width << ", " << m_height << ", " << m_channels <<"\n";
+            }
         }
     }
     else
@@ -75,26 +80,30 @@ SpectralImage::LoadFile(char const *filename, int resizeY)
 }
 
 float const *
-SpectralImage::GetColumnWeights(float xPct)
+SpectralImage::GetColumnWeights(float xPct, int *colno)
 {
     if(m_columnWeights.size() > 0)
     {
         // std::cerr << "sample spectrum at " << xPct << "\n";
-        int col = (xPct * m_width) + .5f;
+        int col = xPct * (m_width-1) + .5f;
         if(col != m_currentCol)
         {
-            // worst-case for cache
+            // Current scheme is worst-case for cache. If we pre-rotate 
+            // the image we might be in better case, but that's premature.
+            // Here we also invert Y since we want high frequencies on the
+            // image top.
             int rowStride = m_width * m_channels;
             unsigned char *pixel = m_data + m_channels * col;
-            for(int i=0;i<m_height;i++)
+            for(int i=m_height-1;i>=0;i--)
             {
                 m_columnWeights[i] = ((int)pixel[0] + pixel[1] + pixel[2]) / (255*3.);
                 pixel += rowStride;
             }
             m_currentCol = col;
 
-            std::cerr << "New table: " << col << "\n";
+            // std::cerr << "New table: " << col << "\n";
         }
+        *colno = m_currentCol;
         return &m_columnWeights[0];
     }
     else
