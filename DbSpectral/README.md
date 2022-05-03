@@ -20,6 +20,8 @@
 > * take out your favorite paint package (or use Fiddle's built-in one)
 >   and start painting or drawing patterns that represent the filter changes.
 
+<center><img src="test/image1.png" style="background-color:black;max-width:600px"></center>
+
 ## Details
 
 We compute the FFT of the incoming signal and multiply the frequency-space
@@ -44,6 +46,16 @@ transform) and have an overlap of 25%.
 
 Currently we "point-sample" the column data. If this presents a problem
 image-scale your input in x and modify `scanRate` accordingly.
+
+## Tips and Caveats
+
+* Interesting temporal effects can be achieved with thin (selecting a narrow band of frequencies), 
+  sloping (changing the frequency band) lines. 
+* Since spectograms represent linear frequency and since "most" of the 
+  interesting auditory stuff happens below 10KHz, you may find yourselv
+  spending lots of time zoomed-in working on the bottom of your spectrogram.
+* We currently operate on 8-bit pngs.  Not clear if more bits are needed.
+  Or whether pseudo-color would be truly helpful.
 
 ## Example
 
