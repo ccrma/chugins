@@ -12,7 +12,7 @@
 DbSpectral::DbSpectral(float sampleRate) :
     m_sampleRate(sampleRate),
     m_spectralImage(nullptr),
-    m_computeSize(512),
+    m_computeSize(512), // Init called from main.cpp, so this value doesn't matter
     m_overlap(128),
     m_scanTime(0.f),
     m_scanRate(100), /* columns per second */
@@ -24,6 +24,9 @@ DbSpectral::DbSpectral(float sampleRate) :
     m_workThread = std::thread(workThreadFunc, this);
     m_loadThread = std::thread(loadThreadFunc, this);
     m_window = dbWindowing::Get(dbWindowing::k_Hann);
+    m_freqRange[0] = m_nextFreqRange[0] = 100;
+    m_freqRange[1] = m_nextFreqRange[1] = 4000;
+    this->updateScanRate();
 }
 
 DbSpectral::~DbSpectral()
@@ -65,6 +68,20 @@ DbSpectral::Init(int computeSize, int overlap)
     assert(m_outputBuffer.readAvailable() == startupSamps);
 }
 
+void
+DbSpectral::SetFreqMin(int m)
+{
+    m_nextFreqRange[0] = m; // careful not to change m_freqRange out from under Tick
+    makeDirty();
+}
+
+void
+DbSpectral::SetFreqMax(int m)
+{
+    m_nextFreqRange[1] = m;
+    makeDirty();
+}
+
 float
 DbSpectral::Tick(float in)
 {
@@ -86,6 +103,7 @@ DbSpectral::Tick(float in)
     float out;
     if(!m_outputBuffer.remove(&out, 0.f))
         out = 0.f;
+    checkDeferredUpdate();
     return out;
 }
 
@@ -96,7 +114,6 @@ DbSpectral::LoadSpectralImage(char const *filename)
     std::function<void()> fn = std::bind(&DbSpectral::loadImage, 
                                         this, nm/*pass by value*/);
     m_loadQueue.Push(fn);
-    this->updateScanRate();
 }
 
 void
@@ -110,6 +127,12 @@ int
 DbSpectral::GetColumn()
 {
     return m_currentColumn;
+}
+
+float
+DbSpectral::GetColumnPct()
+{
+    return m_scanTime;
 }
 
 void
@@ -134,14 +157,62 @@ DbSpectral::SetScanMode(int mode)
         this->m_scanMode = (ScanMode) mode;
 }
 
+/* We anticipate multiple edits arriving in clumps and want
+ * to limit the reload-image frequency.  If we haven't computed
+ * "for a while", we schedule a updateRequest for later. Otherwise
+ * the outstanding request will still be in play and it's serviced
+ * during Tick.
+ */
+void
+DbSpectral::makeDirty()
+{
+    if(m_imgfilePath.size() == 0) return; // still loading image
+
+    auto now = std::chrono::steady_clock::now();
+    if(m_scheduledUpdate == m_zeroInstant)
+    {
+        // std::cerr << "Scheduling update\n";
+        m_scheduledUpdate = now + std::chrono::seconds(2);
+    }
+}
+
+void
+DbSpectral::checkDeferredUpdate()
+{
+    if(m_scheduledUpdate == m_zeroInstant)
+        return;
+
+    auto now = std::chrono::steady_clock::now();
+    if(now >= m_scheduledUpdate)
+    {
+        // std::cerr << "Applying scheduled update\n";
+        if(m_imgfilePath.size() > 0)
+            this->LoadSpectralImage(m_imgfilePath.c_str());
+        m_scheduledUpdate = m_zeroInstant;
+    }
+}
+
 void
 DbSpectral::loadImage(std::string nm)
 {
     assert(std::this_thread::get_id() == m_loadThreadId);
     SpectralImage *newImg = new SpectralImage();
-    int err = newImg->LoadFile(nm.c_str(), m_computeSize/2); // FFTSize produces FFTSize/2 freqs
+    // FFTSize produces FFTSize/2 freqs so we request image resampling
+    // (either up or down) to match this.  Keep in mind that we wish
+    // to apply the image height to a subrange of frequencies (eg: 100, 4000).
+    //
+    // Example: 1024 FFT, 512 complex frequencies, 512 pixel weights.
+    //  Equidistant freq bins: Nyquist/512 == 43 hz per bin
+    //  Frequency range: 100-4000 (indices)
+    //     3900/43 = 90 bins (5.6 pixels per bin, ie over-expressed)
+    //    10000/43 = 232 bins (2ish pixels per bin)
+    int totalbins = m_computeSize / 2;
+    float nyquist = .5f*this->m_sampleRate;
+    float freqPerBin = nyquist / totalbins;
+    int freqBins = 1 + (m_nextFreqRange[1] - m_nextFreqRange[0]) / freqPerBin;
+    int err = newImg->LoadFile(nm.c_str(), freqBins);
     if(!err)
-        this->setImage(newImg);
+        this->setImage(newImg, nm, freqPerBin, freqBins);
     else
         std::cerr << "DbSpectral problem opening file " << nm << "\n";
 }
@@ -155,7 +226,7 @@ DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthrea
     const float rescale = 1.f / (1.5f * computeSize); 
 
     m_window->Apply(computeBuf, computeSize);
-    m_fft.RealFFT(computeBuf); // half of the output samps are real, half imag
+    m_fft.RealFFT(computeBuf); // samples are interleaved complex
 
     int nfreq = computeSize / 2;
 
@@ -166,16 +237,21 @@ DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthrea
                     this->m_spectralImage->GetColumnWeights(m_scanTime, 
                                                         &m_currentColumn) 
                     : nullptr;
+        // apply spectralWeights, mapped to a subset of 
+        // total frequency range (0->Nyquist)
         if(spectralWeights)
         {
-            float *real=computeBuf;
-            float *imag=computeBuf+nfreq;
-            for(int i=0; i<nfreq; i++)
+            float *complex = computeBuf; // interleaved
+            int nbins = 0;
+            for(float freq = m_freqRange[0]; freq <= m_freqRange[1]; 
+                freq += m_freqPerBin)
             {
                 float w = *spectralWeights++;
-                *real++ *= w;
-                *imag++ *= w;
+                *complex++ *= w;
+                *complex++ *= w;
+                nbins++;
             }
+            assert(nbins <= m_freqBins);
         }
     }
 
@@ -198,16 +274,26 @@ DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthrea
         m_scanTime = fmodf(m_scanTime, 1.f);
 }
 
+// happens after loading
 void
-DbSpectral::setImage(SpectralImage *i)
+DbSpectral::setImage(SpectralImage *i, std::string &nm, 
+    float freqPerBin, int nbins) 
 {
     std::lock_guard<std::mutex> lock(m_loadImageLock);
     if(m_spectralImage)
         delete m_spectralImage;
-    m_spectralImage = i;
-    this->updateScanRate();
 
-    // std::cerr << m_spectralImage->GetName()  << " ready to roll.\n";
+    m_spectralImage = i;
+    m_imgfilePath = nm;
+    m_freqPerBin = freqPerBin;
+    m_freqBins = nbins;
+    m_freqRange[0] = m_nextFreqRange[0];
+    m_freqRange[1] = m_nextFreqRange[1];
+    this->updateScanRate();
+    std::cerr <<  m_spectralImage->GetName() << " ready h:"  
+        << i->GetHeight() << " w: " << i->GetWidth() << "\n";
+    std::cerr <<  "  Hz/bin: " << m_freqPerBin << " range: " << 
+        m_freqRange[0] << " " << m_freqRange[1] << " (" << m_computeSize << ")\n";
 }
 
 SpectralImage *

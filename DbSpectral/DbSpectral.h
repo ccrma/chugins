@@ -26,6 +26,7 @@
 
 #include <thread>
 #include <mutex>
+#include <chrono>
 
 /**
  * @brief DbSpectral is a time-varying mono audio filter parameterized by
@@ -55,6 +56,9 @@ public:
     void SetScanRate(int rate); // image columns per second
     void SetScanMode(int mode); // 0: fwdloop, 1: revloop, 2: fwdrevloop
     int GetColumn();
+    float GetColumnPct();
+    void SetFreqMin(int min);
+    void SetFreqMax(int max);
 
 private:
     float m_sampleRate;
@@ -80,6 +84,16 @@ private:
     int m_scanRate;   // measured in cols per second
     float m_scanRatePct; // derived from m_scanRate and current image, pct per sample
     int m_currentColumn;
+
+    int m_freqRange[2], m_nextFreqRange[2];
+    float m_freqPerBin;
+    int m_freqBins;
+    
+    using t_Instant = std::chrono::time_point<std::chrono::steady_clock>;
+    using t_Duration = std::chrono::duration<unsigned int, std::nano>;
+    t_Instant m_scheduledUpdate;
+    t_Instant m_zeroInstant;
+
     enum ScanMode
     {
         k_ScanFwd,
@@ -91,6 +105,7 @@ private:
 
     FFTSg m_fft;
     class dbWindowing const *m_window;
+    std::string m_imgfilePath;
 
     int m_verbosity;
 
@@ -102,6 +117,8 @@ private:
 
 private:
     void updateScanRate();
+    void makeDirty();
+    void checkDeferredUpdate();
 
 private: // FFT calcs
     void doWork(FFTSg::t_Sample *computeBuff, int bufSize);
@@ -109,7 +126,7 @@ private: // FFT calcs
 private: // image loading
     void loadImage(std::string filename); // in loadThread
     SpectralImage *getImage();
-    void setImage(SpectralImage *);
+    void setImage(SpectralImage *, std::string &nm, float freqPerBin, int freqBins);
 
     std::mutex m_loadImageLock;
     SpectralImage *m_spectralImage;

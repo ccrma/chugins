@@ -55,7 +55,8 @@ SpectralImage::LoadFile(char const *filename, int resizeY, bool verbose)
             if(rerr == 0)
             {
                 err = 1;
-                std::cerr << filename << " problem resizing to y:" << resizeY << "\n";
+                std::cerr << m_imageName.c_str() << 
+                    " problem resizing to y:" << resizeY << "\n";
             }
             else
             {
@@ -69,7 +70,7 @@ SpectralImage::LoadFile(char const *filename, int resizeY, bool verbose)
         {
             if(verbose)
             {
-                std::cerr << filename << " opened w, h, nch: " 
+                std::cerr << m_imageName.c_str() << " opened w, h, nch: " 
                     << m_width << ", " << m_height << ", " << m_channels <<"\n";
             }
         }

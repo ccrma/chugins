@@ -8,14 +8,12 @@
  *    without fee. You may distribute this ORIGINAL package.
  * 
  * Package was modified for speed over accuracy by Dana Batali, 2022.
- * Also targeting specific audio applications and following conventions of 
- * Puckette's PureData.
  * 
- *   - t_Real -> float
+ *   - t_Real: float
  *   - usage migrated to bottom
  *   - deleted all unused functions and thread support.
  *   - made private functions static
- *   - minor mods for C++11 (encapsulate as class, eliminate TLS statics)
+ *   - minor mods for C++11 (encapsulate as class)
  */
 
 #include "fftsg.h"
@@ -75,7 +73,7 @@ FFTSg::~FFTSg()
 
 /* Here, n is the number of samples, either real or complex.
  * When realInputs is true we call rdft.
- * When realInputs is false we call cdft.
+ * When realInputs is false we call cdft. This case not thorougly tested.
  */
 void
 FFTSg::InitPlan(int n, bool realInputs)
@@ -144,20 +142,21 @@ FFTSg::RealFFT(t_Sample *fz)
         std::cerr << "FFTSg invalid call for the current plan.\n";
         return;
     }
-    int i, nover2 = m_fftSize/2;
-    t_Sample *fp1, *fp2;
-    t_FFTReal *fp3;
     t_FFTReal *buf = &m_buffer[0];
-    for (i = 0, fp1 = fz, fp3 = buf; i < m_fftSize; i++, fp1++, fp3++)
+
+    // FFTSize contiguous input samples, copy into our potentially
+    //  higher-precision buffer.
+    for(int i=0;i<m_fftSize;i++)
         buf[i] = fz[i];
-    rdft(m_fftSize, 1, buf, &m_bitrev[0], &m_costab[0]);
-    fz[0] = buf[0];
-    fz[nover2] = buf[1];
-    for(i = 1, fp1 = fz+1, fp2 = fz+(m_fftSize-1), fp3 = buf+2; i < nover2;
-        i++, fp1++, fp2--, fp3 += 2)
-    {
-        *fp1 = fp3[0], *fp2 = fp3[1];
-    }
+
+    rdft(m_fftSize, 1/*FFT*/, buf, &m_bitrev[0], &m_costab[0]);
+    /* output data (tldr; interleaved complex numbers with special a[1])
+     *  a[2*k] = R[k], 0<=k<n/2
+     *  a[2*k+1] = I[k], 0<k<n/2
+     *  a[1] = R[n/2]
+     */
+    for(int i=0;i<m_fftSize;i++) 
+        fz[i] = buf[i]; // copy from potentially higher-precision to lower.
 }
 
 void 
@@ -168,23 +167,25 @@ FFTSg::RealIFFT(t_Sample *fz)
         std::cerr << "FFTSg invalid call for the current plan.\n";
         return;
     }
-    t_FFTReal *fp3;
-    t_Sample *fp1, *fp2;
-    int i, nover2 = m_fftSize/2;
     t_FFTReal *buf = &m_buffer[0];
+    for(int i=0;i<m_fftSize;i++)
+        buf[i] = fz[i];
 
-    buf[0] = fz[0];
-    buf[1] = fz[nover2];
-    for (i = 1, fp1 = fz+1, fp2 = fz+(m_fftSize-1), fp3 = buf+2; i < nover2;
-        i++, fp1++, fp2--, fp3 += 2)
-    {
-        fp3[0] = *fp1, fp3[1] = *fp2;
-    }
     rdft(m_fftSize, -1, buf, &m_bitrev[0], &m_costab[0]);
-    for (i = 0, fp1 = fz, fp3 = buf; i < m_fftSize; i++, fp1++, fp3++)
+    /* remark:
+        Inverse of 
+            rdft(n, 1, a, ip, w);
+        is 
+            rdft(n, -1, a, ip, w);
+            for (j = 0; j <= n - 1; j++) {
+                a[j] *= 2.0 / n;
+            }
+    */
+    for(int i=0; i<m_fftSize; i++)
         fz[i] = 2*buf[i];
 }
 
+/* --------------------------------------------------------------------- */
 void 
 FFTSg::FFT(t_Sample *fz1, t_Sample *fz2)
 {
@@ -196,8 +197,6 @@ FFTSg::IFFT(t_Sample *fz1, t_Sample *fz2)
 {
     doFFT(fz1, fz2, 1);
 }
-
-/* --------------------------------------------------------------------- */
 
 void
 FFTSg::doFFT(t_Sample *fz1, t_Sample *fz2, int sgn)

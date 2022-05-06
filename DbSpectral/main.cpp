@@ -12,10 +12,13 @@ CK_DLL_CTOR( dbld_ctor );
 CK_DLL_DTOR( dbld_dtor );
 CK_DLL_MFUN( dbld_init );
 CK_DLL_TICK( dbld_tick );
-CK_DLL_MFUN( dbld_loadImage );
+CK_DLL_MFUN( dbld_loadEQSpectogram );
 CK_DLL_MFUN( dbld_getColumn );
+CK_DLL_MFUN( dbld_getColumnPct );
 CK_DLL_MFUN( dbld_scanRate );
 CK_DLL_MFUN( dbld_scanMode );
+CK_DLL_MFUN( dbld_freqMin );
+CK_DLL_MFUN( dbld_freqMax );
 
 t_CKINT dbld_data_offset = 0;
 
@@ -33,13 +36,25 @@ CK_DLL_QUERY(DbSpectral)
     QUERY->add_arg(QUERY, "int", "fftSize");
     QUERY->add_arg(QUERY, "int", "overlapSize");
 
-    QUERY->add_mfun(QUERY, dbld_loadImage, "void", "loadImage");
+    QUERY->add_mfun(QUERY, dbld_freqMin, "void", "freqMin");
+    QUERY->add_arg(QUERY, "int", "minFreq");
+
+    QUERY->add_mfun(QUERY, dbld_freqMax, "void", "freqMax");
+    QUERY->add_arg(QUERY, "int", "maxFreq");
+
+    QUERY->add_mfun(QUERY, dbld_loadEQSpectogram, "void", "loadEQSpectogram");
+    QUERY->add_arg(QUERY, "string", "imageFile");
+
+    QUERY->add_mfun(QUERY, dbld_loadEQSpectogram, "void", "loadImage"); // legacy alias
     QUERY->add_arg(QUERY, "string", "imageFile");
 
     QUERY->add_mfun(QUERY, dbld_scanRate, "void", "scanRate");
     QUERY->add_arg(QUERY, "int", "rate"); // columns per second
 
     QUERY->add_mfun(QUERY, dbld_getColumn, "int", "getColumn");
+    // no parameters
+
+    QUERY->add_mfun(QUERY, dbld_getColumnPct, "float", "getColumnPct");
     // no parameters
 
     QUERY->add_mfun(QUERY, dbld_scanMode, "void", "scanMode");
@@ -84,7 +99,7 @@ CK_DLL_TICK(dbld_tick)
     return TRUE;
 }
 
-CK_DLL_MFUN(dbld_loadImage)
+CK_DLL_MFUN(dbld_loadEQSpectogram)
 {
     DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     std::string filename = GET_NEXT_STRING_SAFE(ARGS);
@@ -95,6 +110,12 @@ CK_DLL_MFUN(dbld_getColumn)
 {
     DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     RETURN->v_int = c->GetColumn();
+}
+
+CK_DLL_MFUN(dbld_getColumnPct)
+{
+    DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    RETURN->v_float = c->GetColumnPct();
 }
 
 CK_DLL_MFUN(dbld_scanRate)
@@ -109,4 +130,18 @@ CK_DLL_MFUN(dbld_scanMode)
     DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     int mode = GET_NEXT_INT(ARGS);
     c->SetScanMode(mode);
+}
+
+CK_DLL_MFUN(dbld_freqMin)
+{
+    DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int min = GET_NEXT_INT(ARGS);
+    c->SetFreqMin(min);
+}
+
+CK_DLL_MFUN(dbld_freqMax)
+{
+    DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int max = GET_NEXT_INT(ARGS);
+    c->SetFreqMax(max);
 }
