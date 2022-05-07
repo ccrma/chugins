@@ -12,13 +12,15 @@ CK_DLL_CTOR( dbld_ctor );
 CK_DLL_DTOR( dbld_dtor );
 CK_DLL_MFUN( dbld_init );
 CK_DLL_TICK( dbld_tick );
-CK_DLL_MFUN( dbld_loadEQSpectogram );
+CK_DLL_MFUN( dbld_loadSpectogram );
 CK_DLL_MFUN( dbld_getColumn );
 CK_DLL_MFUN( dbld_getColumnPct );
 CK_DLL_MFUN( dbld_scanRate );
-CK_DLL_MFUN( dbld_scanMode );
 CK_DLL_MFUN( dbld_freqMin );
 CK_DLL_MFUN( dbld_freqMax );
+CK_DLL_MFUN( dbld_delayMax );
+CK_DLL_MFUN( dbld_feedbackMax );
+CK_DLL_MFUN( dbld_verbosity );
 
 t_CKINT dbld_data_offset = 0;
 
@@ -35,6 +37,7 @@ CK_DLL_QUERY(DbSpectral)
     QUERY->add_mfun(QUERY, dbld_init, "void", "init");
     QUERY->add_arg(QUERY, "int", "fftSize");
     QUERY->add_arg(QUERY, "int", "overlapSize");
+    QUERY->add_arg(QUERY, "int", "mode");
 
     QUERY->add_mfun(QUERY, dbld_freqMin, "void", "freqMin");
     QUERY->add_arg(QUERY, "int", "minFreq");
@@ -42,10 +45,13 @@ CK_DLL_QUERY(DbSpectral)
     QUERY->add_mfun(QUERY, dbld_freqMax, "void", "freqMax");
     QUERY->add_arg(QUERY, "int", "maxFreq");
 
-    QUERY->add_mfun(QUERY, dbld_loadEQSpectogram, "void", "loadEQSpectogram");
-    QUERY->add_arg(QUERY, "string", "imageFile");
+    QUERY->add_mfun(QUERY, dbld_delayMax, "void", "delayMax");
+    QUERY->add_arg(QUERY, "float", "delayMax");
 
-    QUERY->add_mfun(QUERY, dbld_loadEQSpectogram, "void", "loadImage"); // legacy alias
+    QUERY->add_mfun(QUERY, dbld_feedbackMax, "void", "feedbackMax");
+    QUERY->add_arg(QUERY, "float", "feedbackMax");
+
+    QUERY->add_mfun(QUERY, dbld_loadSpectogram, "void", "loadSpectogram"); // legacy alias
     QUERY->add_arg(QUERY, "string", "imageFile");
 
     QUERY->add_mfun(QUERY, dbld_scanRate, "void", "scanRate");
@@ -57,8 +63,8 @@ CK_DLL_QUERY(DbSpectral)
     QUERY->add_mfun(QUERY, dbld_getColumnPct, "float", "getColumnPct");
     // no parameters
 
-    QUERY->add_mfun(QUERY, dbld_scanMode, "void", "scanMode");
-    QUERY->add_arg(QUERY, "int", "mode"); // 0: loopfwd, 1: looprev, 2: fwdrev
+    QUERY->add_mfun(QUERY, dbld_verbosity, "void", "verbosity");
+    QUERY->add_arg(QUERY, "int", "verbosity");
 
     dbld_data_offset = QUERY->add_mvar(QUERY, "int", "@dbld_data", false);
     QUERY->end_class(QUERY);
@@ -89,7 +95,8 @@ CK_DLL_MFUN(dbld_init)
     DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     int fftSize = GET_NEXT_INT(ARGS); //
     int overlap = GET_NEXT_INT(ARGS); //
-    c->Init(fftSize, overlap);
+    int mode = GET_NEXT_INT(ARGS); //
+    c->Init(fftSize, overlap, (DbSpectral::ImgModes) mode);
 }
 
 CK_DLL_TICK(dbld_tick)
@@ -99,7 +106,7 @@ CK_DLL_TICK(dbld_tick)
     return TRUE;
 }
 
-CK_DLL_MFUN(dbld_loadEQSpectogram)
+CK_DLL_MFUN(dbld_loadSpectogram)
 {
     DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     std::string filename = GET_NEXT_STRING_SAFE(ARGS);
@@ -125,13 +132,6 @@ CK_DLL_MFUN(dbld_scanRate)
     c->SetScanRate(rate);
 }
 
-CK_DLL_MFUN(dbld_scanMode)
-{
-    DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
-    int mode = GET_NEXT_INT(ARGS);
-    c->SetScanMode(mode);
-}
-
 CK_DLL_MFUN(dbld_freqMin)
 {
     DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
@@ -144,4 +144,25 @@ CK_DLL_MFUN(dbld_freqMax)
     DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     int max = GET_NEXT_INT(ARGS);
     c->SetFreqMax(max);
+}
+
+CK_DLL_MFUN(dbld_delayMax)
+{
+    DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    float max = GET_NEXT_FLOAT(ARGS);
+    c->SetDelayMax(max);
+}
+
+CK_DLL_MFUN(dbld_feedbackMax)
+{
+    DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    float max = GET_NEXT_FLOAT(ARGS);
+    c->SetFeedbackMax(max);
+}
+
+CK_DLL_MFUN(dbld_verbosity)
+{
+    DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int x = GET_NEXT_INT(ARGS);
+    c->SetVerbosity(x);
 }

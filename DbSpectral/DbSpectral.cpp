@@ -12,13 +12,14 @@
 DbSpectral::DbSpectral(float sampleRate) :
     m_sampleRate(sampleRate),
     m_spectralImage(nullptr),
-    m_computeSize(512), // Init called from main.cpp, so this value doesn't matter
+    m_fftSize(512), // Init called from main.cpp, so this value doesn't matter
     m_overlap(128),
     m_scanTime(0.f),
     m_scanRate(100), /* columns per second */
     m_scanRatePct(0.), /* computed after we know image width */
     m_currentColumn(0), // depends on image
-    m_verbosity(1)
+    m_verbosity(0),
+    m_mode(k_EQOnly)
 {
     m_mainThreadId = std::this_thread::get_id();
     m_workThread = std::thread(workThreadFunc, this);
@@ -26,6 +27,8 @@ DbSpectral::DbSpectral(float sampleRate) :
     m_window = dbWindowing::Get(dbWindowing::k_Hann);
     m_freqRange[0] = m_nextFreqRange[0] = 100;
     m_freqRange[1] = m_nextFreqRange[1] = 4000;
+    m_delayMax = 0.f;
+    m_feedbackMax = 0.f;
     this->updateScanRate();
 }
 
@@ -50,19 +53,21 @@ DbSpectral::~DbSpectral()
 }
 
 void
-DbSpectral::Init(int computeSize, int overlap)
+DbSpectral::Init(int fftSize, int overlap, ImgModes m)
 {
-    m_computeSize = computeSize;
+    m_mode = m;
+    m_fftSize = std::min(fftSize, k_MaxFFTSize);
     m_overlap = overlap;
-    m_fft.InitPlan(m_computeSize, true/*real*/);
-    m_computeBuf.resize(m_computeSize);
-    for(int i=0;i<m_computeSize;i++)
+    m_decimation = m_fftSize / m_overlap;
+    m_fft.InitPlan(m_fftSize, true/*real*/);
+    m_computeBuf.resize(m_fftSize);
+    for(int i=0;i<m_fftSize;i++)
         m_computeBuf[i] = 0.f;
     // Initialize the outputbuf with 0's 'til valid values start flowing.
-    // If the compute is free we need m_computeSize worth of initial samples.
+    // If the compute is free we need m_fftSize worth of initial samples.
     // But it's not free.  If the loadavg if 1 we need 2*_computeSize.
     m_outputBuffer.producerClear();
-    int startupSamps = m_computeSize + (m_computeSize >> 1);
+    int startupSamps = m_fftSize + (m_fftSize >> 1);
     for(int i=0;i<startupSamps;i++)
         m_outputBuffer.insert(0.);
     assert(m_outputBuffer.readAvailable() == startupSamps);
@@ -82,6 +87,18 @@ DbSpectral::SetFreqMax(int m)
     makeDirty();
 }
 
+void
+DbSpectral::SetDelayMax(float x)
+{
+    m_delayMax = x;
+}
+
+void
+DbSpectral::SetFeedbackMax(float x)
+{
+    m_feedbackMax = x;
+}
+
 float
 DbSpectral::Tick(float in)
 {
@@ -95,9 +112,9 @@ DbSpectral::Tick(float in)
     {
         FFTSg::t_Sample *computeBuf = &m_computeBuf[0];
         // here we read computeSize, but move head by overlap (eg 512, 128)
-        size_t numRead = m_inputBuffer.readBuff(computeBuf, m_computeSize, m_overlap);
+        size_t numRead = m_inputBuffer.readBuff(computeBuf, m_fftSize, m_overlap);
         std::function<void()> fn = std::bind(&DbSpectral::doWork, this,
-                                            computeBuf, m_computeSize);
+                                            computeBuf, m_fftSize);
         m_workQueue.Push(fn);
     }
     float out;
@@ -150,13 +167,6 @@ DbSpectral::updateScanRate()
     // std::cerr << "updateScanRate " << m_scanRate << " => " << m_scanRatePct << "\n";
 }
 
-void
-DbSpectral::SetScanMode(int mode)
-{
-    if(mode >= 0 && mode < k_ScanModeCount)
-        this->m_scanMode = (ScanMode) mode;
-}
-
 /* We anticipate multiple edits arriving in clumps and want
  * to limit the reload-image frequency.  If we haven't computed
  * "for a while", we schedule a updateRequest for later. Otherwise
@@ -206,7 +216,7 @@ DbSpectral::loadImage(std::string nm)
     //  Frequency range: 100-4000 (indices)
     //     3900/43 = 90 bins (5.6 pixels per bin, ie over-expressed)
     //    10000/43 = 232 bins (2ish pixels per bin)
-    int totalbins = m_computeSize / 2;
+    int totalbins = m_fftSize / 2;
     float nyquist = .5f*this->m_sampleRate;
     float freqPerBin = nyquist / totalbins;
     int freqBins = 1 + (m_nextFreqRange[1] - m_nextFreqRange[0]) / freqPerBin;
@@ -224,7 +234,6 @@ DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthrea
     // rescale: computeSize since fft/ifft isn't normalized
     //  3/2 due to windowing.
     const float rescale = 1.f / (1.5f * computeSize); 
-
     m_window->Apply(computeBuf, computeSize);
     m_fft.RealFFT(computeBuf); // samples are interleaved complex
 
@@ -233,25 +242,66 @@ DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthrea
     { // scope for access to image
         std::lock_guard<std::mutex> lock(m_loadImageLock);
         assert(m_scanTime >= 0.f && m_scanTime <= 1.f);
-        float const *spectralWeights = this->m_spectralImage ? 
-                    this->m_spectralImage->GetColumnWeights(m_scanTime, 
-                                                        &m_currentColumn) 
-                    : nullptr;
-        // apply spectralWeights, mapped to a subset of 
-        // total frequency range (0->Nyquist)
-        if(spectralWeights)
+        if(this->m_spectralImage)
         {
+            const float *eqW = m_spectralImage->GetColumnWeights(
+                                    m_scanTime, &m_currentColumn, 0);
+            const float *delayW = m_mode == k_EQOnly ? nullptr :
+                                    m_spectralImage->GetColumnWeights(
+                                     m_scanTime, &m_currentColumn, 1);
+            const float *fbW = m_mode != k_EQDelayFeedback ? nullptr :
+                                    m_spectralImage->GetColumnWeights(
+                                     m_scanTime, &m_currentColumn, 2);
             float *complex = computeBuf; // interleaved
-            int nbins = 0;
-            for(float freq = m_freqRange[0]; freq <= m_freqRange[1]; 
-                freq += m_freqPerBin)
+            if(!delayW || m_delayMax == 0.f)
             {
-                float w = *spectralWeights++;
-                *complex++ *= w;
-                *complex++ *= w;
-                nbins++;
+                int nbin = 0;
+                float freq = 0.f;
+                for(int i=0;i<nfreq;i++)
+                {
+                    if(freq < m_freqRange[0] || freq > m_freqRange[1])
+                        complex += 2;
+                    else
+                    {
+                        float eq = *eqW++;
+                        eq *= eq; // optional exp-gain
+                        *complex++ *= eq;
+                        *complex++ *= eq;
+                        nbin++;
+                    }
+                    freq += m_freqPerBin;
+                }
+                assert(nbin <= m_freqBins);
             }
-            assert(nbins <= m_freqBins);
+            else
+            {
+                int nbin = 0;
+                float freq = 0.f;
+                float delayR, delayI;
+                for(int i=0;i<nfreq;i++)
+                {
+                    if(freq >= m_freqRange[0] && freq <= m_freqRange[1])
+                    {
+                        float delayTime = (m_delayMax * *delayW++);
+                        int delaySamps = (int) (delayTime * m_sampleRate / m_decimation);
+                        float nowR = complex[0];
+                        float nowI = complex[1];
+
+                        m_delayTable.GetSamp(nbin, &delayR, &delayI, delaySamps);
+                        float eq = *eqW++;
+                        eq *= eq; // optional exp-gain
+                        complex[0] = delayR * eq; // this is postEQ
+                        complex[1] = delayI * eq;
+
+                        // feedback: combine nowR with delayR before putting
+                        m_delayTable.PutSamp(nbin, nowR, nowI);
+                        nbin++;
+                    }
+                    freq += m_freqPerBin;
+                    complex += 2;
+                }
+                assert(nbin <= m_freqBins);
+            }
         }
     }
 
@@ -262,14 +312,6 @@ DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthrea
     m_outputBuffer.writeBuff(computeBuf, computeSize, m_overlap, true/*accum*/);
 
     m_scanTime += m_scanRatePct;
-    if(m_scanMode == k_ScanFwdRev)
-    {
-        if(m_scanTime < 0.f || m_scanTime > 1.f)
-        {
-            m_scanRatePct = -m_scanRatePct;
-            m_scanTime += m_scanRatePct;
-        }
-    }
     if(m_scanTime > 1.f)
         m_scanTime = fmodf(m_scanTime, 1.f);
 }
@@ -290,10 +332,22 @@ DbSpectral::setImage(SpectralImage *i, std::string &nm,
     m_freqRange[0] = m_nextFreqRange[0];
     m_freqRange[1] = m_nextFreqRange[1];
     this->updateScanRate();
-    std::cerr <<  m_spectralImage->GetName() << " ready h:"  
-        << i->GetHeight() << " w: " << i->GetWidth() << "\n";
-    std::cerr <<  "  Hz/bin: " << m_freqPerBin << " range: " << 
-        m_freqRange[0] << " " << m_freqRange[1] << " (" << m_computeSize << ")\n";
+    if(m_verbosity)
+    {
+        std::cerr << "Spectral '" <<  m_spectralImage->GetName() 
+            << "' ready. Resampled to h:"  
+            << i->GetHeight() << " w: " << i->GetWidth() << "\n";
+        std::cerr <<  "Spectral bins: " << nbins << ", Hz/bin: " << m_freqPerBin 
+            << ", Range: " << m_freqRange[0] << "-" << m_freqRange[1] 
+            << ", FFT: " << m_fftSize << ", Overlap:" << m_overlap << "\n";
+    }
+    if(m_mode != k_EQOnly)
+    {
+        int delayMaxSamps = (m_delayMax * m_sampleRate) / m_decimation;
+        m_delayTable.Resize(m_freqBins, delayMaxSamps);
+        if(m_verbosity)
+            std::cerr << "Spectral delay: " << delayMaxSamps << "\n";
+    }
 }
 
 SpectralImage *
@@ -310,19 +364,19 @@ DbSpectral::workThreadFunc(DbSpectral *p)
     while(p->m_workQueue.IsActive())
     {
         auto item = p->m_workQueue.Pop(); // should block when empty
-        if(p->m_verbosity > 1)
+        if(p->m_verbosity > 2)
         {
             std::cerr << "workThread delegateBegin " 
                      << p->m_workQueue.Size() << "-------------------\n";
         }
         item();  // <------------- work!
-        if(p->m_verbosity > 1)
+        if(p->m_verbosity > 2)
         {
             std::cerr << "workThread delegateEnd active:" 
                      << p->m_workQueue.IsActive() << "---------------------\n";
         }
     }
-    if(p->m_verbosity)
+    if(p->m_verbosity > 1)
         std::cerr << "workThread exiting\n";
 }
 

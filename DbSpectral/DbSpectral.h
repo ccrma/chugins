@@ -23,6 +23,7 @@
 #include "fftsg.h"
 #include "ringbuffer.h"
 #include "image.h"
+#include "complexDelay.h"
 
 #include <thread>
 #include <mutex>
@@ -50,7 +51,13 @@ class DbSpectral
 public:
     DbSpectral(float sampleRate);
     ~DbSpectral();
-    void Init(int computeSize, int overlap);
+    enum ImgModes
+    {
+        k_EQOnly, // R
+        k_EQDelay, // RG
+        k_EQDelayFeedback, // RGB
+    };
+    void Init(int computeSize, int overlap, ImgModes mode=k_EQOnly);
     void LoadSpectralImage(char const *filename); // asynchronous
     float Tick(float in);
     void SetScanRate(int rate); // image columns per second
@@ -59,32 +66,40 @@ public:
     float GetColumnPct();
     void SetFreqMin(int min);
     void SetFreqMax(int max);
+    void SetDelayMax(float max); // seconds
+    void SetFeedbackMax(float max);
+    void SetVerbosity(int v) { m_verbosity = v; }
 
 private:
     float m_sampleRate;
+    std::string m_imgfilePath;
+    int m_verbosity;
+    ImgModes m_mode;
+    float m_delayMax;
+    float m_feedbackMax;
 
-    static const int k_MaxComputeSize = 4096; // fftsize
+    static const int k_MaxFFTSize = 4096;
     static void workThreadFunc(DbSpectral *);
     static void loadThreadFunc(DbSpectral *);
 
-    // inputBuffer: only accessed by audio thread. We copy-out when
-    // a compute-size chunk is available, then reuse some of the input
-    // for the next compute according to overlap.  Ringbuffer just helps
-    // iron out the edge conditions.
-    Ringbuffer<FFTSg::t_Sample,  2 * k_MaxComputeSize> m_inputBuffer;
+    // inputBuffer: only accessed by audio thread. We copy-out to computeBuf
+    // when compute-size chunk is available, then reuse some of the 
+    // (untouched) input for the next compute according to overlap.  
+    // Ringbuffer just helps iron out the edge conditions.
+    Ringbuffer<FFTSg::t_Sample,  2 * k_MaxFFTSize> m_inputBuffer;
+    std::vector<FFTSg::t_Sample> m_computeBuf;
 
     // outputBuffer: producer is workThread, consumer is audioThread.
-    // When a compute-size chunk is produced, accumulate over compute-sized
-    // contents.
-    Ringbuffer<FFTSg::t_Sample,  2 * k_MaxComputeSize> m_outputBuffer;
+    // When a compute-size chunk is produced, we *accumulate* over 
+    // the compute-sized contents.
+    Ringbuffer<FFTSg::t_Sample,  2 * k_MaxFFTSize> m_outputBuffer;
 
-    int m_computeSize;
-    int m_overlap;
     float m_scanTime; // measured in pct-width (ie [0, 1])
     int m_scanRate;   // measured in cols per second
     float m_scanRatePct; // derived from m_scanRate and current image, pct per sample
     int m_currentColumn;
 
+    // m_freqRange/m_freqPerBin is associated with loaded image.
     int m_freqRange[2], m_nextFreqRange[2];
     float m_freqPerBin;
     int m_freqBins;
@@ -94,20 +109,11 @@ private:
     t_Instant m_scheduledUpdate;
     t_Instant m_zeroInstant;
 
-    enum ScanMode
-    {
-        k_ScanFwd,
-        k_ScanRev,
-        k_ScanFwdRev, // bounce
-        k_ScanModeCount
-    } m_scanMode;
-    std::vector<FFTSg::t_Sample> m_computeBuf;
-
     FFTSg m_fft;
+    int m_fftSize;
+    int m_overlap;
+    int m_decimation; // just fftSize/overlap
     class dbWindowing const *m_window;
-    std::string m_imgfilePath;
-
-    int m_verbosity;
 
     std::thread::id m_mainThreadId, m_workThreadId, m_loadThreadId;
     std::thread m_loadThread;
@@ -130,6 +136,7 @@ private: // image loading
 
     std::mutex m_loadImageLock;
     SpectralImage *m_spectralImage;
+    ComplexDelayTable m_delayTable;
 };
 
 #endif

@@ -81,7 +81,7 @@ SpectralImage::LoadFile(char const *filename, int resizeY, bool verbose)
 }
 
 float const *
-SpectralImage::GetColumnWeights(float xPct, int *colno)
+SpectralImage::GetColumnWeights(float xPct, int *colno, int ch)
 {
     if(m_columnWeights.size() > 0)
     {
@@ -90,14 +90,15 @@ SpectralImage::GetColumnWeights(float xPct, int *colno)
         if(col != m_currentCol)
         {
             // Current scheme is worst-case for cache. If we pre-rotate 
-            // the image we might be in better case, but that's premature.
+            // the image we might be in better shape, but that's premature.
             // Here we also invert Y since we want high frequencies on the
             // image top.
             int rowStride = m_width * m_channels;
             unsigned char *pixel = m_data + m_channels * col;
             for(int i=m_height-1;i>=0;i--)
             {
-                m_columnWeights[i] = ((int)pixel[0] + pixel[1] + pixel[2]) / (255*3.);
+                // m_columnWeights[i] = ((int)pixel[0] + pixel[1] + pixel[2]) / (255*3.);
+                m_columnWeights[i] = pixel[ch] / 255.f;
                 pixel += rowStride;
             }
             m_currentCol = col;
