@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <complex>
+#include <iostream>
 #include <cassert>
 
 class ComplexDelayTable
@@ -18,6 +19,11 @@ public:
 
         for(int i=0;i<m_delayLines.size();i++)
             m_delayLines[i].Resize(maxDelay);
+        
+        #if 1
+        size_t nbytes = m_delayLines.size() * maxDelay * sizeof(std::complex<float>);
+        std::cerr << "ComplexDelayTable memory usage: " << nbytes << "\n";
+        #endif
     }
 
     void PutSamp(int bin, float r, float i)
