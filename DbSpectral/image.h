@@ -2,6 +2,7 @@
 #define spectralimage_h
 
 #include <vector>
+#include <string>
 
 class SpectralImage
 {

@@ -28,6 +28,7 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include <functional>
 
 /**
  * @brief DbSpectral is a time-varying mono audio filter parameterized by

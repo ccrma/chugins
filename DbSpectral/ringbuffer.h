@@ -155,7 +155,7 @@ public:
      * \return Number of elements written into internal buffer
      */
     size_t writeBuff(const T* buff, size_t count, size_t step, bool accum=false);
-    size_t writeBuff(const T* buff, size_t count) { this->writeBuff(buff, count, count); }
+    size_t writeBuff(const T* buff, size_t count) { return this->writeBuff(buff, count, count); }
 
     /*!
      * \brief Load multiple elements from internal buffer without blocking
