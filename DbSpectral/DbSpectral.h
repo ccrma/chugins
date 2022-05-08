@@ -79,7 +79,7 @@ private:
     float m_delayMax;
     float m_feedbackMax;
 
-    static const int k_MaxFFTSize = 4096;
+    #define k_MaxFFTSize 4096
     static void workThreadFunc(DbSpectral *);
     static void loadThreadFunc(DbSpectral *);
 
