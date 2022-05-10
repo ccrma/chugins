@@ -12,6 +12,11 @@ public:
     ComplexDelayTable() {}
     ~ComplexDelayTable() {}
 
+    int GetHead(int bin)
+    {
+        return m_delayLines[bin].GetHead();
+    }
+
     void Resize(int freqBins, int maxDelay/*samples*/) 
     {
         if(m_delayLines.size() != freqBins)
@@ -45,11 +50,13 @@ private:
         {
             m_head = 0;
         }
+        int GetHead() { return m_head; }
         void Resize(int maxDelay)
         {
             int oldSize = m_data.size();
             if(oldSize != maxDelay)
             {
+                // std::cerr <<  "complexDelay.Resize " << maxDelay << "\n";
                 m_data.resize(maxDelay);
                 for(int i=oldSize;i<maxDelay;i++)
                 {
@@ -68,15 +75,18 @@ private:
         }
         void GetSamp(float *r, float *i, int sampsAgo)
         {
-            int outSampIndex = (m_head - sampsAgo);
-            if(outSampIndex < 0)
+            if(sampsAgo >= m_data.size())
             {
-                while(outSampIndex < 0)
-                    outSampIndex += m_data.size();
+                std::cerr << "delayline overrun:" << sampsAgo << " sz:" << m_data.size() << "\n";
             }
+
+            int outSampIndex = (m_head - sampsAgo);
+            while(outSampIndex < 0)
+                outSampIndex += m_data.size();
+
             t_complex &x = m_data[outSampIndex];
             *r = x.real();
-            *i =  x.imag();
+            *i = x.imag();
         }
         using t_complex = std::complex<float>;
         std::vector<t_complex> m_data;

@@ -11,7 +11,7 @@ public:
     ~SpectralImage();
 
     int LoadFile(char const *filename, int resizeY=0, bool verbose=false);
-    float const *GetColumnWeights(float xPct, int *column, int chan=0);
+    float const *GetColumnWeights(float xPct, int *column, int chan);
 
     char const *GetName() { return m_imageName.c_str(); }
     int GetWidth() { return m_width; }
@@ -23,7 +23,7 @@ private:
     int m_channels;
     int m_currentCol; // XXX: could be float and interpolate, for now point-sample
     unsigned char *m_data;
-    std::vector<float> m_columnWeights;
+    std::vector<float> m_columnWeights; // size is nchans * resizeY
     std::string m_imageName;
 };
 

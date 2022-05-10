@@ -28,6 +28,7 @@ DbSpectral::DbSpectral(float sampleRate) :
     m_freqRange[0] = m_nextFreqRange[0] = 100;
     m_freqRange[1] = m_nextFreqRange[1] = 4000;
     m_delayMax = 0.f;
+    m_feedbackMin = 0.f;
     m_feedbackMax = 0.f;
     this->updateScanRate();
 }
@@ -91,6 +92,12 @@ void
 DbSpectral::SetDelayMax(float x)
 {
     m_delayMax = x;
+}
+
+void
+DbSpectral::SetFeedbackMin(float x)
+{
+    m_feedbackMin = x;
 }
 
 void
@@ -278,23 +285,61 @@ DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthrea
                 int nbin = 0;
                 float freq = 0.f;
                 float delayR, delayI;
+                float fb = m_feedbackMax;
+                float df = m_feedbackMax - m_feedbackMin;
+                int first = false;
                 for(int i=0;i<nfreq;i++)
                 {
                     if(freq >= m_freqRange[0] && freq <= m_freqRange[1])
                     {
-                        float delayTime = (m_delayMax * *delayW++);
+                        // delayTime is either time-varying or constant.
+                        // In the varying case, even if the current value is
+                        // 0 we must put-sample for the potentially non-zero
+                        // value later.
+                        float delayTime = delayW ? (m_delayMax * *delayW++) : m_delayMax;
                         int delaySamps = (int) (delayTime * m_sampleRate / m_decimation);
+
                         float nowR = complex[0];
                         float nowI = complex[1];
 
-                        m_delayTable.GetSamp(nbin, &delayR, &delayI, delaySamps);
                         float eq = *eqW++;
                         eq *= eq; // optional exp-gain
-                        complex[0] = delayR * eq; // this is postEQ
-                        complex[1] = delayI * eq;
+                        #if 1
+                            m_delayTable.PutSamp(nbin, nowR, nowI);
+                            m_delayTable.GetSamp(nbin, &delayR, &delayI, delaySamps);
+                            complex[0] = nowR + delayR;
+                            complex[1] = nowI + delayI;
+                        #else
+                        if(delaySamps == 0)
+                        {
+                            m_delayTable.PutSamp(nbin, nowR, nowI);
+                            complex[0] = nowR * eq;
+                            complex[1] = nowI * eq;
+                        }
+                        else
+                        {
+                            if(!first)
+                            {
+                                // eg: 21, 864
+                                // std::cerr << i << " delay " << delaySamps << "\n";
+                                // std::cerr << i << " head " << m_delayTable.GetHead(nbin) << "\n";
+                                first = true;
+                            }
+                            m_delayTable.GetSamp(nbin, &delayR, &delayI, delaySamps);
+                            if(fbW)
+                                fb = m_feedbackMin + df * *fbW++;
+                            if(delayR != 0.)
+                            {
+                                std::cerr << i << " delay " << delayR << " " << delayI << "\n";
+                            }
 
-                        // feedback: combine nowR with delayR before putting
-                        m_delayTable.PutSamp(nbin, nowR, nowI);
+                            // feedback: combine nowR with delayR before putting
+                            m_delayTable.PutSamp(nbin, nowR + fb*delayR, nowI + fb*delayI);
+
+                            complex[0] = delayR * eq; // this is postEQ
+                            complex[1] = delayI * eq;
+                        }
+                        #endif
                         nbin++;
                     }
                     freq += m_freqPerBin;
@@ -344,7 +389,7 @@ DbSpectral::setImage(SpectralImage *i, std::string &nm,
     if(m_mode != k_EQOnly)
     {
         int delayMaxSamps = (m_delayMax * m_sampleRate) / m_decimation;
-        m_delayTable.Resize(m_freqBins, delayMaxSamps);
+        m_delayTable.Resize(m_freqBins, delayMaxSamps+1);
         if(m_verbosity)
             std::cerr << "Spectral delay: " << delayMaxSamps << "\n";
     }

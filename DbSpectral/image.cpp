@@ -41,9 +41,7 @@ SpectralImage::LoadFile(char const *filename, int resizeY, bool verbose)
         else 
             base = filename;
         m_imageName = base;
-        m_columnWeights.resize(resizeY);
-        for(int i=0;i<resizeY;i++)
-            m_columnWeights[i] = 1.f;
+        m_columnWeights.resize(resizeY*m_channels);
         if(m_height != resizeY)
         {
             size_t sz = m_width*resizeY*m_channels;
@@ -98,7 +96,17 @@ SpectralImage::GetColumnWeights(float xPct, int *colno, int ch)
             for(int i=m_height-1;i>=0;i--)
             {
                 // m_columnWeights[i] = ((int)pixel[0] + pixel[1] + pixel[2]) / (255*3.);
-                m_columnWeights[i] = pixel[ch] / 255.f;
+                m_columnWeights[i] = pixel[0] / 255.f;
+                if(m_channels > 1)
+                {
+                    m_columnWeights[i+m_height] = pixel[1] / 255.f;
+                    if(m_channels > 2)
+                    {
+                        m_columnWeights[i+2*m_height] = pixel[2] / 255.f;
+                        if(m_channels > 3)
+                            m_columnWeights[i+3*m_height] = pixel[3] / 255.f;
+                    }
+                }
                 pixel += rowStride;
             }
             m_currentCol = col;
@@ -106,7 +114,7 @@ SpectralImage::GetColumnWeights(float xPct, int *colno, int ch)
             // std::cerr << "New table: " << col << "\n";
         }
         *colno = m_currentCol;
-        return &m_columnWeights[0];
+        return &m_columnWeights[0] + m_height * ch;
     }
     else
         return nullptr;

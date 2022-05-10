@@ -68,6 +68,7 @@ public:
     void SetFreqMin(int min);
     void SetFreqMax(int max);
     void SetDelayMax(float max); // seconds
+    void SetFeedbackMin(float min);
     void SetFeedbackMax(float max);
     void SetVerbosity(int v) { m_verbosity = v; }
 
@@ -77,6 +78,7 @@ private:
     int m_verbosity;
     ImgModes m_mode;
     float m_delayMax;
+    float m_feedbackMin; // negative values are allowed
     float m_feedbackMax;
 
     #define k_MaxFFTSize 4096

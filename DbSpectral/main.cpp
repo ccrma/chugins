@@ -19,6 +19,7 @@ CK_DLL_MFUN( dbld_scanRate );
 CK_DLL_MFUN( dbld_freqMin );
 CK_DLL_MFUN( dbld_freqMax );
 CK_DLL_MFUN( dbld_delayMax );
+CK_DLL_MFUN( dbld_feedbackMin );
 CK_DLL_MFUN( dbld_feedbackMax );
 CK_DLL_MFUN( dbld_verbosity );
 
@@ -47,6 +48,9 @@ CK_DLL_QUERY(DbSpectral)
 
     QUERY->add_mfun(QUERY, dbld_delayMax, "void", "delayMax");
     QUERY->add_arg(QUERY, "float", "delayMax");
+
+    QUERY->add_mfun(QUERY, dbld_feedbackMin, "void", "feedbackMin");
+    QUERY->add_arg(QUERY, "float", "feedbackMin");
 
     QUERY->add_mfun(QUERY, dbld_feedbackMax, "void", "feedbackMax");
     QUERY->add_arg(QUERY, "float", "feedbackMax");
@@ -151,6 +155,13 @@ CK_DLL_MFUN(dbld_delayMax)
     DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     float max = GET_NEXT_FLOAT(ARGS);
     c->SetDelayMax(max);
+}
+
+CK_DLL_MFUN(dbld_feedbackMin)
+{
+    DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    float min = GET_NEXT_FLOAT(ARGS);
+    c->SetFeedbackMin(min);
 }
 
 CK_DLL_MFUN(dbld_feedbackMax)
