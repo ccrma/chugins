@@ -42,12 +42,13 @@ Now if we view the __green__ channel alone we see this:
 Here, pixels represent spectral delay periods and so we can infer that
 black pixels (low and middle frequencies in the controllable frequency range)
 have no delay while white pixels have maximum delay. Here, we don't vary
-delay amounts through time, but there's no reason not to.  When you change
+delay period over time, but there's no reason not to.  When you change
 delay over time you can obtain interesting/bizarre spectral pitch-shifting 
 effects.
 
 In this example we only employ 2 image channels.  DbSpectral currently supports 
-three and interprets the __blue__ channel as the amount of delay feedback.
+up to three and interprets the __blue__ channel as the amount of delay feedback
+when operating in mode 2.
 
 ## Tips and Caveats
 
@@ -86,7 +87,6 @@ transform) and have a controllable overlap.
 Currently we "point-sample" the column data. If this presents a problem
 image-scale your input in x and modify `scanRate` accordingly.
 
-
 ## Example
 
 ```
@@ -118,11 +118,11 @@ while(true)
     }
 }
 ```
+
 Here's the control image. When listening to the example, try to guess
 which column is active at any moment.
 
 <center><img src="test/image1.png" style="background-color:black;max-width:600px"></center>
-
 
 ## API
 
@@ -154,8 +154,28 @@ DbSpectral implements a superset of the capabilities of the
 [Spectacle chugin](../Spectacle) by supporting time-varying, image-based 
 parameterization.
 
-## Copying
+## License
 
 DbSpectral is open-source.  Sub-components are subject to their own
-licenses.  Unless otherwise stated, this code is copyright Dana Batali, 
-2022 and MIT licensed.
+licenses.  Unless otherwise stated, this code is subject to the
+MIT license:
+
+Copyright 2022 Dana Batali
+
+Permission is hereby granted, free of charge, to any person obtaining a copy 
+of this software and associated documentation files (the "Software"), to 
+deal in the Software without restriction, including without limitation the 
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
+sell copies of the Software, and to permit persons to whom the Software is 
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in 
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+SOFTWARE.
