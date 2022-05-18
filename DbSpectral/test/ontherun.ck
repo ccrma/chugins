@@ -1,9 +1,12 @@
 // ontherun without any of the good stuff.
-// (just a demo of DbSpectral, EQ only)
+// DbSpectral, EQ only)
 DbSpectral filt => dac;
 BlitSquare sqr => filt;
 sqr.gain(.3);
+filt.init(2048/*fft*/, 512/*overlap*/, 0/*EQ only*/);
 filt.gain(1);
+filt.mix(1);
+filt.delayMax(0);
 filt.loadSpectogram(me.dir() + "image1.png"); // async
 filt.scanRate(30);
 [52, 55, 57, 55, 62, 60, 62, 64] @=> int notes[];

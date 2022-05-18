@@ -12,7 +12,7 @@
 DbSpectral::DbSpectral(float sampleRate) :
     m_sampleRate(sampleRate),
     m_spectralImage(nullptr),
-    m_mix(.5f),
+    m_mix(1.f),
     m_fftSize(512), // Init called from main.cpp, so this value doesn't matter
     m_overlap(128),
     m_scanTime(0.f),
@@ -29,7 +29,7 @@ DbSpectral::DbSpectral(float sampleRate) :
     m_freqRange[0] = m_nextFreqRange[0] = 100;
     m_freqRange[1] = m_nextFreqRange[1] = 4000;
     m_delayMax = 0.f;
-    m_feedbackMax = 0.f;
+    m_feedbackMax = 0.1f;
     this->updateScanRate();
 }
 
