@@ -68,9 +68,9 @@ public:
     void SetFreqMin(int min);
     void SetFreqMax(int max);
     void SetDelayMax(float max); // seconds
-    void SetFeedbackMin(float min);
     void SetFeedbackMax(float max);
     void SetVerbosity(int v) { m_verbosity = v; }
+    void SetMix(float mix);
 
 private:
     float m_sampleRate;
@@ -78,7 +78,6 @@ private:
     int m_verbosity;
     ImgModes m_mode;
     float m_delayMax;
-    float m_feedbackMin; // negative values are allowed
     float m_feedbackMax;
 
     #define k_MaxFFTSize 4096
@@ -113,10 +112,10 @@ private:
     t_Instant m_zeroInstant;
 
     FFTSg m_fft;
-    int m_fftSize;
-    int m_overlap;
-    int m_decimation; // just fftSize/overlap
+    int m_fftSize; // samples, typical 2048
+    int m_overlap; // samples, typical 512
     class dbWindowing const *m_window;
+    float m_mix;
 
     std::thread::id m_mainThreadId, m_workThreadId, m_loadThreadId;
     std::thread m_loadThread;
@@ -136,6 +135,7 @@ private: // image loading
     void loadImage(std::string filename); // in loadThread
     SpectralImage *getImage();
     void setImage(SpectralImage *, std::string &nm, float freqPerBin, int freqBins);
+    int getDelaySamps(float seconds);
 
     std::mutex m_loadImageLock;
     SpectralImage *m_spectralImage;

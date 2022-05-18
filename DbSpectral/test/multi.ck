@@ -1,4 +1,4 @@
-
+// validate image-changes.
 DbSpectral filt => dac;
 Noise noise => filt;
 SqrOsc sqr => filt;
@@ -9,7 +9,7 @@ for(int h;h<2;h++)
 {
     "image" + h + ".png" => string inm;
     <<<"loading", inm>>>;
-    filt.loadImage(me.dir() + inm); // async
+    filt.loadSpectogram(me.dir() + inm); // async
     for(int i;i<10;i++)
     {
         Math.random2(10, 200) => int scanRate;

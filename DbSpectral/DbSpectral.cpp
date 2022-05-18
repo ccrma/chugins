@@ -12,6 +12,7 @@
 DbSpectral::DbSpectral(float sampleRate) :
     m_sampleRate(sampleRate),
     m_spectralImage(nullptr),
+    m_mix(.5f),
     m_fftSize(512), // Init called from main.cpp, so this value doesn't matter
     m_overlap(128),
     m_scanTime(0.f),
@@ -28,7 +29,6 @@ DbSpectral::DbSpectral(float sampleRate) :
     m_freqRange[0] = m_nextFreqRange[0] = 100;
     m_freqRange[1] = m_nextFreqRange[1] = 4000;
     m_delayMax = 0.f;
-    m_feedbackMin = 0.f;
     m_feedbackMax = 0.f;
     this->updateScanRate();
 }
@@ -53,13 +53,32 @@ DbSpectral::~DbSpectral()
         delete m_spectralImage;
 }
 
+/**
+ * @brief initialize computation with values that are constant across
+ *  a session.
+ * 
+ * @param fftSize default: 2048
+ * @param overlap default: 512
+ * @param m  0: EQ image, 1: EQ+Delay image, 2: EQ+Delay+Feedback image
+ */
 void
 DbSpectral::Init(int fftSize, int overlap, ImgModes m)
 {
     m_mode = m;
     m_fftSize = std::min(fftSize, k_MaxFFTSize);
+
+    int i=2;
+    for(;i<k_MaxFFTSize;i*=2)
+    {
+        if(i >= m_fftSize)
+            break;
+    }
+    if(m_fftSize != i)
+    {
+        std::cerr << "FFT size must be a power of two. Using " << i << "\n";
+        m_fftSize = i;
+    }
     m_overlap = overlap;
-    m_decimation = m_fftSize / m_overlap;
     m_fft.InitPlan(m_fftSize, true/*real*/);
     m_computeBuf.resize(m_fftSize);
     for(int i=0;i<m_fftSize;i++)
@@ -72,6 +91,12 @@ DbSpectral::Init(int fftSize, int overlap, ImgModes m)
     for(int i=0;i<startupSamps;i++)
         m_outputBuffer.insert(0.);
     assert(m_outputBuffer.readAvailable() == startupSamps);
+}
+
+void
+DbSpectral::SetMix(float m)
+{
+    m_mix = m;
 }
 
 void
@@ -92,12 +117,6 @@ void
 DbSpectral::SetDelayMax(float x)
 {
     m_delayMax = x;
-}
-
-void
-DbSpectral::SetFeedbackMin(float x)
-{
-    m_feedbackMin = x;
 }
 
 void
@@ -127,6 +146,7 @@ DbSpectral::Tick(float in)
     float out;
     if(!m_outputBuffer.remove(&out, 0.f))
         out = 0.f;
+    out = out * m_mix + in * (1.f - m_mix);
     checkDeferredUpdate();
     return out;
 }
@@ -266,16 +286,24 @@ DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthrea
                 float freq = 0.f;
                 for(int i=0;i<nfreq;i++)
                 {
-                    if(freq < m_freqRange[0] || freq > m_freqRange[1])
-                        complex += 2;
-                    else
+                    if(freq >= m_freqRange[0] && freq <= m_freqRange[1])
                     {
                         float eq = *eqW++;
                         eq *= eq; // optional exp-gain
-                        *complex++ *= eq;
-                        *complex++ *= eq;
+                        complex[0] *= eq;
+                        complex[1] *= eq;
                         nbin++;
+
+                        #if 0 /* for constant-eq validation */
+                        static float lastEq = eq;
+                        if(eq != lastEq)
+                        {
+                            std::cerr << "hey! " << eq << " " << lastEq << "\n";
+                            lastEq = eq;
+                        }
+                        #endif
                     }
+                    complex += 2;
                     freq += m_freqPerBin;
                 }
                 assert(nbin <= m_freqBins);
@@ -286,7 +314,6 @@ DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthrea
                 float freq = 0.f;
                 float delayR, delayI;
                 float fb = m_feedbackMax;
-                float df = m_feedbackMax - m_feedbackMin;
                 int first = false;
                 for(int i=0;i<nfreq;i++)
                 {
@@ -297,41 +324,24 @@ DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthrea
                         // 0 we must put-sample for the potentially non-zero
                         // value later.
                         float delayTime = delayW ? (m_delayMax * *delayW++) : m_delayMax;
-                        int delaySamps = (int) (delayTime * m_sampleRate / m_decimation);
-
+                        int delaySamps = this->getDelaySamps(delayTime);
                         float nowR = complex[0];
                         float nowI = complex[1];
 
                         float eq = *eqW++;
                         eq *= eq; // optional exp-gain
-                        #if 1
-                            m_delayTable.PutSamp(nbin, nowR, nowI);
-                            m_delayTable.GetSamp(nbin, &delayR, &delayI, delaySamps);
-                            complex[0] = nowR + delayR;
-                            complex[1] = nowI + delayI;
-                        #else
                         if(delaySamps == 0)
                         {
-                            m_delayTable.PutSamp(nbin, nowR, nowI);
+                            if(m_delayMax > 0.f)
+                                m_delayTable.PutSamp(nbin, nowR, nowI);
                             complex[0] = nowR * eq;
                             complex[1] = nowI * eq;
                         }
                         else
                         {
-                            if(!first)
-                            {
-                                // eg: 21, 864
-                                // std::cerr << i << " delay " << delaySamps << "\n";
-                                // std::cerr << i << " head " << m_delayTable.GetHead(nbin) << "\n";
-                                first = true;
-                            }
                             m_delayTable.GetSamp(nbin, &delayR, &delayI, delaySamps);
                             if(fbW)
-                                fb = m_feedbackMin + df * *fbW++;
-                            if(delayR != 0.)
-                            {
-                                std::cerr << i << " delay " << delayR << " " << delayI << "\n";
-                            }
+                                fb = m_feedbackMax * *fbW++;
 
                             // feedback: combine nowR with delayR before putting
                             m_delayTable.PutSamp(nbin, nowR + fb*delayR, nowI + fb*delayI);
@@ -339,7 +349,6 @@ DbSpectral::doWork(FFTSg::t_Sample *computeBuf, int computeSize) // in workthrea
                             complex[0] = delayR * eq; // this is postEQ
                             complex[1] = delayI * eq;
                         }
-                        #endif
                         nbin++;
                     }
                     freq += m_freqPerBin;
@@ -377,6 +386,10 @@ DbSpectral::setImage(SpectralImage *i, std::string &nm,
     m_freqRange[0] = m_nextFreqRange[0];
     m_freqRange[1] = m_nextFreqRange[1];
     this->updateScanRate();
+    int delayMaxSamps = this->getDelaySamps(m_delayMax);
+    if(m_mode != k_EQOnly || delayMaxSamps > 0)
+        m_delayTable.Resize(m_freqBins, delayMaxSamps+1, m_verbosity); // circular buffer
+
     if(m_verbosity)
     {
         std::cerr << "Spectral '" <<  m_spectralImage->GetName() 
@@ -385,14 +398,23 @@ DbSpectral::setImage(SpectralImage *i, std::string &nm,
         std::cerr <<  "Spectral bins: " << nbins << ", Hz/bin: " << m_freqPerBin 
             << ", Range: " << m_freqRange[0] << "-" << m_freqRange[1] 
             << ", FFT: " << m_fftSize << ", Overlap:" << m_overlap << "\n";
+        
+        std::cerr << "Spectral delay: " << delayMaxSamps << "\n";
     }
-    if(m_mode != k_EQOnly)
-    {
-        int delayMaxSamps = (m_delayMax * m_sampleRate) / m_decimation;
-        m_delayTable.Resize(m_freqBins, delayMaxSamps+1);
-        if(m_verbosity)
-            std::cerr << "Spectral delay: " << delayMaxSamps << "\n";
-    }
+}
+
+/* With no overlap, 2048 fft samples produce one frequency-space 
+ * delayable value. Conversely, a 1-sample freq-delay is equivalent 
+ * to a 2048 t-delay. Ie: we have lost temporal delay accuracy. 
+ * To recover some accuracy (among other things) we combine overlapped
+ * FFTs. With a 512-sample overlap, we have 4 times more delay accuracy.
+ * Example: 10 seconds of delay with 512 sample overlay requires
+ * 44100 * 10 / 512 max delayline length (in f-space).
+ */
+int
+DbSpectral::getDelaySamps(float delayTime)
+{
+    return (delayTime * m_sampleRate) / m_overlap;
 }
 
 SpectralImage *

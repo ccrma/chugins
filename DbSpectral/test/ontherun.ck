@@ -1,10 +1,10 @@
 // ontherun without any of the good stuff.
-// (just a demo of DbSpectral, )
+// (just a demo of DbSpectral, EQ only)
 DbSpectral filt => dac;
 BlitSquare sqr => filt;
 sqr.gain(.3);
 filt.gain(1);
-filt.loadImage(me.dir() + "image1.png"); // async
+filt.loadSpectogram(me.dir() + "image1.png"); // async
 filt.scanRate(30);
 [52, 55, 57, 55, 62, 60, 62, 64] @=> int notes[];
 -5 => int transpose;

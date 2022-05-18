@@ -17,7 +17,12 @@ public:
         return m_delayLines[bin].GetHead();
     }
 
-    void Resize(int freqBins, int maxDelay/*samples*/) 
+    int GetSize(int bin)
+    {
+        return m_delayLines[bin].GetSize();
+    }
+
+    void Resize(int freqBins, int maxDelay/*samples*/, int verbose) 
     {
         if(m_delayLines.size() != freqBins)
             m_delayLines.resize(freqBins);
@@ -25,10 +30,11 @@ public:
         for(int i=0;i<m_delayLines.size();i++)
             m_delayLines[i].Resize(maxDelay);
         
-        #if 1
-        size_t nbytes = m_delayLines.size() * maxDelay * sizeof(std::complex<float>);
-        std::cerr << "ComplexDelayTable memory usage: " << nbytes << "\n";
-        #endif
+        if(verbose)
+        {
+            size_t nbytes = m_delayLines.size() * maxDelay * sizeof(std::complex<float>);
+            std::cerr << "ComplexDelayTable memory usage: " << nbytes << "\n";
+        }
     }
 
     void PutSamp(int bin, float r, float i)
@@ -51,12 +57,12 @@ private:
             m_head = 0;
         }
         int GetHead() { return m_head; }
+        int GetSize() { return m_data.size(); }
         void Resize(int maxDelay)
         {
             int oldSize = m_data.size();
             if(oldSize != maxDelay)
             {
-                // std::cerr <<  "complexDelay.Resize " << maxDelay << "\n";
                 m_data.resize(maxDelay);
                 for(int i=oldSize;i<maxDelay;i++)
                 {

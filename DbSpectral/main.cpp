@@ -12,6 +12,7 @@ CK_DLL_CTOR( dbld_ctor );
 CK_DLL_DTOR( dbld_dtor );
 CK_DLL_MFUN( dbld_init );
 CK_DLL_TICK( dbld_tick );
+CK_DLL_MFUN( dbld_mix );
 CK_DLL_MFUN( dbld_loadSpectogram );
 CK_DLL_MFUN( dbld_getColumn );
 CK_DLL_MFUN( dbld_getColumnPct );
@@ -19,7 +20,6 @@ CK_DLL_MFUN( dbld_scanRate );
 CK_DLL_MFUN( dbld_freqMin );
 CK_DLL_MFUN( dbld_freqMax );
 CK_DLL_MFUN( dbld_delayMax );
-CK_DLL_MFUN( dbld_feedbackMin );
 CK_DLL_MFUN( dbld_feedbackMax );
 CK_DLL_MFUN( dbld_verbosity );
 
@@ -40,6 +40,9 @@ CK_DLL_QUERY(DbSpectral)
     QUERY->add_arg(QUERY, "int", "overlapSize");
     QUERY->add_arg(QUERY, "int", "mode");
 
+    QUERY->add_mfun(QUERY, dbld_mix, "void", "mix");
+    QUERY->add_arg(QUERY, "float", "x");
+
     QUERY->add_mfun(QUERY, dbld_freqMin, "void", "freqMin");
     QUERY->add_arg(QUERY, "int", "minFreq");
 
@@ -48,9 +51,6 @@ CK_DLL_QUERY(DbSpectral)
 
     QUERY->add_mfun(QUERY, dbld_delayMax, "void", "delayMax");
     QUERY->add_arg(QUERY, "float", "delayMax");
-
-    QUERY->add_mfun(QUERY, dbld_feedbackMin, "void", "feedbackMin");
-    QUERY->add_arg(QUERY, "float", "feedbackMin");
 
     QUERY->add_mfun(QUERY, dbld_feedbackMax, "void", "feedbackMax");
     QUERY->add_arg(QUERY, "float", "feedbackMax");
@@ -110,6 +110,12 @@ CK_DLL_TICK(dbld_tick)
     return TRUE;
 }
 
+CK_DLL_MFUN(dbld_mix)
+{
+    DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    c->SetMix(GET_NEXT_FLOAT(ARGS));
+}
+
 CK_DLL_MFUN(dbld_loadSpectogram)
 {
     DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
@@ -155,13 +161,6 @@ CK_DLL_MFUN(dbld_delayMax)
     DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     float max = GET_NEXT_FLOAT(ARGS);
     c->SetDelayMax(max);
-}
-
-CK_DLL_MFUN(dbld_feedbackMin)
-{
-    DbSpectral *c = (DbSpectral *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
-    float min = GET_NEXT_FLOAT(ARGS);
-    c->SetFeedbackMin(min);
 }
 
 CK_DLL_MFUN(dbld_feedbackMax)

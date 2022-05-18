@@ -1,3 +1,4 @@
+// compare fft->ifft with bypass
 Noise snd => DbSpectral filt => dac;
 SqrOsc sqr => filt;
 snd.gain(.3);
