@@ -7,7 +7,7 @@
 > other with different settings for each segment of your composition. Now take
 > a picture of these settings to produce an image.  Here, a pixel's brightness 
 > represents the equalizer's slider position. If you're still with us, take out 
-> your favorite paint package (or use Fiddle's built-in one) and start editing 
+> your favorite paint package (or use [Fiddle's built-in one](https://cannerycoders.com/docs/Fiddle/interface/imageeditor.html)) and start editing 
 > or drawing patterns that represent the filter changes. Finally combine this
 > image, an input signal, and `DbSpectral` to obtain intuitive and complete
 > control over the spectral filter and delay effects.
