@@ -77,13 +77,44 @@ private:
     {
         std::string expr;
         int index;
-        std::vector<Section> const *sections;
+        
+        ArrangementState()
+        {
+            this->index = 0;
+        }
 
         void Init(std::string &x)
         {
             this->expr = x;
             this->index = 0;
         };
+
+        bool IsActive()
+        {
+            return index < expr.size();
+        }
+
+        /**
+         * @brief check arrangement state for more events
+         * 
+         * @param currentTime 
+         * @return int 0 when all okay (whether active or not)
+         */
+        int IsDone(float &currentTime)
+        {
+            if(expr.size() == 0) return 0; // not our job
+            return expr.size() > 0 && this->index == expr.size();
+        }
+
+        /**
+         * @brief enforce the arrangement boundary conditions.
+         * 
+         * @param currentTime will be modified when we finish a section
+         * @param sections 
+         * @return int 0 on success -1 on done.
+         */
+        int Update(float &currentTime, std::vector<Section> &sections);
+
     };
 
     unsigned m_sampleRate;

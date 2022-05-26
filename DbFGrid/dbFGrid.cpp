@@ -12,14 +12,14 @@
 /* ----------------------------------------------------------------------- */
 dbFGrid::dbFGrid(unsigned int sampleRate)
 {
-    this->m_sampleRate = sampleRate;
-    this->m_verbosity = 0;
+    m_sampleRate = sampleRate;
+    m_verbosity = 0;
 }
 
 dbFGrid::~dbFGrid()
 {
-    std::set<char *>::iterator it = this->m_customCCNames.begin();
-    while (it != this->m_customCCNames.end())
+    std::set<char *>::iterator it = m_customCCNames.begin();
+    while (it != m_customCCNames.end())
     {
         char *s = *it;
         delete [] s;
@@ -31,14 +31,14 @@ int
 dbFGrid::Open(std::string const &fnm)
 {
     int err = 0;
-    this->m_currentTime = 0;
-    this->m_bbox[0] = 1e6;
-    this->m_bbox[1] = 0;
-    this->m_columnUnit = .25f; // size of a column (here 1/4 note)
-    this->m_signature[0] = 4;
-    this->m_signature[1] = 4;  // size of a bat (here 1/4 note)
-    this->m_colToBeat = 1.f; // converts columns to beats (here 1)
-    this->m_sections.clear();
+    m_currentTime = 0;
+    m_bbox[0] = 1e6;
+    m_bbox[1] = 0;
+    m_columnUnit = .25f; // size of a column (here 1/4 note)
+    m_signature[0] = 4;
+    m_signature[1] = 4;  // size of a bat (here 1/4 note)
+    m_colToBeat = 1.f; // converts columns to beats (here 1)
+    m_sections.clear();
     this->Rewind();
 
     std::ifstream fstr;
@@ -55,7 +55,7 @@ dbFGrid::Open(std::string const &fnm)
             fstr >> j;
             if(j.contains("fmatrix"))
             {
-                if(this->m_verbosity > 0)
+                if(m_verbosity > 0)
                     std::cerr << "DbFGrid opened " << fnm << "\n";
                 auto jfm = j["fmatrix"];
                 if(jfm.count("sections"))
@@ -69,28 +69,28 @@ dbFGrid::Open(std::string const &fnm)
                         Section s;
                         s.c0 = jcolumns.at(0).get<int>();
                         s.c1 = jcolumns.at(1).get<int>();
-                        this->m_sections.push_back(s);
+                        m_sections.push_back(s);
                     }
-                    if(this->m_verbosity > 0)
+                    if(m_verbosity > 0)
                     {
                         std::cerr << "dbFGrid found " 
-                            << this->m_sections.size() << " sections\n";
+                            << m_sections.size() << " sections\n";
                     }
                 }
-                this->m_params = jfm["params"];
+                m_params = jfm["params"];
                 float beatSize;
-                if(this->m_params.count("signature"))
+                if(m_params.count("signature"))
                 {
-                    this->m_signature[0] = this->m_params["signature"]["x"].get<int>();
-                    beatSize = this->m_params["signature"]["y"].get<float>();
-                    this->m_signature[1] = int(.5f + 1.f/ beatSize);
+                    m_signature[0] = m_params["signature"]["x"].get<int>();
+                    beatSize = m_params["signature"]["y"].get<float>();
+                    m_signature[1] = int(.5f + 1.f/ beatSize);
                 }
                 else
-                    beatSize = 1.0f / this->m_signature[1];
-                if(this->m_params.count("columnUnit"))
-                    this->m_columnUnit = this->m_params["columnUnit"].get<float>();
+                    beatSize = 1.0f / m_signature[1];
+                if(m_params.count("columnUnit"))
+                    m_columnUnit = m_params["columnUnit"].get<float>();
                 // example: 1/8 colunit, 1/4 sigDenom => colToBeat: .5 
-                this->m_colToBeat = this->m_columnUnit / beatSize; 
+                m_colToBeat = m_columnUnit / beatSize; 
                 auto jlayers = jfm["layers"];
 
                 // foreach layer
@@ -115,7 +115,7 @@ dbFGrid::Open(std::string const &fnm)
                     if(fnm == "Comments")
                     {
                         // not performable but we don't want to mess with id
-                        this->m_layers.push_back(Layer(Layer::k_commentsLayer));
+                        m_layers.push_back(Layer(Layer::k_commentsLayer));
                         continue; 
                     }
                     else
@@ -123,8 +123,8 @@ dbFGrid::Open(std::string const &fnm)
                         std::cerr << "DbFGrid unimplemented layer type " << fnm << "\n";
                         continue;
                     }
-                    this->m_layers.push_back(Layer(lt));
-                    Layer &l = this->m_layers.back();
+                    m_layers.push_back(Layer(lt));
+                    Layer &l = m_layers.back();
                     l.fparams = jl["fparams"];
 
                     const char *defKey = "v"; // value
@@ -218,10 +218,10 @@ dbFGrid::Open(std::string const &fnm)
                             }
                         }
                     }
-                    if(this->m_bbox[0] > l.bbox[0])
-                        this->m_bbox[0] = l.bbox[0];
-                    if(this->m_bbox[1] < l.bbox[1])
-                        this->m_bbox[1] = l.bbox[1];
+                    if(m_bbox[0] > l.bbox[0])
+                        m_bbox[0] = l.bbox[0];
+                    if(m_bbox[1] < l.bbox[1])
+                        m_bbox[1] = l.bbox[1];
                     l.ComputeEdgeOrdering();
                 }
             }
@@ -231,7 +231,7 @@ dbFGrid::Open(std::string const &fnm)
                 err = 1;
             }
             
-            if(err == 0 && this->m_verbosity > 0)
+            if(err == 0 && m_verbosity > 0)
             {
                 this->dumpMatrix();
             }
@@ -262,8 +262,8 @@ dbFGrid::SetArrangement(std::string const &expr)
     this->flattenPartSpec(expr.c_str(), &exprFlat);
     for(int i=0;i<exprFlat.size();i++)
     {
-        int snum = (exprFlat[i] - 'A' + 1);
-        if(snum > m_sections.size())
+        int sectionNum = (exprFlat[i] - 'A');
+        if(sectionNum >= m_sections.size())
         {
             std::cerr << "DbFGrid: unknown section in arrangement '" 
                     << exprFlat[i] << "' (" 
@@ -271,7 +271,6 @@ dbFGrid::SetArrangement(std::string const &expr)
             return -1;
         }
     }
-    m_arrangementState.sections = &m_sections;
     m_arrangementState.Init(exprFlat);
     return 0;
 }
@@ -280,7 +279,7 @@ dbFGrid::SetArrangement(std::string const &expr)
 bool
 dbFGrid::hasCustomCCName(char const *nm)
 {
-    return this->m_customCCNames.count((char *) nm);
+    return m_customCCNames.count((char *) nm);
 }
 
 char const *
@@ -292,15 +291,15 @@ dbFGrid::getCustomCCName(char const *nm)
         ret = nullptr;
     else
     {
-        std::set<char *>::iterator it = this->m_customCCNames.find((char *)nm);
-        if(it != this->m_customCCNames.end())
+        std::set<char *>::iterator it = m_customCCNames.find((char *)nm);
+        if(it != m_customCCNames.end())
             ret = *it;
         else
         {
             char *c = new char[len + 1];
             if(c)
                 strcpy(c, nm);
-            this->m_customCCNames.insert(c);
+            m_customCCNames.insert(c);
             ret = c;
         }
     }
@@ -310,19 +309,19 @@ dbFGrid::getCustomCCName(char const *nm)
 int
 dbFGrid::GetNumLayers()
 {
-    return (int) this->m_layers.size();
+    return (int) m_layers.size();
 }
 
 int
 dbFGrid::GetBarSize()
 {
-    return this->m_signature[0];
+    return m_signature[0];
 }
 
 int
 dbFGrid::GetBeatSize()
 {
-    return this->m_signature[1];
+    return m_signature[1];
 }
 
 int
@@ -330,7 +329,7 @@ dbFGrid::Rewind(int sectionIndex)
 {
     // Define sectionIndex of 0 as valid even without sections since 
     // CC values are on [0, 1].
-    if(sectionIndex != -1 && this->m_sections.size() <= sectionIndex)
+    if(sectionIndex != -1 && m_sections.size() <= sectionIndex)
     {
         if(sectionIndex != 0)
             std::cerr << "dbFGrid undefined section: " << sectionIndex << "\n";
@@ -338,26 +337,26 @@ dbFGrid::Rewind(int sectionIndex)
     }
     if(sectionIndex == -1)
     {
-        for(Layer &l : this->m_layers)
+        for(Layer &l : m_layers)
             l.Rewind();
-        this->m_currentTime = 0;
+        m_currentTime = 0;
     }
     else
     {
-        Section &s = this->m_sections[sectionIndex];
+        Section &s = m_sections[sectionIndex];
         unsigned il=0;
-        for(Layer &l : this->m_layers)
-            l.Rewind(s.c0, s.c1, il++, this->m_verbosity);
-        this->m_currentTime = s.c0;
+        for(Layer &l : m_layers)
+            l.Rewind(s.c0, s.c1, il++, m_verbosity);
+        m_currentTime = s.c0;
     }
-    this->m_channelPool.clear();
-    this->m_channelsInUse.clear();
+    m_channelPool.clear();
+    m_channelsInUse.clear();
     for(unsigned i=0;i<15;i++)
     {
         // below, we access new elements from back. For "cosmetics"
         // we'll initialize the pool so that low-numbered channels
         // come online before high-numbered channels
-        this->m_channelPool.push_back(15-i);
+        m_channelPool.push_back(15-i);
     }    
     return 0;
 }
@@ -372,35 +371,67 @@ dbFGrid::ReadChannel(char const *nm, int ll, int col, int row,
         char const *nmtok = dbFGrid::getCustomCCName(nm);
         if(this->GetNumLayers() > ll)
         {
-            Layer &l = this->m_layers[ll];
+            Layer &l = m_layers[ll];
             npts = l.ReadSubEventData(nmtok, col, row, result);
         }
     }
     return npts;
 }
 
-/* return 0 on success, non-zero when we reach the end 
+int
+dbFGrid::ArrangementState::Update(float &currentTime, 
+    std::vector<Section> &sections)
+{
+    int done = 0;
+    if(currentTime > sections[this->index].c1+kColEpsilon)
+    {
+        this->index++;
+        if(this->index >= this->expr.size())
+            done = 1;
+        else
+        {
+            int sectionNum = 'A' - this->expr[this->index];
+            currentTime = sections[sectionNum].c0;
+        }
+    }
+    return done;
+}
+
+/**
+ * @brief return the next event in the grid. 
+ * @param evt 
+ * @param soloLayer 
+ * @return int 0 on sucess, non-zero on error or EOF.
  */
 int 
 dbFGrid::Read(Event *evt, int soloLayer)
 {
-    if(this->m_currentTime > (this->m_bbox[1]+kColEpsilon))
+    // check currentTime against bbox of all layers.
+    if(m_currentTime > (m_bbox[1]+kColEpsilon))
         return -1;
+    else
+    if(m_arrangementState.IsActive())
+    {
+        if(m_arrangementState.IsDone(m_currentTime))
+            return -1;
+
+        m_arrangementState.Update(m_currentTime, m_sections);
+    }
 
     // first nominate the best next event defined as the one whose
-    // start or end is closest to this->m_currentTime
+    // start or end is closest to m_currentTime
     float minDist = 1e6;
     int nextLIndex = -1;
-    for(int i=0;i<this->m_layers.size();i++)
+    for(int i=0;i<m_layers.size();i++)
     {
         if(soloLayer != -1 && i != soloLayer)
             continue;
 
-        Layer &l = this->m_layers[i];
-        if(this->m_currentTime > l.GetMaxTime())
+        Layer &l = m_layers[i];
+        if(m_currentTime > l.GetMaxTime())
           continue;
         
-        float dist = l.NextDistance(this->m_currentTime);
+        float dist = l.NextDistance(m_currentTime);
         if(dist < minDist)
         {
             minDist = dist;
@@ -415,16 +446,16 @@ dbFGrid::Read(Event *evt, int soloLayer)
         if(minDist > kColEpsilon)
         {
             evt->eType = Event::k_Wait;
-            evt->value = minDist * this->m_colToBeat;
+            evt->value = minDist * m_colToBeat;
             evt->note = 0;
             evt->ccID = -1;
             evt->ccName = nullptr;
-            this->m_currentTime += minDist; // time in "columns"
+            m_currentTime += minDist; // time in "columns"
         }
         else
         {
-            Layer &l = this->m_layers[nextLIndex];
-            l.GetEvent(this->m_currentTime, evt, this->m_verbosity);
+            Layer &l = m_layers[nextLIndex];
+            l.GetEvent(m_currentTime, evt, m_verbosity);
             switch(evt->eType)
             {
             case Event::k_NoteOn:
@@ -449,18 +480,18 @@ unsigned
 dbFGrid::allocateChannel(unsigned note, unsigned layer)
 {
     unsigned chan = 0;
-    if(this->m_channelPool.size() > 0)
+    if(m_channelPool.size() > 0)
     {
-        chan = this->m_channelPool.back();
-        this->m_channelPool.pop_back();
+        chan = m_channelPool.back();
+        m_channelPool.pop_back();
 
         unsigned key = (layer << 7) | note;
-        if(this->m_channelsInUse.count(key) != 0)
+        if(m_channelsInUse.count(key) != 0)
         {
             std::cerr << "dbFGrid MIDI/MPE channel allocation botch for note " 
                       << note << "\n";
         }
-        this->m_channelsInUse[key] = chan;
+        m_channelsInUse[key] = chan;
     }
     else
         std::cerr << "dbFGrid out of MIDI/MPE channels for note " << note << "\n";
@@ -472,14 +503,14 @@ dbFGrid::findChannel(unsigned note, unsigned layer, bool release)
 {
     unsigned chan = 0;
     unsigned key = (layer << 7) | note;
-    if(this->m_channelsInUse.count(key) != 0)
+    if(m_channelsInUse.count(key) != 0)
     {
-        auto it = this->m_channelsInUse.find(key);
+        auto it = m_channelsInUse.find(key);
         chan = it->second;
         if(release)
         {
-            this->m_channelsInUse.erase(it);
-            this->m_channelPool.push_back(chan);
+            m_channelsInUse.erase(it);
+            m_channelPool.push_back(chan);
         }
     }
     else
@@ -868,7 +899,7 @@ dbFGrid::flattenPartSpec(char const *spec, std::string *partspec)
         this->error("Too many ('s in part specification");
         return 0;
     }
-    if(this->m_verbosity)
+    if(m_verbosity)
     {
         std::string x("P in:");
         x.append(spec);
@@ -944,24 +975,24 @@ void
 dbFGrid::dumpMatrix()
 {
     std::cerr << "dbFGrid has:\n";
-    std::cerr << "  " << this->m_layers.size() << " layers\n";
-    std::cerr << "  " << this->m_sections.size() << " sections\n";
-    for(int s=0;s<this->m_sections.size();s++)
+    std::cerr << "  " << m_layers.size() << " layers\n";
+    std::cerr << "  " << m_sections.size() << " sections\n";
+    for(int s=0;s<m_sections.size();s++)
     {
         int c0 = m_sections[s].c0;
         int c1 = m_sections[s].c1;
         std::cerr << "    " << s << ": [" << c0 << "," << c1 <<"]\n";
     }
-    this->dumpObject("  params", this->m_params);
+    this->dumpObject("  params", m_params);
     int il = 0;
-    for(Layer &l : this->m_layers)
+    for(Layer &l : m_layers)
     {
         std::cerr << "  L" << il++ << " has " << l.cells.size() << " events\n";
         int i = 0;
         int ie=0, ise=-666;
 
         // these are the events, not the ordered events
-        if(this->m_verbosity > 1)
+        if(m_verbosity > 1)
         {
             for(Cell &e : l.cells)
             {
@@ -969,7 +1000,7 @@ dbFGrid::dumpMatrix()
                 {
                     if(e.subEvent)
                     {
-                        if(this->m_verbosity > 2)
+                        if(m_verbosity > 2)
                         {
                             std::cerr << "     se" << ise++ << " " 
                                 << it->first << ": " << it->second << "\n";
