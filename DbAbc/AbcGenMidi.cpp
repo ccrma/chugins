@@ -112,6 +112,17 @@ AbcGenMidi::getNextPerformanceEvents(int track, IMidiWriter *m)
         active = 1;
     }
     else
+    if(this->wctx->delta_time)
+    {
+        // voice done but pending rest...
+        char buf[32];
+        snprintf(buf, 32, "%d", track);
+        this->midi->writeMetaEvent(this->wctx->delta_time, MidiEvent::end_of_track, 
+                (unsigned char *) buf, strlen(buf));
+        this->wctx->delta_time = 0;
+        active = 1;
+    }
+    else
     {
         active = 0;
         if(this->initState->verbose)
