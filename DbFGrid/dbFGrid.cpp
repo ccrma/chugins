@@ -4,6 +4,8 @@
 #include <fstream>
 #include <algorithm>
 #include <cmath>
+#include <random>
+#include <climits>
 
 #define kColEpsilon .0001f /* measured in columns */
 
@@ -251,6 +253,29 @@ dbFGrid::Open(std::string const &fnm)
     return err;
 }
 
+int
+dbFGrid::SetArrangement(std::string const &expr)
+{
+    if(expr.size() == 0) return 0;
+
+    std::string exprFlat;
+    this->flattenPartSpec(expr.c_str(), &exprFlat);
+    for(int i=0;i<exprFlat.size();i++)
+    {
+        int snum = (exprFlat[i] - 'A' + 1);
+        if(snum > m_sections.size())
+        {
+            std::cerr << "DbFGrid: unknown section in arrangement '" 
+                    << exprFlat[i] << "' (" 
+                    << m_sections.size() << " sections)\n";
+            return -1;
+        }
+    }
+    m_arrangementState.sections = &m_sections;
+    m_arrangementState.Init(exprFlat);
+    return 0;
+}
+
 /* tokenize incoming custom CCNames... */
 bool
 dbFGrid::hasCustomCCName(char const *nm)
@@ -410,6 +435,9 @@ dbFGrid::Read(Event *evt, int soloLayer)
                 break;
             case Event::k_CC:
                 evt->chan = this->findChannel(evt->note, nextLIndex, false);
+                break;
+            case Event::k_Wait:
+            default:
                 break;
             }
         }
@@ -697,6 +725,199 @@ dbFGrid::Layer::GetEvent(float current, Event *evt, int verbosity)
         evt->value = e.GetParam("v", .5f);
     }
     this->oIndex++;
+}
+
+/* ----------------------------------------------------------------- */
+/* converts an in-header P: field to a list of part labels 
+ * returns the number of distinct parts enountered.
+ * caller can inspect return.  If == 1, it may be an in-body
+ * partlabel (since the line between header and notes is ill-defined)
+ */
+/* e.g. P:A(AB)3(CD)2 becomes P:AABABABCDCD 
+        P: A3[A|B|C]3
+        P: A3[A|A|A|B|C]3
+        P: A3(X[A|A|A|B|C]3)5
+        P: A3[C|D|[E|F|G]2]3  // chooser flattens results when its ] is encountered
+ */
+int 
+dbFGrid::flattenPartSpec(char const *spec, std::string *partspec)
+{
+    int stack[10]; // index of beginning of pattern seq
+    char lastch =  ' '; /* [SDG] 2020-06-03 */
+    char errmsg[80];
+    int stackptr = 0;
+    int spec_length = strlen(spec);
+    int k = 0;
+    int inChoice = 0;
+    char const *in = spec;
+
+    while(*in != 0 && k < spec_length) 
+    { 
+        k++;
+        if(*in == '.' || *in == ' ')  // for readability
+            in = in + 1;
+        else
+        if(((*in >= 'A') && (*in <= 'Z')) || 
+            (*in == '(') || (*in == ')') || (*in == ']') || (*in == '[') ||
+            (*in == '|' && inChoice) ||
+            ((*in >= '0') && (*in <= '9'))) 
+        {
+            if(((*in >= 'A') && (*in <= 'Z')) || (*in == '|'))
+            {
+                partspec->push_back(*in);
+                lastch = *in;
+                in = in + 1;
+            }
+            if(*in == '(' || *in == '[') 
+            {
+                if(*in == '[')
+                    inChoice++;
+                if(stackptr < 10) 
+                {
+                    stack[stackptr] = partspec->size();
+                    stackptr = stackptr + 1;
+                } 
+                else 
+                    this->error("nesting too deep in part specification");
+                in = in + 1;
+            }
+            if(*in == ')' || *in == ']')  // nb: we lookahead for number following
+            {
+                int chooser = (*in == ']');
+                if(chooser) inChoice--;
+                in = in + 1;
+                if(stackptr > 0) 
+                {
+                    int repeats, start, stop;
+                    if((*in >= '0') && (*in <= '9')) 
+                        repeats = this->readnump(&in);
+                    else 
+                        repeats = 1;
+                    stackptr = stackptr - 1;
+                    start = stack[stackptr];
+                    stop = partspec->size();
+                    if(chooser)
+                    {
+                        std::string input = partspec->substr(start, stop);
+                        std::vector<std::string> choices;
+                        std::string::size_type pos = 0;
+                        while(pos != std::string::npos)
+                        {
+                            auto nextpos = input.find_first_of('|', pos);
+                            if(nextpos == std::string::npos)
+                            {
+                                choices.push_back(input.substr(pos));
+                                break;
+                            }
+                            else
+                            {
+                                choices.push_back(input.substr(pos, nextpos-pos));
+                                pos = nextpos+1;
+                            }
+                        }
+                        std::default_random_engine generator;
+                        std::uniform_int_distribution<int> distribution(0,choices.size()-1);
+                        partspec->erase(start, stop);
+                        for(int i=1; i<repeats; i++) 
+                        {
+                            int r = distribution(generator);
+                            partspec->append(choices[r]);
+                        }
+                    }
+                    else
+                    for(int i=1; i<repeats; i++)  // <-- starts at 1
+                    {
+                        for(int j=0; j<((int) (stop-start)); j++) 
+                        {
+                            char c = partspec->at(start+j);
+                            partspec->push_back(c);
+                        }
+                    }
+                } 
+                else 
+                    this->error("Too many )'s in part specification");
+            }
+            else
+            if((*in >= '0') && (*in <= '9')) 
+            {
+                // handles: A3 (not (AB)3),CASEis->parser->readnump(&in);
+                int repeats = this->readnump(&in);
+                if(partspec->size() > 0) 
+                {
+                    for(int i = 1; i<repeats; i++) 
+                        partspec->push_back(lastch);
+                } 
+                else 
+                    this->error("No part to repeat in part specification");
+            }
+        }
+        else 
+        {
+            if(m_verbosity > 1)
+            {
+                snprintf(errmsg, 80, 
+                        "illegal character \'%c\' in part specification.\n"
+                        "The P: is ignored.", *in);
+                this->error(errmsg);
+            }
+            break;
+        }
+    } /* end of spec */
+    if(stackptr != 0) 
+    {
+        this->error("Too many ('s in part specification");
+        return 0;
+    }
+    if(this->m_verbosity)
+    {
+        std::string x("P in:");
+        x.append(spec);
+        x.append(" => ");
+        x.append(partspec->c_str());
+        this->log(x.c_str());
+    }
+    return partspec->size();
+}
+
+int
+dbFGrid::readnump(char const **p)
+{
+    int sign = 1;
+    if(**p == '-')
+    {
+        *p = *p + 1;
+        this->skipspace(p);
+        sign = -1;
+    }
+    int t = 0;
+    while(isdigit(**p) && (t < (INT_MAX-9)/10))
+    {
+        t = t * 10 + (int) **p - '0';
+        *p = *p + 1;
+    }
+    return sign * t;
+}
+
+void
+dbFGrid::skipspace(char const **p)
+{
+    char c = **p;
+    while((c == ' ') || (c == '\t'))
+    {
+        *p = *p + 1;
+        c = **p;
+    }
+}
+void 
+dbFGrid::error(char const *msg)
+{
+    std::cerr << "DbFGrid ERROR " << msg << "\n";
+}
+
+void 
+dbFGrid::log(char const *msg)
+{
+    std::cerr << "DbFGrid " << msg << "\n";
 }
 
 /* -------------------------------------------------------------------------- */

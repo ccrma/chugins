@@ -88,6 +88,10 @@ CK_DLL_QUERY(DbFGrid)
     QUERY->add_mfun(QUERY, fgrd_open, "int", "open");
     QUERY->add_arg(QUERY, "string", "path");
 
+    // arrangement(string)
+    QUERY->add_mfun(QUERY, fgrd_open, "int", "arrangement");
+    QUERY->add_arg(QUERY, "string", "expr");
+
     // read()
     QUERY->add_mfun(QUERY, fgrd_read, "int", "read");
     QUERY->add_arg(QUERY, "FGridMsg", "msg");
@@ -174,6 +178,14 @@ CK_DLL_MFUN(fgrd_open)
     std::string filename = GET_NEXT_STRING_SAFE(ARGS);
     int err = c->Open(filename);
     RETURN->v_int = err ? 0 : 1; // following midifilein return conventions
+}
+
+CK_DLL_MFUN(fgrd_arrangement)
+{
+    dbFGrid * c = (dbFGrid *) OBJ_MEMBER_INT(SELF, fgrd_data_offset);
+    std::string expr = GET_NEXT_STRING_SAFE(ARGS);
+    int err = c->SetArrangement(expr);
+    RETURN->v_int = err;
 }
 
 CK_DLL_MFUN(fgrd_numLayers)

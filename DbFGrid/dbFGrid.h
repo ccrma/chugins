@@ -24,6 +24,7 @@ public:
     void SetVerbosity(int v) { this->m_verbosity = v; }
     int Open(std::string const &filepath);
     int Close();
+    int SetArrangement(std::string const &);
     int GetNumLayers();
     bool IsValid() { return this->GetNumLayers() > 0; }
     int GetBarSize();    // num of signature
@@ -72,16 +73,30 @@ private:
         unsigned c0, c1;
     };
 
+    struct ArrangementState
+    {
+        std::string expr;
+        int index;
+        std::vector<Section> const *sections;
+
+        void Init(std::string &x)
+        {
+            this->expr = x;
+            this->index = 0;
+        };
+    };
+
     unsigned m_sampleRate;
     float m_bbox[2]; // of all layers
     int m_signature[2];  // from file (eg [4, 4] === [4, .25])
     float m_sigDenom; // from file (.25)
     float m_columnUnit;  // from file (eg .125)
     float m_colToBeat; // combines sigDenom and columnUnit
-    std::vector<Section> m_sections;
     int m_verbosity;
 
     float m_currentTime; // measured in fractional columns
+    ArrangementState m_arrangementState;
+    std::vector<Section> m_sections;
 
     t_jobj m_params; // of fmatrix
     /*
@@ -165,12 +180,8 @@ private:
 private:
     // We associate a MIDI channel with a note following MPE practice.
     // Since our CC events are already tied to a note, this isn't strictly
-    // necessary. It may make the lives of downstream players a little simpler.
-    // The idea: Midi CCs (except note-aftertouch) are "channel-wide". The
-    // MPE trick is to trick MIDI by assigning different channels to each note.
-    // In MIDI there are only 15 non-default channels, so we need to dole them
-    // out accordingly.  This means that no more than 15 notes with cc's can
-    // be live at one time.
+    // necessary. It may mak}
+
     std::vector<unsigned> m_channelPool; // max length 15
     std::map<unsigned, unsigned> m_channelsInUse; // key is layer << 7 | note
     unsigned allocateChannel(unsigned note, unsigned layer);
@@ -186,6 +197,13 @@ private:
         }
     };
     std::set<char *, cmpStr> m_customCCNames;
+
+private:
+    int flattenPartSpec(char const *spec, std::string *partspec);
+    void error(char const *msg);
+    void log(char const *msg);
+    int readnump(char const **);
+    void skipspace(char const **);
 
 private:
     void dumpObjectList(char const *nm, t_jobjArray const &);
