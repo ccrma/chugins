@@ -7,8 +7,6 @@
 #include <random>
 #include <climits>
 
-#define kColEpsilon .0001f /* measured in columns */
-
 /* ----------------------------------------------------------------------- */
 dbFGrid::dbFGrid(unsigned int sampleRate)
 {
@@ -271,6 +269,8 @@ dbFGrid::SetArrangement(std::string const &expr)
             return -1;
         }
     }
+    if(m_verbosity)
+        std::cerr << "DbFGrid arrangement: " << exprFlat.c_str() << "\n";
     m_arrangementState.Init(exprFlat);
     return 0;
 }
@@ -378,25 +378,6 @@ dbFGrid::ReadChannel(char const *nm, int ll, int col, int row,
     return npts;
 }
 
-int
-dbFGrid::ArrangementState::Update(float &currentTime, 
-    std::vector<Section> &sections)
-{
-    int done = 0;
-    if(currentTime > sections[this->index].c1+kColEpsilon)
-    {
-        this->index++;
-        if(this->index >= this->expr.size())
-            done = 1;
-        else
-        {
-            int sectionNum = 'A' - this->expr[this->index];
-            currentTime = sections[sectionNum].c0;
-        }
-    }
-    return done;
-}
-
 /**
  * @brief return the next event in the grid. 
  * @param evt 
@@ -406,18 +387,28 @@ dbFGrid::ArrangementState::Update(float &currentTime,
 int 
 dbFGrid::Read(Event *evt, int soloLayer)
 {
-    // check currentTime against bbox of all layers.
-    if(m_currentTime > (m_bbox[1]+kColEpsilon))
-        return -1;
-    else
     if(m_arrangementState.IsActive())
     {
-        if(m_arrangementState.IsDone(m_currentTime))
-            return -1;
-
-        m_arrangementState.Update(m_currentTime, m_sections);
+        int nextSection = m_arrangementState.GetNextSection(m_currentTime, m_sections);
+        if(nextSection != -1)
+        {
+            if(m_verbosity)
+            {
+                std::cerr << "arrangement " 
+                    << m_arrangementState.index 
+                    << " next section " << nextSection << " -----\n";
+            }
+            this->Rewind(nextSection);
+        }
     }
 
+    // check currentTime against bbox of all layers.
+    if(m_currentTime > (m_bbox[1]+kColEpsilon))
+    {
+        if(!m_arrangementState.IsActive())
+            return -1;
+    }
+    
     // first nominate the best next event defined as the one whose
     // start or end is closest to m_currentTime
     float minDist = 1e6;
@@ -438,39 +429,41 @@ dbFGrid::Read(Event *evt, int soloLayer)
             nextLIndex = i;
         }
     }
-    if(nextLIndex == -1)
+    if(nextLIndex == -1) // end of file
+    {
+        std::cerr << "done -2\n";
         return -2;
+    }
+    else
+        evt->layer = nextLIndex;
+
+    if(minDist > kColEpsilon)
+    {
+        evt->eType = Event::k_Wait;
+        evt->value = minDist * m_colToBeat;
+        evt->note = 0;
+        evt->ccID = -1;
+        evt->ccName = nullptr;
+        m_currentTime += minDist; // time in "columns"
+    }
     else
     {
-        evt->layer = nextLIndex;
-        if(minDist > kColEpsilon)
+        Layer &l = m_layers[nextLIndex];
+        l.GetEvent(m_currentTime, evt, m_verbosity);
+        switch(evt->eType)
         {
-            evt->eType = Event::k_Wait;
-            evt->value = minDist * m_colToBeat;
-            evt->note = 0;
-            evt->ccID = -1;
-            evt->ccName = nullptr;
-            m_currentTime += minDist; // time in "columns"
-        }
-        else
-        {
-            Layer &l = m_layers[nextLIndex];
-            l.GetEvent(m_currentTime, evt, m_verbosity);
-            switch(evt->eType)
-            {
-            case Event::k_NoteOn:
-                evt->chan = this->allocateChannel((unsigned) evt->note, nextLIndex);
-                break;
-            case Event::k_NoteOff:
-                evt->chan = this->findChannel((unsigned) evt->note, nextLIndex, true);
-                break;
-            case Event::k_CC:
-                evt->chan = this->findChannel(evt->note, nextLIndex, false);
-                break;
-            case Event::k_Wait:
-            default:
-                break;
-            }
+        case Event::k_NoteOn:
+            evt->chan = this->allocateChannel((unsigned) evt->note, nextLIndex);
+            break;
+        case Event::k_NoteOff:
+            evt->chan = this->findChannel((unsigned) evt->note, nextLIndex, true);
+            break;
+        case Event::k_CC:
+            evt->chan = this->findChannel(evt->note, nextLIndex, false);
+            break;
+        case Event::k_Wait:
+        default:
+            break;
         }
     }
     return 0;

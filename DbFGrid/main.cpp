@@ -46,6 +46,7 @@ CK_DLL_DTOR( fgrd_dtor );
 
 CK_DLL_MFUN( fgrd_setVerbosity );
 CK_DLL_MFUN( fgrd_open );
+CK_DLL_MFUN( fgrd_arrangement );
 CK_DLL_MFUN( fgrd_rewind );
 CK_DLL_MFUN( fgrd_rewindSection );
 CK_DLL_MFUN( fgrd_read );
@@ -89,7 +90,7 @@ CK_DLL_QUERY(DbFGrid)
     QUERY->add_arg(QUERY, "string", "path");
 
     // arrangement(string)
-    QUERY->add_mfun(QUERY, fgrd_open, "int", "arrangement");
+    QUERY->add_mfun(QUERY, fgrd_arrangement, "int", "arrangement");
     QUERY->add_arg(QUERY, "string", "expr");
 
     // read()

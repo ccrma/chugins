@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <cassert>
 #include <set>
+#include <iostream>
 
 using json = nlohmann::json;
 
@@ -68,6 +69,8 @@ public:
         std::vector<double> &results);
 
 private:
+    #define kColEpsilon .0001f /* measured in columns */
+
     struct Section
     {
         unsigned c0, c1;
@@ -86,35 +89,43 @@ private:
         void Init(std::string &x)
         {
             this->expr = x;
-            this->index = 0;
+            this->index = -1;
         };
+
+        void Rewind()
+        {
+            this->index = -1;
+        }
 
         bool IsActive()
         {
-            return index < expr.size();
+            return expr.size() > 0;
         }
 
-        /**
-         * @brief check arrangement state for more events
-         * 
-         * @param currentTime 
-         * @return int 0 when all okay (whether active or not)
-         */
-        int IsDone(float &currentTime)
+        bool IsDone()
         {
-            if(expr.size() == 0) return 0; // not our job
-            return expr.size() > 0 && this->index == expr.size();
+            if(this->expr.size() == 0) return true; // not our job
+            return this->index >= this->expr.size();
         }
 
-        /**
-         * @brief enforce the arrangement boundary conditions.
-         * 
-         * @param currentTime will be modified when we finish a section
-         * @param sections 
-         * @return int 0 on success -1 on done.
-         */
-        int Update(float &currentTime, std::vector<Section> &sections);
-
+        // return -1 if no new section required
+        int GetNextSection(float currentTime, 
+                    std::vector<Section> const &sections)
+        {
+            float maxCol = 0.f;
+            if(this->index >= 0)
+            {
+                int sectionNum = 'A' - this->expr[this->index];
+                maxCol = sections[sectionNum].c1;
+            }
+            if(currentTime > maxCol - kColEpsilon)
+            {
+                this->index++;
+                if(this->index < this->expr.size())
+                    return 'A' - this->expr[this->index];
+            }
+            return -1;
+        }
     };
 
     unsigned m_sampleRate;

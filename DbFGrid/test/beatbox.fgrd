@@ -1,0 +1,200 @@
+{
+  "$schema": "https://cannerycoders.com/schema/fmatrix_v0.json",
+  "fmatrix": {
+    "type": "NoteMatrix",
+    "params": {
+      "signature": {
+        "x": 4,
+        "y": 0.25
+      },
+      "columnUnit": 0.125,
+      "columnSnap": 1,
+      "labelIndexOrigin": 1,
+      "numColumns": 100,
+      "altLength": "12 : 2 : 0",
+      "gridStyle": 0,
+      "octaveRange": {
+        "x": 3,
+        "y": 3
+      },
+      "noteFilter": 1,
+      "scaleRoot": 0,
+      "scaleMinor": 0,
+      "BPM": 120
+    },
+    "layers": [
+      {
+        "name": "MidiNote",
+        "fnm": "MidiNote",
+        "sfnm": "MidiCC",
+        "fparams": {
+          "v": 0.75
+        },
+        "color": "#3D4CCE",
+        "description": "",
+        "display": true,
+        "mute": false,
+        "activeEventLayer": 0,
+        "events": [
+          {
+            "_": [
+              0,
+              1,
+              64
+            ],
+            "v": 0.9699929510061054
+          },
+          {
+            "_": [
+              0,
+              1,
+              60
+            ],
+            "v": 0.8880533741709442
+          },
+          {
+            "_": [
+              1,
+              1,
+              60
+            ],
+            "v": 0.49929722399616594
+          },
+          {
+            "_": [
+              2,
+              1,
+              64
+            ]
+          },
+          {
+            "_": [
+              4,
+              1,
+              64
+            ]
+          },
+          {
+            "_": [
+              4,
+              1,
+              62
+            ]
+          },
+          {
+            "_": [
+              6,
+              1,
+              64
+            ]
+          },
+          {
+            "_": [
+              7,
+              1,
+              60
+            ],
+            "v": 0.5316935698440659
+          },
+          {
+            "_": [
+              8,
+              1,
+              64
+            ]
+          },
+          {
+            "_": [
+              10,
+              1,
+              64
+            ]
+          },
+          {
+            "_": [
+              10,
+              1,
+              60
+            ],
+            "v": 0.5964862615398587
+          },
+          {
+            "_": [
+              11,
+              1,
+              60
+            ]
+          },
+          {
+            "_": [
+              12,
+              1,
+              64
+            ]
+          },
+          {
+            "_": [
+              12,
+              1,
+              62
+            ]
+          },
+          {
+            "_": [
+              14,
+              1,
+              64
+            ]
+          }
+        ],
+        "eventKeys": [
+          "v"
+        ],
+        "eventState": {
+          "v": {}
+        }
+      },
+      {
+        "name": "MidiNote",
+        "fnm": "MidiNote",
+        "sfnm": "MidiCC",
+        "fparams": {
+          "v": 0.75
+        },
+        "color": "#3DCE4C",
+        "description": "",
+        "display": true,
+        "mute": false,
+        "activeEventLayer": 0,
+        "events": [],
+        "eventKeys": [
+          "v"
+        ]
+      }
+    ],
+    "sections": [
+      {
+        "name": "levee",
+        "columns": [
+          0,
+          16
+        ]
+      }
+    ]
+  },
+  "view": {
+    "coords": {
+      "pan": [
+        47.885107974300254,
+        0
+      ],
+      "scale": [
+        2.15402588439273,
+        1.9292299290000015
+      ]
+    },
+    "activeLayer": 0,
+    "soloDisplay": false,
+    "ccDisplay": true
+  }
+}
