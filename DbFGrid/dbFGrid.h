@@ -115,14 +115,14 @@ private:
             float maxCol = 0.f;
             if(this->index >= 0)
             {
-                int sectionNum = 'A' - this->expr[this->index];
+                int sectionNum = this->expr[this->index] - 'A';
                 maxCol = sections[sectionNum].c1;
             }
             if(currentTime > maxCol - kColEpsilon)
             {
                 this->index++;
                 if(this->index < this->expr.size())
-                    return 'A' - this->expr[this->index];
+                    return this->expr[this->index] - 'A';
             }
             return -1;
         }

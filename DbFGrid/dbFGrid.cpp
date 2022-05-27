@@ -431,7 +431,7 @@ dbFGrid::Read(Event *evt, int soloLayer)
     }
     if(nextLIndex == -1) // end of file
     {
-        std::cerr << "done -2\n";
+        // std::cerr << "done -2\n";
         return -2;
     }
     else
