@@ -625,6 +625,12 @@ dbFGrid::Layer::Rewind(unsigned c0, unsigned c1, unsigned layerIndex,
     this->section0 = c0;
     this->section1 = c1;
 
+    if(this->type == k_commentsLayer)
+    {
+        this->oIndex = 0;
+        return;
+    }
+
     bool found = false;;
     // update oIndex to prior to or at c0
     for(unsigned i=0;i<this->orderedEdges.size();i++)
