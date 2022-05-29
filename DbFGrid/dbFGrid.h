@@ -113,7 +113,7 @@ private:
                     std::vector<Section> const &sections)
         {
             float maxCol = 0.f;
-            if(this->index >= 0)
+            if(this->index >= 0 && this->index < this->expr.size())
             {
                 int sectionNum = this->expr[this->index] - 'A';
                 maxCol = sections[sectionNum].c1;
