@@ -257,7 +257,7 @@ dbFGrid::SetArrangement(std::string const &expr)
     if(expr.size() == 0) return 0;
 
     std::string exprFlat;
-    this->flattenPartSpec(expr.c_str(), &exprFlat);
+    this->flattenPartSpec(expr.c_str(), &exprFlat); // result reported when verbose
     for(int i=0;i<exprFlat.size();i++)
     {
         int sectionNum = (exprFlat[i] - 'A');
@@ -269,8 +269,6 @@ dbFGrid::SetArrangement(std::string const &expr)
             return -1;
         }
     }
-    if(m_verbosity)
-        std::cerr << "DbFGrid arrangement: " << exprFlat.c_str() << "\n";
     m_arrangementState.Init(exprFlat);
     return 0;
 }
@@ -898,11 +896,11 @@ dbFGrid::flattenPartSpec(char const *spec, std::string *partspec)
         this->error("Too many ('s in part specification");
         return 0;
     }
-    if(m_verbosity || true)
+    if(m_verbosity)
     {
-        std::string x("P in:");
+        std::string x("pattern '");
         x.append(spec);
-        x.append(" => ");
+        x.append("' => ");
         x.append(partspec->c_str());
         this->log(x.c_str());
     }
