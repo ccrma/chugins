@@ -848,7 +848,7 @@ dbFGrid::flattenPartSpec(char const *spec, std::string *partspec)
                         std::default_random_engine generator;
                         std::uniform_int_distribution<int> distribution(0,choices.size()-1);
                         partspec->erase(start, stop);
-                        for(int i=1; i<repeats; i++) 
+                        for(int i=0; i<repeats; i++) 
                         {
                             int r = distribution(generator);
                             partspec->append(choices[r]);
@@ -898,7 +898,7 @@ dbFGrid::flattenPartSpec(char const *spec, std::string *partspec)
         this->error("Too many ('s in part specification");
         return 0;
     }
-    if(m_verbosity)
+    if(m_verbosity || true)
     {
         std::string x("P in:");
         x.append(spec);
