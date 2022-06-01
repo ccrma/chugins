@@ -23,6 +23,8 @@ CK_DLL_MFUN(fluidsynth_noteOnChan);
 CK_DLL_MFUN(fluidsynth_noteOffChan);
 CK_DLL_MFUN(fluidsynth_progChange);
 CK_DLL_MFUN(fluidsynth_progChangeChan);
+CK_DLL_MFUN(fluidsynth_cc);
+CK_DLL_MFUN(fluidsynth_ccChan);
 CK_DLL_MFUN(fluidsynth_setBank);
 CK_DLL_MFUN(fluidsynth_setBankChan);
 CK_DLL_MFUN(fluidsynth_setTuning);
@@ -73,11 +75,9 @@ public:
         m_settings = NULL;
     }
 
-    // for Chugins extending UGen
+    // ugen: (0 in, 2 out)
     void tick( SAMPLE *in, SAMPLE *out )
     {
-        // default: this passes whatever input is patched into Chugin
-
         fluid_synth_write_float(m_synth, 1, out, 0, 0, out+1, 0, 0);
     }
 
@@ -94,6 +94,11 @@ public:
     void noteOff(int chan, int key)
     {
         fluid_synth_noteoff(m_synth, chan, key);
+    }
+
+    void cc(int chan, int cc, int val)
+    {
+        fluid_synth_cc(m_synth, chan, cc, val);
     }
 
     void progChange(int chan, int progNum)
@@ -229,6 +234,15 @@ CK_DLL_QUERY( fluidsynth )
 
     QUERY->add_mfun(QUERY, fluidsynth_noteOffChan, "void", "noteOff");
     QUERY->add_arg(QUERY, "int", "note");
+    QUERY->add_arg(QUERY, "int", "chan");
+
+    QUERY->add_mfun(QUERY, fluidsynth_cc, "void", "cc");
+    QUERY->add_arg(QUERY, "int", "cc");
+    QUERY->add_arg(QUERY, "int", "val");
+
+    QUERY->add_mfun(QUERY, fluidsynth_ccChan, "void", "cc");
+    QUERY->add_arg(QUERY, "int", "cc");
+    QUERY->add_arg(QUERY, "int", "val");
     QUERY->add_arg(QUERY, "int", "chan");
 
     QUERY->add_mfun(QUERY, fluidsynth_progChange, "void", "progChange");
@@ -405,6 +419,26 @@ CK_DLL_MFUN(fluidsynth_noteOffChan)
     t_CKINT chan = GET_NEXT_INT(ARGS);
 
     f_data->noteOff(chan, note);
+}
+
+CK_DLL_MFUN(fluidsynth_cc)
+{
+    FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+
+    t_CKINT cc = GET_NEXT_INT(ARGS);
+    t_CKINT val = GET_NEXT_INT(ARGS);
+
+    f_data->cc(0, cc, val);
+}
+
+CK_DLL_MFUN(fluidsynth_ccChan)
+{
+    FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+
+    t_CKINT cc = GET_NEXT_INT(ARGS);
+    t_CKINT val = GET_NEXT_INT(ARGS);
+    t_CKINT chan = GET_NEXT_INT(ARGS);
+    f_data->cc(chan, cc, val);
 }
 
 CK_DLL_MFUN(fluidsynth_progChange)
