@@ -10,12 +10,15 @@
 // general includes
 #include <stdio.h>
 #include <limits.h>
+#include <iostream>
 
 #include <fluidsynth.h>
 
 CK_DLL_CTOR(fluidsynth_ctor);
 CK_DLL_DTOR(fluidsynth_dtor);
 CK_DLL_TICKF(fluidsynth_tickf);
+CK_DLL_MFUN(fluidsynth_setVerbosity);
+CK_DLL_MFUN(fluidsynth_selectPreset); // experimental
 CK_DLL_MFUN(fluidsynth_open);
 CK_DLL_MFUN(fluidsynth_noteOn);
 CK_DLL_MFUN(fluidsynth_noteOff);
@@ -43,7 +46,7 @@ CK_DLL_MFUN(fluidsynth_resetPitchBend);
 CK_DLL_MFUN(fluidsynth_resetPitchBendChan);
 CK_DLL_MFUN(fluidsynth_getPitchBend);
 CK_DLL_MFUN(fluidsynth_getPitchBendChan);
-
+CK_DLL_MFUN(fluidsynth_hasPreset);
 
 // this is a special offset reserved for Chugin internal data
 t_CKINT fluidsynth_data_offset = 0;
@@ -59,8 +62,16 @@ public:
     FluidSynth(t_CKFLOAT fs)
     {
         m_srate = fs;
+        m_fontId = -1;
 
         m_settings = new_fluid_settings();
+
+        // gs: (default) CC0 becomes the bank number, CC32 is ignored.
+        // gm: ignores CC0 and CC32 messages.
+        // xg: CC32 becomes the bank number, CC0 toggles between melodic or drum channel.
+        // mma: bank is calculated as CC0*128+CC32.
+        fluid_settings_setstr(m_settings, "synth.midi-bank-select", "mma");
+
         m_synth = new_fluid_synth(m_settings);
 
         fluid_synth_set_sample_rate(m_synth, m_srate);
@@ -75,6 +86,17 @@ public:
         m_settings = NULL;
     }
 
+    void setVerbosity(int v)
+    {
+        fluid_settings_setint(m_settings, "synth.verbose", v);
+        if(m_synth)
+        {
+            delete_fluid_synth(m_synth);
+            m_synth = NULL;
+        }
+        m_synth = new_fluid_synth(m_settings);
+    }
+
     // ugen: (0 in, 2 out)
     void tick( SAMPLE *in, SAMPLE *out )
     {
@@ -83,7 +105,8 @@ public:
 
     int open(const std::string &sfont)
     {
-        return fluid_synth_sfload(m_synth, sfont.c_str(), 1);
+        m_fontId = fluid_synth_sfload(m_synth, sfont.c_str(), 1);
+        return m_fontId;
     }
 
     void noteOn(int chan, int key, int vel)
@@ -109,6 +132,12 @@ public:
     void setBank(int chan, int bankNum)
     {
         fluid_synth_bank_select(m_synth, chan, bankNum);
+    }
+
+    int selectPreset(int bank, int prog, int chan)
+    {
+        return fluid_synth_program_select(m_synth, chan,
+                                m_fontId, bank, prog);
     }
 
     void setTuning(int chan, Chuck_Array8 * tuning)
@@ -196,6 +225,7 @@ private:
     float m_srate;
     fluid_settings_t *m_settings;
     fluid_synth_t *m_synth;
+    int m_fontId;
 };
 
 // query function: chuck calls this when loading the Chugin
@@ -258,6 +288,15 @@ CK_DLL_QUERY( fluidsynth )
     QUERY->add_mfun(QUERY, fluidsynth_setBankChan, "void", "setBank");
     QUERY->add_arg(QUERY, "int", "bankNum");
     QUERY->add_arg(QUERY, "int", "chan");
+
+    // presets provided to bypass weird logic associated with GM percussion
+    QUERY->add_mfun(QUERY, fluidsynth_selectPreset, "int", "selectPreset");
+    QUERY->add_arg(QUERY, "int", "bank");
+    QUERY->add_arg(QUERY, "int", "prog");
+    QUERY->add_arg(QUERY, "int", "chan");
+
+    QUERY->add_mfun(QUERY, fluidsynth_setVerbosity, "int", "setVerbosity");
+    QUERY->add_arg(QUERY, "int", "verbosity");
 
     QUERY->add_mfun(QUERY, fluidsynth_setTuning, "void", "setTuning");
     QUERY->add_arg(QUERY, "float[]", "tuning");
@@ -465,7 +504,6 @@ CK_DLL_MFUN(fluidsynth_setBank)
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
     t_CKINT bankNum = GET_NEXT_INT(ARGS);
 
-
     f_data->setBank(0, bankNum);
 }
 
@@ -477,6 +515,21 @@ CK_DLL_MFUN(fluidsynth_setBankChan)
     t_CKINT chan = GET_NEXT_INT(ARGS);
 
     f_data->setBank(chan, bankNum);
+}
+
+CK_DLL_MFUN(fluidsynth_setVerbosity)
+{
+    FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+    f_data->setVerbosity(GET_NEXT_INT(ARGS));
+}
+
+CK_DLL_MFUN(fluidsynth_selectPreset)
+{
+    FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
+    t_CKINT bankNum = GET_NEXT_INT(ARGS);
+    t_CKINT progNum = GET_NEXT_INT(ARGS);
+    t_CKINT chan = GET_NEXT_INT(ARGS);
+    RETURN->v_int = f_data->selectPreset(bankNum, progNum, chan);
 }
 
 CK_DLL_MFUN(fluidsynth_setTuning)
