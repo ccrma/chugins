@@ -108,23 +108,37 @@ private:
             return this->index >= this->expr.size();
         }
 
+        int getSectionNum()
+        {
+            if(this->index >= 0 && this->index < this->expr.size())
+            {
+                return this->expr[this->index] - 'A'; // XXX: suppport [A-Za-z]
+            }
+            else
+                return -1;
+        }
+
+        bool IsSectionEnding(float currentTime,
+                    std::vector<Section> const &sections)
+        {
+            int s = this->getSectionNum();
+            if(s != -1)
+            {
+                float maxCol = sections[s].c1; /* section end */
+                if(currentTime > (maxCol - kColEpsilon))
+                    return true;
+                else
+                    return false;
+            }
+            return true;
+        }
+
         // return -1 if no new section required
         int GetNextSection(float currentTime, 
                     std::vector<Section> const &sections)
         {
-            float maxCol = 0.f;
-            if(this->index >= 0 && this->index < this->expr.size())
-            {
-                int sectionNum = this->expr[this->index] - 'A';
-                maxCol = sections[sectionNum].c1;
-            }
-            if(currentTime > maxCol - kColEpsilon)
-            {
-                this->index++;
-                if(this->index < this->expr.size())
-                    return this->expr[this->index] - 'A';
-            }
-            return -1;
+            this->index++;
+            return this->getSectionNum();
         }
     };
 
@@ -192,7 +206,7 @@ private:
         void ComputeEdgeOrdering(); // after loading
         bool operator()(int i, int j); // for sorting event order
 
-        float NextDistance(float current);
+        float NextDistance(float current, bool noteEndsOnly);
         void GetEvent(float current, Event *evt, int verbosity);
         float GetMaxTime() 
         { 
@@ -222,7 +236,7 @@ private:
 private:
     // We associate a MIDI channel with a note following MPE practice.
     // Since our CC events are already tied to a note, this isn't strictly
-    // necessary. It may mak}
+    // necessary. 
 
     std::vector<unsigned> m_channelPool; // max length 15
     std::map<unsigned, unsigned> m_channelsInUse; // key is layer << 7 | note
@@ -241,6 +255,7 @@ private:
     std::set<char *, cmpStr> m_customCCNames;
 
 private:
+    bool getNextEvent(Event *, int soloLayer, bool endOfSection=false); 
     int flattenPartSpec(char const *spec, std::string *partspec);
     void error(char const *msg);
     void log(char const *msg);
