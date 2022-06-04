@@ -65,12 +65,12 @@ public:
         m_fontId = -1;
 
         m_settings = new_fluid_settings();
-
+        // midi-bank-select superceded selectPreset(bank, voice, channel)
         // gs: (default) CC0 becomes the bank number, CC32 is ignored.
         // gm: ignores CC0 and CC32 messages.
         // xg: CC32 becomes the bank number, CC0 toggles between melodic or drum channel.
         // mma: bank is calculated as CC0*128+CC32.
-        fluid_settings_setstr(m_settings, "synth.midi-bank-select", "mma");
+        // fluid_settings_setstr(m_settings, "synth.midi-bank-select", "mma");
 
         m_synth = new_fluid_synth(m_settings);
 
@@ -134,10 +134,15 @@ public:
         fluid_synth_bank_select(m_synth, chan, bankNum);
     }
 
+    /* selectPreset combines setBank and progChange and offers
+     * the advantage of establishing the correct channel type.
+     */
     int selectPreset(int bank, int prog, int chan)
     {
-        return fluid_synth_program_select(m_synth, chan,
-                                m_fontId, bank, prog);
+        fluid_synth_set_channel_type(m_synth, chan,     
+                (bank >= 128) ? CHANNEL_TYPE_DRUM : CHANNEL_TYPE_MELODIC);
+        int result = fluid_synth_program_select(m_synth, chan, m_fontId, bank, prog);
+        return 0;
     }
 
     void setTuning(int chan, Chuck_Array8 * tuning)
