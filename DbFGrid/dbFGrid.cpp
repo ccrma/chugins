@@ -432,9 +432,10 @@ dbFGrid::getNextEvent(Event *evt, int soloLayer, bool endOfSection)
     {
         if(soloLayer != -1 && i != soloLayer)
             continue;
-
+        
         Layer &l = m_layers[i];
-        if(m_currentTime > l.GetMaxTime())
+        if(m_currentTime > l.GetMaxTime() ||
+          l.type == Layer::k_commentsLayer)
             continue;
         
         float dist = l.NextDistance(m_currentTime, endOfSection);
