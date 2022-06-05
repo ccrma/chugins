@@ -73,7 +73,7 @@ private:
 
     struct Section
     {
-        unsigned c0, c1;
+        unsigned c0, c1; // always measured in integral columns.
     };
 
     struct ArrangementState
@@ -89,8 +89,13 @@ private:
         void Init(std::string &x)
         {
             this->expr = x;
-            this->index = -1;
+            this->index = -1; // need to trigger a Rewind
         };
+
+        bool IsInit()
+        {
+            return this->index == -1;
+        }
 
         void Rewind()
         {
@@ -118,24 +123,17 @@ private:
                 return -1;
         }
 
-        bool IsSectionEnding(float currentTime,
-                    std::vector<Section> const &sections)
+        int GetEndOfSection(std::vector<Section> const &sections)
         {
             int s = this->getSectionNum();
             if(s != -1)
-            {
-                float maxCol = sections[s].c1; /* section end */
-                if(currentTime > (maxCol - kColEpsilon))
-                    return true;
-                else
-                    return false;
-            }
-            return true;
+                return sections[s].c1;
+            else
+                return 0;
         }
 
         // return -1 if no new section required
-        int GetNextSection(float currentTime, 
-                    std::vector<Section> const &sections)
+        int GetNextSection(std::vector<Section> const &sections)
         {
             this->index++;
             return this->getSectionNum();
@@ -206,7 +204,7 @@ private:
         void ComputeEdgeOrdering(); // after loading
         bool operator()(int i, int j); // for sorting event order
 
-        float NextDistance(float current, bool noteEndsOnly);
+        float NextDistance(float current, int maxDist=0);
         void GetEvent(float current, Event *evt, int verbosity);
         float GetMaxTime() 
         { 
@@ -255,7 +253,7 @@ private:
     std::set<char *, cmpStr> m_customCCNames;
 
 private:
-    bool getNextEvent(Event *, int soloLayer, bool endOfSection=false); 
+    bool getNextEvent(Event *, int soloLayer, int endOfSection=0); 
     int flattenPartSpec(char const *spec, std::string *partspec);
     void error(char const *msg);
     void log(char const *msg);

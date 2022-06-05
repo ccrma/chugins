@@ -386,42 +386,49 @@ dbFGrid::ReadChannel(char const *nm, int ll, int col, int row,
 int 
 dbFGrid::Read(Event *evt, int soloLayer)
 {
-    if(m_arrangementState.IsActive())
+    if(!m_arrangementState.IsActive())
     {
-        if(m_arrangementState.IsSectionEnding(m_currentTime, m_sections))
+        if(this->getNextEvent(evt, soloLayer))
+            return 0; // no error
+        else
+            return -1; // done
+    }
+    else
+    {
+        int endOfSection = m_arrangementState.GetEndOfSection(m_sections);
+        if(m_arrangementState.IsInit() || !this->getNextEvent(evt, soloLayer, endOfSection))
         {
-            if(this->getNextEvent(evt, soloLayer, true/*noteEnd only*/))
-                return 0;
-            else
+            int nextSection = m_arrangementState.GetNextSection(m_sections);
+            if(nextSection != -1)
             {
-                int nextSection = m_arrangementState.GetNextSection(m_currentTime, m_sections);
-                if(nextSection != -1)
+                // a section has changed, but there may be multiple danging
+                // note-ends
+                if(m_verbosity)
                 {
-                    // a section has changed, but there may be multiple danging
-                    // note-ends
-                    if(m_verbosity)
-                    {
-                        std::cerr << "arrangement " 
-                            << m_arrangementState.index 
-                            << " next section " << nextSection << " -----\n";
-                    }
-                    if(nextSection >= 0)
-                        this->Rewind(nextSection); // changes currentTime
+                    std::cerr << "arrangement " 
+                        << m_arrangementState.index 
+                        << " next section " << nextSection << " -----\n";
+                }
+                if(nextSection >= 0)
+                {
+                    this->Rewind(nextSection); // changes currentTime
+                    return this->Read(evt, soloLayer);
                 }
             }
+            return -1;  // done
         }
+        else
+            return 0;
     }
-
-    if(this->getNextEvent(evt, soloLayer))
-        return 0; // no error
-    else
-        return -1; // done
 }
 
 bool
-dbFGrid::getNextEvent(Event *evt, int soloLayer, bool endOfSection)
+dbFGrid::getNextEvent(Event *evt, int soloLayer, int endOfSection)
 {
     if(m_currentTime > (m_bbox[1]+kColEpsilon))
+        return false;
+    
+    if(endOfSection != 0 && m_currentTime > endOfSection)
         return false;
     
     // first nominate the best next event defined as the one whose
@@ -434,8 +441,7 @@ dbFGrid::getNextEvent(Event *evt, int soloLayer, bool endOfSection)
             continue;
         
         Layer &l = m_layers[i];
-        if(m_currentTime > l.GetMaxTime() ||
-          l.type == Layer::k_commentsLayer)
+        if(m_currentTime > l.GetMaxTime() || l.type == Layer::k_commentsLayer)
             continue;
         
         float dist = l.NextDistance(m_currentTime, endOfSection);
@@ -445,14 +451,33 @@ dbFGrid::getNextEvent(Event *evt, int soloLayer, bool endOfSection)
             nextLIndex = i;
         }
     }
-    if(nextLIndex == -1) // end of file
+    if(nextLIndex == -1) // no events found in file or section
+    {
+        if(endOfSection > 0) 
+        {
+            float dt = (endOfSection - m_currentTime);
+            if(dt > kColEpsilon)
+            {
+                // generate a wait to end-of-section
+                // std::cerr << "End of section wait " << dt << "\n";
+                evt->eType = Event::k_Wait; // <-----------------
+                evt->value = dt * m_colToBeat;
+                evt->note = 0;
+                evt->ccID = -1;
+                evt->ccName = nullptr;
+                m_currentTime += dt; // time in "columns"
+                return true;
+            }
+            else
+                return false;
+        }
         return false;
+    }
     else
         evt->layer = nextLIndex;
 
     if(minDist > kColEpsilon)
     {
-        if(endOfSection) return false;
         evt->eType = Event::k_Wait; // <-----------------
         evt->value = minDist * m_colToBeat;
         evt->note = 0;
@@ -467,14 +492,12 @@ dbFGrid::getNextEvent(Event *evt, int soloLayer, bool endOfSection)
         switch(evt->eType)
         {
         case Event::k_NoteOn:
-            assert(!endOfSection);
             evt->chan = this->allocateChannel((unsigned) evt->note, nextLIndex);
             break;
         case Event::k_NoteOff:
             evt->chan = this->findChannel((unsigned) evt->note, nextLIndex, true);
             break;
         case Event::k_CC:
-            assert(!endOfSection);
             evt->chan = this->findChannel(evt->note, nextLIndex, false);
             break;
         case Event::k_Wait:
@@ -680,12 +703,15 @@ dbFGrid::Layer::Rewind(unsigned c0, unsigned c1, unsigned layerIndex,
 }
 
 float
-dbFGrid::Layer::NextDistance(float current, bool noteEndsOnly)
+dbFGrid::Layer::NextDistance(float current, int maxDist /* end-of-section is non-0 column */)
 {
     if(this->oIndex >= this->orderedEdges.size())
     {
         // this case occurs when we've processed our final events but
         // the current time hasn't yet been advanced.
+        if(maxDist != 0 && current < maxDist)
+            return maxDist - current; // request a wait
+        else
         if(current < this->GetMaxTime())
             return this->GetMaxTime() - current; // request a wait
         else
@@ -694,24 +720,29 @@ dbFGrid::Layer::NextDistance(float current, bool noteEndsOnly)
 
     int ievt = this->orderedEdges[this->oIndex];
     Cell &e = this->cells[ievt >> 1];
-    bool isDown = !(ievt&1);
+    bool isDown = !(ievt&1); // even/odd test
     if(isDown || !e.subEvent)
     {
         if(isDown)
         {
-            if(noteEndsOnly)
-                return 1e10; // end of section
+            if(maxDist != 0 && e.start >= maxDist)
+                return 1e10; // no start-events at maxDist or beyond
             else
                 return e.start - current;
         }
         else
-            return e.end - current;
+        {
+            if(maxDist != 0 && e.end > maxDist)
+                return maxDist - current;
+            else
+                return e.end - current;
+        }
     }
     else
     {
         // skip subEvent release messages (CC values are sample+hold)
         this->oIndex++;
-        return this->NextDistance(current, noteEndsOnly); 
+        return this->NextDistance(current, maxDist); 
     }
 }
 
