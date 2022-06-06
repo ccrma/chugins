@@ -70,6 +70,7 @@ CK_DLL_MFUN(faust_nvoices_set);
 CK_DLL_MFUN(faust_noteon);
 CK_DLL_MFUN(faust_noteoff);
 CK_DLL_MFUN(faust_assets_set);
+CK_DLL_MFUN(faust_libraries_set);
 CK_DLL_MFUN(faust_panic);
 CK_DLL_MFUN(faust_dump);
 CK_DLL_MFUN(faust_ok);
@@ -308,6 +309,10 @@ public:
     
     void setAssetsDir(const string & assetsDir) {
         m_assetsDirPath = assetsDir;
+    }
+    
+    void setLibrariesDir(const string & librariesDir) {
+        m_faustLibrariesPath = librariesDir;
     }
     
     void panic() {
@@ -813,6 +818,11 @@ CK_DLL_QUERY( Faust )
     // add arguments
     QUERY->add_arg(QUERY, "string", "assetsDir");
     
+    // add .librariesDir()
+    QUERY->add_mfun(QUERY, faust_libraries_set, "int", "librariesDir");
+    // add arguments
+    QUERY->add_arg(QUERY, "string", "librariesDir");
+    
     // add .panic()
     QUERY->add_mfun(QUERY, faust_panic, "void", "panic");
 
@@ -997,6 +1007,18 @@ CK_DLL_MFUN(faust_assets_set)
     std::string v = GET_NEXT_STRING_SAFE(ARGS);
     // call it
     f->setAssetsDir( v );
+    // return it
+    RETURN->v_int = 1;
+}
+
+CK_DLL_MFUN(faust_libraries_set)
+{
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // get value
+    std::string v = GET_NEXT_STRING_SAFE(ARGS);
+    // call it
+    f->setLibrariesDir( v );
     // return it
     RETURN->v_int = 1;
 }

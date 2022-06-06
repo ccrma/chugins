@@ -1,0 +1,3 @@
+import("stdfaust.lib");
+// stereo sine tone at 440 Hz.
+my_signal = os.osc(440.) <: _, _;
