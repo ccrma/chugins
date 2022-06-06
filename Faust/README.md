@@ -30,7 +30,19 @@ Create an environment variable `FAUST_DIR` which contains [Faust](https://github
 export FAUST_DIR=/some/path/to/faust
 ```
 
-In a Terminal/shell window in which `FAUST_DIR` has been set, navigate to this README and run either
+Build Libsndfile:
+```bash
+cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DENABLE_EXTERNAL_LIBS=off -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+cmake --build build --config Release
+```
+
+Create an environment variable `SndFile_DIR` which contains libsndfile, for example
+
+```bash
+export SndFile_DIR=/some/path/to/libsndfile/build
+```
+
+In a Terminal/shell window in which `FAUST_DIR` and `SndFile_DIR` have been set, navigate to this README and run either
 
 ```bash
 sh build_macos.sh

@@ -1,6 +1,9 @@
+rm "/usr/local/lib/chuck/Faust.chug"
+rm "/usr/local/lib/chuck/libfaust.2.dylib"
+
 mkdir build
 cd build
-cmake .. -DFAUST_DIR=$FAUST_DIR -G "Xcode"
+cmake .. -G "Xcode" -DFAUST_DIR=$FAUST_DIR -DSndFile_DIR=$SndFile_DIR -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
 cmake --build . --config Release
 
 # todo: if we can avoid this install_name_tool line, then we won't have to codesign manually below.

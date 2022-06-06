@@ -5,16 +5,18 @@
 // authors: Ge Wang (ge@ccrma.stanford.edu)
 //          Romain Michon (rmichon@ccrma.stanford.edu)
 // date: Spring 2016
+// author: David Braun (braun@ccrma.stanford.edu)
+// date: Summer 2022
 //
 // NOTE: be mindful of chuck/chugin compilation, particularly on OSX
 //       compiled for 10.5 chuck may not work well with 10.10 chugin!
 //-----------------------------------------------------------------------------
 
 #ifndef MAX_INPUTS
-  #define MAX_INPUTS 12
+  #define MAX_INPUTS 64
 #endif
 #ifndef MAX_OUTPUTS
-  #define MAX_OUTPUTS 12
+  #define MAX_OUTPUTS 64
 #endif
 
 // this should align with the correct versions of these ChucK files
@@ -33,8 +35,23 @@ using namespace std;
 
 // faust include
 #include "faust/dsp/llvm-dsp.h"
+#include "faust/dsp/proxy-dsp.h"
+#include "faust/dsp/poly-llvm-dsp.h"
+#include "faust/dsp/poly-interpreter-dsp.h"
+
+#include "faust/gui/meta.h"
+#include "faust/gui/FUI.h"
+#include "faust/gui/MidiUI.h"
 #include "faust/gui/UI.h"
 #include "faust/gui/PathBuilder.h"
+#include "faust/gui/GUI.h"
+//#include "faust/gui/JSONUI.h"
+#include "faust/gui/SoundUI.h"
+
+#include "faust/midi/rt-midi.h"
+#include "faust/midi/RtMidi.cpp"
+
+#include "TMutex.h"
 
 // declaration of chugin constructor
 CK_DLL_CTOR(faust_ctor);
@@ -48,11 +65,17 @@ CK_DLL_MFUN(faust_eval);
 CK_DLL_MFUN(faust_compile);
 CK_DLL_MFUN(faust_v_set);
 CK_DLL_MFUN(faust_v_get);
+CK_DLL_MFUN(faust_nvoices_get);
+CK_DLL_MFUN(faust_nvoices_set);
+CK_DLL_MFUN(faust_noteon);
+CK_DLL_MFUN(faust_noteoff);
+CK_DLL_MFUN(faust_panic);
 CK_DLL_MFUN(faust_dump);
 CK_DLL_MFUN(faust_ok);
 CK_DLL_MFUN(faust_error);
 CK_DLL_MFUN(faust_code);
 CK_DLL_MFUN(faust_test);
+
 
 // this is a special offset reserved for Chugin internal data
 t_CKINT faust_data_offset = 0;
@@ -60,6 +83,10 @@ t_CKINT faust_data_offset = 0;
 #ifndef FAUSTFLOAT
   #define FAUSTFLOAT float
 #endif
+
+std::list<GUI*> GUI::fGuiList;
+ztimedmap GUI::gTimedZoneMap;
+static int numCompiled = 0;
 
 //-----------------------------------------------------------------------------
 // name: class FauckUI
@@ -219,8 +246,12 @@ public:
         m_srate = fs;
         // clear
         m_factory = NULL;
+        m_poly_factory = NULL;
         m_dsp = NULL;
+        m_dsp_poly = NULL;
         m_ui = NULL;
+        m_midi_ui = NULL;
+        m_soundUI = NULL;
         // zero
         m_input = NULL;
         m_output = NULL;
@@ -230,6 +261,10 @@ public:
         // auto import
         m_autoImport = "// Faust Chugin auto import:\n \
         import(\"stdfaust.lib\");\n";
+        m_assetsDirPath = "";
+        m_faustLibrariesPath = "";
+        
+        clearMIDI();
     }
     
     // destructor
@@ -240,17 +275,90 @@ public:
         clearBufs();
     }
     
+    int getNVoices() {
+        return m_nvoices;
+    }
+    
+    int setNVoices(int nvoices) {
+        nvoices = std::max(0, nvoices);
+        m_nvoices = nvoices;
+        return m_nvoices;
+    }
+    
+    void noteOn(int pitch, int velocity) {
+        if (m_dsp_poly) {
+            int channel = 0;
+            m_dsp_poly->keyOn(channel, pitch, velocity);
+        }
+    }
+    
+    void noteOff(int pitch, int velocity) {
+        if (m_dsp_poly) {
+            int channel = 0;
+            m_dsp_poly->keyOff(channel, pitch, velocity);
+        }
+    }
+    
+    void sendAllNotesOff(int channel) {
+        if (m_dsp_poly) {
+            m_dsp_poly->ctrlChange(channel, m_dsp_poly->ALL_NOTES_OFF, 0);
+        }
+    }
+    
+    void panic() {
+        for (int i=0; i<16; i++) {
+            sendAllNotesOff(i);
+        }
+    }
+    
+    void sendPitchBend(int channel, int wheel) {
+        if (m_dsp_poly) {
+            m_dsp_poly->pitchWheel(channel, wheel);
+        }
+    }
+
+    void sendProgram(int channel, int pgm) {
+        if (m_dsp_poly) {
+            m_dsp_poly->progChange(channel, pgm);
+        }
+    }
+
+    void sendControl(int channel, int ctrl, int value) {
+        if (m_dsp_poly) {
+            m_dsp_poly->ctrlChange(channel, ctrl, value);
+        }
+    }
+    
     // clear
     void clear()
     {
-        // clean up, possibly
-        if( m_factory != NULL )
-        {
-            deleteDSPFactory( m_factory );
-            m_factory = NULL;
+        
+        // todo: do something with m_midi_handler
+        if (m_dsp_poly) {
+            m_midi_handler.removeMidiIn(m_dsp_poly);
+            m_midi_handler.stopMidi();
         }
+        if (m_midi_ui) {
+            m_midi_ui->removeMidiIn(m_dsp_poly);
+            m_midi_ui->stop();
+        }
+
         SAFE_DELETE(m_dsp);
         SAFE_DELETE(m_ui);
+        SAFE_DELETE(m_dsp_poly);
+        SAFE_DELETE(m_midi_ui);
+        SAFE_DELETE(m_soundUI);
+        
+        deleteDSPFactory(m_factory); m_factory = NULL;
+        SAFE_DELETE(m_poly_factory);
+        
+        clearMIDI();
+    }
+    
+    void clearMIDI() {
+        if (m_dsp_poly) {
+            m_dsp_poly->instanceClear();
+        }
     }
     
     // clear
@@ -303,10 +411,17 @@ public:
         clear();
         
         // arguments
-        const int argc = 0;
-        const char ** argv = NULL;
-        // optimization level
-        const int optimize = -1;
+        int argc = 0;
+        const char** argv = new const char* [128];
+        
+        if (std::strcmp(m_faustLibrariesPath, "") != 0) {
+            argv[argc++] = "--import-dir";
+            argv[argc++] = m_faustLibrariesPath;
+        }
+        //argv[argc++] = "-vec";
+        //argv[argc++] = "-vs";
+        //argv[argc++] = "128";
+        //argv[argc++] = "-dfs";
         
         // save
         m_code = code;
@@ -314,12 +429,36 @@ public:
         // auto import
         string theCode = m_autoImport + "\n" + code;
         
-        // create new factory
-        m_factory = createDSPFactoryFromString( "chuck", theCode,
-            argc, argv, "", m_errorString, optimize );
+        // optimization level
+        const int optimize = -1;
         
+#if __APPLE__
+    std::string target = getDSPMachineTarget();
+#else
+    std::string target = std::string("");
+#endif
+        
+        bool polyphonyIsOn = m_nvoices > 0;
+        
+        if (polyphonyIsOn) {
+            // create new factory
+            m_poly_factory = createPolyDSPFactoryFromString("chuck", theCode,
+                argc, argv, target.c_str(), m_errorString, optimize);
+        } else {
+            // create new factory
+            m_factory = createDSPFactoryFromString( "chuck", theCode,
+                argc, argv, target.c_str(), m_errorString, optimize );
+        }
+        
+        if (argv) {
+            for (int i = 0; i < argc; i++) {
+                argv[i] = NULL;
+            }
+            argv = NULL;
+        }
+
         // check for error
-        if( m_errorString != "" )
+        if( m_errorString != "")
         {
             // output error
             cerr << "[Faust]: " << m_errorString << endl;
@@ -329,28 +468,81 @@ public:
             return false;
         }
         
-        // create DSP instance
-        m_dsp = m_factory ->createDSPInstance();
+        //// print where faustlib is looking for stdfaust.lib and the other lib files.
+        //auto pathnames = m_factory->getIncludePathnames();
+        //cout << "pathnames:\n" << endl;
+        //for (auto name : pathnames) {
+        //    cout << name << "\n" << endl;
+        //}
+        //cout << "library list:\n" << endl;
+        //auto librarylist = m_factory->getLibraryList();
+        //for (auto name : librarylist) {
+        //    cout << name << "\n" << endl;
+        //}
+
+    #if __APPLE__
+        if (m_midi_enable) {
+            // Only macOS can support virtual MIDI in.
+            // Use case: you want to send MIDI programmatically to Faust from some other software/algorithm, not midi hardware
+            m_midi_handler = rt_midi(m_midi_virtual_name, m_midi_virtual);
+        }
+    #endif
+
+        if (polyphonyIsOn) {
+            m_dsp_poly = m_poly_factory->createPolyDSPInstance(m_nvoices, m_dynamicVoices, m_groupVoices);
+            if (!m_dsp_poly) {
+                cerr << "[Faust]: Cannot create Poly DSP instance." << endl;
+                return false;
+            }
+            if (m_midi_enable) {
+                m_midi_handler.addMidiIn(m_dsp_poly);
+            }
+        }
+        else {
+            // create DSP instance
+            m_dsp = m_factory->createDSPInstance();
+            if (!m_dsp) {
+                cerr << "[Faust]: Cannot create DSP instance." << endl;
+                return false;
+            }
+        }
         
+        dsp* theDsp = polyphonyIsOn ? m_dsp_poly : m_dsp;
+
+        // make new UI
+        if (m_midi_enable)
+        {
+            m_midi_ui = new MidiUI(&m_midi_handler);
+            theDsp->buildUserInterface(m_midi_ui);
+        }
+
         // make new UI
         m_ui = new FauckUI();
         // build ui
-        m_dsp->buildUserInterface( m_ui );
-        
-        // get channels
-        int inputs = m_dsp->getNumInputs();
-        int outputs = m_dsp->getNumOutputs();
-        
-        // see if we need to alloc
-        if( inputs > m_numInputChannels || outputs > m_numOutputChannels )
-        {
-            // clear and allocate
-            allocate( inputs, outputs );
+        theDsp->buildUserInterface( m_ui );
+        // build sound ui
+        if (strcmp(m_assetsDirPath, "") != 0) {
+            m_soundUI = new SoundUI(m_assetsDirPath, m_srate);
+            theDsp->buildUserInterface(m_soundUI);
         }
-        
+
+        // get channels
+        int inputs = theDsp->getNumInputs();
+        int outputs = theDsp->getNumOutputs();
+
+        // see if we need to alloc
+        if (inputs != m_numInputChannels || outputs != m_numOutputChannels) {
+            // clear and allocate
+            allocate(inputs, outputs);
+        }
+
         // init
-        m_dsp->init( (int)(m_srate + .5) );
-        
+        theDsp->init((int)(m_srate + .5));
+
+        if (m_midi_enable) {
+            m_midi_ui->run();
+        }
+
         return true;
     }
 
@@ -392,20 +584,57 @@ public:
     }
     
     void tick( SAMPLE * in, SAMPLE * out, int nframes ){
-      if( m_dsp != NULL ){
-        for(int f = 0; f < nframes; f++)
-        {			
-          for(int c = 0; c < m_numInputChannels; c++)
-          {
-            m_input[c][0] = in[f*m_numInputChannels+c];
-          }
-          m_dsp->compute( 1, m_input, m_output );
-          for(int c = 0; c < m_numOutputChannels; c++)
-          {
-            out[f*m_numOutputChannels+c] = m_output[c][0];
-          }
+        
+        bool polyphonyIsOn = m_nvoices > 0;
+        dsp* theDsp = polyphonyIsOn ? m_dsp_poly : m_dsp;
+        
+        if (!theDsp) {
+            // write zeros and return
+            for(int f = 0; f < nframes; f++)
+            {
+                for (int chan = 0; chan < m_numOutputChannels; chan++) {
+                    out[f*m_numOutputChannels+chan] = 0;
+            }
+            }
+            return;
         }
-      }
+        
+        int pitch = 0;
+        int pastVel = 0;
+        int velo = 0;
+
+        int numSamples = 0;
+        float* writePtr = nullptr;
+        float* readPtr = nullptr;
+        bool needGuiMutex = m_nvoices > 0 && polyphonyIsOn && m_groupVoices;
+
+        int controlSample = 0;
+        int midiSample = 0;
+                
+        // If polyphony is enabled and we're grouping voices,
+        // several voices might share the same parameters in a group.
+        // Therefore we have to call updateAllGuis to update all dependent parameters.
+        if (needGuiMutex) {
+            if (guiUpdateMutex.Lock()) {
+                // Have Faust update all GUIs.
+                GUI::updateAllGuis();
+
+                guiUpdateMutex.Unlock();
+            }
+        }
+        
+        for(int f = 0; f < nframes; f++)
+        {
+            for(int c = 0; c < m_numInputChannels; c++)
+            {
+                m_input[c][0] = in[f*m_numInputChannels+c];
+            }
+                theDsp->compute( 1, m_input, m_output );
+            for(int c = 0; c < m_numOutputChannels; c++)
+            {
+                out[f*m_numOutputChannels+c] = m_output[c][0];
+            }
+        }
     }
     
     // for Chugins extending UGen
@@ -413,14 +642,16 @@ public:
     SAMPLE tick( SAMPLE in )
     {
         // sanity check
-        if( m_dsp == NULL ) return 0;
+        dsp* theDsp = polyphonyIsOn ? m_dsp_poly : m_dsp;
+
+        if( theDsp == NULL ) return 0;
         
         // set input
         for( int i = 0; i < m_numInputChannels; i++ ) m_input[i][0] = in;
         // zero output
         for( int i = 0; i < m_numOutputChannels; i++ ) m_output[i][0] = 0;
         // compute samples
-        m_dsp->compute( 1, m_input, m_output );
+        theDsp->compute( 1, m_input, m_output );
         // average output
         t_CKFLOAT avg = 0;
         for( int i = 0; i < m_numOutputChannels; i++ ) avg += m_output[i][0];
@@ -456,8 +687,10 @@ private:
     string m_code;
     // llvm factory
     llvm_dsp_factory * m_factory;
+    llvm_dsp_poly_factory* m_poly_factory;
     // faust DSP object
     dsp * m_dsp;
+    dsp_poly* m_dsp_poly;
     // faust compiler error string
     string m_errorString;
     // auto import
@@ -473,6 +706,26 @@ private:
     
     // UI
     FauckUI * m_ui;
+    
+    TMutex guiUpdateMutex;
+    
+    const char* m_faustLibrariesPath;
+    const char* m_assetsDirPath;
+    
+    bool m_groupVoices = true;
+    bool m_dynamicVoices = true;
+
+    // input and output
+    int m_nvoices = 0;
+    bool m_midi_enable = false;
+    bool m_midi_virtual = false;
+    string m_midi_virtual_name = string("");
+
+    rt_midi m_midi_handler;
+
+    // UI
+    MidiUI* m_midi_ui = nullptr;
+    SoundUI* m_soundUI = nullptr;
 };
 
 
@@ -529,6 +782,29 @@ CK_DLL_QUERY( Faust )
     QUERY->add_mfun(QUERY, faust_v_get, "float", "v");
     // add argument
     QUERY->add_arg(QUERY, "string", "key");
+    
+    // add .nvoices()
+    QUERY->add_mfun(QUERY, faust_nvoices_set, "int", "nvoices");
+    // add arguments
+    QUERY->add_arg(QUERY, "int", "value");
+
+    // add .nvoices()
+    QUERY->add_mfun(QUERY, faust_nvoices_get, "int", "nvoices");
+    
+    // add .noteOn()
+    QUERY->add_mfun(QUERY, faust_noteon, "int", "noteOn");
+    // add arguments
+    QUERY->add_arg(QUERY, "int", "pitch");
+    QUERY->add_arg(QUERY, "int", "velocity");
+    
+    // add .noteOff()
+    QUERY->add_mfun(QUERY, faust_noteoff, "int", "noteOff");
+    // add arguments
+    QUERY->add_arg(QUERY, "int", "pitch");
+    QUERY->add_arg(QUERY, "int", "velocity");
+    
+    // add .panic()
+    QUERY->add_mfun(QUERY, faust_panic, "void", "panic");
 
     // add .dump()
     QUERY->add_mfun(QUERY, faust_dump, "void", "dump");
@@ -654,6 +930,60 @@ CK_DLL_MFUN(faust_v_get)
     std::string name = GET_NEXT_STRING_SAFE(ARGS);
     // call it
     RETURN->v_float = f->getParam( name );
+}
+
+CK_DLL_MFUN(faust_nvoices_set)
+{
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // get value
+    t_CKINT v = GET_NEXT_INT(ARGS);
+    // call it
+    v = f->setNVoices( v );
+    // return it
+    RETURN->v_int = v;
+}
+
+CK_DLL_MFUN(faust_nvoices_get)
+{
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // call it
+    RETURN->v_int = f->getNVoices();
+}
+
+CK_DLL_MFUN(faust_noteon)
+{
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // get value
+    t_CKINT pitch = GET_NEXT_INT(ARGS);
+    t_CKINT velocity = GET_NEXT_INT(ARGS);
+    // call it
+    f->noteOn(pitch, velocity);
+    // return it
+    RETURN->v_int = 1;
+}
+
+CK_DLL_MFUN(faust_noteoff)
+{
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // get value
+    t_CKINT pitch = GET_NEXT_INT(ARGS);
+    t_CKINT velocity = GET_NEXT_INT(ARGS);
+    // call it
+    f->noteOff(pitch, velocity);
+    // return it
+    RETURN->v_int = 1;
+}
+
+CK_DLL_MFUN(faust_panic)
+{
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // call it
+    f->panic();
 }
 
 CK_DLL_MFUN(faust_dump)

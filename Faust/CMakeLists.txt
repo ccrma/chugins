@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 project(FaucK VERSION 0.0.1)
 
 set(FAUST_DIR ${FAUST_DIR})
+set(SndFile_DIR ${SndFile_DIR})
 ## Create Faust
 message(STATUS "FaucK external")
 
@@ -29,8 +30,13 @@ add_library(FaucK SHARED ${ALL_FILES})
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 
+find_package(SndFile REQUIRED)
+target_link_libraries(${PROJECT_NAME} PUBLIC SndFile::sndfile)
+
 ## Link FaucK with faustlib
 include_directories(${FAUST_DIR}/architecture)
+include_directories(${FAUST_DIR}/compiler)
+include_directories(${FAUST_DIR}/compiler/utils)
 if(APPLE)
 target_link_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/libfaust/macOS-universal)
 elseif(WIN32)
@@ -101,6 +107,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     "__APPLE__;"
     "__MACH__;"
 )
+target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
 endif()
 
 ################################################################################
