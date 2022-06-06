@@ -11,25 +11,23 @@
 #include <cstring>
 
 /* -------------------------------------------------------------------- */
-
-/* -------------------------------------------------------------------- */
-SpectralImage::SpectralImage() :
+Image::Image() :
     m_data(nullptr)
-{
-}
+{}
 
-SpectralImage::~SpectralImage()
+Image::~Image()
 {
     if(m_data)
         stbi_image_free(m_data);
 }
 
 int
-SpectralImage::LoadFile(char const *filename, int resizeY, bool verbose)
+Image::LoadFile(char const *filename, bool verbose)
 {
-    int err=0;
+    int err = 0;
     if(m_data != nullptr)
         stbi_image_free(m_data);
+
     m_data = stbi_load(filename, &m_width, &m_height, &m_channels, 0);
     if(m_data)
     {
@@ -41,6 +39,45 @@ SpectralImage::LoadFile(char const *filename, int resizeY, bool verbose)
         else 
             base = filename;
         m_imageName = base;
+        if(verbose)
+        {
+            std::cerr << m_imageName.c_str() << " opened w, h, nch: " 
+                    << m_width << ", " << m_height << ", " << m_channels <<"\n";
+        }
+    }
+    else
+        err = -1;
+    return err;
+}
+
+int
+Image::GetSample(float x, float y, int *result)
+{
+    int err;
+    if(m_data != nullptr)
+    {
+        err = 0;
+    }
+    else
+        err = 1;
+    return err;
+}
+
+/* -------------------------------------------------------------------- */
+SpectralImage::SpectralImage()
+{
+}
+
+SpectralImage::~SpectralImage()
+{
+}
+
+int
+SpectralImage::LoadFile(char const *filename, int resizeY, bool verbose)
+{
+    int err = Image::LoadFile(filename, verbose);
+    if(!err)
+    {
         m_columnWeights.resize(resizeY*m_channels);
         if(m_height != resizeY)
         {
@@ -62,14 +99,11 @@ SpectralImage::LoadFile(char const *filename, int resizeY, bool verbose)
                     stbi_image_free(m_data);
                 m_data = output;
                 m_height = resizeY;
-            }
-        }
-        if(!err)
-        {
-            if(verbose)
-            {
-                std::cerr << m_imageName.c_str() << " opened w, h, nch: " 
-                    << m_width << ", " << m_height << ", " << m_channels <<"\n";
+                if(verbose)
+                {
+                    std::cerr << m_imageName.c_str() <<
+                    " resized to y:" << resizeY << "\n";
+                }
             }
         }
     }

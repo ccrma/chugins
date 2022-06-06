@@ -14,8 +14,6 @@ by an image file.
 for the purposes of producing control parameters for other audio processing
 tools.
 
-
-
 ## License
 
 DbImgTools are open-source.  Sub-components are subject to their own
