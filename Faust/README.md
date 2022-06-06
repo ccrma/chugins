@@ -8,100 +8,68 @@ FaucK should work both in the terminal and MiniAudicle (at least on Linux for th
 
 ## Compilation and Installation
 
-### OSX and Linux
-
-FaucK uses the "on-the-fly" LLVM based version of the Faust compiler (<http://faust.grame.fr>) also known as `libfaust`. Thus, in order to compile FaucK, Faust should be installed on your system. If you don't have it, get it from the Faust Git Repo (<https://github.com/grame-cncm/faust>). `faust` has a couple of dependencies so you might have to fix them before you can do anything. For instance, the `LLVM` developement files (we recommend version 3.8 or <) as well as `openssl` will be needed.
-
-Once you compiled and installed `faust`, you should be able to build FaucK. On Linux, just type:
-
-```
-make linux
-sudo make install
-```
-
-on OSX:
-
-```
-make osx
-sudo make install
-```
-
-Hopefully, everything went well and you're now ready to FaucK around!
-
-### Windows
-
-#### Overview
+### Faust
 
 These instructions will build a 64-bit Faust chugin. Therefore, it is **incompatible** with 32-bit `miniAudicle` and 32-bit `chuck.exe`.
 
-#### Preparation
+FaucK uses the "on-the-fly" LLVM based version of the Faust compiler (<http://faust.grame.fr>) also known as `libfaust`. Luckily, we've already compiled `libfaust` for you on various platforms (see [TD-Faust](https://github.com/DBraun/TD-Faust/) for more info). Thus, we only need the [Faust Libraries](https://faustlibraries.grame.fr/). If on macOS/Linux, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `/usr/local/share/faust/`. For example, this should result in the existence of this file: `/usr/local/share/faust/all.lib`. If on Windows, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `C:/Program Files (x86)/ChucK/share/faust` or wherever your ChucK is installed. What's important is that the `share` folder is next to the `bin` folder which contains `chuck.exe`.
+
+Next, download [Faust's source code](https://github.com/grame-cncm/faust) to a directory.
+
+### Building FaucK
+
+#### macOS/Linux
+
+##### Code-signing
+
+> On macOS, you must codesign the Faust.chug. To prepare to do this, you will set an environment variable. Find your Development Profile. Open Keychain Access, go to 'login' on the left, and look for something like Apple Development: example@example.com (ABCDE12345). Then in Terminal, run `export CODESIGN_IDENTITY="Apple Development: example@example.com (ABCDE12345)"` with your own info substituted. If you weren't able to find your profile, you need to create one. Open Xcode, go to "Accounts", add your Apple ID, click "Manage Certificates", and use the plus icon to add a profile. Then check Keychain Access again.
+
+Create an environment variable `FAUST_DIR` which contains [Faust](https://github.com/grame-cncm/faust). For example, 
+
+```bash
+export FAUST_DIR=/some/path/to/faust
+```
+
+In a Terminal/shell window in which `FAUST_DIR` has been set, navigate to this README and run either
+
+```bash
+sh build_macos.sh
+```
+
+or `sh build_linux.sh` on Linux.
+
+On macOS/Linux, the goal is to create two files inside `/usr/local/lib/chuck`:
+
+* `Faust.chug`
+* `libfaust.2.dylib`
+
+so check that these files exist. Then run chuck with a FaucK example.
+
+#### Windows
 
 Go to your Documents folder: `%USERPROFILE%/Documents`. Inside, create a `ChucK` folder. Inside this folder, create a `chugins` folder.
 
-Next, create a permanent environment variable `CHUCK_CHUGIN_PATH` and set it equal to `%USERPROFILE%/Documents/ChucK/chugins`.
+Next, create a **permanent** environment variable `CHUCK_CHUGIN_PATH` and set it equal to `%USERPROFILE%/Documents/ChucK/chugins`.
 
-#### Install FAUST
+Create an environment variable `FAUST_DIR` which contains [Faust](https://github.com/grame-cncm/faust). For example, 
 
-Download and use the latest `win64.exe` installer for [FAUST](https://github.com/grame-cncm/faust/releases).
-
-Copy the `.lib` files in `C:/Program Files/Faust/share/faust/` to `C:/Program Files (x86)/ChucK/share/faust` or wherever your ChucK is installed. What's important is that the `share` folder is next to the `bin` folder which contains `chuck.exe`.
-
-#### Using Prebuilt Everything
-
-To avoid compiling everything yourself, you may simply follow the instructions in this subsection.
-
-Copy `win-x64/Release/Faust.chug` to `%USERPROFILE%/Documents/ChucK/chugins`. Copy `win-x64/Release/faust.dll` to `C:/Program Files (x86)/ChucK/bin`.
-
-#### Building LLVM
-
-The remaining instructions involve cloning repositories to `C:/repos`. You can make changes if you want your repositories saved elsewhere.
-
-Clone the [LLVM Project](https://github.com/llvm/llvm-project) repository:
-`git clone https://github.com/llvm/llvm-project C:/repos/llvm-project`
-
-Configure with CMake:
 ```bash
-cd C:/repos/llvm-project/llvm
-mkdir build
-cd build
-cmake .. -G "Visual Studio 16 2019" -DLLVM_USE_CRT_DEBUG=MDd -DLLVM_USE_CRT_RELEASE=MD -DLLVM_BUILD_TESTS=Off -DCMAKE_INSTALL_PREFIX="./llvm" -Thost=x64
+set FAUST_DIR="C:/path/to/Faust"
 ```
 
-(Note that the `MD` flags build a dynamic library, whereas `MT` would have built a static library.)
+In a command window in which `FAUST_DIR` has been set, navigate to this README and run
 
-Then open `C:/repos/llvm-project/llvm/build/LLVM.sln` and build in Release/64. This will take at least 20 minutes.
-
-#### Building libfaust
-
-Clone the [FAUST](https://github.com/grame-cncm/faust/) repository:
-`git clone https://github.com/grame-cncm/faust.git C:/repos/faust`
-
-Libfaust is compiled as a step during the compilation of the Faust chugin, which comes next.
-
-#### Building Faust.chug
-
-Open a cmd window to the directory containing this README.
-
-Configure with CMake:
 ```bash
-mkdir build
-cd build
-set LLVM_DIR=C:/repos/llvm-project/llvm/build/lib/cmake/llvm
-cmake .. -DUSE_LLVM_CONFIG=off -DFAUST_DIR=C:/repos/faust
+call build_windows.bat
 ```
 
-Run this one more time:
-```bash
-cmake .. -DUSE_LLVM_CONFIG=off -DFAUST_DIR=C:/repos/faust
-```
+On Windows, the goal is to create two files inside `%USERPROFILE%/Documents/ChucK/chugins`:
 
-Then open `FaucK.sln` and build in Release/64.
+* `Faust.chug`
+* `faust.dll`
+* `sndfile.dll`
 
-#### Post-build
-
-Confirm that `%USERPROFILE%/Documents/ChucK/chugins` contains `Faust.chug`.
-
-Copy `C:/repos/faust/build/lib/Release/faust.dll` (about 30 MB) to `C:/Program Files (x86)/ChucK/bin/faust.dll`.
+so check that these files exist. Then run chuck.exe with a FaucK example.
 
 ## Using FaucK
 
@@ -142,6 +110,8 @@ foo.v("freq",440);
 ```
 
 Finally, the `dump` method can be called at any time to print a list of the parameters of the Faust object as well as their current value.  This is useful to observe large Faust programs that have a large number of parameters in complex grouping paths. Programmers can also directly copy the path of any parameter to control for use with the `v` method.
+
+You can debug why the Faust.chugin may not be loading with `chuck --verbose clarinet.ck` or any other FaucK example.
 
 ## Examples
 

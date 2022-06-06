@@ -1,3 +1,4 @@
 build/
 !win-x64/*/*.dll
 !win-x64/*/*.chug
+faustlibraries

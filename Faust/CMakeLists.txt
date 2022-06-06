@@ -3,23 +3,10 @@ cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 project(FaucK VERSION 0.0.1)
 
 set(FAUST_DIR ${FAUST_DIR})
-include(FaustLib.cmake)
 ## Create Faust
 message(STATUS "FaucK external")
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT FaucK)
-
-################################################################################
-# Set target arch type if empty. Visual studio solution generator provides it.
-################################################################################
-if(NOT CMAKE_VS_PLATFORM_NAME)
-    set(CMAKE_VS_PLATFORM_NAME "x64")
-endif()
-message("${CMAKE_VS_PLATFORM_NAME} architecture in use")
-
-if(NOT ("${CMAKE_VS_PLATFORM_NAME}" STREQUAL "x64"))
-    message(FATAL_ERROR "${CMAKE_VS_PLATFORM_NAME} arch is not supported!")
-endif()
 
 project(FaucK VERSION 0.0.1)
 
@@ -40,22 +27,29 @@ set(ALL_FILES
 
 add_library(FaucK SHARED ${ALL_FILES})
 
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
+
 ## Link FaucK with faustlib
 include_directories(${FAUST_DIR}/architecture)
-add_dependencies(${PROJECT_NAME} dynamiclib)
-target_link_libraries(${PROJECT_NAME} dynamiclib)
-
-## Link the Pure Data external with llvm
-find_package(LLVM REQUIRED CONFIG)
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-
-add_definitions(${LLVM_DEFINITIONS})
-include_directories(${LLVM_INCLUDE_DIRS})
+if(APPLE)
+target_link_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/libfaust/macOS-universal)
+elseif(WIN32)
+target_link_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/libfaust/windows-x86_64)
+else()
+target_link_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/libfaust/ubuntu-aarch64)
+target_link_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/libfaust/ubuntu-x86_64)
+endif()
+target_link_libraries(${PROJECT_NAME} PUBLIC faust)
 
 if(WIN32)
   # win sock 32
   target_link_libraries(${PROJECT_NAME} ws2_32)
+
+  # windows multimedia for rt midi
+  target_link_libraries(${PROJECT_NAME} winmm)
+  # more
+  target_link_libraries(${PROJECT_NAME} wsock32)
+  target_link_libraries(${PROJECT_NAME} dsound dinput8 dxguid)
 endif()
 
 if(MSVC)
@@ -87,6 +81,12 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     "$<$<CONFIG:Release>:"
         "NDEBUG"
     ">"
+    "_USRDLL;"
+    "FAUCK_EXPORTS"
+)
+
+if(WIN32)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
     "WIN32;"
     "_WIN32;"
     "_WINDOWS;"
@@ -94,8 +94,14 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     "__WINDOWS_DS__"
     __WINDOWS_MODERN__
     __PLATFORM_WIN32__
-    "FAUCK_EXPORTS"
 )
+elseif(APPLE)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    "__MACOSX_CORE__;"
+    "__APPLE__;"
+    "__MACH__;"
+)
+endif()
 
 ################################################################################
 # Compile and link options
