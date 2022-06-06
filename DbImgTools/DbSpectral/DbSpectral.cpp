@@ -1,8 +1,8 @@
 /* see comments in README.md */
 #define _USE_MATH_DEFINES
 #include "DbSpectral.h"
-#include "dbWindowing.h"
-#include "fftsg.h"
+#include "../lib/Windowing.h"
+#include "../lib/fftsg.h"
 
 #include <iostream>
 #include <functional>
@@ -25,7 +25,7 @@ DbSpectral::DbSpectral(float sampleRate) :
     m_mainThreadId = std::this_thread::get_id();
     m_workThread = std::thread(workThreadFunc, this);
     m_loadThread = std::thread(loadThreadFunc, this);
-    m_window = dbWindowing::Get(dbWindowing::k_Hann);
+    m_window = Windowing::Get(Windowing::k_Hann);
     m_freqRange[0] = m_nextFreqRange[0] = 100;
     m_freqRange[1] = m_nextFreqRange[1] = 4000;
     m_delayMax = 0.f;

@@ -19,11 +19,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include "concurrentQ.h"
-#include "fftsg.h"
-#include "ringbuffer.h"
-#include "image.h"
-#include "complexDelay.h"
+#include "../lib/concurrentQ.h"
+#include "../lib/fftsg.h"
+#include "../lib/ringbuffer.h"
+#include "../lib/image.h"
+#include "../lib/complexDelay.h"
 
 #include <thread>
 #include <mutex>
@@ -114,7 +114,7 @@ private:
     FFTSg m_fft;
     int m_fftSize; // samples, typical 2048
     int m_overlap; // samples, typical 512
-    class dbWindowing const *m_window;
+    class Windowing const *m_window;
     float m_mix;
 
     std::thread::id m_mainThreadId, m_workThreadId, m_loadThreadId;

@@ -1,5 +1,5 @@
-#ifndef dbWindowing_h
-#define dbWindowing_h
+#ifndef Windowing_h
+#define Windowing_h
 
 #include <cmath>
 #include <memory>
@@ -11,9 +11,9 @@ const int kDefaultTableLength = 8192;
 /**
  * a fixed-size windowing function with linearly interpolated weights.
  */
-static std::unique_ptr<class dbWindowing> sSingletons[6];
+static std::unique_ptr<class Windowing> sSingletons[6];
 
-class dbWindowing
+class Windowing
 {
 public:
     enum FilterType
@@ -26,13 +26,13 @@ public:
         k_PlanckTaper85, // for long grains (less fading at edges)
         k_PlanckTaper95 // for long grains (less fading at edges)
     };
-    static dbWindowing *Get(FilterType t=k_Sine)
+    static Windowing *Get(FilterType t=k_Sine)
     {
         unsigned i = (unsigned) t;
         if(!sSingletons[i])
         {
             // std::cout << "new window " << i << std::endl;
-            sSingletons[i] = std::unique_ptr<dbWindowing>(new dbWindowing(t));
+            sSingletons[i] = std::unique_ptr<Windowing>(new Windowing(t));
         }
         return sSingletons[i].get();
     }
@@ -75,13 +75,13 @@ public:
         }
     }
 
-    ~dbWindowing() // for unique_ptr destruction
+    ~Windowing() // for unique_ptr destruction
     {
         delete [] m_window;
     }
 
 private:
-    dbWindowing(FilterType t=k_Blackman, int len=8192)
+    Windowing(FilterType t=k_Blackman, int len=8192)
     {
         m_window = new float[len];
         switch(t)
