@@ -69,6 +69,7 @@ CK_DLL_MFUN(faust_nvoices_get);
 CK_DLL_MFUN(faust_nvoices_set);
 CK_DLL_MFUN(faust_noteon);
 CK_DLL_MFUN(faust_noteoff);
+CK_DLL_MFUN(faust_assets_set);
 CK_DLL_MFUN(faust_panic);
 CK_DLL_MFUN(faust_dump);
 CK_DLL_MFUN(faust_ok);
@@ -261,8 +262,8 @@ public:
         // auto import
         m_autoImport = "// Faust Chugin auto import:\n \
         import(\"stdfaust.lib\");\n";
-        m_assetsDirPath = "";
-        m_faustLibrariesPath = "";
+        m_assetsDirPath = string("");
+        m_faustLibrariesPath = string("");
         
         clearMIDI();
     }
@@ -303,6 +304,10 @@ public:
         if (m_dsp_poly) {
             m_dsp_poly->ctrlChange(channel, m_dsp_poly->ALL_NOTES_OFF, 0);
         }
+    }
+    
+    void setAssetsDir(const string & assetsDir) {
+        m_assetsDirPath = assetsDir;
     }
     
     void panic() {
@@ -414,9 +419,9 @@ public:
         int argc = 0;
         const char** argv = new const char* [128];
         
-        if (std::strcmp(m_faustLibrariesPath, "") != 0) {
+        if (m_faustLibrariesPath != "") {
             argv[argc++] = "--import-dir";
-            argv[argc++] = m_faustLibrariesPath;
+            argv[argc++] = m_faustLibrariesPath.c_str();
         }
         //argv[argc++] = "-vec";
         //argv[argc++] = "-vs";
@@ -521,8 +526,8 @@ public:
         // build ui
         theDsp->buildUserInterface( m_ui );
         // build sound ui
-        if (strcmp(m_assetsDirPath, "") != 0) {
-            m_soundUI = new SoundUI(m_assetsDirPath, m_srate);
+        if (m_assetsDirPath != "") {
+            m_soundUI = new SoundUI(m_assetsDirPath.c_str(), m_srate);
             theDsp->buildUserInterface(m_soundUI);
         }
 
@@ -709,8 +714,8 @@ private:
     
     TMutex guiUpdateMutex;
     
-    const char* m_faustLibrariesPath;
-    const char* m_assetsDirPath;
+    std::string m_faustLibrariesPath;
+    std::string m_assetsDirPath;
     
     bool m_groupVoices = true;
     bool m_dynamicVoices = true;
@@ -802,6 +807,11 @@ CK_DLL_QUERY( Faust )
     // add arguments
     QUERY->add_arg(QUERY, "int", "pitch");
     QUERY->add_arg(QUERY, "int", "velocity");
+    
+    // add .assetsDir()
+    QUERY->add_mfun(QUERY, faust_assets_set, "int", "assetsDir");
+    // add arguments
+    QUERY->add_arg(QUERY, "string", "assetsDir");
     
     // add .panic()
     QUERY->add_mfun(QUERY, faust_panic, "void", "panic");
@@ -974,6 +984,19 @@ CK_DLL_MFUN(faust_noteoff)
     t_CKINT velocity = GET_NEXT_INT(ARGS);
     // call it
     f->noteOff(pitch, velocity);
+    // return it
+    RETURN->v_int = 1;
+}
+
+
+CK_DLL_MFUN(faust_assets_set)
+{
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // get value
+    std::string v = GET_NEXT_STRING_SAFE(ARGS);
+    // call it
+    f->setAssetsDir( v );
     // return it
     RETURN->v_int = 1;
 }
