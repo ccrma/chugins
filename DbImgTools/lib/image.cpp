@@ -56,7 +56,14 @@ Image::GetSample(float x, float y, int *result)
     int err;
     if(m_data != nullptr)
     {
-        err = 0;
+        int ix = (m_width-1) * x;
+        int iy = m_height - (m_height-1) * y; // invert y (?)
+
+        unsigned char *pixel = m_data + m_channels * ix;
+        int rowStride = m_width * m_channels;
+        pixel += iy * rowStride;
+
+        *result = * reinterpret_cast<int *>(pixel); // rgba 
     }
     else
         err = 1;

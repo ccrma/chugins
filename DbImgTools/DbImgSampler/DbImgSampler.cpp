@@ -34,6 +34,17 @@ DbImgSampler::Load(char const *filename)
     m_loadQueue.Push(fn);
 }
 
+int
+DbImgSampler::GetSample(float x, float y, int *result)
+{
+    // scope for access to image
+    std::lock_guard<std::mutex> lock(m_loadImageLock);
+    if(m_image)
+        return m_image->GetSample(x, y, result);
+    else
+        return -1;
+}
+
 /* We anticipate multiple edits arriving in clumps and want
  * to limit the reload-image frequency.  If we haven't computed
  * "for a while", we schedule a updateRequest for later. Otherwise
@@ -79,17 +90,6 @@ DbImgSampler::loadImage(std::string nm) // invoked in loaderThread
         this->setImage(newImg, nm);
     else
         std::cerr << "DbImgSampler problem opening file " << nm << "\n";
-}
-
-int
-DbImgSampler::GetSample(float x, float y, int *result)
-{
-    // scope for access to image
-    std::lock_guard<std::mutex> lock(m_loadImageLock);
-    if(m_image)
-        return m_image->GetSample(x, y, result);
-    else
-        return -1;
 }
 
 // happens after loading
