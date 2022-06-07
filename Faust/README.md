@@ -10,13 +10,11 @@ concurrency mechanisms. The goal is to create an amalgam that plays to the stren
 
 ### Pre-requisites for all platforms
 
-You must install cmake and git so that they're accessible in Terminal/shell/cmd windows.
+You must install [cmake](https://cmake.org/download/) and [git](https://git-scm.com/downloads) so that they're accessible in Terminal/shell/cmd prompts.
 
 ### Faust
 
 FaucK uses the "on-the-fly" LLVM based version of the Faust compiler (<http://faust.grame.fr>) also known as `libfaust`. Luckily, we've already compiled `libfaust` for you on various platforms (see [TD-Faust](https://github.com/DBraun/TD-Faust/) for more info). However, we still need the [Faust Libraries](https://faustlibraries.grame.fr/). If on macOS/Linux, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `/usr/local/share/faust/`. For example, this should result in the existence of this file: `/usr/local/share/faust/all.lib`. If on Windows, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `C:/Program Files (x86)/ChucK/share/faust` or wherever your ChucK is installed. What's important is that the `share` folder is next to the `bin` folder which contains `chuck.exe`.
-
-Next, download [Faust's source code](https://github.com/grame-cncm/faust) to a directory.
 
 ### Building FaucK
 
@@ -36,9 +34,9 @@ Go to your Documents folder: `%USERPROFILE%/Documents`. Inside, create a `ChucK`
 
 Next, create a **permanent** environment variable `CHUCK_CHUGIN_PATH` and set it equal to `%USERPROFILE%/Documents/ChucK/chugins`.
 
-Navigate to this README and run `call build_windows.bat`.
+Navigate to this README in a cmd window and run `call build_windows.bat`.
 
-On Windows, the goal is to create `Faust.chug` inside `%USERPROFILE%/Documents/ChucK/chugins` and `faust.dll` and `sndfile.dll` inside `C:/Program Files (x86)/ChucK/bin/`, so check that these files exist. Then run chuck.exe with a FaucK example.
+On Windows, the goal is to create `Faust.chug` inside `%USERPROFILE%/Documents/ChucK/chugins` and both `faust.dll` and `sndfile.dll` inside `C:/Program Files (x86)/ChucK/bin/`, so check that these files exist. Then run chuck.exe with a FaucK example.
 
 ## Using FaucK
 
