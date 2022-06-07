@@ -173,7 +173,7 @@ private:
     bool m_fileWasRead = false;
 
     int numAllocated = 0;
-    ClipInfo m_clipInfo;
+    AbletonClipInfo m_clipInfo;
 
     const int ibs = 1024;
     const int channels = 2;
