@@ -3,10 +3,6 @@ cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 project(WarpBufChugin VERSION 0.0.1)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WarpBufChugin)
 
-if(MSVC)
-set(CMAKE_VS_PLATFORM_NAME "x64")
-endif()
-
 project(WarpBufChugin VERSION 0.0.1)
 
 ## libsamplerate - start
@@ -59,9 +55,9 @@ FILE(GLOB CK_SOURCES
 
 set(Sources
     "src/AbletonClipInfo.h"
-    "src/WarpBufChuginDLL.cpp"
     "src/WarpBufChugin.h"
     "src/WarpBufChugin.cpp"
+    "src/WarpBufChuginDLL.cpp"
 )
 
 source_group("Sources" FILES ${Sources})
@@ -73,31 +69,38 @@ add_library(WarpBufChugin SHARED ${CK_SOURCES} ${Sources} ${RUBBERBAND_SOURCES} 
 
 target_compile_definitions(WarpBufChugin
     PUBLIC
-        HAVE_LIBSAMPLERATE
-        HAVE_KISSFFT
+    HAVE_LIBSAMPLERATE
+    HAVE_KISSFFT
 
-        _USRDLL
-        NDEBUG
-        _NDEBUG
-        _MBCS
-        WarpBufChugin_EXPORTS
-        _LIB
+    _USRDLL
+    NDEBUG
+    _NDEBUG
+    _MBCS
+    WarpBufChugin_EXPORTS
+    _LIB
 )
 
 if(MSVC)
     target_compile_definitions(WarpBufChugin
         PUBLIC
-            NOMINMAX
-            _WINDOWS
-            WIN32
-            __WINDOWS_MODERN__
-            __PLATFORM_WIN32__
-            __WINDOWS_DS__
-            )
-else()
+        NOMINMAX
+        _WINDOWS
+        WIN32
+        __WINDOWS_MODERN__
+        __PLATFORM_WIN32__
+        __WINDOWS_DS__
+        )
+elseif(APPLE)
     target_compile_definitions(WarpBufChugin
         PUBLIC
         __MACOSX_CORE__
+        USE_PTHREADS
+    )   
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fPIC")
+else()
+    target_compile_definitions(WarpBufChugin
+        PUBLIC
+        __PLATFORM_LINUX__
         USE_PTHREADS
     )   
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fPIC")
@@ -155,7 +158,6 @@ if(MSVC)
 endif()
 
 if (MSVC)
-
   set_target_properties(${PROJECT_NAME} PROPERTIES
                         VS_DEBUGGER_COMMAND "C:\\Program\ Files\ (x86)\\ChucK\\bin\\chuck.exe"
                         VS_DEBUGGER_COMMAND_ARGUMENTS "..\\tests\\warpbuf_basic.ck")
@@ -170,5 +172,5 @@ else()
                      POST_BUILD
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      "$<TARGET_FILE:WarpBufChugin>"
-                     "~/Library/Application Support/ChucK/ChuGins/WarpBuf.chug")
+                     "/usr/local/lib/chuck/WarpBuf.chug")
 endif()

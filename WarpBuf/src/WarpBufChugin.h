@@ -23,6 +23,8 @@ using namespace std;
 #include "rubberband/RubberBandStretcher.h"
 #include "AbletonClipInfo.h"
 
+#define WARPBUF_MAX_OUTPUTS 16
+
 //-----------------------------------------------------------------------------
 // name: class WarpBufChugin
 // desc: WarpBufChugin for time-stretching and pitch-stretching (via Rubber Band library)
@@ -74,17 +76,17 @@ private:
     SNDFILE* sndfile;
     SF_INFO sfinfo;
     int sfReadPos = 0;
-    bool m_fileWasRead = false;
 
-    int numAllocated = 0;
+    int m_numAllocated = 0;
     AbletonClipInfo m_clipInfo;
 
     const int ibs = 1024;  // interleaved buffer size
-    const int channels = 2;
+    int m_channels = 0;
     double m_playHeadBeats = 0.; // measured in quarter notes
     bool m_play = true;
     double m_bpm = 120.;  // desired playback bpm (not the source bpm)
 
     void clearBufs();
-    void allocate(int numSamples);
+    void allocate(int numChannels, int numSamples);
+    void resetStretcher();
 };

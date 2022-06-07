@@ -6,6 +6,12 @@ WarpBufChugin::WarpBufChugin(t_CKFLOAT srate)
     m_srate = srate;
     memset(&sfinfo, 0, sizeof(SF_INFO));
 
+    this->resetStretcher();
+}
+
+void
+WarpBufChugin::resetStretcher() {
+
     using namespace RubberBand;
 
     RubberBandStretcher::Options options = 0;
@@ -50,67 +56,74 @@ WarpBufChugin::WarpBufChugin(t_CKFLOAT srate)
 
     m_rbstretcher = std::make_unique<RubberBand::RubberBandStretcher>(
         m_srate,
-        2,
+        sfinfo.channels,
         options,
         1.,
         1.);
-
-    m_nonInterleavedBuffer = new float* [channels];
-    for (int i = 0; i < channels; i++) {
-        m_nonInterleavedBuffer[i] = new float[ibs];
-    }
-    m_interleavedBuffer = new float[channels * ibs];
 
 }
 
 WarpBufChugin::~WarpBufChugin()
 {
     clearBufs();
-    delete[] m_interleavedBuffer;
-
-    if (m_nonInterleavedBuffer != NULL)
-    {
-        for (int i = 0; i < channels; i++) {
-            SAFE_DELETE_ARRAY(m_nonInterleavedBuffer[i]);
-        }
-    }
-    SAFE_DELETE_ARRAY(m_nonInterleavedBuffer);
-
     m_rbstretcher.release();
 }
 
-bool WarpBufChugin::getLoopEnable() {
+bool
+WarpBufChugin::getLoopEnable() {
     return m_clipInfo.loop_end;
 }
 
-void WarpBufChugin::setLoopEnable(bool enable) {
+void
+WarpBufChugin::setLoopEnable(bool enable) {
     m_clipInfo.loop_on = enable;
 }
 
 // clear
-void WarpBufChugin::clearBufs()
+void
+WarpBufChugin::clearBufs()
 {
     if (m_retrieveBuffer != NULL)
     {
-        for (int i = 0; i < channels; i++) {
+        for (int i = 0; i < m_channels; i++) {
             SAFE_DELETE_ARRAY(m_retrieveBuffer[i]);
         }
     }
     SAFE_DELETE_ARRAY(m_retrieveBuffer);
+
+    SAFE_DELETE_ARRAY(m_interleavedBuffer);
+
+    if (m_nonInterleavedBuffer != NULL)
+    {
+        for (int i = 0; i < m_channels; i++) {
+            SAFE_DELETE_ARRAY(m_nonInterleavedBuffer[i]);
+        }
+    }
+    SAFE_DELETE_ARRAY(m_nonInterleavedBuffer);
 }
 
 // allocate
-void WarpBufChugin::allocate(int numSamples)
+void
+WarpBufChugin::allocate(int numChannels, int numSamples)
 {
-    if (numAllocated == numSamples) {
+    if (m_numAllocated == numSamples && m_channels == numChannels) {
         return;
     }
-    numAllocated = numSamples;
 
     // clear
     clearBufs();
 
-    m_retrieveBuffer = new float * [channels];
+    m_channels = numChannels;
+    m_numAllocated = numSamples;
+
+    m_nonInterleavedBuffer = new float* [m_channels];
+    for (int i = 0; i < m_channels; i++) {
+        m_nonInterleavedBuffer[i] = new float[ibs];
+    }
+       
+    m_interleavedBuffer = new float[m_channels * ibs];
+    
+    m_retrieveBuffer = new float * [m_channels];
     // allocate buffers for each channel
     for (int i = 0; i < 2; i++) {
         // single sample for each
@@ -118,11 +131,13 @@ void WarpBufChugin::allocate(int numSamples)
     }
 }
 
-double WarpBufChugin::getPlayhead() {
+double
+WarpBufChugin::getPlayhead() {
     return m_playHeadBeats;
 }
 
-void WarpBufChugin::setPlayhead(double playhead) {
+void
+WarpBufChugin::setPlayhead(double playhead) {
 
     m_playHeadBeats = playhead;
 
@@ -134,7 +149,8 @@ void WarpBufChugin::setPlayhead(double playhead) {
     sf_seek(sndfile, sfReadPos, SEEK_SET);
 }
 
-double WarpBufChugin::getTranspose() {
+double
+WarpBufChugin::getTranspose() {
 
     double scale = m_rbstretcher->getPitchScale();
 
@@ -143,18 +159,21 @@ double WarpBufChugin::getTranspose() {
     return transpose;
 }
 
-void WarpBufChugin::setTranspose(double transpose) {
+void
+WarpBufChugin::setTranspose(double transpose) {
 
     float scale = std::pow(2., transpose/12.);
 
     m_rbstretcher->setPitchScale(scale);
 }
 
-double WarpBufChugin::getBPM() {
+double
+WarpBufChugin::getBPM() {
     return m_bpm;
 }
 
-void WarpBufChugin::setBPM(double bpm) {
+void
+WarpBufChugin::setBPM(double bpm) {
     if (bpm <= 0) {
         std::cerr << "Error: BPM must be positive." << std::endl;
         return;
@@ -162,20 +181,21 @@ void WarpBufChugin::setBPM(double bpm) {
     m_bpm = bpm;
 }
 
-void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
+void
+WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 {
+    allocate(sfinfo.channels, nframes);
+
     bool past_end_marker_and_loop_off = m_playHeadBeats > m_clipInfo.end_marker && !m_clipInfo.loop_on;
-    if (past_end_marker_and_loop_off || (!m_play) || (!m_fileWasRead)) {
+    if (m_channels==0 || sfinfo.channels == 0 || past_end_marker_and_loop_off || (!m_play)) {
         // write zeros
-        for (int chan = 0; chan < channels; chan++) {
+        for (int chan = 0; chan < WARPBUF_MAX_OUTPUTS; chan++) {
             for (int i = 0; i < nframes; i++) {
                 out[chan + 2 * i] = 0.;
             }
         }
         return;
     }
-
-    allocate(nframes);
 
     double _;
     double instant_bpm = -1.;
@@ -195,9 +215,10 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 
     int count = -1;
     int numAvailable = m_rbstretcher->available();
+    int allowedReadCount = 0;
     while (numAvailable < nframes) {
 
-        int allowedReadCount = m_clipInfo.loop_on ? std::min(ibs, (int)( loop_end_seconds*sfinfo.samplerate- sfReadPos)) : ibs;
+        allowedReadCount = m_clipInfo.loop_on ? std::min(ibs, (int)( loop_end_seconds*sfinfo.samplerate- sfReadPos)) : ibs;
 
         count = sf_readf_float(sndfile, m_interleavedBuffer, allowedReadCount);
         sfReadPos += count;
@@ -205,9 +226,9 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
             if (!m_clipInfo.loop_on) {
                 // we're not looping, so just fill with zeros.
                 count = ibs;
-                for (size_t c = 0; c < channels; c++) {
+                for (size_t c = 0; c < m_channels; c++) {
                     for (int i = 0; i < count; i++) {
-                        m_interleavedBuffer[i*channels+c] = 0.;
+                        m_interleavedBuffer[i*m_channels+c] = 0.;
                     }
                 }
             }
@@ -221,9 +242,9 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
             }
         }
 
-        for (size_t c = 0; c < channels; ++c) {
+        for (size_t c = 0; c < m_channels; ++c) {
             for (int i = 0; i < count; ++i) {
-                m_nonInterleavedBuffer[c][i] = m_interleavedBuffer[i * channels + c];
+                m_nonInterleavedBuffer[c][i] = m_interleavedBuffer[i * m_channels + c];
             }
         }
 
@@ -235,7 +256,7 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 
     //// copy from buffer to output.
     // out needs to receive alternating left/right channels.
-    for (int chan = 0; chan < channels; chan++) {
+    for (int chan = 0; chan < m_channels; chan++) {
         auto chanPtr = m_retrieveBuffer[chan];
         for (int i = 0; i < nframes; i++) {
             out[chan + 2 * i] = *chanPtr++;
@@ -244,8 +265,11 @@ void WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 }
 
 // return true if the file was read
-bool WarpBufChugin::read(const string& path) {
+bool
+WarpBufChugin::read(const string& path) {
     
+    memset(&sfinfo, 0, sizeof(SF_INFO));
+
     sndfile = sf_open(path.c_str(), SFM_READ, &sfinfo);
     if (!sndfile) {
         cerr << "ERROR: Failed to open input file \"" << path << "\": "
@@ -258,8 +282,6 @@ bool WarpBufChugin::read(const string& path) {
         return false;
     }
 
-    m_rbstretcher->reset();
-
     if (!m_clipInfo.readWarpFile((path + std::string(".asd")).c_str())) {
         // We didn't find a warp file, so assume it's 120 bpm.
         m_clipInfo.loop_start = 0.;
@@ -271,6 +293,8 @@ bool WarpBufChugin::read(const string& path) {
     }
 
     this->setPlayhead(m_clipInfo.start_marker);
+
+    this->resetStretcher();
 
     return true;
 }

@@ -52,8 +52,7 @@ CK_DLL_QUERY(WarpBuf)
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, warpbuf_dtor);
 
-    // stereo out
-    QUERY->add_ugen_funcf(QUERY, warpbuf_tick, NULL, 0, 2);
+    QUERY->add_ugen_funcf(QUERY, warpbuf_tick, NULL, 0, WARPBUF_MAX_OUTPUTS);
 
     QUERY->add_mfun(QUERY, warpbuf_getplay, "int", "play");
 

@@ -50,3 +50,9 @@ Run any of the test scripts: `chuck.exe "tests/warpbuf_basic.ck"`. You will need
 ## Licenses
 
 WarpBuf uses [Rubber Band Library](https://github.com/breakfastquay/rubberband/) and [libsamplerate](https://github.com/libsndfile/libsamplerate), so your usage of WarpBuf must obey their licenses.
+
+## Todo:
+
+* Get/set the list of warp markers
+* Optionally pre-read the entire audio buffer and hold it in a buffer.
+* Support other audio formats (MP3)
