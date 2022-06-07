@@ -35,7 +35,6 @@ set(RUBBERBAND_SRC_CPP
     src/system/Thread.cpp
     src/StretcherChannelData.cpp
     src/StretcherImpl.cpp
-
     src/kissfft/kiss_fft.c
     src/kissfft/kiss_fftr.c
     )
@@ -47,6 +46,9 @@ endforeach()
 
 set(RUBBERBAND_HEADERS 
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rubberband/rubberband/RubberBandStretcher.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rubberband/src/kissfft/kiss_fft.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rubberband/src/kissfft/kiss_fftr.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rubberband/src/kissfft/kiss_fft_log.h
 )
 ## Rubberband - end
 
@@ -69,7 +71,7 @@ add_library(WarpBufChugin SHARED ${CK_SOURCES} ${Sources} ${RUBBERBAND_SOURCES} 
 target_compile_definitions(WarpBufChugin
     PUBLIC
         HAVE_LIBSAMPLERATE
-        USE_KISSFFT
+        HAVE_KISSFFT
 
         _USRDLL
         NDEBUG
@@ -105,6 +107,7 @@ target_include_directories(WarpBufChugin PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../chuck/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Rubberband>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Rubberband/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Rubberband/src/kissfft>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/portable_endian/include>

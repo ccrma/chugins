@@ -1,5 +1,3 @@
-Bitcrusher b;
-
 WarpBuf s1 => dac;
 WarpBuf s2 => dac;
 

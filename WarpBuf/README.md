@@ -36,8 +36,9 @@ If on Windows, create an extra folder for your chugins, `%USERPROFILE%/Documents
 
 In `chugins/WarpBuf`, open a command window on Windows or Terminal window on macOS:
 
-```
-cmake -Bbuild
+```bash
+cmake -Bbuild .
+cmake --build build --config Release
 ```
 
 Then open `chugins/WarpBuf/build/WarpBufChugin.sln` and build in 64-bit Release mode. You should see a new WarpBuf.chug file in the chugins folder you created earlier.
@@ -48,4 +49,4 @@ Run any of the test scripts: `chuck.exe "tests/warpbuf_basic.ck"`. You will need
 
 ## Licenses
 
-WarpBuf uses [rubberband](https://github.com/breakfastquay/rubberband/) and [libsamplerate](https://github.com/libsndfile/libsamplerate), so your usage of WarpBuf must obey their licenses.
+WarpBuf uses [Rubber Band Library](https://github.com/breakfastquay/rubberband/) and [libsamplerate](https://github.com/libsndfile/libsamplerate), so your usage of WarpBuf must obey their licenses.
