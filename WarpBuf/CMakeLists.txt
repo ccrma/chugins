@@ -59,6 +59,8 @@ FILE(GLOB CK_SOURCES
 
 set(Sources
     "src/AbletonClipInfo.h"
+    "src/WarpBufChuginDLL.cpp"
+    "src/WarpBufChugin.h"
     "src/WarpBufChugin.cpp"
 )
 
