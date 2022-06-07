@@ -455,7 +455,7 @@ public:
     std::string target = std::string("");
 #endif
         
-        bool polyphonyIsOn = m_nvoices > 0;
+        const bool polyphonyIsOn = m_nvoices > 0;
         
         if (polyphonyIsOn) {
             // create new factory
@@ -602,31 +602,22 @@ public:
     
     void tick( SAMPLE * in, SAMPLE * out, int nframes ){
         
-        bool polyphonyIsOn = m_nvoices > 0;
+        const bool polyphonyIsOn = m_nvoices > 0;
         dsp* theDsp = polyphonyIsOn ? m_dsp_poly : m_dsp;
         
         if (!theDsp) {
             // write zeros and return
             for(int f = 0; f < nframes; f++)
             {
-                for (int chan = 0; chan < m_numOutputChannels; chan++) {
+                for (int chan = 0; chan < m_numOutputChannels; chan++)
+                {
                     out[f*m_numOutputChannels+chan] = 0;
-            }
+                }
             }
             return;
         }
         
-        int pitch = 0;
-        int pastVel = 0;
-        int velo = 0;
-
-        int numSamples = 0;
-        float* writePtr = nullptr;
-        float* readPtr = nullptr;
         bool needGuiMutex = m_nvoices > 0 && polyphonyIsOn && m_groupVoices;
-
-        int controlSample = 0;
-        int midiSample = 0;
                 
         // If polyphony is enabled and we're grouping voices,
         // several voices might share the same parameters in a group.
@@ -646,7 +637,9 @@ public:
             {
                 m_input[c][0] = in[f*m_numInputChannels+c];
             }
-                theDsp->compute( 1, m_input, m_output );
+            
+            theDsp->compute( 1, m_input, m_output );
+            
             for(int c = 0; c < m_numOutputChannels; c++)
             {
                 out[f*m_numOutputChannels+c] = m_output[c][0];
@@ -744,8 +737,6 @@ private:
     MidiUI* m_midi_ui = nullptr;
     SoundUI* m_soundUI = nullptr;
 };
-
-
 
 
 //-----------------------------------------------------------------------------
@@ -876,9 +867,6 @@ CK_DLL_QUERY( Faust )
     return TRUE;
 }
 
-
-
-
 // implementation for the constructor
 CK_DLL_CTOR(faust_ctor)
 {
@@ -891,7 +879,6 @@ CK_DLL_CTOR(faust_ctor)
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, faust_data_offset) = (t_CKINT) f_obj;
 }
-
 
 // implementation for the destructor
 CK_DLL_DTOR(faust_dtor)
@@ -907,7 +894,6 @@ CK_DLL_DTOR(faust_dtor)
         f_obj = NULL;
     }
 }
-
 
 // implementation for tick function
 CK_DLL_TICKF(faust_tickf)

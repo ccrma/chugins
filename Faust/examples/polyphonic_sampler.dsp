@@ -59,7 +59,7 @@ frdtable(N, S, init, idx) =
 process = frdtable(LAGRANGE_ORDER, S, soundfile_table_L, ridx),
           frdtable(LAGRANGE_ORDER, S, soundfile_table_R, ridx) <: sp.stereoize(_*finalGain)
 with {
-	finalGain = gain*envVol*0.5;
+	finalGain = gain*envVol*0.2;
 };
 // polyphonic DSP code must declare a stereo effect
 effect = _, _;
