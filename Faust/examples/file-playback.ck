@@ -1,18 +1,16 @@
 // name: file-playback.ck
-// desc: demo of Faust chugin in action!
+// desc: Play a short audio file like a polyphonic "sampler"
 
 // instantiate and connect faust => ck
-Faust playback;
+Faust playback => dac;
+
+5 => playback.numVoices;
 
 me.dir() + "assets" => string assetsDir => playback.assetsDir;
 <<< "assetsDir: ", assetsDir >>>;
 
-5 => playback.nvoices;
-
 // evaluate file playback
 playback.compile("polyphonic_sampler.dsp");
-
-playback => dac;
 
 // time loop
 while( true )

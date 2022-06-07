@@ -69,8 +69,13 @@ CK_DLL_MFUN(faust_nvoices_get);
 CK_DLL_MFUN(faust_nvoices_set);
 CK_DLL_MFUN(faust_noteon);
 CK_DLL_MFUN(faust_noteoff);
+CK_DLL_MFUN(faust_pitchwheel);
+CK_DLL_MFUN(faust_progchange);
+CK_DLL_MFUN(faust_ctrlchange);
+CK_DLL_MFUN(faust_noteoff);
 CK_DLL_MFUN(faust_assets_set);
 CK_DLL_MFUN(faust_libraries_set);
+CK_DLL_MFUN(faust_groupvoices_set);
 CK_DLL_MFUN(faust_panic);
 CK_DLL_MFUN(faust_dump);
 CK_DLL_MFUN(faust_ok);
@@ -315,25 +320,29 @@ public:
         m_faustLibrariesPath = librariesDir;
     }
     
+    void setGroupVoices(bool groupVoices) {
+        m_groupVoices = groupVoices;
+    }
+    
     void panic() {
         for (int i=0; i<16; i++) {
             sendAllNotesOff(i);
         }
     }
     
-    void sendPitchBend(int channel, int wheel) {
+    void pitchWheel(int channel, int wheel) {
         if (m_dsp_poly) {
             m_dsp_poly->pitchWheel(channel, wheel);
         }
     }
 
-    void sendProgram(int channel, int pgm) {
+    void progChange(int channel, int pgm) {
         if (m_dsp_poly) {
             m_dsp_poly->progChange(channel, pgm);
         }
     }
 
-    void sendControl(int channel, int ctrl, int value) {
+    void ctrlChange(int channel, int ctrl, int value) {
         if (m_dsp_poly) {
             m_dsp_poly->ctrlChange(channel, ctrl, value);
         }
@@ -794,12 +803,12 @@ CK_DLL_QUERY( Faust )
     QUERY->add_arg(QUERY, "string", "key");
     
     // add .nvoices()
-    QUERY->add_mfun(QUERY, faust_nvoices_set, "int", "nvoices");
+    QUERY->add_mfun(QUERY, faust_nvoices_set, "int", "numVoices");
     // add arguments
     QUERY->add_arg(QUERY, "int", "value");
 
     // add .nvoices()
-    QUERY->add_mfun(QUERY, faust_nvoices_get, "int", "nvoices");
+    QUERY->add_mfun(QUERY, faust_nvoices_get, "int", "numVoices");
     
     // add .noteOn()
     QUERY->add_mfun(QUERY, faust_noteon, "int", "noteOn");
@@ -813,6 +822,25 @@ CK_DLL_QUERY( Faust )
     QUERY->add_arg(QUERY, "int", "pitch");
     QUERY->add_arg(QUERY, "int", "velocity");
     
+    // add .pitchWheel()
+    QUERY->add_mfun(QUERY, faust_pitchwheel, "int", "pitchWheel");
+    // add arguments
+    QUERY->add_arg(QUERY, "int", "pitch");
+    QUERY->add_arg(QUERY, "int", "wheel");
+    
+    // add .progChange()
+    QUERY->add_mfun(QUERY, faust_progchange, "int", "progChange");
+    // add arguments
+    QUERY->add_arg(QUERY, "int", "channel");
+    QUERY->add_arg(QUERY, "int", "pgm");
+    
+    // add .ctrlChange()
+    QUERY->add_mfun(QUERY, faust_ctrlchange, "int", "ctrlChange");
+    // add arguments
+    QUERY->add_arg(QUERY, "int", "channel");
+    QUERY->add_arg(QUERY, "int", "ctrl");
+    QUERY->add_arg(QUERY, "int", "value");
+    
     // add .assetsDir()
     QUERY->add_mfun(QUERY, faust_assets_set, "int", "assetsDir");
     // add arguments
@@ -822,6 +850,11 @@ CK_DLL_QUERY( Faust )
     QUERY->add_mfun(QUERY, faust_libraries_set, "int", "librariesDir");
     // add arguments
     QUERY->add_arg(QUERY, "string", "librariesDir");
+    
+    // add .groupVoices()
+    QUERY->add_mfun(QUERY, faust_groupvoices_set, "int", "groupVoices");
+    // add arguments
+    QUERY->add_arg(QUERY, "int", "groupVoices");
     
     // add .panic()
     QUERY->add_mfun(QUERY, faust_panic, "void", "panic");
@@ -998,6 +1031,45 @@ CK_DLL_MFUN(faust_noteoff)
     RETURN->v_int = 1;
 }
 
+CK_DLL_MFUN(faust_pitchwheel)
+{
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // get value
+    t_CKINT channel = GET_NEXT_INT(ARGS);
+    t_CKINT wheel = GET_NEXT_INT(ARGS);
+    // call it
+    f->pitchWheel(channel, wheel);
+    // return it
+    RETURN->v_int = 1;
+}
+
+CK_DLL_MFUN(faust_progchange)
+{
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // get value
+    t_CKINT channel = GET_NEXT_INT(ARGS);
+    t_CKINT pgm = GET_NEXT_INT(ARGS);
+    // call it
+    f->progChange(channel, pgm);
+    // return it
+    RETURN->v_int = 1;
+}
+
+CK_DLL_MFUN(faust_ctrlchange)
+{
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // get value
+    t_CKINT channel = GET_NEXT_INT(ARGS);
+    t_CKINT ctrl = GET_NEXT_INT(ARGS);
+    t_CKINT value = GET_NEXT_INT(ARGS);
+    // call it
+    f->ctrlChange(channel, ctrl, value);
+    // return it
+    RETURN->v_int = 1;
+}
 
 CK_DLL_MFUN(faust_assets_set)
 {
@@ -1019,6 +1091,18 @@ CK_DLL_MFUN(faust_libraries_set)
     std::string v = GET_NEXT_STRING_SAFE(ARGS);
     // call it
     f->setLibrariesDir( v );
+    // return it
+    RETURN->v_int = 1;
+}
+
+CK_DLL_MFUN(faust_groupvoices_set)
+{
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // get value
+    bool v = GET_NEXT_INT(ARGS);
+    // call it
+    f->setGroupVoices( v );
     // return it
     RETURN->v_int = 1;
 }

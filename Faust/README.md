@@ -4,15 +4,13 @@ FaucK is a Chugin allowing to combine the powerful, succinct [Functional AUdio S
 FaucK allows programmers to on-the-fly evaluate Faust code directly from ChucK code and control Faust signal processors using ChucK’s sample-precise timing and
 concurrency mechanisms. The goal is to create an amalgam that plays to the strengths of each language, giving rise to new possibilities for rapid prototyping, interaction design and controller mapping, pedagogy, and new ways of working with both Faust and ChucK. 
 
-FaucK should work both in the terminal and MiniAudicle (at least on Linux for the latest). 
+**FaucK should work both in the terminal with 64-bit `chuck` and 64-bit MiniAudicle.**
 
 ## Compilation and Installation
 
 ### Faust
 
-These instructions will build a 64-bit Faust chugin. Therefore, it is **incompatible** with 32-bit `miniAudicle` and 32-bit `chuck.exe`.
-
-FaucK uses the "on-the-fly" LLVM based version of the Faust compiler (<http://faust.grame.fr>) also known as `libfaust`. Luckily, we've already compiled `libfaust` for you on various platforms (see [TD-Faust](https://github.com/DBraun/TD-Faust/) for more info). Thus, we only need the [Faust Libraries](https://faustlibraries.grame.fr/). If on macOS/Linux, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `/usr/local/share/faust/`. For example, this should result in the existence of this file: `/usr/local/share/faust/all.lib`. If on Windows, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `C:/Program Files (x86)/ChucK/share/faust` or wherever your ChucK is installed. What's important is that the `share` folder is next to the `bin` folder which contains `chuck.exe`.
+FaucK uses the "on-the-fly" LLVM based version of the Faust compiler (<http://faust.grame.fr>) also known as `libfaust`. Luckily, we've already compiled `libfaust` for you on various platforms (see [TD-Faust](https://github.com/DBraun/TD-Faust/) for more info). However, we still need the [Faust Libraries](https://faustlibraries.grame.fr/). If on macOS/Linux, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `/usr/local/share/faust/`. For example, this should result in the existence of this file: `/usr/local/share/faust/all.lib`. If on Windows, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `C:/Program Files (x86)/ChucK/share/faust` or wherever your ChucK is installed. What's important is that the `share` folder is next to the `bin` folder which contains `chuck.exe`.
 
 Next, download [Faust's source code](https://github.com/grame-cncm/faust) to a directory.
 
@@ -30,25 +28,19 @@ Create an environment variable `FAUST_DIR` which contains [Faust](https://github
 export FAUST_DIR=/some/path/to/faust
 ```
 
-Build Libsndfile:
+Download [Libsndfile](https://github.com/libsndfile/libsndfile) to a directory. Navigate to it in a Terminal/shell window. Then,
 ```bash
 cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DENABLE_EXTERNAL_LIBS=off -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
 cmake --build build --config Release
 ```
 
-Create an environment variable `SndFile_DIR` which contains libsndfile, for example
+Create an environment variable `SndFile_DIR` which contains the new `build` folder, for example
 
 ```bash
 export SndFile_DIR=/some/path/to/libsndfile/build
 ```
 
-In a Terminal/shell window in which `FAUST_DIR` and `SndFile_DIR` have been set, navigate to this README and run either
-
-```bash
-sh build_macos.sh
-```
-
-or `sh build_linux.sh` on Linux.
+In a Terminal/shell window in which `FAUST_DIR` and `SndFile_DIR` have been set, navigate to this README and run either `sh build_macos.sh` or `sh build_linux.sh`.
 
 On macOS/Linux, the goal is to create two files inside `/usr/local/lib/chuck`:
 
@@ -66,14 +58,15 @@ Next, create a **permanent** environment variable `CHUCK_CHUGIN_PATH` and set it
 Create an environment variable `FAUST_DIR` which contains [Faust](https://github.com/grame-cncm/faust). For example, 
 
 ```bash
-set FAUST_DIR="C:/path/to/Faust"
+set FAUST_DIR="C:/path/to/faust"
 ```
 
-In a command window in which `FAUST_DIR` has been set, navigate to this README and run
-
+Download precompiled [Libsndfile](https://github.com/libsndfile/libsndfile/releases/download/1.0.31/libsndfile-1.0.31-win64.zip) and unzip it to a directory. Set an environment variable for it:
 ```bash
-call build_windows.bat
+set SndFile_DIR="C:/path/to/libsndfile-1.0.31-win64/cmake"
 ```
+
+In a command window in which `FAUST_DIR` and `SndFile_DIR` have been set, navigate to this README and run `call build_windows.bat`.
 
 On Windows, the goal is to create two files inside `%USERPROFILE%/Documents/ChucK/chugins`:
 
@@ -111,7 +104,7 @@ Alternately, the same object can load a Faust program from the file system by in
 foo.compile("osc.dsp");
 ```
 
-Next, the `v` method can be called at anytime to change the value of a specific parameter defined on the Faust object that is specified by its path (`v` stands for "value"; we chose this abbreviation in anticipation that most program will invoke this method often). For example, here we create a sine wave oscillator whose only parameter is its frequency (`freq`) and we set it to 440Hz: 
+Next, the `v` method can be called at anytime to change the value of a specific parameter defined on the Faust object that is specified by its path (`v` stands for "value"; we chose this abbreviation in anticipation that most program will invoke this method often). For example, here we create a sine wave oscillator whose only parameter is its frequency (`freq`) and we set it to 440 Hz: 
 
 ```
 foo.eval(`
@@ -123,13 +116,15 @@ foo.v("freq",440);
 
 Finally, the `dump` method can be called at any time to print a list of the parameters of the Faust object as well as their current value.  This is useful to observe large Faust programs that have a large number of parameters in complex grouping paths. Programmers can also directly copy the path of any parameter to control for use with the `v` method.
 
-You can debug why the Faust.chugin may not be loading with `chuck --verbose clarinet.ck` or any other FaucK example.
+### Polyphony
+
+Polyphony is supported. You simply need to provide DSP code that refers to correctly named parameters such as `freq` or `note`, `gain`, and `gate`. For more information, see the FAUST [manual](https://faustdoc.grame.fr/manual/midi/#standard-polyphony-parameters). For polyphony, you must set the number of voices to 1 or higher with the `numVoices` function. The default (0) disables polyphony. Refer to `examples/polyphony-simple.ck`.
 
 ## Examples
 
-Examples can be found in the `examples` folder of the FaucK distribution: <https://github.com/ccrma/chugins/tree/master/Faust/examples>
+Examples can be found in the `examples` folder of the FaucK distribution: <https://github.com/ccrma/chugins/tree/master/Faust/examples>. You can debug why the Faust.chugin may not be loading with `chuck --verbose clarinet.ck` or any other FaucK example.
 
 ## Other Resources
 
 * Check out the 2016 SMC paper on FaucK: Ge Wang and Romain Michon, *FaucK!! Hybridizing the Faust and ChucK Audio Programming Languages*
-* For other questions, feel free to e-mail Romain Michon: rmichon_AT_ccrma_DOT_stanford_DOT_edu
+* For other questions, feel free to e-mail Romain Michon: rmichon_AT_ccrma_DOT_stanford_DOT_edu or David Braun: braun_AT_ccrma_DOT_stanford_DOT_edu.
