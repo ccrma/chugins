@@ -55,26 +55,9 @@ Go to your Documents folder: `%USERPROFILE%/Documents`. Inside, create a `ChucK`
 
 Next, create a **permanent** environment variable `CHUCK_CHUGIN_PATH` and set it equal to `%USERPROFILE%/Documents/ChucK/chugins`.
 
-Create an environment variable `FAUST_DIR` which contains [Faust](https://github.com/grame-cncm/faust). For example, 
+Navigate to this README and run `call build_windows.bat`.
 
-```bash
-set FAUST_DIR="C:/path/to/faust"
-```
-
-Download precompiled [Libsndfile](https://github.com/libsndfile/libsndfile/releases/download/1.0.31/libsndfile-1.0.31-win64.zip) and unzip it to a directory. Set an environment variable for it:
-```bash
-set SndFile_DIR="C:/path/to/libsndfile-1.0.31-win64/cmake"
-```
-
-In a command window in which `FAUST_DIR` and `SndFile_DIR` have been set, navigate to this README and run `call build_windows.bat`.
-
-On Windows, the goal is to create two files inside `%USERPROFILE%/Documents/ChucK/chugins`:
-
-* `Faust.chug`
-* `faust.dll`
-* `sndfile.dll`
-
-so check that these files exist. Then run chuck.exe with a FaucK example.
+On Windows, the goal is to create `Faust.chug` inside `%USERPROFILE%/Documents/ChucK/chugins` and `faust.dll` and `sndfile.dll` inside `C:/Program Files (x86)/ChucK/bin/`, so check that these files exist. Then run chuck.exe with a FaucK example.
 
 ## Using FaucK
 
@@ -120,9 +103,32 @@ Finally, the `dump` method can be called at any time to print a list of the para
 
 Polyphony is supported. You simply need to provide DSP code that refers to correctly named parameters such as `freq` or `note`, `gain`, and `gate`. For more information, see the FAUST [manual](https://faustdoc.grame.fr/manual/midi/#standard-polyphony-parameters). For polyphony, you must set the number of voices to 1 or higher with the `numVoices` function. The default (0) disables polyphony. Refer to `examples/polyphony-simple.ck`.
 
+### Full API
+
+A Faust Chugin has the following functions:
+* `void dump()` Print out information about the Faust parameters in the ChucK console.
+* `void v(string name, float value)` Set a value for a named parameter.
+* `float v(string name)` Get a value for a named parameter.
+* `void panic()` Turn off all voices if polyphony is active.
+* `void eval(string code)` Evaluate a string of Faust code.
+* `void compile(string filepath)` Load and evaluate Faust code from a file path.
+* `void assetsDir(string dirpath)` Set the directory containing soundfiles which you want Faust to load.
+* `void librariesDir(string dirpath)` Set the directory containing your custom Faust `.lib` files.
+* `int numVoices(int value)` Get/set the number of voices. The default (0) has polyphony disabled.
+* `void groupVoices(int groupVoices)` Enable/disable grouping of voices, if polyphony is enabled. Not grouping voices results in having unique parameters for each voice.
+* `void noteOn(int pitch, int velocity)` Turn on a note if polyphony is active.
+* `void noteOff(int pitch, int velocity)` Turn off a note if polyphony is active.
+* `void pitchWheel(int pitch, int wheel)`
+* `void progChange(int channel, int pgm)`
+* `void ctrlChange(int channel, int ctrl, int value)`
+* `void ok()`: **todo**
+* `void error()` **todo**
+* `void code()` **todo**
+* `void test()` **todo**
+
 ## Examples
 
-Examples can be found in the `examples` folder of the FaucK distribution: <https://github.com/ccrma/chugins/tree/master/Faust/examples>. You can debug why the Faust.chugin may not be loading with `chuck --verbose clarinet.ck` or any other FaucK example.
+Examples can be found in the `examples` folder of the FaucK distribution: <https://github.com/ccrma/chugins/tree/master/Faust/examples>. You can debug why the Faust.chugin may not be loading with `chuck --verbose:10 --level:10 crybaby.ck` or any other FaucK example.
 
 ## Other Resources
 

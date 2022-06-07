@@ -72,7 +72,6 @@ CK_DLL_MFUN(faust_noteoff);
 CK_DLL_MFUN(faust_pitchwheel);
 CK_DLL_MFUN(faust_progchange);
 CK_DLL_MFUN(faust_ctrlchange);
-CK_DLL_MFUN(faust_noteoff);
 CK_DLL_MFUN(faust_assets_set);
 CK_DLL_MFUN(faust_libraries_set);
 CK_DLL_MFUN(faust_groupvoices_set);
@@ -81,7 +80,6 @@ CK_DLL_MFUN(faust_dump);
 CK_DLL_MFUN(faust_ok);
 CK_DLL_MFUN(faust_error);
 CK_DLL_MFUN(faust_code);
-CK_DLL_MFUN(faust_test);
 
 
 // this is a special offset reserved for Chugin internal data
@@ -786,11 +784,6 @@ CK_DLL_QUERY( Faust )
     // add argument
     QUERY->add_arg(QUERY, "string", "path");
 
-    // add .test()
-    QUERY->add_mfun(QUERY, faust_test, "int", "test");
-    // add argument
-    QUERY->add_arg(QUERY, "int", "code");
-
     // add .v()
     QUERY->add_mfun(QUERY, faust_v_set, "float", "v");
     // add arguments
@@ -937,18 +930,6 @@ CK_DLL_MFUN(faust_eval)
     std::string code = GET_NEXT_STRING_SAFE(ARGS);
     // eval it
     RETURN->v_int = f->eval( code );
-}
-
-CK_DLL_MFUN(faust_test)
-{
-    // get our c++ class pointer
-    Faust * f = (Faust *) OBJ_MEMBER_INT(SELF, faust_data_offset);
-    // get argument
-    t_CKINT x = GET_NEXT_INT(ARGS);
-    // print
-    cerr << "TEST: " << x << endl;
-    // eval it
-    RETURN->v_int = x;
 }
 
 CK_DLL_MFUN(faust_compile)

@@ -49,13 +49,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC faust)
 
 if(WIN32)
   # win sock 32
-  target_link_libraries(${PROJECT_NAME} ws2_32)
+  target_link_libraries(${PROJECT_NAME} PUBLIC ws2_32)
 
   # windows multimedia for rt midi
-  target_link_libraries(${PROJECT_NAME} winmm)
+  target_link_libraries(${PROJECT_NAME} PUBLIC winmm)
   # more
-  target_link_libraries(${PROJECT_NAME} wsock32)
-  target_link_libraries(${PROJECT_NAME} dsound dinput8 dxguid)
+  target_link_libraries(${PROJECT_NAME} PUBLIC wsock32)
+  target_link_libraries(${PROJECT_NAME} PUBLIC dsound dinput8 dxguid)
 endif()
 
 if(MSVC)
@@ -96,6 +96,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     "WIN32;"
     "_WIN32;"
     "_WINDOWS;"
+    "NOMINMAX;"
     "_USRDLL;"
     "__WINDOWS_DS__"
     __WINDOWS_MODERN__
