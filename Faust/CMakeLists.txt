@@ -33,7 +33,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 find_package(SndFile REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC SndFile::sndfile)
 
-## Link FaucK with faustlib
+## Link FaucK with libfaust
 include_directories(${FAUST_DIR}/architecture)
 include_directories(${FAUST_DIR}/compiler)
 include_directories(${FAUST_DIR}/compiler/utils)
