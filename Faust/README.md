@@ -1,10 +1,8 @@
 # FaucK!!
 
-FaucK is a Chugin allowing to combine the powerful, succinct [Functional AUdio STream (Faust) language](http://faust.grame.fr) with the strongly-timed ChucK audio programming language.
-FaucK allows programmers to on-the-fly evaluate Faust code directly from ChucK code and control Faust signal processors using ChucK’s sample-precise timing and
-concurrency mechanisms. The goal is to create an amalgam that plays to the strengths of each language, giving rise to new possibilities for rapid prototyping, interaction design and controller mapping, pedagogy, and new ways of working with both Faust and ChucK. 
+FaucK is a Chugin allowing to combine the powerful, succinct [Functional AUdio STream (Faust) language](http://faust.grame.fr) with the strongly-timed ChucK audio programming language. FaucK allows programmers to on-the-fly evaluate Faust code directly from ChucK code and control Faust signal processors using ChucK’s sample-precise timing and concurrency mechanisms. The goal is to create an amalgam that plays to the strengths of each language, giving rise to new possibilities for rapid prototyping, interaction design and controller mapping, pedagogy, and new ways of working with both Faust and ChucK. 
 
-**FaucK should work both in the terminal with 64-bit `chuck` and 64-bit MiniAudicle.**
+**FaucK should work both in the terminal with 64-bit `chuck` and 64-bit [MiniAudicle](https://github.com/ccrma/miniAudicle).**
 
 ## Compilation and Installation
 
@@ -94,12 +92,12 @@ A Faust Chugin has the following functions:
 * `void assetsDir(string dirpath)` Set the directory containing soundfiles which you want Faust to load.
 * `void librariesDir(string dirpath)` Set the directory containing your custom Faust `.lib` files.
 * `int numVoices(int value)` Get/set the number of voices. The default (0) has polyphony disabled.
-* `void groupVoices(int groupVoices)` Enable/disable grouping of voices, if polyphony is enabled. Not grouping voices results in having unique parameters for each voice.
+* `void groupVoices(int groupVoices)` Enable/disable grouping of voices, if polyphony is enabled. The default is enabled. Not grouping voices results in having unique parameters for each voice.
 * `void noteOn(int pitch, int velocity)` Turn on a note if polyphony is active.
 * `void noteOff(int pitch, int velocity)` Turn off a note if polyphony is active.
-* `void pitchWheel(int pitch, int wheel)`
-* `void progChange(int channel, int pgm)`
-* `void ctrlChange(int channel, int ctrl, int value)`
+* `void pitchWheel(int channel, int wheel)` Channel 0 means "all channels", otherwise [1-16]. `wheel` is [-8192,8192].
+* `void progChange(int channel, int pgm)` Channel 0 means "all channels", otherwise [1-16]. `pgm` is [0,127].
+* `void ctrlChange(int channel, int ctrl, int value)` Channel 0 means "all channels", otherwise [1-16]. `ctrl` is [0,127]. `value` is [0,127].
 * `void ok()`: **todo**
 * `void error()` **todo**
 * `string code()` **todo**

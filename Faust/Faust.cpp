@@ -89,7 +89,7 @@ t_CKINT faust_data_offset = 0;
   #define FAUSTFLOAT float
 #endif
 
-std::list<GUI*> GUI::fGuiList;
+list<GUI*> GUI::fGuiList;
 ztimedmap GUI::gTimedZoneMap;
 static int numCompiled = 0;
 
@@ -101,10 +101,10 @@ class FauckUI : public UI, public PathBuilder
 {
 protected:
     // name to pointer map
-    std::map<std::string, FAUSTFLOAT*> fZoneMap;
+    map<string, FAUSTFLOAT*> fZoneMap;
     
     // insert into map
-    void insertMap( std::string label, FAUSTFLOAT * zone )
+    void insertMap( string label, FAUSTFLOAT * zone )
     {
         // map
         fZoneMap[label] = zone;
@@ -175,7 +175,7 @@ public:
     {}
     
     // set/get
-    void setValue( const std::string& path, FAUSTFLOAT value )
+    void setValue( const string& path, FAUSTFLOAT value )
     {
         // append "/chuck/" if necessary
         string p = path.length() > 0 && path[0] == '/' ? path : string("/chuck/")+path;
@@ -194,7 +194,7 @@ public:
         *fZoneMap[p] = value;
     }
     
-    float getValue(const std::string& path)
+    float getValue(const string& path)
     {
         // append "/0x00/" if necessary
         string p = path.length() > 0 && path[0] == '/' ? path : string("/0x00/")+path;
@@ -215,7 +215,7 @@ public:
     void dumpParams()
     {
         // iterator
-        std::map<std::string, FAUSTFLOAT*>::iterator iter = fZoneMap.begin();
+        map<string, FAUSTFLOAT*>::iterator iter = fZoneMap.begin();
         // go
         for( ; iter != fZoneMap.end(); iter++ )
         {
@@ -225,13 +225,13 @@ public:
     }
     
     // map access
-    std::map<std::string, FAUSTFLOAT*>& getMap() { return fZoneMap; }
+    map<string, FAUSTFLOAT*>& getMap() { return fZoneMap; }
     // get map size
     int getParamsCount() { return fZoneMap.size(); }
     // get param path
-    std::string getParamPath(int index)
+    string getParamPath(int index)
     {
-        std::map<std::string, FAUSTFLOAT*>::iterator it = fZoneMap.begin();
+        map<string, FAUSTFLOAT*>::iterator it = fZoneMap.begin();
         while (index-- > 0 && it++ != fZoneMap.end()) {}
         return (*it).first;
     }
@@ -285,10 +285,13 @@ public:
     }
     
     int setNVoices(int nvoices) {
-        nvoices = std::max(0, nvoices);
+        nvoices = max(0, nvoices);
         m_nvoices = nvoices;
         return m_nvoices;
     }
+
+    // Note: MIDI channel is numbered in[1..16] in this layer.
+    // Channel 0 means "all channels" when receiving or sending.
     
     void noteOn(int pitch, int velocity) {
         if (m_dsp_poly) {
@@ -323,9 +326,7 @@ public:
     }
     
     void panic() {
-        for (int i=0; i<16; i++) {
-            sendAllNotesOff(i);
-        }
+        sendAllNotesOff(0);
     }
     
     void pitchWheel(int channel, int wheel) {
@@ -450,9 +451,9 @@ public:
         const int optimize = -1;
         
 #if __APPLE__
-    std::string target = getDSPMachineTarget();
+    string target = getDSPMachineTarget();
 #else
-    std::string target = std::string("");
+    string target = string("");
 #endif
         
         const bool polyphonyIsOn = m_nvoices > 0;
@@ -579,7 +580,7 @@ public:
         // clear code string
         m_code = "";
         // get it
-        for( string line; std::getline( fin, line ); )
+        for( string line; getline( fin, line ); )
             m_code += line + '\n';
         
         // eval it
@@ -623,11 +624,11 @@ public:
         // several voices might share the same parameters in a group.
         // Therefore we have to call updateAllGuis to update all dependent parameters.
         if (needGuiMutex) {
-            if (guiUpdateMutex.Lock()) {
+            if (m_guiUpdateMutex.Lock()) {
                 // Have Faust update all GUIs.
                 GUI::updateAllGuis();
 
-                guiUpdateMutex.Unlock();
+                m_guiUpdateMutex.Unlock();
             }
         }
         
@@ -705,6 +706,8 @@ private:
     string m_errorString;
     // auto import
     string m_autoImport;
+    string m_faustLibrariesPath;
+    string m_assetsDirPath;
     
     // faust input buffer
     FAUSTFLOAT ** m_input;
@@ -716,26 +719,19 @@ private:
     
     // UI
     FauckUI * m_ui;
+    MidiUI* m_midi_ui = nullptr;
+    SoundUI* m_soundUI = nullptr;
     
-    TMutex guiUpdateMutex;
-    
-    std::string m_faustLibrariesPath;
-    std::string m_assetsDirPath;
-    
+    TMutex m_guiUpdateMutex;
+
     bool m_groupVoices = true;
     bool m_dynamicVoices = true;
-
-    // input and output
     int m_nvoices = 0;
+
     bool m_midi_enable = false;
     bool m_midi_virtual = false;
     string m_midi_virtual_name = string("");
-
     rt_midi m_midi_handler;
-
-    // UI
-    MidiUI* m_midi_ui = nullptr;
-    SoundUI* m_soundUI = nullptr;
 };
 
 
@@ -809,7 +805,7 @@ CK_DLL_QUERY( Faust )
     // add .pitchWheel()
     QUERY->add_mfun(QUERY, faust_pitchwheel, "int", "pitchWheel");
     // add arguments
-    QUERY->add_arg(QUERY, "int", "pitch");
+    QUERY->add_arg(QUERY, "int", "channel");
     QUERY->add_arg(QUERY, "int", "wheel");
     
     // add .progChange()
@@ -913,7 +909,7 @@ CK_DLL_MFUN(faust_eval)
     // get our c++ class pointer
     Faust * f = (Faust *) OBJ_MEMBER_INT(SELF, faust_data_offset);
     // get argument
-    std::string code = GET_NEXT_STRING_SAFE(ARGS);
+    string code = GET_NEXT_STRING_SAFE(ARGS);
     // eval it
     RETURN->v_int = f->eval( code );
 }
@@ -923,7 +919,7 @@ CK_DLL_MFUN(faust_compile)
     // get our c++ class pointer
     Faust * f = (Faust *) OBJ_MEMBER_INT(SELF, faust_data_offset);
     // get argument
-    std::string code = GET_NEXT_STRING_SAFE(ARGS);
+    string code = GET_NEXT_STRING_SAFE(ARGS);
     // eval it
     RETURN->v_int = f->compile( code );
 }
@@ -933,7 +929,7 @@ CK_DLL_MFUN(faust_v_set)
     // get our c++ class pointer
     Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
     // get name
-    std::string name = GET_NEXT_STRING_SAFE(ARGS);
+    string name = GET_NEXT_STRING_SAFE(ARGS);
     // get value
     t_CKFLOAT v = GET_NEXT_FLOAT(ARGS);
     // call it
@@ -947,7 +943,7 @@ CK_DLL_MFUN(faust_v_get)
     // get our c++ class pointer
     Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
     // get name
-    std::string name = GET_NEXT_STRING_SAFE(ARGS);
+    string name = GET_NEXT_STRING_SAFE(ARGS);
     // call it
     RETURN->v_float = f->getParam( name );
 }
@@ -1043,7 +1039,7 @@ CK_DLL_MFUN(faust_assets_set)
     // get our c++ class pointer
     Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
     // get value
-    std::string v = GET_NEXT_STRING_SAFE(ARGS);
+    string v = GET_NEXT_STRING_SAFE(ARGS);
     // call it
     f->setAssetsDir( v );
     // return it
@@ -1055,7 +1051,7 @@ CK_DLL_MFUN(faust_libraries_set)
     // get our c++ class pointer
     Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
     // get value
-    std::string v = GET_NEXT_STRING_SAFE(ARGS);
+    string v = GET_NEXT_STRING_SAFE(ARGS);
     // call it
     f->setLibrariesDir( v );
     // return it
