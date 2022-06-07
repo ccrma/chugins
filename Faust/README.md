@@ -8,6 +8,10 @@ concurrency mechanisms. The goal is to create an amalgam that plays to the stren
 
 ## Compilation and Installation
 
+### Pre-requisites for all platforms
+
+You must install cmake and git so that they're accessible in Terminal/shell/cmd windows.
+
 ### Faust
 
 FaucK uses the "on-the-fly" LLVM based version of the Faust compiler (<http://faust.grame.fr>) also known as `libfaust`. Luckily, we've already compiled `libfaust` for you on various platforms (see [TD-Faust](https://github.com/DBraun/TD-Faust/) for more info). However, we still need the [Faust Libraries](https://faustlibraries.grame.fr/). If on macOS/Linux, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `/usr/local/share/faust/`. For example, this should result in the existence of this file: `/usr/local/share/faust/all.lib`. If on Windows, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `C:/Program Files (x86)/ChucK/share/faust` or wherever your ChucK is installed. What's important is that the `share` folder is next to the `bin` folder which contains `chuck.exe`.
@@ -22,32 +26,9 @@ Next, download [Faust's source code](https://github.com/grame-cncm/faust) to a d
 
 > On macOS, you must codesign the Faust.chug. To prepare to do this, you will set an environment variable. Find your Development Profile. Open Keychain Access, go to 'login' on the left, and look for something like Apple Development: example@example.com (ABCDE12345). Then in Terminal, run `export CODESIGN_IDENTITY="Apple Development: example@example.com (ABCDE12345)"` with your own info substituted. If you weren't able to find your profile, you need to create one. Open Xcode, go to "Accounts", add your Apple ID, click "Manage Certificates", and use the plus icon to add a profile. Then check Keychain Access again.
 
-Create an environment variable `FAUST_DIR` which contains [Faust](https://github.com/grame-cncm/faust). For example, 
+In a Terminal/shell window, navigate to this README and run either `sh build_unix.sh`.
 
-```bash
-export FAUST_DIR=/some/path/to/faust
-```
-
-Download [Libsndfile](https://github.com/libsndfile/libsndfile) to a directory. Navigate to it in a Terminal/shell window. Then,
-```bash
-cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DENABLE_EXTERNAL_LIBS=off -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
-cmake --build build --config Release
-```
-
-Create an environment variable `SndFile_DIR` which contains the new `build` folder, for example
-
-```bash
-export SndFile_DIR=/some/path/to/libsndfile/build
-```
-
-In a Terminal/shell window in which `FAUST_DIR` and `SndFile_DIR` have been set, navigate to this README and run either `sh build_macos.sh` or `sh build_linux.sh`.
-
-On macOS/Linux, the goal is to create two files inside `/usr/local/lib/chuck`:
-
-* `Faust.chug`
-* `libfaust.2.dylib`
-
-so check that these files exist. Then run chuck with a FaucK example.
+On macOS/Linux, the goal is to create `Faust.chug` inside `/usr/local/lib/chuck`. On macOS, we additionally want `libfaust.2.dylib` in that folder. On Linux, instead, we want `libfaust.so.2` in that folder. After checking that these files exist, run chuck with a FaucK example.
 
 #### Windows
 
@@ -123,7 +104,7 @@ A Faust Chugin has the following functions:
 * `void ctrlChange(int channel, int ctrl, int value)`
 * `void ok()`: **todo**
 * `void error()` **todo**
-* `void code()` **todo**
+* `string code()` **todo**
 * `void test()` **todo**
 
 ## Examples
