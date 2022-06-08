@@ -1,5 +1,5 @@
-#ifndef DbImgSampler_h
-#define DbImgSampler_h
+#ifndef DbImageSampler_h
+#define DbImageSampler_h
 /**
  *
  * Copyright (c) 2022 Dana Batali
@@ -28,8 +28,8 @@
 #include <functional>
 
 /**
- * @brief DbImgSampler samples image files given a normalized image coordinate 
- * pair. DbImgSampler reads image files (.png) representing arbitrary parameter
+ * @brief DbImageSampler samples image files given a normalized image coordinate 
+ * pair. DbImageSampler reads image files (.png) representing arbitrary parameter
  * values for application in image synthesis or processing.  
  *
  * Images are loaded in a separate thread to prevent hiccups in the
@@ -37,19 +37,19 @@
  * values are only valid after the load has completed succesfully.
  */
  
-class DbImgSampler
+class DbImageSampler
 {
 public:
-    DbImgSampler();
-    ~DbImgSampler();
+    DbImageSampler();
+    ~DbImageSampler();
 
     void Load(char const *filename); // asynchronous
-    int GetSample(float x, float y, int *result);
+    int GetSample(float x, float y, float *r, float *g, float *b, float *a);
 
 private:
     std::string m_imgfilePath;
 
-    static void loadThreadFunc(DbImgSampler *);
+    static void loadThreadFunc(DbImageSampler *);
 
     std::thread::id m_mainThreadId, m_loadThreadId;
     std::thread m_loadThread;

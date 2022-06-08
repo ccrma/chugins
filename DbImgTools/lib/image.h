@@ -14,7 +14,7 @@ public:
     char const *GetName() { return m_imageName.c_str(); }
     int GetWidth() { return m_width; }
     int GetHeight() { return m_height; }
-    int GetSample(float x, float y, int *result);
+    int GetSample(float x, float y, float *r, float *g, float *b, float *a);
 
 protected:
     std::string m_imageName;

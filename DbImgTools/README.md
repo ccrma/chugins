@@ -1,8 +1,8 @@
-# DbImgTools Chugins
+# DbImageTools Chugins
 
 ## Intro
 
-DbImgTools is a collection of [ChucK](https://chuck.stanford.edu/) chugins 
+DbImageTools is a collection of [ChucK](https://chuck.stanford.edu/) chugins 
 focused on the use of image files to control the synthesis parameters.
 These chugins are included in [Fiddle](https://cannerycoders.com/#Fiddle),
 the free ChucK development environment.
@@ -10,13 +10,13 @@ the free ChucK development environment.
 [DbSpectral](DbSpectral/README.md) is a time-varying audio filter described
 by an image file.
 
-[DbImgSampler](DbImgSampler/README.md) base be used to sample an image
+[DbImageSampler](DbImageSampler/README.md) base be used to sample an image
 for the purposes of producing control parameters for other audio processing
 tools.
 
 ## License
 
-DbImgTools are open-source.  Sub-components are subject to their own
+DbImageTools are open-source.  Sub-components are subject to their own
 licenses.  Unless otherwise stated, this code is subject to the
 to the MIT license:
 

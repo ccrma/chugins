@@ -50,20 +50,40 @@ Image::LoadFile(char const *filename, bool verbose)
     return err;
 }
 
+inline void clamp(float &a)
+{
+    if(a < 0.f)
+        a = 0.f;
+    else
+    if(a > 1.f)
+        a = 1.f;
+}
+
 int
-Image::GetSample(float x, float y, int *result)
+Image::GetSample(float x, float y, float *r, float *g, float *b, float *a)
 {
     int err;
     if(m_data != nullptr)
     {
+        clamp(x);
+        clamp(y);
         int ix = (m_width-1) * x;
-        int iy = m_height - (m_height-1) * y; // invert y (?)
+        int iy = (m_height-1) * y; 
+
+        // std::cerr << "sampling " << ix << ", " << iy << "\n";
+        // invert y (?)
+        // iy = (m_height-1) - iy;
 
         unsigned char *pixel = m_data + m_channels * ix;
         int rowStride = m_width * m_channels;
         pixel += iy * rowStride;
 
-        *result = * reinterpret_cast<int *>(pixel); // rgba 
+        *r = pixel[0] / 255.f;
+        *g = pixel[1] / 255.f;
+        *b = pixel[2] / 255.f;
+        *a = (m_channels >= 4) ? pixel[3] / 255.f : 1.f;;
+
+        err = 0;
     }
     else
         err = 1;

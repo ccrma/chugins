@@ -1,12 +1,12 @@
 /* see comments in README.md */
-#include "DbImgSampler.h"
+#include "DbImageSampler.h"
 
 #include <iostream>
 #include <functional>
 #include <cassert>
 #include <string>
 
-DbImgSampler::DbImgSampler() :
+DbImageSampler::DbImageSampler() :
     m_image(nullptr),
     m_verbosity(0)
 {
@@ -14,7 +14,7 @@ DbImgSampler::DbImgSampler() :
     m_loadThread = std::thread(loadThreadFunc, this);
 }
 
-DbImgSampler::~DbImgSampler()
+DbImageSampler::~DbImageSampler()
 { 
     if(m_loadThread.joinable())
     {
@@ -26,23 +26,26 @@ DbImgSampler::~DbImgSampler()
 }
 
 void
-DbImgSampler::Load(char const *filename)
+DbImageSampler::Load(char const *filename)
 {
     std::string nm(filename);
-    std::function<void()> fn = std::bind(&DbImgSampler::loadImage, 
+    std::function<void()> fn = std::bind(&DbImageSampler::loadImage, 
                                         this, nm/*pass by value*/);
     m_loadQueue.Push(fn);
 }
 
 int
-DbImgSampler::GetSample(float x, float y, int *result)
+DbImageSampler::GetSample(float x, float y, float *r, float *g, float *b, float *a)
 {
     // scope for access to image
     std::lock_guard<std::mutex> lock(m_loadImageLock);
     if(m_image)
-        return m_image->GetSample(x, y, result);
+        return m_image->GetSample(x, y, r, g, b, a);
     else
+    {
+        *r = *g = *b = *a = 0.f;
         return -1;
+    }
 }
 
 /* We anticipate multiple edits arriving in clumps and want
@@ -52,7 +55,7 @@ DbImgSampler::GetSample(float x, float y, int *result)
  * during Tick.
  */
 void
-DbImgSampler::makeDirty()
+DbImageSampler::makeDirty()
 {
     if(m_imgfilePath.size() == 0) return; // still loading image
 
@@ -65,7 +68,7 @@ DbImgSampler::makeDirty()
 }
 
 void
-DbImgSampler::checkDeferredUpdate()
+DbImageSampler::checkDeferredUpdate()
 {
     if(m_scheduledUpdate == m_zeroInstant)
         return;
@@ -81,7 +84,7 @@ DbImgSampler::checkDeferredUpdate()
 }
 
 void
-DbImgSampler::loadImage(std::string nm) // invoked in loaderThread
+DbImageSampler::loadImage(std::string nm) // invoked in loaderThread
 {
     assert(std::this_thread::get_id() == m_loadThreadId);
     Image *newImg = new Image();
@@ -89,12 +92,12 @@ DbImgSampler::loadImage(std::string nm) // invoked in loaderThread
     if(!err)
         this->setImage(newImg, nm);
     else
-        std::cerr << "DbImgSampler problem opening file " << nm << "\n";
+        std::cerr << "DbImageSampler problem opening file " << nm << "\n";
 }
 
 // happens after loading
 void
-DbImgSampler::setImage(Image *i, std::string &nm)
+DbImageSampler::setImage(Image *i, std::string &nm)
 {
     std::lock_guard<std::mutex> lock(m_loadImageLock);
     if(m_image)
@@ -104,14 +107,14 @@ DbImgSampler::setImage(Image *i, std::string &nm)
     m_imgfilePath = nm;
     if(m_verbosity)
     {
-        std::cerr << "DbImgSampler '" <<  m_image->GetName() 
+        std::cerr << "DbImageSampler '" <<  m_image->GetName() 
             << "' ready (h:"
             << i->GetHeight() << " w: " << i->GetWidth() << "\n";
     }
 }
 
 /* static */ void
-DbImgSampler::loadThreadFunc(DbImgSampler *p)
+DbImageSampler::loadThreadFunc(DbImageSampler *p)
 {
     p->m_loadThreadId = std::this_thread::get_id();
     while(p->m_loadQueue.IsActive())
