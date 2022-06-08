@@ -152,7 +152,7 @@ WarpBufChugin::getTranspose() {
 void
 WarpBufChugin::setTranspose(double transpose) {
 
-    float scale = std::pow(2., transpose/12.);
+    double scale = std::pow(2., transpose/12.);
 
     m_rbstretcher->setPitchScale(scale);
 }
