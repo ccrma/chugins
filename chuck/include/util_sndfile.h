@@ -1748,7 +1748,9 @@ enum
 {
   /* keep sorted for wav_w64_format_str() */
     WAVE_FORMAT_UNKNOWN                 = 0x0000,       /* Microsoft Corporation */
+#ifndef WAVE_FORMAT_PCM
     WAVE_FORMAT_PCM                     = 0x0001,       /* Microsoft PCM format */
+#endif
     WAVE_FORMAT_MS_ADPCM                = 0x0002,       /* Microsoft ADPCM */
     WAVE_FORMAT_IEEE_FLOAT              = 0x0003,       /* Micrososft 32 bit float format */
     WAVE_FORMAT_VSELP                   = 0x0004,       /* Compaq Computer Corporation */
