@@ -1,22 +1,58 @@
+fun void heartbeat() {
+    while(true) {
+        <<<"heartbeat">>>;
+        500::ms => now;
+    }
+}
+spork~ heartbeat();
+
 WarpBuf s1 => dac;
 WarpBuf s2 => dac;
 
 s1.gain(.4);
 s2.gain(.4);
 
-151. => float BPM;
-BPM => s1.bpm;
-BPM => s2.bpm;
+float BPM;
 
-me.dir() + "assets/drums.wav" => s1.read;
-me.dir() + "assets/synth.wav" => s2.read;
+fun void setBPM(float newBPM) {
+    newBPM => BPM => s1.bpm => s2.bpm;
+}
 
-2. => s2.transpose;
+setBPM(140.);
 
-// 1 => s1.loop;
-// 2. => s1.loopStart;
-// 3. => s1.loopEnd;
+me.dir() + "assets/1375__sleep__90-bpm-nylon2.wav" => s1.read;
+me.dir() + "assets/381353__waveplaysfx__drumloop-120-bpm-edm-drum-loop-022.wav" => s2.read;
+
+// test that loop off works.
+// You should only hear the drum loop once.
+// 0 => s2.loop;
+
+// Test that ridiculous bounds don't break it.
+// The guitar should be silent always.
+// 1000. => s1.loopStart => s1.startMarker;
+// 1000. => s1.loopEnd;
+// 1000. => s1.playhead;
+
+// Test that ridiculous bounds don't break it.
+// The guitar should be silent always.
+// 1000. => s1.loopStart;
+// 999. => s1.loopEnd;
+// 998. => s1.playhead;
+
+// Test that ridiculous bounds don't break it.
+// The guitar should be silent always.
+// -2. => s1.loopStart;
+// -1. => s1.loopEnd;
+// 3. => s1.playhead;
+
+// Test that ridiculous bounds don't break it.
+// The guitar should be silent always.
+// -2. => s1.loopStart;
+// -1. => s1.loopEnd;
+// -3. => s1.playhead;
 
 while(true) {
-	1::second => now;
+	setBPM(110+20.*Math.random2(0,4));
+	(240./BPM)::second => now;
+	Std.rand2(-6, 0) => s2.transpose;
 }

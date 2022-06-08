@@ -69,16 +69,6 @@ WarpBufChugin::~WarpBufChugin()
     m_rbstretcher.release();
 }
 
-bool
-WarpBufChugin::getLoopEnable() {
-    return m_clipInfo.loop_end;
-}
-
-void
-WarpBufChugin::setLoopEnable(bool enable) {
-    m_clipInfo.loop_on = enable;
-}
-
 // clear
 void
 WarpBufChugin::clearBufs()
@@ -144,9 +134,9 @@ WarpBufChugin::setPlayhead(double playhead) {
     double playhead_seconds;
     double _;
     m_clipInfo.beat_to_seconds(m_playHeadBeats, playhead_seconds, _);
-
     sfReadPos = playhead_seconds * sfinfo.samplerate;
     sf_seek(sndfile, sfReadPos, SEEK_SET);
+    // seeking doesn't change sfReadPos
 }
 
 double
@@ -205,7 +195,7 @@ WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
     double loop_end_seconds = 0.;
     m_clipInfo.beat_to_seconds(m_clipInfo.loop_end, loop_end_seconds, _);
 
-    m_playHeadBeats += m_bpm * (double)nframes / (60. * m_srate);
+    m_playHeadBeats += m_bpm * double(nframes) / (60. * m_srate);
 
     double ratio = (m_srate / sfinfo.samplerate);
     if (instant_bpm > 0) {
@@ -218,31 +208,33 @@ WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
     int allowedReadCount = 0;
     while (numAvailable < nframes) {
 
-        allowedReadCount = m_clipInfo.loop_on ? std::min(ibs, (int)( loop_end_seconds*sfinfo.samplerate- sfReadPos)) : ibs;
+        if (sfReadPos > -1 && sfReadPos < sfinfo.frames) {
+            allowedReadCount = m_clipInfo.loop_on ? std::min(ibs, (int)(loop_end_seconds * sfinfo.samplerate - sfReadPos)) : ibs;
+            count = sf_readf_float(sndfile, m_interleavedBuffer, allowedReadCount);
+            sfReadPos += count;
+        }
+        else {
+            count = 0;
+        }
 
-        count = sf_readf_float(sndfile, m_interleavedBuffer, allowedReadCount);
-        sfReadPos += count;
         if (count <= 0) {
-            if (!m_clipInfo.loop_on) {
-                // we're not looping, so just fill with zeros.
-                count = ibs;
-                for (size_t c = 0; c < m_channels; c++) {
+            if (m_clipInfo.loop_on) {
+                // we are looping, so seek to the loop start of the audio file
+                setPlayhead(m_clipInfo.loop_start);
+            }
+
+            if (sfReadPos < 0 || sfReadPos >= sfinfo.frames) {
+                count = 1;
+                // fill with zeros
+                for (int c = 0; c < m_channels; c++) {
                     for (int i = 0; i < count; i++) {
-                        m_interleavedBuffer[i*m_channels+c] = 0.;
+                        m_interleavedBuffer[i * m_channels + c] = 0.;
                     }
                 }
             }
-            else {
-                // we are looping, so seek to the loop start of the audio file
-                setPlayhead(m_clipInfo.loop_start);
-
-                allowedReadCount = std::min(ibs, (int)(loop_end_seconds * sfinfo.samplerate - sfReadPos));
-                count = sf_readf_float(sndfile, m_interleavedBuffer, allowedReadCount);
-                sfReadPos += count;
-            }
         }
-
-        for (size_t c = 0; c < m_channels; ++c) {
+        
+        for (int c = 0; c < m_channels; ++c) {
             for (int i = 0; i < count; ++i) {
                 m_nonInterleavedBuffer[c][i] = m_interleavedBuffer[i * m_channels + c];
             }

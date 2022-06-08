@@ -33,6 +33,3 @@ Debug/
 *.exe
 *.out
 *.app
-
-!tests/plugins/*
-!win-x64/*.chug

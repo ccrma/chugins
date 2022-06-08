@@ -51,23 +51,29 @@ fun void setBPM(float newBPM) {
 
 setBPM(140.);
 
-me.dir() + "assets/drums.wav" => s1.read;
-me.dir() + "assets/synth.wav" => s2.read;
+me.dir() + "assets/1375__sleep__90-bpm-nylon2.wav" => s1.read;
+me.dir() + "assets/381353__waveplaysfx__drumloop-120-bpm-edm-drum-loop-022.wav" => s2.read;
+
+fun void heartbeat() {
+    while(true) {
+        <<<"heartbeat">>>;
+        500::ms => now;
+    }
+}
+spork~ heartbeat();
 
 while(true) {
 
 	// Random transpose
-	Std.rand2(-2, 2) => s2.transpose;
+	Std.rand2(-8, 8) => s2.transpose;
 
 	// Random loop start and end
-	Std.rand2(0, 8) => s1.loopStart;
-	s1.loopStart() + Std.rand2(1, 8) => s1.loopEnd;
+	Std.rand2(0, 24) => s1.loopStart => s1.playhead;
+	s1.loopStart() + Std.rand2(1, 16) => s1.loopEnd;
 
-	// Random BPM
-	setBPM(120. + Std.rand2(0,5)*20.);
-
-	repeat(4.) {
+	repeat(Std.rand2(1, 4)) {
 		Std.rand2(0, 15) => s2.playhead;
-		bpm.n1 => now;
+		bpm.n32 * Std.rand2(1, 4) => now;
 	}
+    
 }

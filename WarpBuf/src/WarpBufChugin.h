@@ -48,8 +48,6 @@ public:
     void setTranspose(double transpose);
     double getBPM();
     void setBPM(double bpm);
-    bool getLoopEnable();
-    void setLoopEnable(bool enable);
 
     bool read(const string& filename);
 
@@ -63,7 +61,9 @@ public:
     double getLoopStart() { return m_clipInfo.loop_start; }
     void setLoopStart(double loopStart) { m_clipInfo.loop_start = loopStart; }
     double getLoopEnd() { return m_clipInfo.loop_end; }
-    void setLoopEnd(double LoopEnd) { m_clipInfo.loop_end = LoopEnd; }
+    void setLoopEnd(double loopEnd) { m_clipInfo.loop_end = loopEnd; }
+    bool getLoopEnable() { return m_clipInfo.loop_on; }
+    void setLoopEnable(bool enable) { m_clipInfo.loop_on = enable; }
 private:
     // sample rate
     t_CKFLOAT m_srate;
