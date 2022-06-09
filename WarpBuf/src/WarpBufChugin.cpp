@@ -16,43 +16,9 @@ WarpBufChugin::resetStretcher() {
 
     RubberBandStretcher::Options options = 0;
 
-    //options |= RubberBandStretcher::OptionProcessOffline;
-    options |= RubberBandStretcher::OptionProcessRealTime;  // NOT the default
-
-    //options |= RubberBandStretcher::OptionStretchElastic;
-    options |= RubberBandStretcher::OptionStretchPrecise;  // NOT the default
-
-    //options |= RubberBandStretcher::OptionTransientsCrisp;
-    //options |= RubberBandStretcher::OptionTransientsMixed;
-    options |= RubberBandStretcher::OptionTransientsSmooth;  // NOT the default
-
-    options |= RubberBandStretcher::OptionDetectorCompound;
-    //options |= RubberBandStretcher::OptionDetectorPercussive;
-    //options |= RubberBandStretcher::OptionDetectorSoft;
-
-    options |= RubberBandStretcher::OptionPhaseLaminar;
-    //options |= RubberBandStretcher::OptionPhaseIndependent;
-
-    //options |= RubberBandStretcher::OptionThreadingAuto;
-    options |= RubberBandStretcher::OptionThreadingNever;  // NOT the default
-    //options |= RubberBandStretcher::OptionThreadingAlways;
-
-    options |= RubberBandStretcher::OptionWindowStandard;
-    //options |= RubberBandStretcher::OptionWindowShort;
-    //options |= RubberBandStretcher::OptionWindowLong;
-
-    options |= RubberBandStretcher::OptionSmoothingOff;
-    //options |= RubberBandStretcher::OptionSmoothingOn;
-
-    options |= RubberBandStretcher::OptionFormantShifted;
-    //options |= RubberBandStretcher::OptionFormantPreserved;
-
-    //options |= RubberBandStretcher::OptionPitchHighSpeed;
-    options |= RubberBandStretcher::OptionPitchHighQuality;  // NOT the default
-    //options |= RubberBandStretcher::OptionPitchHighConsistency;
-
-    //options |= RubberBandStretcher::OptionChannelsApart;
-    options |= RubberBandStretcher::OptionChannelsTogether;  // NOT the default
+    options |= RubberBandStretcher::OptionProcessRealTime;
+    options |= RubberBandStretcher::OptionThreadingNever;
+    options |= RubberBandStretcher::OptionPitchHighQuality;
 
     m_rbstretcher = std::make_unique<RubberBand::RubberBandStretcher>(
         m_srate,
