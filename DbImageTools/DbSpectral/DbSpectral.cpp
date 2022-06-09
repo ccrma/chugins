@@ -1,7 +1,7 @@
 /* see comments in README.md */
 #define _USE_MATH_DEFINES
 #include "DbSpectral.h"
-#include "../lib/Windowing.h"
+#include "../lib/windowing.h"
 #include "../lib/fftsg.h"
 
 #include <iostream>
