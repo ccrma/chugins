@@ -25,27 +25,20 @@ Two audio files might have different tempos, but you can "beatmatch" them by giv
 130. => warpBuf1.bpm => warpBuf2.bpm;
 ```
 
-WarpBuf has been tested with `asd` files created with Ableton Live 10.1.30.
+WarpBuf has been tested with `asd` files created with Ableton Live 9 and 10.1.30.
 
 ## Installation
 
+Make sure you have `cmake`, `git`, and `sh` available from the command line/Terminal.
+
 Update submodules:
-`git submodule update --init --recursive`
+`git submodule update --recursive`
 
 If on Windows, create an extra folder for your chugins, `%USERPROFILE%/Documents/ChucK/chugins/`. Create a system environment variable `CHUCK_CHUGIN_PATH` equal to this path.
 
-In `chugins/WarpBuf`, open a command window on Windows or Terminal window on macOS:
+In `chugins/WarpBuf`, open a command window on Windows or Terminal window on macOS and run `sh build_all_platforms.sh`. On Windows, the `WarpBuf.chug` should appear inside `%USERPROFILE%/Documents/ChucK/chugins/`, and on macOS/Linux it should appear in `/usr/local/lib/chuck`.
 
-```bash
-cmake -Bbuild .
-cmake --build build --config Release
-```
-
-Then open `chugins/WarpBuf/build/WarpBufChugin.sln` and build in 64-bit Release mode. You should see a new WarpBuf.chug file in the chugins folder you created earlier.
-
-Build 64-bit chuck.exe from [source](https://github.com/ccrma/chuck/tree/main/src/visual-studio). If you want to use [miniAudicle](https://github.com/ccrma/miniAudicle), then miniAudicle must also be 64-bit. Check that your chuck is 64-bit with `chuck --version`.
-
-Run any of the test scripts: `chuck.exe "tests/warpbuf_basic.ck"`. You will need to provide assets in the assets folder.
+Run any of the test scripts: `chuck.exe --verbose:10 level:10 "tests/warpbuf_basic.ck"`.
 
 ## Licenses
 

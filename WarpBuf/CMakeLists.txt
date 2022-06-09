@@ -31,8 +31,6 @@ set(RUBBERBAND_SRC_CPP
     src/system/Thread.cpp
     src/StretcherChannelData.cpp
     src/StretcherImpl.cpp
-    src/kissfft/kiss_fft.c
-    src/kissfft/kiss_fftr.c
     )
 # Convert to list of source files (extension based on OS)
 foreach(cpp_file IN LISTS RUBBERBAND_SRC_CPP)
@@ -42,9 +40,6 @@ endforeach()
 
 set(RUBBERBAND_HEADERS 
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rubberband/rubberband/RubberBandStretcher.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rubberband/src/kissfft/kiss_fft.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rubberband/src/kissfft/kiss_fftr.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rubberband/src/kissfft/kiss_fft_log.h
 )
 ## Rubberband - end
 
@@ -70,8 +65,6 @@ add_library(WarpBufChugin SHARED ${CK_SOURCES} ${Sources} ${RUBBERBAND_SOURCES} 
 target_compile_definitions(WarpBufChugin
     PUBLIC
     HAVE_LIBSAMPLERATE
-    HAVE_KISSFFT
-
     _USRDLL
     NDEBUG
     _NDEBUG
@@ -83,6 +76,7 @@ target_compile_definitions(WarpBufChugin
 if(MSVC)
     target_compile_definitions(WarpBufChugin
         PUBLIC
+        USE_BUILTIN_FFT
         NOMINMAX
         _WINDOWS
         WIN32
@@ -93,6 +87,7 @@ if(MSVC)
 elseif(APPLE)
     target_compile_definitions(WarpBufChugin
         PUBLIC
+        HAVE_VDSP
         __MACOSX_CORE__
         USE_PTHREADS
     )   
@@ -100,6 +95,7 @@ elseif(APPLE)
 else()
     target_compile_definitions(WarpBufChugin
         PUBLIC
+        USE_BUILTIN_FFT
         __PLATFORM_LINUX__
         USE_PTHREADS
     )   
@@ -107,13 +103,15 @@ else()
 endif()
 
 target_link_libraries(WarpBufChugin samplerate)
+if(APPLE)
+target_link_libraries(WarpBufChugin "-framework Accelerate")
+endif()
 
 # Include header directories
 target_include_directories(WarpBufChugin PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../chuck/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Rubberband>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Rubberband/src>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Rubberband/src/kissfft>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/portable_endian/include>
@@ -167,10 +165,4 @@ if (MSVC)
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      "$<TARGET_FILE:WarpBufChugin>"
                      "%USERPROFILE%/Documents/ChucK/chugins/WarpBuf.chug")
-else()
-  add_custom_command(TARGET ${PROJECT_NAME}
-                     POST_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     "$<TARGET_FILE:WarpBufChugin>"
-                     "/usr/local/lib/chuck/WarpBuf.chug")
 endif()
