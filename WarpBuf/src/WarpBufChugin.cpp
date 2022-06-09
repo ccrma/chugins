@@ -26,7 +26,6 @@ WarpBufChugin::resetStretcher() {
         options,
         1.,
         1.);
-
 }
 
 WarpBufChugin::~WarpBufChugin()
@@ -58,7 +57,7 @@ WarpBufChugin::clearBufs()
     SAFE_DELETE_ARRAY(m_nonInterleavedBuffer);
 }
 
-// allocate
+// allocate the buffers if the number of channels or number of samples changed
 void
 WarpBufChugin::allocate(int numChannels, int numSamples)
 {
@@ -81,8 +80,7 @@ WarpBufChugin::allocate(int numChannels, int numSamples)
     
     m_retrieveBuffer = new float * [m_channels];
     // allocate buffers for each channel
-    for (int i = 0; i < 2; i++) {
-        // single sample for each
+    for (int i = 0; i < m_channels; i++) {
         m_retrieveBuffer[i] = new float[numSamples];
     }
 }
@@ -143,52 +141,78 @@ WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
     allocate(sfinfo.channels, nframes);
 
     bool past_end_marker_and_loop_off = m_playHeadBeats > m_clipInfo.end_marker && !m_clipInfo.loop_on;
-    if (m_channels==0 || sfinfo.channels == 0 || past_end_marker_and_loop_off || (!m_play)) {
-        // write zeros
+    // If our sound file has zero channels, or for some reason the number of allocated channels (m_channels)
+    // is zero, or play is disabled, or (loop is off and our playhead measured in beats is greater than
+    // our end marker measured in beats)
+    if (sfinfo.channels == 0 || m_channels == 0 || (!m_play) || past_end_marker_and_loop_off) {
+        // Write zeros into our output buffer and return.
+        // Note that we are not feeding the zeros to the stretcher.
         for (int chan = 0; chan < WARPBUF_MAX_OUTPUTS; chan++) {
             for (int i = 0; i < nframes; i++) {
-                out[chan + 2 * i] = 0.;
+                out[chan + WARPBUF_MAX_OUTPUTS * i] = 0.;
             }
         }
         return;
     }
 
     double _;
-    double instant_bpm = -1.;
+    double currentBPM = -1.;
 
-    m_clipInfo.beat_to_seconds(m_playHeadBeats, _, instant_bpm);
+    m_clipInfo.beat_to_seconds(m_playHeadBeats, _, currentBPM);
 
     double loop_end_seconds = 0.;
     m_clipInfo.beat_to_seconds(m_clipInfo.loop_end, loop_end_seconds, _);
 
-    m_playHeadBeats += m_bpm * double(nframes) / (60. * m_srate);
-
     double ratio = (m_srate / sfinfo.samplerate);
-    if (instant_bpm > 0) {
-        ratio *= instant_bpm / m_bpm;
+    if (currentBPM > 0) {
+        ratio *= currentBPM / m_bpm;
     }
     m_rbstretcher->setTimeRatio(ratio);
 
-    int count = -1;
+    // progress the playhead based on the number of frames.
+    // Note that it would be slightly better to do this more incrementally inside
+    // a loop, but that's hard to conceptualize with how a rubber band stretcher
+    // makes samples retrievable.
+    m_playHeadBeats += m_bpm * double(nframes) / (60. * m_srate);
+
+    int count = 0;
     int numAvailable = m_rbstretcher->available();
     int allowedReadCount = 0;
+    // In a while loop, we read from the sound file into an interleaved buffer and count the number of samples we read in a "count" variable.
+    // Note that sf_readf_float can return -1 if no samples were read.
+    // If count is zero:
+    //     Then maybe we want to loop around and update our read position.
+    //     If our new read position is still out of bounds, then we should just "count" 1 new frame and write zeros for it.
+    //     Otherwise, our new read position is in bounds (but count is zero), so we can continue and expect new samples next pass in the while loop.
+    // Once we've read new samples or written zeros into our interleaved buffer, we copy it into a non-interleaved buffer.
+    // Then we tell Rubber Band to process the non-interleaved buffer and wait for enough available output samples.
+    // When there are enough available samples, we retrieve them and copy them into chuck's output buffer.
+    // Note that ChucK pretty much only asks for one frame at a time.
     while (numAvailable < nframes) {
 
+        // If our sample read position is in bounds given our sound file
         if (sfReadPos > -1 && sfReadPos < sfinfo.frames) {
+            // Every call to sf_readf_float might be slow, so if we're going to call it at all, it's best to ask for many samples.
+            // The upper limit on the number of samples we'll ask for is `ibs`. However, if we're near the loop end and loop is enabled,
+            // then we might have fewer samples to ask for: We don't want to read samples that are to the right of the loop end. Instead
+            // we want to go to the loop start.
             allowedReadCount = m_clipInfo.loop_on ? std::min(ibs, (int)(loop_end_seconds * sfinfo.samplerate - sfReadPos)) : ibs;
             count = sf_readf_float(sndfile, m_interleavedBuffer, allowedReadCount);
+            count = std::max(0, count);
             sfReadPos += count;
         }
         else {
             count = 0;
         }
 
-        if (count <= 0) {
+        if (count < 1) {
             if (m_clipInfo.loop_on) {
-                // we are looping, so seek to the loop start of the audio file
+                // We are looping, so seek to the loop start of the audio file.
+                // This will change sfReadPos and hopefully put it in bounds.
                 setPlayhead(m_clipInfo.loop_start);
             }
 
+            // If our read pos is out of bounds, then we should write one frame of zeros.
             if (sfReadPos < 0 || sfReadPos >= sfinfo.frames) {
                 count = 1;
                 // fill with zeros
@@ -198,11 +222,16 @@ WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
                     }
                 }
             }
+            else {
+                // Our read pos is in bounds and count is still <= zero, so we can continue. We can expect to get samples next time.
+                continue;
+            }
         }
         
-        for (int c = 0; c < m_channels; ++c) {
+        // Copy from the interleaved buffer to the non interleaved buffer.
+        for (int chan = 0; chan < m_channels; ++chan) {
             for (int i = 0; i < count; ++i) {
-                m_nonInterleavedBuffer[c][i] = m_interleavedBuffer[i * m_channels + c];
+                m_nonInterleavedBuffer[chan][i] = m_interleavedBuffer[i * m_channels + chan];
             }
         }
 
@@ -212,12 +241,12 @@ WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 
     m_rbstretcher->retrieve(m_retrieveBuffer, nframes);
 
-    //// copy from buffer to output.
+    // Copy from m_retrieveBuffer to chuck's output.
     // out needs to receive alternating left/right channels.
     for (int chan = 0; chan < m_channels; chan++) {
         auto chanPtr = m_retrieveBuffer[chan];
         for (int i = 0; i < nframes; i++) {
-            out[chan + 2 * i] = *chanPtr++;
+            out[chan + m_channels * i] = *chanPtr++;
         }
     }
 }
@@ -242,12 +271,14 @@ WarpBufChugin::read(const string& path) {
 
     if (!m_clipInfo.readWarpFile((path + std::string(".asd")).c_str())) {
         // We didn't find a warp file, so assume it's 120 bpm.
+        const double bpm = 120.;
+        const double end_in_beats = bpm * sfinfo.frames / (sfinfo.samplerate * 60.);
         m_clipInfo.loop_start = 0.;
         m_clipInfo.hidden_loop_start = 0.;
         m_clipInfo.start_marker = 0.;
-        m_clipInfo.hidden_loop_end = 120.* sfinfo.frames / (sfinfo.samplerate * 60.);
-        m_clipInfo.loop_end = 120. * sfinfo.frames / (sfinfo.samplerate * 60.);
-        m_clipInfo.end_marker = 120. * sfinfo.frames / (sfinfo.samplerate * 60.);
+        m_clipInfo.hidden_loop_end = end_in_beats;
+        m_clipInfo.loop_end = end_in_beats;
+        m_clipInfo.end_marker = end_in_beats;
     }
 
     this->setPlayhead(m_clipInfo.start_marker);

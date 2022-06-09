@@ -23,7 +23,7 @@ setBPM(140.);
 me.dir() + "assets/1375__sleep__90-bpm-nylon2.wav" => s1.read;
 me.dir() + "assets/381353__waveplaysfx__drumloop-120-bpm-edm-drum-loop-022.wav" => s2.read;
 
-// test that loop off works.
+// Test that loop off works.
 // You should only hear the drum loop once
 // and the guitar should loop.
 // 0 => s2.loop;

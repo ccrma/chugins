@@ -26,6 +26,7 @@ public:
 
     std::vector<std::pair<double, double>> warp_markers;
 
+    // For an input beat moment, return the moment's time in samples.
     int beat_to_sample(double beat, double sr) {
 
         double seconds;
@@ -36,6 +37,8 @@ public:
         return samples;
     }
 
+    // For an input beat moment, figure out the moment's time in seconds and instantaneous bpm.
+    // We modify the seconds and bpm variables by reference.
     void beat_to_seconds(double beat, double& seconds, double& bpm) {
 
         // todo: better handle overflow cases where beat is very small or very large
