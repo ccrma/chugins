@@ -40,7 +40,7 @@ public:
     // for Chugins extending UGen
     void tick(SAMPLE* in, SAMPLE* out, int nframes);
 
-    void reset() { m_rbstretcher->reset(); }
+    void reset();
 
     double getPlayhead();
     void setPlayhead(double playhead);
@@ -64,29 +64,33 @@ public:
     void setLoopEnd(double loopEnd) { m_clipInfo.loop_end = loopEnd; }
     bool getLoopEnable() { return m_clipInfo.loop_on; }
     void setLoopEnable(bool enable) { m_clipInfo.loop_on = enable; }
+
 private:
     // sample rate
     t_CKFLOAT m_srate;
 
     std::unique_ptr<RubberBand::RubberBandStretcher> m_rbstretcher;
 
+    // buffer related vars:
+    const int ibs = 1024;  // interleaved buffer size
+    int m_numAllocated = 0;  // keep track of allocated samples
+    int m_channels = 0;  // keep track of allocated channels
     float** m_retrieveBuffer = NULL; // non interleaved: [channels][ibs]
     float* m_interleavedBuffer = nullptr;  // interleaved: [channels*ibs]
     float** m_nonInterleavedBuffer = NULL;  // non interleaved: [channels][ibs]
+
+    // soundfile vars:
     SNDFILE* sndfile;
     SF_INFO sfinfo;
     int sfReadPos = 0;
 
-    int m_numAllocated = 0;
     AbletonClipInfo m_clipInfo;
 
-    const int ibs = 1024;  // interleaved buffer size
-    int m_channels = 0;
     double m_playHeadBeats = 0.; // measured in quarter notes
     bool m_play = true;
     double m_bpm = 120.;  // desired playback bpm (not the source bpm)
 
     void clearBufs();
     void allocate(int numChannels, int numSamples);
-    void resetStretcher();
+    void recreateStretcher();
 };
