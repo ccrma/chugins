@@ -1,4 +1,5 @@
 #include "WarpBufChugin.h"
+#include <filesystem>
 
 WarpBufChugin::WarpBufChugin(t_CKFLOAT srate)
 {
@@ -79,10 +80,10 @@ WarpBufChugin::allocate(int numChannels, int numSamples)
 
     m_nonInterleavedBuffer = new float* [m_channels];
     for (int i = 0; i < m_channels; i++) {
-        m_nonInterleavedBuffer[i] = new float[ibs];
+        m_nonInterleavedBuffer[i] = new float[interleaved_buffer_size];
     }
        
-    m_interleavedBuffer = new float[m_channels * ibs];
+    m_interleavedBuffer = new float[m_channels * interleaved_buffer_size];
     
     m_retrieveBuffer = new float * [m_channels];
     // allocate buffers for each channel
@@ -193,12 +194,12 @@ WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
             // We might want to artificially restrict the number of samples to try to read from the soundfile.
             if (m_clipInfo.loop_on) {
                 // If we're looping, we want to prevent reading samples beyond the loop end sample point.
-                // If we're not beyond the loop end sample read point, we can greedily grab `ibs` samples.
-                allowedReadCount = std::min(ibs, loop_end_sample - sfReadPos);
+                // If we're not beyond the loop end sample read point, we can greedily grab `interleaved_buffer_size` samples.
+                allowedReadCount = std::min(interleaved_buffer_size, loop_end_sample - sfReadPos);
             }
             else {
-                // Not looping, so greedily grab `ibs` samples.
-                allowedReadCount = ibs;
+                // Not looping, so greedily grab `interleaved_buffer_size` samples.
+                allowedReadCount = interleaved_buffer_size;
             }
             if (allowedReadCount) {
                 count = sf_readf_float(sndfile, m_interleavedBuffer, allowedReadCount);
@@ -294,16 +295,28 @@ WarpBufChugin::read(const string& path) {
         return false;
     }
 
-    if (!m_clipInfo.readWarpFile((path + std::string(".asd")).c_str())) {
+    auto asd_path = path + std::string(".asd");
+    bool file_exists = std::filesystem::exists(asd_path);
+
+    if (! (file_exists && m_clipInfo.readWarpFile(asd_path.c_str()))) {
         // We didn't find a warp file, so assume it's 120 bpm.
         const double bpm = 120.;
         const double end_in_beats = bpm * sfinfo.frames / (sfinfo.samplerate * 60.);
+        //m_clipInfo.loop_on = true; // todo: maybe we want to do this. Let's just preserve the previous setting.
+        //m_clipInfo.warp_on = true; // todo: maybe we want to do this. Let's just preserve the previous setting.
         m_clipInfo.loop_start = 0.;
         m_clipInfo.hidden_loop_start = 0.;
         m_clipInfo.start_marker = 0.;
         m_clipInfo.hidden_loop_end = end_in_beats;
         m_clipInfo.loop_end = end_in_beats;
         m_clipInfo.end_marker = end_in_beats;
+
+        // reset the warp markers based on the default bpm:
+        m_clipInfo.warp_markers.clear();
+        m_clipInfo.warp_markers.push_back(std::make_pair(0, 0));
+        double beats = 1. / 32.;
+        double durSeconds = beats * (60. / bpm);
+        m_clipInfo.warp_markers.push_back(std::make_pair(durSeconds, beats));
     }
 
     this->setPlayhead(m_clipInfo.start_marker);

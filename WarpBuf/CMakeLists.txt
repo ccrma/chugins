@@ -61,6 +61,7 @@ add_library(WarpBufChugin SHARED ${CK_SOURCES} ${Sources} ${RUBBERBAND_SOURCES} 
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/include/samplerate.h
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/portable_endian/include/portable_endian.h
     )
+set_target_properties(WarpBufChugin PROPERTIES CXX_STANDARD 17)
 
 target_compile_definitions(WarpBufChugin
     PUBLIC

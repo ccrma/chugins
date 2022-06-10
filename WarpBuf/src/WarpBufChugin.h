@@ -72,12 +72,12 @@ private:
     std::unique_ptr<RubberBand::RubberBandStretcher> m_rbstretcher;
 
     // buffer related vars:
-    const int ibs = 1024;  // interleaved buffer size
+    const int interleaved_buffer_size = 1024;
     int m_numAllocated = 0;  // keep track of allocated samples
     int m_channels = 0;  // keep track of allocated channels
-    float** m_retrieveBuffer = NULL; // non interleaved: [channels][ibs]
-    float* m_interleavedBuffer = nullptr;  // interleaved: [channels*ibs]
-    float** m_nonInterleavedBuffer = NULL;  // non interleaved: [channels][ibs]
+    float** m_retrieveBuffer = NULL; // non interleaved: [m_channels][nframes] where nframes is the dynamic number of frames chuck requests on tick
+    float* m_interleavedBuffer = nullptr;  // interleaved: [m_channels*interleaved_buffer_size]
+    float** m_nonInterleavedBuffer = NULL;  // non interleaved: [m_channels][interleaved_buffer_size]
 
     // soundfile vars:
     SNDFILE* sndfile;
