@@ -1,0 +1,3 @@
+[submodule "DbBox2D/box2d"]
+	path = DbBox2D/box2d
+	url = https://github.com/erincatto/box2d
