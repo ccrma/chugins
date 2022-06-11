@@ -20,9 +20,14 @@ CK_DLL_MFUN( dbld_worldEnd );
 CK_DLL_MFUN( dbld_done );
 CK_DLL_MFUN( dbld_getPosition );
 CK_DLL_MFUN( dbld_getVelocity );
-CK_DLL_MFUN( dbld_getNumEvents );
-CK_DLL_MFUN( dbld_getEvent );
+CK_DLL_MFUN( dbld_getAngularVelocity );
 
+CK_DLL_MFUN( dbld_setGravity );
+CK_DLL_MFUN( dbld_setFriction );
+CK_DLL_MFUN( dbld_setDensity );
+CK_DLL_MFUN( dbld_setRestitution );
+CK_DLL_MFUN( dbld_applyImpulse );
+CK_DLL_MFUN( dbld_applyAngularImpulse );
 
 t_CKINT dbld_data_offset = 0;
 
@@ -73,6 +78,9 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_mfun(QUERY, dbld_getVelocity, "complex", "getVelocity");
     QUERY->add_arg(QUERY, "int", "bodyId");
 
+    QUERY->add_mfun(QUERY, dbld_getAngularVelocity, "float", "getAngularVelocity");
+    QUERY->add_arg(QUERY, "int", "bodyId");
+
     QUERY->add_mfun(QUERY, dbld_done, "void", "done");  // async
 
     // we'd like to invoke the broadcast method of our parent class
@@ -108,13 +116,148 @@ CK_DLL_DTOR(dbld_dtor)
 CK_DLL_MFUN(dbld_worldBegin)
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
-    std::string filename = GET_NEXT_STRING_SAFE(ARGS);
-    char const *cp = filename.c_str();
-    RETURN->v_int = c->LoadWorld(cp); // async, nonzero return indicates busy
+    t_CKCOMPLEX gravity = GET_NEXT_COMPLEX(ARGS);
+    c->WorldBegin(gravity); 
+}
+
+CK_DLL_MFUN(dbld_worldEnd)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    c->WorldEnd();
+}
+
+CK_DLL_MFUN(dbld_newEdge)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    t_CKCOMPLEX p1 = GET_NEXT_COMPLEX(ARGS);
+    t_CKCOMPLEX p2 = GET_NEXT_COMPLEX(ARGS);
+    bool twoSided = GET_NEXT_INT(ARGS);
+    RETURN->v_int = c->NewEdge(p1, p2, twoSided);
+}
+
+CK_DLL_MFUN(dbld_newCircle)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    t_CKCOMPLEX pos = GET_NEXT_COMPLEX(ARGS);
+    float radius = GET_NEXT_FLOAT(ARGS);
+    float density = GET_NEXT_FLOAT(ARGS);
+    int bt = GET_NEXT_INT(ARGS);
+    DbBox2D::BodyType t = DbBox2D::k_Static;
+    if(bt >= 0 && bt < DbBox2D::k_NumBodyTypes)
+        t = (DbBox2D::BodyType) bt;
+    RETURN->v_int = c->NewCircle(pos, radius, density, t);
+}
+
+CK_DLL_MFUN(dbld_newTriangle)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    t_CKCOMPLEX p1 = GET_NEXT_COMPLEX(ARGS);
+    t_CKCOMPLEX p2 = GET_NEXT_COMPLEX(ARGS);
+    t_CKCOMPLEX p3 = GET_NEXT_COMPLEX(ARGS);
+    float density = GET_NEXT_FLOAT(ARGS);
+    int bt = GET_NEXT_INT(ARGS);
+    DbBox2D::BodyType t = DbBox2D::k_Static;
+    if(bt >= 0 && bt < DbBox2D::k_NumBodyTypes)
+        t = (DbBox2D::BodyType) bt;
+    RETURN->v_int = c->NewTriangle(p1, p2, p3, density, t);
+}
+
+CK_DLL_MFUN(dbld_newRectangle)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    t_CKCOMPLEX pos = GET_NEXT_COMPLEX(ARGS);
+    t_CKCOMPLEX sz = GET_NEXT_COMPLEX(ARGS);
+    float density = GET_NEXT_FLOAT(ARGS);
+    int bt = GET_NEXT_INT(ARGS);
+    DbBox2D::BodyType t = DbBox2D::k_Static;
+    if(bt >= 0 && bt < DbBox2D::k_NumBodyTypes)
+        t = (DbBox2D::BodyType) bt;
+    RETURN->v_int = c->NewRectangle(pos, sz, density, t);
+}
+
+CK_DLL_MFUN(dbld_newRoom)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    t_CKCOMPLEX pos = GET_NEXT_COMPLEX(ARGS);
+    t_CKCOMPLEX sz = GET_NEXT_COMPLEX(ARGS);
+    float density = GET_NEXT_FLOAT(ARGS);
+    int bt = GET_NEXT_INT(ARGS);
+    DbBox2D::BodyType t = DbBox2D::k_Static;
+    if(bt >= 0 && bt < DbBox2D::k_NumBodyTypes)
+        t = (DbBox2D::BodyType) bt;
+    RETURN->v_int = c->NewRoom(pos, sz, density, t);
 }
 
 CK_DLL_MFUN(dbld_done)
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     c->Done();
+}
+
+CK_DLL_MFUN(dbld_getPosition)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    c->GetPosition(bodyId, RETURN->v_complex);
+}
+
+CK_DLL_MFUN(dbld_getVelocity)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    c->GetVelocity(bodyId, RETURN->v_complex);
+}
+
+CK_DLL_MFUN(dbld_getAngularVelocity)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    RETURN->v_float = c->GetAngularVelocity(bodyId);
+}
+
+CK_DLL_MFUN( dbld_setGravity )
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    t_CKCOMPLEX pos = GET_NEXT_COMPLEX(ARGS);
+    c->SetGravity(pos);
+}
+
+CK_DLL_MFUN( dbld_setFriction )
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    float x = GET_NEXT_FLOAT(ARGS);
+    c->SetFriction(bodyId, x);
+}
+
+CK_DLL_MFUN( dbld_setDensity )
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    float x = GET_NEXT_FLOAT(ARGS);
+    c->SetDensity(bodyId, x);
+}
+
+CK_DLL_MFUN( dbld_setRestitution )
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    float x = GET_NEXT_FLOAT(ARGS);
+    c->SetRestitution(bodyId, x);
+}
+
+CK_DLL_MFUN( dbld_applyImpulse )
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    t_CKCOMPLEX x = GET_NEXT_COMPLEX(ARGS);
+    c->ApplyImpulse(bodyId, x);
+}
+
+CK_DLL_MFUN( dbld_applyAngularImpulse )
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    float x = GET_NEXT_FLOAT(ARGS);
+    c->ApplyAngularImpulse(bodyId, x);
 }

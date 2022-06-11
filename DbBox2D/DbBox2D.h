@@ -27,41 +27,50 @@ public:
 
     void WorldBegin(t_CKCOMPLEX &gravity);
     void WorldEnd();
-    enum BodyType
+    enum BodyType // match b2BodyType
     {
-        k_Static,
+        k_Static=0,
+        k_Kinematic, // can move but "always wins", eg platform in game.
         k_Dynamic,
-        k_Kinematic // can move but "always wins", eg platform in game.
+        k_NumBodyTypes
     };
     int NewEdge(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, bool twoSided);
     int NewCircle(t_CKCOMPLEX &pos, float radius, float density, BodyType t);
     int NewTriangle(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, t_CKCOMPLEX &p3, float density, BodyType t);
     int NewRectangle(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float density, BodyType t);
     int NewRoom(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float density, BodyType t);
-
-    // Density, Restitution, Friction properties
-
     // int NewPendulum1()
     // complex NewPendulum2()
 
     // http://www.iforce2d.net/b2dtut/joints-revolute
     // https://github.com/erincatto/box2d/blob/main/testbed/tests/tumbler.cpp
-    int NewRevoluteJoint(JointType t, int body1, int body2); // anchor is body1 pos
-    int NewDistanceJoint(JointType t, int body1, int body2);
-    int NewSpringJoint(JointType t, int body1, int body2);
+    int NewRevoluteJoint(int body1, int body2); // anchor is body1 pos
+    int NewDistanceJoint(int body1, int body2);
+    int NewSpringJoint(int body1, int body2);
 
     // SetTransform(int i, t_CKCOMPLEX pos, float angle);
-    // SetLinearVelocity(int i, t_CKCOMPLEX vel);
-    // SetAngularVelocity(int i, float radsPerSec);
-    // vs
-    // ApplyLinearForce/Impulse
-    // ApplyAngularForce/Impulse
 
+    /* can be called while the simulation is running --------------------*/
+    // http://www.iforce2d.net/b2dtut/forces
+    void ApplyImpulse(int bodyId, t_CKCOMPLEX &impulse); // to center
+    void ApplyAngularImpulse(int bodyId, float impulse);
+
+    int SetGravity(t_CKCOMPLEX &g);
+    int SetRestitution(int bodyId, float x);
+    int SetFriction(int bodyId, float x);
+    int SetDensity(int bodyId, float x);
+
+    int GetPosition(int bodyId, t_CKCOMPLEX &pos);
+    int GetVelocity(int bodyId, t_CKCOMPLEX &vel);
+    float GetAngularVelocity(int bodyId);
+
+    void Step();
     void Done();
 
     // contact listener
     void BeginContact(b2Contact* contact) override;
     void EndContact(b2Contact* contact) override;
+
 
 private:
     static void workThreadFunc(DbBox2D *o);
@@ -73,6 +82,20 @@ private:
     // can lead to bodies.
     std::vector<b2Body *> m_bodies; 
     std::vector<b2Joint *> m_joints; 
+    std::vector<b2Contact *> m_contacts; 
+    struct ContactState
+    {
+        ContactState(b2Contact *bc)
+        {
+            this->touching = bc->IsTouching();
+            this->bodyA = (int) bc->GetFixtureA()->GetBody()->GetUserData().pointer;
+            this->bodyB = (int) bc->GetFixtureB()->GetBody()->GetUserData().pointer;
+        }
+
+        int bodyA, bodyB;
+        bool touching;
+    };
+    std::vector<ContactState> m_contactStates; 
 
     float m_timeStep;
     int32 m_velocityIterations;
