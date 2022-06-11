@@ -1,3 +1,0 @@
-[submodule "DbImageTools/DbBox2D/box2d"]
-	path = DbBox2D/box2d
-	url = https://github.com/cannerycoders/box2d
