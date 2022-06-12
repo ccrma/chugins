@@ -10,6 +10,7 @@
 
 #include "chuck_oo.h"
 #include "box2d/box2d.h"
+#include "concurrentQ.h"
 
 // https://box2d.org/documentation/
 // http://www.iforce2d.net/b2dtut/constant-speed
@@ -18,7 +19,7 @@
 class DbBox2D : public b2ContactListener
 {
 public:
-    DbBox2D(Chuck_Event *o);
+    DbBox2D();
 
     // NB: chuck is calling our destructor twice causing badness.
     //  We presume this is because of our unusual attempts to subclass
@@ -64,16 +65,18 @@ public:
     int GetVelocity(int bodyId, t_CKCOMPLEX &vel);
     float GetAngularVelocity(int bodyId);
 
-    void Step();
+    int GetNumContacts(); 
+    int GetContact(int id, int *bodyA, int *bodyB, bool *touching);
+
+    int Pause(bool p);
+
+    void Step(float timeStep); // in sec ie: 1./60.
     void Done();
 
+public:
     // contact listener
     void BeginContact(b2Contact* contact) override;
     void EndContact(b2Contact* contact) override;
-
-
-private:
-    static void workThreadFunc(DbBox2D *o);
 
 private:
     b2World *m_world;
@@ -83,30 +86,18 @@ private:
     std::vector<b2Body *> m_bodies; 
     std::vector<b2Joint *> m_joints; 
     std::vector<b2Contact *> m_contacts; 
-    struct ContactState
-    {
-        ContactState(b2Contact *bc)
-        {
-            this->touching = bc->IsTouching();
-            this->bodyA = (int) bc->GetFixtureA()->GetBody()->GetUserData().pointer;
-            this->bodyB = (int) bc->GetFixtureB()->GetBody()->GetUserData().pointer;
-        }
 
-        int bodyA, bodyB;
-        bool touching;
-    };
-    std::vector<ContactState> m_contactStates; 
-
-    float m_timeStep;
     int32 m_velocityIterations;
     int32 m_positionIterations;
     void cleanupWorld();
 
-private:
-    Chuck_Event *m_evtObj;
+private: // threading
+    static void workThreadFunc(DbBox2D *o);
+    void doStep(float timeStep); // invoked in work thread
+    ConcurrentQ<std::function<void()>> m_workQueue;
+    int m_debug;
     std::atomic<bool> m_done;
     std::atomic<bool> m_loadWorld;
-    std::string m_worldFile;
     std::thread::id m_mainThreadId, m_workThreadId;
     std::thread m_workThread;
     std::mutex m_worldMutex;

@@ -17,11 +17,15 @@ CK_DLL_MFUN( dbld_newTriangle );
 CK_DLL_MFUN( dbld_newRectangle );
 CK_DLL_MFUN( dbld_newRoom );
 CK_DLL_MFUN( dbld_worldEnd );
+
+CK_DLL_MFUN( dbld_step );
 CK_DLL_MFUN( dbld_done );
+
 CK_DLL_MFUN( dbld_getPosition );
 CK_DLL_MFUN( dbld_getVelocity );
 CK_DLL_MFUN( dbld_getAngularVelocity );
-
+CK_DLL_MFUN( dbld_getNumContacts );
+CK_DLL_MFUN( dbld_getContact );
 CK_DLL_MFUN( dbld_setGravity );
 CK_DLL_MFUN( dbld_setFriction );
 CK_DLL_MFUN( dbld_setDensity );
@@ -35,12 +39,13 @@ t_CKINT dbld_data_offset = 0;
 CK_DLL_QUERY(DbBox2D)
 {
     QUERY->setname(QUERY, "DbBox2D");
-    QUERY->begin_class(QUERY, "DbBox2D", "Event"); // we're not a ugen!
+    QUERY->begin_class(QUERY, "DbBox2D", "Object"); // we're not a ugen!
 
     QUERY->add_ctor(QUERY, dbld_ctor);
     QUERY->add_dtor(QUERY, dbld_dtor);
 
     QUERY->add_mfun(QUERY, dbld_worldBegin, "void", "worldBegin");
+    QUERY->add_arg(QUERY, "complex", "gravity");
 
     QUERY->add_mfun(QUERY, dbld_worldEnd, "void", "worldEnd");
 
@@ -52,25 +57,29 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_mfun(QUERY, dbld_newCircle, "int", "newCircle");
     QUERY->add_arg(QUERY, "complex", "position");
     QUERY->add_arg(QUERY, "float", "radius"); 
-    QUERY->add_arg(QUERY, "int", "static");
+    QUERY->add_arg(QUERY, "float", "density"); 
+    QUERY->add_arg(QUERY, "int", "bodyType");
 
     QUERY->add_mfun(QUERY, dbld_newTriangle, "int", "newTriangle");
     QUERY->add_arg(QUERY, "complex", "p1");
     QUERY->add_arg(QUERY, "complex", "p2");
     QUERY->add_arg(QUERY, "complex", "p3");
-    QUERY->add_arg(QUERY, "int", "static");
+    QUERY->add_arg(QUERY, "int", "bodyType");
 
     QUERY->add_mfun(QUERY, dbld_newRectangle, "int", "newRectangle");
     QUERY->add_arg(QUERY, "complex", "position");
     QUERY->add_arg(QUERY, "complex", "size");
     QUERY->add_arg(QUERY, "float", "angle");
-    QUERY->add_arg(QUERY, "int", "static");
+    QUERY->add_arg(QUERY, "int", "bodyType");
 
     QUERY->add_mfun(QUERY, dbld_newRoom, "int", "newRoom");
     QUERY->add_arg(QUERY, "complex", "position");
     QUERY->add_arg(QUERY, "complex", "size");
     QUERY->add_arg(QUERY, "float", "angle");
-    QUERY->add_arg(QUERY, "int", "static");
+    QUERY->add_arg(QUERY, "int", "bodyType");
+
+    QUERY->add_mfun(QUERY, dbld_step, "void", "step");
+    QUERY->add_arg(QUERY, "dur", "stepSize");
 
     QUERY->add_mfun(QUERY, dbld_getPosition, "complex", "getPosition");
     QUERY->add_arg(QUERY, "int", "bodyId");
@@ -80,6 +89,34 @@ CK_DLL_QUERY(DbBox2D)
 
     QUERY->add_mfun(QUERY, dbld_getAngularVelocity, "float", "getAngularVelocity");
     QUERY->add_arg(QUERY, "int", "bodyId");
+
+    QUERY->add_mfun(QUERY, dbld_getNumContacts, "int", "getNumContacts");
+
+    QUERY->add_mfun(QUERY, dbld_getContact, "vec3", "getContact"); // bodyA, bodyB, touching
+    QUERY->add_arg(QUERY, "int", "bodyId");
+
+    QUERY->add_mfun(QUERY, dbld_setGravity, "void", "setGravity");
+    QUERY->add_arg(QUERY, "complex", "gravity");
+
+    QUERY->add_mfun(QUERY, dbld_setFriction, "void", "setFriction" );
+    QUERY->add_arg(QUERY, "int", "bodyId");
+    QUERY->add_arg(QUERY, "float", "friction");
+
+    QUERY->add_mfun(QUERY, dbld_setDensity, "void", "setDensity" );
+    QUERY->add_arg(QUERY, "int", "bodyId");
+    QUERY->add_arg(QUERY, "float", "density");
+
+    QUERY->add_mfun(QUERY, dbld_setRestitution , "void", "setRestitution");
+    QUERY->add_arg(QUERY, "int", "bodyId");
+    QUERY->add_arg(QUERY, "float", "restitution");
+
+    QUERY->add_mfun(QUERY, dbld_applyImpulse, "void", "applyImpulse" );
+    QUERY->add_arg(QUERY, "int", "bodyId");
+    QUERY->add_arg(QUERY, "complex", "impulse");
+
+    QUERY->add_mfun(QUERY, dbld_applyAngularImpulse, "void", "applyAngularImpulse" );
+    QUERY->add_arg(QUERY, "int", "bodyId");
+    QUERY->add_arg(QUERY, "float", "angularImpulse");
 
     QUERY->add_mfun(QUERY, dbld_done, "void", "done");  // async
 
@@ -93,12 +130,7 @@ CK_DLL_QUERY(DbBox2D)
 CK_DLL_CTOR(dbld_ctor)
 {
     OBJ_MEMBER_INT(SELF, dbld_data_offset) = 0;
-    DbBox2D *c = new DbBox2D((Chuck_Event *) SELF);
-
-    // we are getting double-deleted, presumably because we are Event subclass
-    // hack/fix is to add a ref so the first decref doesn't trigger
-    SELF->add_ref(); // <---------------- hack, prevents dtor
-
+    DbBox2D *c = new DbBox2D();
     OBJ_MEMBER_INT(SELF, dbld_data_offset) = (t_CKINT) c;
 }
 
@@ -136,6 +168,7 @@ CK_DLL_MFUN(dbld_newEdge)
 }
 
 CK_DLL_MFUN(dbld_newCircle)
+
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     t_CKCOMPLEX pos = GET_NEXT_COMPLEX(ARGS);
@@ -188,6 +221,13 @@ CK_DLL_MFUN(dbld_newRoom)
     RETURN->v_int = c->NewRoom(pos, sz, density, t);
 }
 
+CK_DLL_MFUN(dbld_step)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    float stepSize = GET_NEXT_DUR(ARGS) / API->vm->get_srate(API, SHRED);
+    c->Step(stepSize); // async, void
+}
+
 CK_DLL_MFUN(dbld_done)
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
@@ -213,6 +253,29 @@ CK_DLL_MFUN(dbld_getAngularVelocity)
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     int bodyId = GET_NEXT_INT(ARGS);
     RETURN->v_float = c->GetAngularVelocity(bodyId);
+}
+
+CK_DLL_MFUN(dbld_getNumContacts)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    RETURN->v_int = c->GetNumContacts();
+}
+
+CK_DLL_MFUN(dbld_getContact)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    int contactId = GET_NEXT_INT(ARGS);
+    int bodyA, bodyB; 
+    bool touching;
+    int err = c->GetContact(contactId, &bodyA, &bodyB, &touching);
+    if(!err)
+    {
+        RETURN->v_vec3.x = bodyA;
+        RETURN->v_vec3.y = bodyB;
+        RETURN->v_vec3.z = touching ? 1 : 0;
+    }
+    else
+        RETURN->v_vec3.x = -1;
 }
 
 CK_DLL_MFUN( dbld_setGravity )
