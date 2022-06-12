@@ -111,21 +111,21 @@ Object properties can be changed during the simulation. To modify object
 properities its class (Shape, Contact, Joint) couples with its id to uniquely
 identify the object.
 
-| Method                                 | Description                                                                                                              |
-| :------------------------------------- | :----------------------------------------------------------------------------------------------------------------------- |
-| `step(dur am)`                         | causes the simulation to proceed to its next step. amt is typically 1/60th of a second.                                  |
-| `dur getAvgSimTime()`                  | returns the actual compute time for a simulation step.                                                                   |
-| `complex getPosition(int id)`          | returns the position of the identified _shape_.                                                                          |
-| `complex getVelocity(int id)`          | returns the linear velocity of the identified _shape_.                                                                   |
-| `complex getAngularVelocity(int id)`   | returns the angular velocity of the identified _shape_.                                                                  |
-| `int getNumContacts()`                 | returns the number of contact events that occured in the last frame.                                                     |
+| Method                                 | Description                                                                             |
+| :------------------------------------- | :-------------------------------------------------------------------------------------- |
+| `step(dur am)`                         | causes the simulation to proceed to its next step. amt is typically 1/60th of a second. |
+| `dur getAvgSimTime()`                  | returns the average measured compute time for a simulation step.                        |
+| `complex getPosition(int id)`          | returns the position of the identified _shape_.                                         |
+| `complex getVelocity(int id)`          | returns the linear velocity of the identified _shape_.                                  |
+| `complex getAngularVelocity(int id)`   | returns the angular velocity of the identified _shape_.                                 |
+| `int getNumContacts()`                 | returns the number of contact events that occured in the last frame.                    |
 | `vec3 getContact(int id)`              | returns the contact info for the identified _contact_. 3 values are stuffed into the vec2: shapeAId, shapeBId, touching. |
-| `setGravity(complex g)`                | allows you to change gravity during the simulation.                                                                      |
-| `setFriction(int id, float x)`         | change the friction value for identified _shape_.                                                                        |
-| `setDensity(int id, float x)`          | change the density value for identified _shape_.                                                                         |
-| `setRestitution(int id, float x)`      | change the restitution (bounciness) value for identified _shape_.                                                        |
-| `applyImpulse(int id, complex x)`      | apply an impulse force to the identified _shape_.                                                                        |
-| `applyAngularImpulse(int id, float x)` | apply an angular impulse force to the identified _shape_.                                                                |
+| `setGravity(complex g)`                | allows you to change gravity during the simulation.                                     |
+| `setFriction(int id, float x)`         | change the friction value for identified _shape_.                                       |
+| `setDensity(int id, float x)`          | change the density value for identified _shape_.                                        |
+| `setRestitution(int id, float x)`      | change the restitution (bounciness) value for identified _shape_.                       |
+| `applyImpulse(int id, complex x)`      | apply an impulse force to the identified _shape_.                                       |
+| `applyAngularImpulse(int id, float x)` | apply an angular impulse force to the identified _shape_.                               |
 
 ### Constants
 
