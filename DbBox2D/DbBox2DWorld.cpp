@@ -150,7 +150,7 @@ DbBox2D::NewRoom(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float density, BodyType t)
     shape.SetAsBox(hx+hthick, hthick/*hy*/, b2Vec2(0.f, hy+hthick), 0.f);
     body->CreateFixture(&shape, density);
     // bottom
-    shape.SetAsBox(hx+hthick, hthick/*hy*/, b2Vec2(0.f, -(hy+hthick), 0.f);
+    shape.SetAsBox(hx+hthick, hthick/*hy*/, b2Vec2(0.f, -hy-hthick), 0.f);
     body->CreateFixture(&shape, density);
     // left
     shape.SetAsBox(hthick, hy+hthick/*hy*/, b2Vec2(-hx-hthick, 0.f), 0.f);
