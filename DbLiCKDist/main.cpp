@@ -26,13 +26,13 @@
 #include "DbLiCKDistort.h"
 
 
-CK_DLL_CTOR( dbld_ctor );
-CK_DLL_DTOR( dbld_dtor );
-CK_DLL_MFUN( dbld_distortion );
-CK_DLL_MFUN( dbld_setparam );
-CK_DLL_TICK( dbld_tick );
+CK_DLL_CTOR( dblld_ctor );
+CK_DLL_DTOR( dblld_dtor );
+CK_DLL_MFUN( dblld_distortion );
+CK_DLL_MFUN( dblld_setparam );
+CK_DLL_TICK( dblld_tick );
 
-t_CKINT dbld_data_offset = 0;
+t_CKINT dblld_data_offset = 0;
 
 /* -------------------------------------------------------------------- */
 
@@ -40,63 +40,63 @@ CK_DLL_QUERY(DbLiCKDistort)
 {
     QUERY->setname(QUERY, "DbLiCKDistort");
     QUERY->begin_class(QUERY, "DbLiCKDistort", "UGen");
-    QUERY->add_ctor(QUERY, dbld_ctor);
-    QUERY->add_dtor(QUERY, dbld_dtor);
+    QUERY->add_ctor(QUERY, dblld_ctor);
+    QUERY->add_dtor(QUERY, dblld_dtor);
 
     // set
-    QUERY->add_mfun(QUERY, dbld_distortion, "string", "distortion");
+    QUERY->add_mfun(QUERY, dblld_distortion, "string", "distortion");
     QUERY->add_arg(QUERY, "string", "name");
 
     // setparam
-    QUERY->add_mfun(QUERY, dbld_setparam, "int", "setparam");
+    QUERY->add_mfun(QUERY, dblld_setparam, "int", "setparam");
     QUERY->add_arg(QUERY, "int", "id");
     QUERY->add_arg(QUERY, "float", "value");
 
     // tick
-    QUERY->add_ugen_func(QUERY, dbld_tick, NULL, 1, 1);
+    QUERY->add_ugen_func(QUERY, dblld_tick, NULL, 1, 1);
 
-    dbld_data_offset = QUERY->add_mvar(QUERY, "int", "@dbLiCKdistort_data", false);
+    dblld_data_offset = QUERY->add_mvar(QUERY, "int", "@dbLiCKdistort_data", false);
     QUERY->end_class(QUERY);
     return TRUE;
 }
 
-CK_DLL_CTOR(dbld_ctor)
+CK_DLL_CTOR(dblld_ctor)
 {
-    OBJ_MEMBER_INT(SELF, dbld_data_offset) = 0;
+    OBJ_MEMBER_INT(SELF, dblld_data_offset) = 0;
     float srate = API->vm->get_srate(API, SHRED);
     DbLiCKDistortMgr * c = new DbLiCKDistortMgr(srate);
-    OBJ_MEMBER_INT(SELF, dbld_data_offset) = (t_CKINT) c;
+    OBJ_MEMBER_INT(SELF, dblld_data_offset) = (t_CKINT) c;
 }
 
-CK_DLL_DTOR(dbld_dtor)
+CK_DLL_DTOR(dblld_dtor)
 {
-    DbLiCKDistortMgr *c = (DbLiCKDistortMgr *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DbLiCKDistortMgr *c = (DbLiCKDistortMgr *) OBJ_MEMBER_INT(SELF, dblld_data_offset);
     if(c)
     {
         delete c;
-        OBJ_MEMBER_INT(SELF, dbld_data_offset) = 0;
+        OBJ_MEMBER_INT(SELF, dblld_data_offset) = 0;
         c = NULL;
     }
 }
 
-CK_DLL_MFUN(dbld_distortion) // set
+CK_DLL_MFUN(dblld_distortion) // set
 {
-    DbLiCKDistortMgr *c = (DbLiCKDistortMgr *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DbLiCKDistortMgr *c = (DbLiCKDistortMgr *) OBJ_MEMBER_INT(SELF, dblld_data_offset);
     std::string nm = GET_NEXT_STRING_SAFE(ARGS);
     RETURN->v_int = c->Set(nm.c_str()); // 0 is success
 }
 
-CK_DLL_MFUN(dbld_setparam) // set
+CK_DLL_MFUN(dblld_setparam) // set
 {
-    DbLiCKDistortMgr *c = (DbLiCKDistortMgr *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DbLiCKDistortMgr *c = (DbLiCKDistortMgr *) OBJ_MEMBER_INT(SELF, dblld_data_offset);
     int i = GET_NEXT_INT(ARGS); // 
     float f = GET_NEXT_FLOAT(ARGS);
     c->SetParam(i, f);
 }
 
-CK_DLL_TICK(dbld_tick)
+CK_DLL_TICK(dblld_tick)
 {
-    DbLiCKDistortMgr *c = (DbLiCKDistortMgr *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DbLiCKDistortMgr *c = (DbLiCKDistortMgr *) OBJ_MEMBER_INT(SELF, dblld_data_offset);
     *out = c->Tick(in);
     return TRUE;
 }

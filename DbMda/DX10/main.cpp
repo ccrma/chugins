@@ -26,25 +26,25 @@
 
 #include "mdaDX10Processor.h"
 
-CK_DLL_CTOR( dbld_ctor );
-CK_DLL_DTOR( dbld_dtor );
+CK_DLL_CTOR( dbdx_ctor );
+CK_DLL_DTOR( dbdx_dtor );
 
-CK_DLL_MFUN( dbld_printPresets );
-CK_DLL_MFUN( dbld_selectPreset );
-CK_DLL_MFUN( dbld_getNumPresets );
+CK_DLL_MFUN( dbdx_printPresets );
+CK_DLL_MFUN( dbdx_selectPreset );
+CK_DLL_MFUN( dbdx_getNumPresets );
 
-CK_DLL_MFUN( dbld_printParams );
-CK_DLL_MFUN( dbld_setParam );
-CK_DLL_MFUN( dbld_getParam );
+CK_DLL_MFUN( dbdx_printParams );
+CK_DLL_MFUN( dbdx_setParam );
+CK_DLL_MFUN( dbdx_getParam );
 
-CK_DLL_MFUN( dbld_noteOn );
-CK_DLL_MFUN( dbld_noteOff );
+CK_DLL_MFUN( dbdx_noteOn );
+CK_DLL_MFUN( dbdx_noteOff );
 
-CK_DLL_MFUN( dbld_midiEvent );
+CK_DLL_MFUN( dbdx_midiEvent );
 
-CK_DLL_TICK( dbld_tick );
+CK_DLL_TICK( dbdx_tick );
 
-t_CKINT dbld_data_offset = 0;
+t_CKINT dbdx_data_offset = 0;
 
 /* -------------------------------------------------------------------- */
 
@@ -52,127 +52,127 @@ CK_DLL_QUERY(DbMdaDX10)
 {
     QUERY->setname(QUERY, "DbMdaDX10");
     QUERY->begin_class(QUERY, "DbMdaDX10", "UGen");
-    QUERY->add_ctor(QUERY, dbld_ctor);
-    QUERY->add_dtor(QUERY, dbld_dtor);
+    QUERY->add_ctor(QUERY, dbdx_ctor);
+    QUERY->add_dtor(QUERY, dbdx_dtor);
 
     // presets -------------------------------------------
-    QUERY->add_mfun(QUERY, dbld_printPresets, "void", "printPresets");
+    QUERY->add_mfun(QUERY, dbdx_printPresets, "void", "printPresets");
     // no args
 
-    QUERY->add_mfun(QUERY, dbld_getNumPresets, "int", "getNumPresets");
+    QUERY->add_mfun(QUERY, dbdx_getNumPresets, "int", "getNumPresets");
     // no args
 
-    QUERY->add_mfun(QUERY, dbld_selectPreset, "void", "selectPreset");
+    QUERY->add_mfun(QUERY, dbdx_selectPreset, "void", "selectPreset");
     QUERY->add_arg(QUERY, "int", "id");
 
     // params ---------------------------------------------
-    QUERY->add_mfun(QUERY, dbld_printParams, "void", "printParams");
+    QUERY->add_mfun(QUERY, dbdx_printParams, "void", "printParams");
 
-    QUERY->add_mfun(QUERY, dbld_setParam, "void", "setParam");
+    QUERY->add_mfun(QUERY, dbdx_setParam, "void", "setParam");
     QUERY->add_arg(QUERY, "int", "id");
     QUERY->add_arg(QUERY, "float", "value");
 
-    QUERY->add_mfun(QUERY, dbld_getParam, "float", "getParam");
+    QUERY->add_mfun(QUERY, dbdx_getParam, "float", "getParam");
     QUERY->add_arg(QUERY, "int", "id");
 
     // midi ----------------------------------------------------
-    QUERY->add_mfun(QUERY, dbld_noteOn, "int", "noteOn");
+    QUERY->add_mfun(QUERY, dbdx_noteOn, "int", "noteOn");
     QUERY->add_arg(QUERY, "int", "noteNumber");
     QUERY->add_arg(QUERY, "float", "velocity");
 
-    QUERY->add_mfun(QUERY, dbld_noteOff, "int", "noteOff");
+    QUERY->add_mfun(QUERY, dbdx_noteOff, "int", "noteOff");
     QUERY->add_arg(QUERY, "int", "noteNumber");
     QUERY->add_arg(QUERY, "float", "velocity");
 
-    QUERY->add_mfun(QUERY, dbld_midiEvent, "void", "midiEvent");
+    QUERY->add_mfun(QUERY, dbdx_midiEvent, "void", "midiEvent");
     QUERY->add_arg(QUERY, "MidiMsg", "msg");
 
     // mono tick --------------------------------------------------
     // vs: add_ugen_funcf
-    QUERY->add_ugen_func(QUERY, dbld_tick, NULL, 0, 1);
+    QUERY->add_ugen_func(QUERY, dbdx_tick, NULL, 0, 1);
 
-    dbld_data_offset = QUERY->add_mvar(QUERY, "int", "@dbld_data", false);
+    dbdx_data_offset = QUERY->add_mvar(QUERY, "int", "@dbdx_data", false);
     QUERY->end_class(QUERY);
     return TRUE;
 }
 
-CK_DLL_CTOR(dbld_ctor)
+CK_DLL_CTOR(dbdx_ctor)
 {
-    OBJ_MEMBER_INT(SELF, dbld_data_offset) = 0;
+    OBJ_MEMBER_INT(SELF, dbdx_data_offset) = 0;
     float srate = API->vm->get_srate(API, SHRED);
     DX10Processor *c = new DX10Processor(srate);
-    OBJ_MEMBER_INT(SELF, dbld_data_offset) = (t_CKINT) c;
+    OBJ_MEMBER_INT(SELF, dbdx_data_offset) = (t_CKINT) c;
 }
 
-CK_DLL_DTOR(dbld_dtor)
+CK_DLL_DTOR(dbdx_dtor)
 {
-    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbdx_data_offset);
     if(c)
     {
         delete c;
-        OBJ_MEMBER_INT(SELF, dbld_data_offset) = 0;
+        OBJ_MEMBER_INT(SELF, dbdx_data_offset) = 0;
     }
 }
 
-CK_DLL_MFUN( dbld_printPresets )
+CK_DLL_MFUN( dbdx_printPresets )
 {
-    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbdx_data_offset);
     c->printPresets();
 }
 
-CK_DLL_MFUN( dbld_getNumPresets )
+CK_DLL_MFUN( dbdx_getNumPresets )
 {
-    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbdx_data_offset);
     RETURN->v_int = c->getNumPresets();
 }
 
-CK_DLL_MFUN( dbld_selectPreset )
+CK_DLL_MFUN( dbdx_selectPreset )
 {
-    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbdx_data_offset);
     int i = GET_NEXT_INT(ARGS); // 
     c->selectPreset(i);
 }
 
-CK_DLL_MFUN( dbld_printParams )
+CK_DLL_MFUN( dbdx_printParams )
 {
-    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbdx_data_offset);
     c->printParams();
 }
 
-CK_DLL_MFUN( dbld_setParam )
+CK_DLL_MFUN( dbdx_setParam )
 {
-    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbdx_data_offset);
     int i = GET_NEXT_INT(ARGS); // 
     float f = GET_NEXT_FLOAT(ARGS);
     c->setParamValue(i, f);
 }
 
-CK_DLL_MFUN( dbld_getParam )
+CK_DLL_MFUN( dbdx_getParam )
 {
     t_CKINT index = GET_NEXT_INT(ARGS);
-    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbdx_data_offset);
     RETURN->v_float = c->getParamValue(index);
 }
 
-CK_DLL_MFUN( dbld_noteOn )
+CK_DLL_MFUN( dbdx_noteOn )
 {
     t_CKINT note = GET_NEXT_INT(ARGS);
     t_CKFLOAT vel = GET_NEXT_FLOAT(ARGS);
-    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbdx_data_offset);
     c->addNoteOn(note, vel);
 }
 
-CK_DLL_MFUN( dbld_noteOff )
+CK_DLL_MFUN( dbdx_noteOff )
 {
     t_CKINT note = GET_NEXT_INT(ARGS);
     t_CKFLOAT vel = GET_NEXT_FLOAT(ARGS);
-    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbdx_data_offset);
     c->addNoteOff(note, vel);
 }
 
-CK_DLL_MFUN( dbld_midiEvent )
+CK_DLL_MFUN( dbdx_midiEvent )
 {
-    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbdx_data_offset);
     Chuck_Object *msg = GET_NEXT_OBJECT(ARGS);
 
     /* object mvar offsets for MidiMsg not exported by chuck
@@ -187,9 +187,9 @@ CK_DLL_MFUN( dbld_midiEvent )
     c->addMidiEvent(data1, data2, data3);
 }
 
-CK_DLL_TICK(dbld_tick)
+CK_DLL_TICK(dbdx_tick)
 {
-    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
+    DX10Processor *c = (DX10Processor *) OBJ_MEMBER_INT(SELF, dbdx_data_offset);
     c->processMono(&in, out, 1);
     return TRUE;
 }

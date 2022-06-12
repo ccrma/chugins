@@ -96,7 +96,7 @@ private:
 private: // threading
     static void workThreadFunc(DbBox2D *o);
     void doStep(float timeStep); // invoked in work thread
-    ConcurrentQ<std::function<void()>> m_workQueue;
+    DbB2dConcurrentQ<std::function<void()>> m_workQueue;
     int m_debug;
     std::atomic<bool> m_done;
     std::atomic<bool> m_loadWorld;

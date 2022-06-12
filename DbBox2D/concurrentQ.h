@@ -13,19 +13,19 @@
 #include <iostream>
 
 template <typename T>
-class ConcurrentQ
+class DbB2dConcurrentQ
 {
 public:
-    ConcurrentQ()
+    DbB2dConcurrentQ()
     {
         m_bailing.store(false);
     }
-    ~ConcurrentQ()
+    ~DbB2dConcurrentQ()
     {
         // std::cerr << "Q deleted\n";
     }
-    ConcurrentQ(const ConcurrentQ&) = delete; // disable copying
-    ConcurrentQ& operator=(const ConcurrentQ&) = delete; // disable assignment
+    DbB2dConcurrentQ(const DbB2dConcurrentQ&) = delete; // disable copying
+    DbB2dConcurrentQ& operator=(const DbB2dConcurrentQ&) = delete; // disable assignment
 
     T Pop() 
     {

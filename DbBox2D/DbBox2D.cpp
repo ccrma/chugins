@@ -2,12 +2,12 @@
 
 DbBox2D::DbBox2D() :
     m_world(nullptr),
+    m_velocityIterations(6),
+    m_positionIterations(2),
     m_debug(0),
-    m_iter(0),
     m_done(false),
     m_loadWorld(false),
-    m_velocityIterations(6),
-    m_positionIterations(2)
+    m_iter(0)
 {
     m_mainThreadId = std::this_thread::get_id();
     m_workThread = std::thread(workThreadFunc, this);
@@ -51,10 +51,15 @@ DbBox2D::doStep(float timeStep)
     }
     Timer::t_Duration dt = m_timer.Stop();
     float timeConsumed = dt / std::chrono::seconds(1);
-    if(timeConsumed >= .5*timeStep)
+    if(timeConsumed >= .75f*timeStep)
     {
-        std::cerr << "DbBox2D WARNING: scene is too heavy for timeStep? " 
-            << timeConsumed/timeStep << "\n";
+        static int done = 0;
+        if(!done)
+        {
+            done = 1;
+            std::cerr << "DbBox2D WARNING: scene is too heavy for timeStep? " 
+                << timeConsumed/timeStep << "\n";
+        }
     }
     m_iter++;
 }
