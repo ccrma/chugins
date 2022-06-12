@@ -35,6 +35,13 @@ CK_DLL_MFUN( dbb2d_applyAngularImpulse );
 
 t_CKINT dbb2d_data_offset = 0;
 
+/* enums */
+t_CKINT dbb2d_staticType_offset = 0;
+t_CKINT dbb2d_kinematicType_offset = 0;
+t_CKINT dbb2d_dynamicType_offset = 0;
+t_CKINT dbb2d_degToRad_offset = 0;
+t_CKINT dbb2d_radToDeg_offset = 0;
+
 /* ----------------------------------------------------------- */
 CK_DLL_QUERY(DbBox2D)
 {
@@ -52,7 +59,6 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_mfun(QUERY, dbb2d_newEdge, "int", "newEdge");
     QUERY->add_arg(QUERY, "complex", "p1");
     QUERY->add_arg(QUERY, "complex", "p2");
-    QUERY->add_arg(QUERY, "int", "twoSided");
 
     QUERY->add_mfun(QUERY, dbb2d_newCircle, "int", "newCircle");
     QUERY->add_arg(QUERY, "complex", "position");
@@ -64,12 +70,14 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_arg(QUERY, "complex", "p1");
     QUERY->add_arg(QUERY, "complex", "p2");
     QUERY->add_arg(QUERY, "complex", "p3");
+    QUERY->add_arg(QUERY, "float", "density"); 
     QUERY->add_arg(QUERY, "int", "bodyType");
 
     QUERY->add_mfun(QUERY, dbb2d_newRectangle, "int", "newRectangle");
     QUERY->add_arg(QUERY, "complex", "position");
     QUERY->add_arg(QUERY, "complex", "size");
     QUERY->add_arg(QUERY, "float", "angle");
+    QUERY->add_arg(QUERY, "float", "density"); 
     QUERY->add_arg(QUERY, "int", "bodyType");
 
     QUERY->add_mfun(QUERY, dbb2d_newRoom, "int", "newRoom");
@@ -120,7 +128,11 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_arg(QUERY, "int", "bodyId");
     QUERY->add_arg(QUERY, "float", "angularImpulse");
 
-    // we'd like to invoke the broadcast method of our parent class
+    dbb2d_staticType_offset = QUERY->add_mvar(QUERY, "int", "staticType", true/*constant*/);
+    dbb2d_kinematicType_offset = QUERY->add_mvar(QUERY, "int", "kinematicType", true/*constant*/);
+    dbb2d_dynamicType_offset = QUERY->add_mvar(QUERY, "int", "dynamicType", true/*constant*/);
+    dbb2d_degToRad_offset = QUERY->add_mvar(QUERY, "float", "degToRad", true/*constant*/);
+    dbb2d_radToDeg_offset = QUERY->add_mvar(QUERY, "float", "radToDeg", true/*constant*/);
 
     dbb2d_data_offset = QUERY->add_mvar(QUERY, "int", "@dbb2d_data", false);
     QUERY->end_class(QUERY);
@@ -129,9 +141,13 @@ CK_DLL_QUERY(DbBox2D)
 
 CK_DLL_CTOR(dbb2d_ctor)
 {
-    OBJ_MEMBER_INT(SELF, dbb2d_data_offset) = 0;
     DbBox2D *c = new DbBox2D();
     OBJ_MEMBER_INT(SELF, dbb2d_data_offset) = (t_CKINT) c;
+    OBJ_MEMBER_INT(SELF, dbb2d_staticType_offset) = 0;
+    OBJ_MEMBER_INT(SELF, dbb2d_kinematicType_offset) = 1;
+    OBJ_MEMBER_INT(SELF, dbb2d_dynamicType_offset) = 2;
+    OBJ_MEMBER_FLOAT(SELF, dbb2d_degToRad_offset) =  ONE_PI/ 180.f;
+    OBJ_MEMBER_FLOAT(SELF, dbb2d_radToDeg_offset) = 180.f / ONE_PI;
 }
 
 CK_DLL_DTOR(dbb2d_dtor)
@@ -162,8 +178,7 @@ CK_DLL_MFUN(dbb2d_newEdge)
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
     t_CKCOMPLEX p1 = GET_NEXT_COMPLEX(ARGS);
     t_CKCOMPLEX p2 = GET_NEXT_COMPLEX(ARGS);
-    bool twoSided = GET_NEXT_INT(ARGS);
-    RETURN->v_int = c->NewEdge(p1, p2, twoSided);
+    RETURN->v_int = c->NewEdge(p1, p2);
 }
 
 CK_DLL_MFUN(dbb2d_newCircle)
@@ -199,12 +214,13 @@ CK_DLL_MFUN(dbb2d_newRectangle)
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
     t_CKCOMPLEX pos = GET_NEXT_COMPLEX(ARGS);
     t_CKCOMPLEX sz = GET_NEXT_COMPLEX(ARGS);
+    float angle = GET_NEXT_FLOAT(ARGS);
     float density = GET_NEXT_FLOAT(ARGS);
     int bt = GET_NEXT_INT(ARGS);
     DbBox2D::BodyType t = DbBox2D::k_Static;
     if(bt >= 0 && bt < DbBox2D::k_NumBodyTypes)
         t = (DbBox2D::BodyType) bt;
-    RETURN->v_int = c->NewRectangle(pos, sz, density, t);
+    RETURN->v_int = c->NewRectangle(pos, sz, angle, density, t);
 }
 
 CK_DLL_MFUN(dbb2d_newRoom)

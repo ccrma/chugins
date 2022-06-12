@@ -21,7 +21,7 @@ DbBox2D::WorldEnd()
 }
 
 int 
-DbBox2D::NewEdge(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, bool twoSided)
+DbBox2D::NewEdge(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2)
 {
     int id = m_bodies.size();
     b2BodyDef bd;
@@ -35,8 +35,8 @@ DbBox2D::NewEdge(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, bool twoSided)
     b2EdgeShape shape;
     b2Vec2 b1(p1.re, p1.im);
     b2Vec2 b2(p2.re, p2.im);
-    if(twoSided)
-        shape.SetTwoSided(b1, b2);
+    shape.SetTwoSided(b1, b2);
+    #if 0
     else
     {
         float dx = b2.x - b1.x;
@@ -44,6 +44,7 @@ DbBox2D::NewEdge(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, bool twoSided)
         b2Vec2 b0(b1.x - dx, b1.y - dy), b3(b2.x+dx, b2.y+dy);
         shape.SetOneSided(b0, b1, b2, b3); /* unverified */
     }
+    #endif
     body->CreateFixture(&shape, 0.f); /* zero okay since we're static */
     return id;
 }
@@ -100,7 +101,8 @@ DbBox2D::NewTriangle(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, t_CKCOMPLEX &p3,
 }
 
 int 
-DbBox2D::NewRectangle(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float density, BodyType t)
+DbBox2D::NewRectangle(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float angle, 
+    float density, BodyType t)
 {
     int id = m_bodies.size();
     b2BodyDef bd;
@@ -114,7 +116,7 @@ DbBox2D::NewRectangle(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float density, BodyType
     float hx = sz.re/2.f;
     float hy = sz.im/2.f;
     b2PolygonShape shape;
-    shape.SetAsBox(hx, hy);
+    shape.SetAsBox(hx, hy, b2Vec2(0, 0), angle);
     body->CreateFixture(&shape, density);
     return id;
 }
@@ -145,16 +147,16 @@ DbBox2D::NewRoom(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float density, BodyType t)
     // #          #
     // \==========/
     // top
-    shape.SetAsBox(hx+hthick, hthick/*hy*/, b2Vec2(0.f, hy), 0.f);
+    shape.SetAsBox(hx+hthick, hthick/*hy*/, b2Vec2(0.f, hy+hthick), 0.f);
     body->CreateFixture(&shape, density);
     // bottom
-    shape.SetAsBox(hx+hthick, hthick/*hy*/, b2Vec2(0.f, -hy), 0.f);
+    shape.SetAsBox(hx+hthick, hthick/*hy*/, b2Vec2(0.f, -(hy+hthick), 0.f);
     body->CreateFixture(&shape, density);
     // left
-    shape.SetAsBox(hthick, hy+hthick/*hy*/, b2Vec2(-hx, 0.f), 0.f);
+    shape.SetAsBox(hthick, hy+hthick/*hy*/, b2Vec2(-hx-hthick, 0.f), 0.f);
     body->CreateFixture(&shape, density);
     // right
-    shape.SetAsBox(hthick, hy+hthick/*hy*/, b2Vec2(hx, 0.f), 0.f);
+    shape.SetAsBox(hthick, hy+hthick/*hy*/, b2Vec2(hx+hthick, 0.f), 0.f);
     body->CreateFixture(&shape, density);
 
     return id;

@@ -36,10 +36,10 @@ public:
         k_Dynamic,
         k_NumBodyTypes
     };
-    int NewEdge(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, bool twoSided);
+    int NewEdge(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2);
     int NewCircle(t_CKCOMPLEX &pos, float radius, float density, BodyType t);
     int NewTriangle(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, t_CKCOMPLEX &p3, float density, BodyType t);
-    int NewRectangle(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float density, BodyType t);
+    int NewRectangle(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float angle, float density, BodyType t);
     int NewRoom(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float density, BodyType t);
     // int NewPendulum1()
     // complex NewPendulum2()

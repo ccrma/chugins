@@ -90,7 +90,7 @@ for(int i;i<10000;i++)
                     }
                     notes[note] => Std.mtof => float f;
                     f => inst[pIndex].freq;
-                    Math.random2f(.7, 1) => inst[pIndex].noteOn;
+                    Math.random2f(.8, 1) => inst[pIndex].noteOn;
                     b.applyImpulse(id, #(.1, .1)); // up right
                 }
             }

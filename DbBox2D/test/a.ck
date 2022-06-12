@@ -1,3 +1,11 @@
+// 14 bouncy balls above a plane. Each is placed randomly and
+// has a random density.
+//
+// On each contact: 
+//  - we play a note
+// Notes:
+//  - balls may fall off the plane nevery to be heard again.
+//  - resting balls may be revived when another marauder hits them.
 DbBox2D b;
 
 [72, 74, 76, 78, 52, 55, 61, 63, 65, 66, 68, 66, 65, 63] @=> int notes[];
@@ -23,7 +31,7 @@ fun void test1()
     #(0, -10) => complex gravity;
     b.worldBegin(gravity);
     // things can fall off the edge into the abyss
-    b.newEdge(#(-10, 0), #(10, 0), 1/*twosided*/) => int room;
+    b.newEdge(#(-10, 0), #(10, 0)) => int room;
     shapes << room;
     for(int i;i<numParticles;i++)
     {
@@ -54,7 +62,7 @@ for(int i;i<1000;i++)
         // sonify the contacts
         for(int j;j<c;j++)
         {
-            b.getContact(j) => vec3 info;
+            b.getContact(j) => vec3 info; //  (bodyA, bodyB, touching)
             info.y $ int -1 => int id;
             if(info.z != 0)
             {
