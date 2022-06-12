@@ -1,9 +1,9 @@
 #include "DbBox2D.h"
-#include "timer.h"
 
 DbBox2D::DbBox2D() :
     m_world(nullptr),
     m_debug(0),
+    m_iter(0),
     m_done(false),
     m_loadWorld(false),
     m_velocityIterations(6),
@@ -16,8 +16,7 @@ DbBox2D::DbBox2D() :
 DbBox2D::~DbBox2D()
 {
     // std::cerr << "DbBox2D dtor\n";
-    this->Done();
-
+    m_done = true;
     if(m_workThread.joinable())
     {
         m_workQueue.Bail();
@@ -33,34 +32,31 @@ DbBox2D::Step(float timeStep) // invoked in audio thread
     m_workQueue.Push(fn);
 }
 
-void
-DbBox2D::Done()
+float
+DbBox2D::GetAvgSimTime()
 {
-    std::cerr << "Done ---------------------------\n";
-    m_done = true;
-    // std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    // m_workThread.join();
-    this->cleanupWorld();
+    if(m_iter ==0) return 0.f;
+    return (m_timer.GetElapsed() / m_iter) / std::chrono::seconds(1);
 }
 
 void
 DbBox2D::doStep(float timeStep)
 {
-    Timer t;
-    t.Start();
+    m_timer.Start();
     std::lock_guard<std::mutex> lock(m_worldMutex);
     if(m_world) 
     {
         m_contacts.clear();
         m_world->Step(timeStep, m_velocityIterations, m_positionIterations);
     }
-    Timer::t_Duration dt = t.Stop();
+    Timer::t_Duration dt = m_timer.Stop();
     float timeConsumed = dt / std::chrono::seconds(1);
     if(timeConsumed >= .5*timeStep)
     {
         std::cerr << "DbBox2D WARNING: scene is too heavy for timeStep? " 
             << timeConsumed/timeStep << "\n";
     }
+    m_iter++;
 }
 
 /*static*/ void

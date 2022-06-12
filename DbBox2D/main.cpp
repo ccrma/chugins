@@ -19,7 +19,7 @@ CK_DLL_MFUN( dbld_newRoom );
 CK_DLL_MFUN( dbld_worldEnd );
 
 CK_DLL_MFUN( dbld_step );
-CK_DLL_MFUN( dbld_done );
+CK_DLL_MFUN( dbld_getAvgSimTime );
 
 CK_DLL_MFUN( dbld_getPosition );
 CK_DLL_MFUN( dbld_getVelocity );
@@ -81,6 +81,8 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_mfun(QUERY, dbld_step, "void", "step");
     QUERY->add_arg(QUERY, "dur", "stepSize");
 
+    QUERY->add_mfun(QUERY, dbld_getAvgSimTime, "dur", "getAvgSimTime");
+
     QUERY->add_mfun(QUERY, dbld_getPosition, "complex", "getPosition");
     QUERY->add_arg(QUERY, "int", "bodyId");
 
@@ -118,8 +120,6 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_arg(QUERY, "int", "bodyId");
     QUERY->add_arg(QUERY, "float", "angularImpulse");
 
-    QUERY->add_mfun(QUERY, dbld_done, "void", "done");  // async
-
     // we'd like to invoke the broadcast method of our parent class
 
     dbld_data_offset = QUERY->add_mvar(QUERY, "int", "@dbld_data", false);
@@ -136,7 +136,6 @@ CK_DLL_CTOR(dbld_ctor)
 
 CK_DLL_DTOR(dbld_dtor)
 {
-    std::cerr << "DbBox2D unexpected dtor\n";
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
     if(c)
     {
@@ -228,10 +227,10 @@ CK_DLL_MFUN(dbld_step)
     c->Step(stepSize); // async, void
 }
 
-CK_DLL_MFUN(dbld_done)
+CK_DLL_MFUN(dbld_getAvgSimTime)
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbld_data_offset);
-    c->Done();
+    RETURN->v_dur = API->vm->get_srate(API, SHRED) * c->GetAvgSimTime();
 }
 
 CK_DLL_MFUN(dbld_getPosition)

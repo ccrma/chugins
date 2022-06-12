@@ -56,9 +56,10 @@ public:
     t_Duration Stop() 
     {
         auto end = std::chrono::steady_clock::now();
-        m_elapsed += end - m_startTime;
+        auto interval = end - m_startTime;
+        m_elapsed += interval;
         m_running = false;
-        return m_elapsed;
+        return interval;
     }
 
     t_Duration GetElapsed() const { return m_elapsed; }

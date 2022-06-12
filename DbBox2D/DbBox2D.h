@@ -11,6 +11,7 @@
 #include "chuck_oo.h"
 #include "box2d/box2d.h"
 #include "concurrentQ.h"
+#include "timer.h"
 
 // https://box2d.org/documentation/
 // http://www.iforce2d.net/b2dtut/constant-speed
@@ -71,6 +72,7 @@ public:
     int Pause(bool p);
 
     void Step(float timeStep); // in sec ie: 1./60.
+    float GetAvgSimTime(); // in sec
     void Done();
 
 public:
@@ -101,6 +103,8 @@ private: // threading
     std::thread::id m_mainThreadId, m_workThreadId;
     std::thread m_workThread;
     std::mutex m_worldMutex;
+    uint64_t m_iter;
+    Timer m_timer;
 };
 
 #endif

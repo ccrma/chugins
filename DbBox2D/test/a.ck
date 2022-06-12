@@ -2,8 +2,6 @@
 1 => int kinematicType;
 2 => int dynamicType;
 
-1::second => now;
-
 DbBox2D b;
 
 [ 72, 74, 76, 78, 52, 55, 61, 63, 65, 66, 68, 66, 65, 63 ] @=> int notes[];
@@ -16,9 +14,9 @@ ModalBar inst[numParticles];
 for(int i;i<numParticles;i++)
 {
     ModalBar m => inst[i];
-    inst[i].preset(1);
+    inst[i].preset(Math.random2(0, 4));
     inst[i] => r;
-    3./numParticles => inst[i].gain;
+    6./numParticles => inst[i].gain;
 }
 
 int shapes[0];
@@ -50,10 +48,11 @@ test1();
 
 <<<"World has", shapes.size(), "shapes.">>>;
 1::second / 60 => dur stepSize;
-for(int i;i<10000;i++)
+4 => float sloMo;
+for(int i;i<1000;i++)
 {
     b.step(stepSize);
-    stepSize => now;
+    sloMo * stepSize => now;
     // b.pause(1);
     b.getNumContacts() => int c;
     if(c != 0)
@@ -93,4 +92,8 @@ for(int i;i<10000;i++)
         */
     }
 }
-b.done();
+b.getAvgSimTime() => dur simAvg;
+<<<"average sim time", simAvg/1::second, "seconds, duty cycle", simAvg/stepSize>>>;
+
+<<<"ringing">>>;
+3::second => now;
