@@ -1,35 +1,41 @@
 // 4 balls in a square room.  Each has different bounciness (restitution).
 // On each contact: 
 //  - we play a note, panned to its relative room location
-//  - we add impulse in upper-right direction. 
+//  - we add impulse in random direction. 
 // Notes:
 //  - balls may come to rest and produce no notes.
 //  - resting balls may be revived when another marauder hits them.
 
 DbBox2D b;
 int debug;
-
-[72, 64, 46, 60] @=> int notes[];
-NHHall r => dac;
-
-1 => float sloMo;
-notes.size() => int numParticles;
-.7 => float gain;
-ModalBar inst[numParticles];
-Pan2 pans[numParticles];
-for(int i;i<numParticles;i++)
-{
-    ModalBar m @=> inst[i];
-    m.preset(1); // Math.random2(0, 4));
-    gain/numParticles => m.gain;
-
-    Pan2 p @=> pans[i];
-    (-1 + 2 * i/(numParticles-1.0)) => p.pan;
-
-    m => p => r;
-}
-
 int shapes[0];
+int notes[];
+ModalBar inst[0];
+Pan2 pans[0];
+int numParticles;
+1 => float sloMo;
+
+fun void buildAudio()
+{
+    [57, 58, 60, 64, 65] @=> notes;
+    NHHall r => dac;
+
+    notes.size() => numParticles;
+    .7 => float gain;
+    inst.size(numParticles);
+    pans.size(numParticles);
+    for(int i;i<numParticles;i++)
+    {
+        ModalBar m @=> inst[i];
+        m.preset(1); // Math.random2(0, 4));
+        gain/numParticles => m.gain;
+    
+        Pan2 p @=> pans[i];
+        (-1 + 2 * i/(numParticles-1.0)) => p.pan;
+    
+        m => p => r;
+    }
+}
 
 fun void test1()
 {
@@ -53,11 +59,12 @@ fun void test1()
     b.worldEnd();
 }
 
+buildAudio();
 test1();
 
 <<<"World has", shapes.size(), "shapes.">>>;
 1::second / 60 => dur stepSize;
-for(int i;i<10000;i++)
+for(int i;i<5000;i++)
 {
     b.step(stepSize);
     sloMo * stepSize => now;
@@ -91,7 +98,11 @@ for(int i;i<10000;i++)
                     notes[note] => Std.mtof => float f;
                     f => inst[pIndex].freq;
                     Math.random2f(.8, 1) => inst[pIndex].noteOn;
-                    b.applyImpulse(id, #(.1, .1)); // up right
+                    if(p.re < 1)
+                        b.applyImpulse(id, #(Math.random2f(-.1,.1), .1)); // up random
+                    else
+                    if(p.re > 18)
+                        b.applyImpulse(id, #(Math.random2f(-.1,.1), -.1)); // down random
                 }
             }
         }

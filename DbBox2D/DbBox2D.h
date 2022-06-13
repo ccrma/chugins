@@ -36,6 +36,7 @@ public:
         k_Dynamic,
         k_NumBodyTypes
     };
+    int NewPoint(t_CKCOMPLEX &pos); // used to anchor a joint
     int NewEdge(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2);
     int NewCircle(t_CKCOMPLEX &pos, float radius, float density, BodyType t);
     int NewTriangle(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, t_CKCOMPLEX &p3, float density, BodyType t);
@@ -46,7 +47,9 @@ public:
 
     // http://www.iforce2d.net/b2dtut/joints-revolute
     // https://github.com/erincatto/box2d/blob/main/testbed/tests/tumbler.cpp
-    int NewRevoluteJoint(int body1, int body2); // anchor is body1 pos
+    int NewRevoluteJoint(int bodyA, int bodyB,
+        t_CKCOMPLEX &anchorA, t_CKCOMPLEX &anchorB,
+        float refAngle, float motorSpeed, float maxMotorTorque);
     int NewDistanceJoint(int body1, int body2);
     int NewSpringJoint(int body1, int body2);
 

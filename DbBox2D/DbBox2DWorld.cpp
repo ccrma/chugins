@@ -50,6 +50,18 @@ DbBox2D::NewEdge(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2)
 }
 
 int 
+DbBox2D::NewPoint(t_CKCOMPLEX &pos)
+{
+    int id = m_bodies.size();
+    b2BodyDef bd;
+    bd.position.Set(pos.re, pos.im);
+    b2Body* body = m_world->CreateBody(&bd);
+    m_bodies.push_back(body);
+    // no fixtures here.
+    return id;
+}
+
+int 
 DbBox2D::NewCircle(t_CKCOMPLEX &pos, float radius, float density, BodyType t)
 {
     int id = m_bodies.size();
@@ -161,6 +173,35 @@ DbBox2D::NewRoom(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float density, BodyType t)
 
     return id;
 }
+
+int 
+DbBox2D::NewRevoluteJoint(int bodyA, int bodyB,
+        t_CKCOMPLEX &anchorA, t_CKCOMPLEX &anchorB,
+        float refAngle, float motorSpeed, float maxMotorTorque)
+{
+    int jid = -1;
+    if(m_world && bodyA < m_bodies.size() && bodyB < m_bodies.size())
+    {
+        jid = m_joints.size();
+        b2Body *a = m_bodies[bodyA];
+        b2Body *b = m_bodies[bodyB];
+
+        b2RevoluteJointDef jd;
+        jd.bodyA = a;
+        jd.bodyB = b;
+        jd.localAnchorA.Set(anchorA.re, anchorA.im);
+        jd.localAnchorB.Set(anchorB.re, anchorB.im);
+        jd.referenceAngle = refAngle;
+        jd.motorSpeed = motorSpeed;
+        jd.maxMotorTorque = maxMotorTorque;
+        jd.enableMotor = motorSpeed > 0.f;
+
+        b2RevoluteJoint *m_joint = (b2RevoluteJoint *) m_world->CreateJoint(&jd);
+        m_joints.push_back(m_joint);
+    }
+    return jid;
+}
+
 void
 DbBox2D::ApplyImpulse(int bodyId, t_CKCOMPLEX &impulse) // to center
 {

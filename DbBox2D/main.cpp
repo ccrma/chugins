@@ -11,11 +11,13 @@
 CK_DLL_CTOR( dbb2d_ctor );
 CK_DLL_DTOR( dbb2d_dtor );
 CK_DLL_MFUN( dbb2d_worldBegin );
+CK_DLL_MFUN( dbb2d_newPoint );
 CK_DLL_MFUN( dbb2d_newEdge );
 CK_DLL_MFUN( dbb2d_newCircle );
 CK_DLL_MFUN( dbb2d_newTriangle );
 CK_DLL_MFUN( dbb2d_newRectangle );
 CK_DLL_MFUN( dbb2d_newRoom );
+CK_DLL_MFUN( dbb2d_newRevoluteJoint );
 CK_DLL_MFUN( dbb2d_worldEnd );
 
 CK_DLL_MFUN( dbb2d_step );
@@ -60,6 +62,9 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_arg(QUERY, "complex", "p1");
     QUERY->add_arg(QUERY, "complex", "p2");
 
+    QUERY->add_mfun(QUERY, dbb2d_newPoint, "int", "newPoint");
+    QUERY->add_arg(QUERY, "complex", "position");
+
     QUERY->add_mfun(QUERY, dbb2d_newCircle, "int", "newCircle");
     QUERY->add_arg(QUERY, "complex", "position");
     QUERY->add_arg(QUERY, "float", "radius"); 
@@ -83,8 +88,17 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_mfun(QUERY, dbb2d_newRoom, "int", "newRoom");
     QUERY->add_arg(QUERY, "complex", "position");
     QUERY->add_arg(QUERY, "complex", "size");
-    QUERY->add_arg(QUERY, "float", "angle");
+    QUERY->add_arg(QUERY, "float", "density");
     QUERY->add_arg(QUERY, "int", "bodyType");
+
+    QUERY->add_mfun(QUERY, dbb2d_newRevoluteJoint, "int", "newRevoluteJoint");
+    QUERY->add_arg(QUERY, "int", "bodyA");
+    QUERY->add_arg(QUERY, "int", "bodyB");
+    QUERY->add_arg(QUERY, "complex", "localAnchorA");
+    QUERY->add_arg(QUERY, "complex", "localAnchorB");
+    QUERY->add_arg(QUERY, "float", "refAngle");
+    QUERY->add_arg(QUERY, "float", "motorSpeed");
+    QUERY->add_arg(QUERY, "float", "maxMotorTorque");
 
     QUERY->add_mfun(QUERY, dbb2d_step, "void", "step");
     QUERY->add_arg(QUERY, "dur", "stepSize");
@@ -181,8 +195,14 @@ CK_DLL_MFUN(dbb2d_newEdge)
     RETURN->v_int = c->NewEdge(p1, p2);
 }
 
-CK_DLL_MFUN(dbb2d_newCircle)
+CK_DLL_MFUN(dbb2d_newPoint)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    t_CKCOMPLEX pos = GET_NEXT_COMPLEX(ARGS);
+    RETURN->v_int = c->NewPoint(pos);
+}
 
+CK_DLL_MFUN(dbb2d_newCircle)
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
     t_CKCOMPLEX pos = GET_NEXT_COMPLEX(ARGS);
@@ -234,6 +254,20 @@ CK_DLL_MFUN(dbb2d_newRoom)
     if(bt >= 0 && bt < DbBox2D::k_NumBodyTypes)
         t = (DbBox2D::BodyType) bt;
     RETURN->v_int = c->NewRoom(pos, sz, density, t);
+}
+
+CK_DLL_MFUN(dbb2d_newRevoluteJoint)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int bodyA = GET_NEXT_INT(ARGS);
+    int bodyB = GET_NEXT_INT(ARGS);
+    t_CKCOMPLEX anchorA = GET_NEXT_COMPLEX(ARGS);
+    t_CKCOMPLEX anchorB = GET_NEXT_COMPLEX(ARGS);
+    float motorSpeed = GET_NEXT_FLOAT(ARGS);
+    float refAngle = GET_NEXT_FLOAT(ARGS);
+    float maxMotorTorque = GET_NEXT_FLOAT(ARGS);
+    RETURN->v_int = c->NewRevoluteJoint(bodyA, bodyB, anchorA, anchorB,
+        motorSpeed, refAngle, maxMotorTorque);
 }
 
 CK_DLL_MFUN(dbb2d_step)
