@@ -19,6 +19,7 @@ CK_DLL_MFUN( dbb2d_newRectangle );
 CK_DLL_MFUN( dbb2d_newRoom );
 CK_DLL_MFUN( dbb2d_newRevoluteJoint );
 CK_DLL_MFUN( dbb2d_worldEnd );
+CK_DLL_MFUN( dbb2d_getNumBodies );
 
 CK_DLL_MFUN( dbb2d_step );
 CK_DLL_MFUN( dbb2d_getAvgSimTime );
@@ -57,6 +58,7 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_arg(QUERY, "complex", "gravity");
 
     QUERY->add_mfun(QUERY, dbb2d_worldEnd, "void", "worldEnd");
+    QUERY->add_mfun(QUERY, dbb2d_getNumBodies, "int", "getNumBodies");
 
     QUERY->add_mfun(QUERY, dbb2d_newEdge, "int", "newEdge");
     QUERY->add_arg(QUERY, "complex", "p1");
@@ -185,6 +187,12 @@ CK_DLL_MFUN(dbb2d_worldEnd)
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
     c->WorldEnd();
+}
+
+CK_DLL_MFUN(dbb2d_getNumBodies)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    RETURN->v_int = c->GetNumBodies();
 }
 
 CK_DLL_MFUN(dbb2d_newEdge)

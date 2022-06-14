@@ -386,12 +386,6 @@ DbBox2D::EndContact(b2Contact* contact)
 }
 
 int
-DbBox2D::GetNumContacts()
-{ 
-    return m_contacts.size(); 
-}
-
-int
 DbBox2D::GetContact(int id, int *bodyA, int *bodyB, bool *touching)
 {
     if(id < m_contacts.size())

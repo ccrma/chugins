@@ -16,6 +16,7 @@
 // https://box2d.org/documentation/
 // http://www.iforce2d.net/b2dtut/constant-speed
 // https://piqnt.com/planck.js/
+// https://github.com/shakiba/planck.js/blob/master/src/serializer/schema.json
 
 class DbBox2D : public b2ContactListener
 {
@@ -69,6 +70,8 @@ public:
     int GetVelocity(int bodyId, t_CKCOMPLEX &vel);
     float GetAngularVelocity(int bodyId);
 
+    int GetNumBodies();
+    int GetNumJoints();
     int GetNumContacts(); 
     int GetContact(int id, int *bodyA, int *bodyB, bool *touching);
 

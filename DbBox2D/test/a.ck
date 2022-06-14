@@ -23,16 +23,16 @@ for(int i;i<numParticles;i++)
     6./numParticles => inst[i].gain;
 }
 
-int shapes[0];
+int bodies[0];
 
 fun void test1()
 {
-    shapes.size(0);
+    bodies.size(0);
     #(0, -10) => complex gravity;
     b.worldBegin(gravity);
     // things can fall off the edge into the abyss
     b.newEdge(#(-10, 0), #(10, 0)) => int room;
-    shapes << room;
+    bodies << room;
     for(int i;i<numParticles;i++)
     {
         complex pos;
@@ -42,14 +42,14 @@ fun void test1()
         Math.random2f(.5, 1.5) => float density;
         b.newCircle(pos, radius, density, b.dynamicType) => int id;
         b.setRestitution(id, .95);
-        shapes << id;
+        bodies << id;
     }
     b.worldEnd();
 }
 
 test1();
 
-<<<"World has", shapes.size(), "shapes.">>>;
+<<<"World has", bodies.size(), "bodies.">>>;
 1::second / 60 => dur stepSize;
 4 => float sloMo;
 for(int i;i<1000;i++)

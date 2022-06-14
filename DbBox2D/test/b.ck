@@ -8,7 +8,7 @@
 
 DbBox2D b;
 int debug;
-int shapes[0];
+int bodies[0];
 int notes[];
 ModalBar inst[0];
 Pan2 pans[0];
@@ -39,12 +39,12 @@ fun void buildAudio()
 
 fun void test1()
 {
-    shapes.size(0);
+    bodies.size(0);
     #(0, -10) => complex gravity;
     b.worldBegin(gravity);
     // room from  x: -10, 10, y: 0, 20
     b.newRoom(#(0, 10), #(20, 20)/*sz*/, 1, b.staticType) => int room;
-    shapes << room;
+    bodies << room;
     for(int i;i<numParticles;i++)
     {
         complex pos;
@@ -54,7 +54,7 @@ fun void test1()
         Math.random2f(1, 10) => float density;
         b.newCircle(pos, radius, density, b.dynamicType) => int id;
         b.setRestitution(id, Math.random2f(.75, 1.));  // energy added below
-        shapes << id;
+        bodies << id;
     }
     b.worldEnd();
 }
@@ -62,7 +62,7 @@ fun void test1()
 buildAudio();
 test1();
 
-<<<"World has", shapes.size(), "shapes.">>>;
+<<<"World has", bodies.size(), "bodies.">>>;
 1::second / 60 => dur stepSize;
 for(int i;i<5000;i++)
 {

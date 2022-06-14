@@ -24,6 +24,25 @@ DbBox2D::~DbBox2D()
     }
 }
 
+/* ------------------------------------------------------------------------- */
+int
+DbBox2D::GetNumContacts()
+{ 
+    return m_contacts.size(); 
+}
+
+int
+DbBox2D::GetNumBodies()
+{ 
+    return m_bodies.size(); 
+}
+
+int
+DbBox2D::GetNumJoints()
+{ 
+    return m_joints.size(); 
+}
+
 /* ---------------------------------------------------------------------- */
 void 
 DbBox2D::Step(float timeStep) // invoked in audio thread
