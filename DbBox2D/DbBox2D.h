@@ -68,6 +68,7 @@ public:
 
     int GetPosition(int bodyId, t_CKCOMPLEX &pos);
     int GetVelocity(int bodyId, t_CKCOMPLEX &vel);
+    float GetAngle(int bodyId);
     float GetAngularVelocity(int bodyId);
 
     int GetNumBodies();

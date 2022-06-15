@@ -26,6 +26,7 @@ CK_DLL_MFUN( dbb2d_getAvgSimTime );
 
 CK_DLL_MFUN( dbb2d_getPosition );
 CK_DLL_MFUN( dbb2d_getVelocity );
+CK_DLL_MFUN( dbb2d_getAngle );
 CK_DLL_MFUN( dbb2d_getAngularVelocity );
 CK_DLL_MFUN( dbb2d_getNumContacts );
 CK_DLL_MFUN( dbb2d_getContact );
@@ -111,6 +112,9 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_arg(QUERY, "int", "bodyId");
 
     QUERY->add_mfun(QUERY, dbb2d_getVelocity, "complex", "getVelocity");
+    QUERY->add_arg(QUERY, "int", "bodyId");
+
+    QUERY->add_mfun(QUERY, dbb2d_getAngle, "float", "getAngle");
     QUERY->add_arg(QUERY, "int", "bodyId");
 
     QUERY->add_mfun(QUERY, dbb2d_getAngularVelocity, "float", "getAngularVelocity");
@@ -303,6 +307,13 @@ CK_DLL_MFUN(dbb2d_getVelocity)
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
     int bodyId = GET_NEXT_INT(ARGS);
     c->GetVelocity(bodyId, RETURN->v_complex);
+}
+
+CK_DLL_MFUN(dbb2d_getAngle)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    RETURN->v_float = c->GetAngle(bodyId);
 }
 
 CK_DLL_MFUN(dbb2d_getAngularVelocity)

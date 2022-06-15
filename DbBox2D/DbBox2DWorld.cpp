@@ -330,6 +330,21 @@ DbBox2D::GetVelocity(int bodyId, t_CKCOMPLEX &vel)
 }
 
 float 
+DbBox2D::GetAngle(int bodyId)
+{
+    float vel;
+    if(m_bodies.size() > bodyId)
+    {
+        m_worldMutex.lock();
+        vel = m_bodies[bodyId]->GetAngle();
+        m_worldMutex.unlock();
+    }
+    else
+        vel = 0.f;
+    return vel;
+}
+
+float 
 DbBox2D::GetAngularVelocity(int bodyId)
 {
     float vel;
