@@ -1,4 +1,5 @@
 #include "DbBox2D.h"
+#include <cassert>
 
 /* Scene construction --------------------------------------------------- */
 void
@@ -408,9 +409,13 @@ DbBox2D::GetContact(int id, int *bodyA, int *bodyB, bool *touching)
         b2Contact* contact = m_contacts[id];
         *bodyA = (int) contact->GetFixtureA()->GetBody()->GetUserData().pointer;
         *bodyB = (int) contact->GetFixtureB()->GetBody()->GetUserData().pointer;
+        assert(*bodyA >= 0 && *bodyB >= 0);
         *touching = contact->IsTouching();
         return 0;
     }
     else
+    {
+        *bodyA = *bodyB = -1;
         return -1;
+    }
 }
