@@ -48,8 +48,8 @@ fun void test1()
 }
 
 test1();
+dumpWorld();
 
-<<<"World has", bodies.size(), "bodies.">>>;
 1::second / 60 => dur stepSize;
 4 => float sloMo;
 for(int i;i<1000;i++)

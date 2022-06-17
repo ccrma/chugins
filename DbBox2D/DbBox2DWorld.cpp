@@ -27,7 +27,8 @@ DbBox2D::NewEdge(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2)
     int id = m_bodies.size();
     b2BodyDef bd;
     bd.type = b2_staticBody; // XXX
-    bd.position.Set((p1.re+p2.re)/2.f, (p1.im+p2.im)/2.f);
+    // bd.position.Set((p1.re+p2.re)/2.f, (p1.im+p2.im)/2.f);
+    bd.position.Set(0, 0);
     b2Body* body = m_world->CreateBody(&bd);
     body->GetUserData().pointer = id;
     m_bodies.push_back(body);
@@ -91,29 +92,6 @@ DbBox2D::NewCircle(t_CKCOMPLEX &pos, float radius, float density, BodyType t)
 }
 
 int 
-DbBox2D::NewTriangle(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, t_CKCOMPLEX &p3,     
-            float density, BodyType t)
-{
-    int id = m_bodies.size();
-    b2BodyDef bd;
-    bd.type = (b2BodyType) t;
-    bd.position.Set((p1.re + p2.re + p3.re)/3.f,
-                    (p2.im + p2.im + p3.im)/3.f);
-    b2Body* body = m_world->CreateBody(&bd);
-    body->GetUserData().pointer = id;
-    m_bodies.push_back(body);
-
-    b2PolygonShape shape;
-    b2Vec2 verts[3];
-    verts[0].Set(p1.re, p1.im);
-    verts[1].Set(p2.re, p2.im);
-    verts[2].Set(p3.re, p3.im);
-    shape.Set(verts, 3);
-    body->CreateFixture(&shape, density);
-    return id;
-}
-
-int 
 DbBox2D::NewRectangle(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float angle, 
     float density, BodyType t)
 {
@@ -130,6 +108,76 @@ DbBox2D::NewRectangle(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float angle,
     float hy = sz.im/2.f;
     b2PolygonShape shape;
     shape.SetAsBox(hx, hy, b2Vec2(0, 0), angle);
+    body->CreateFixture(&shape, density);
+    return id;
+}
+
+// a triangle defined in worldspace, we'll move the origin to its centroid
+int 
+DbBox2D::NewTriangle(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, t_CKCOMPLEX &p3,     
+            float density, BodyType t)
+{
+    int id = m_bodies.size();
+    b2BodyDef bd;
+    bd.type = (b2BodyType) t;
+    float cx = (p1.re + p2.re + p3.re)/3.f;
+    float cy = (p2.im + p2.im + p3.im)/3.f;
+    bd.position.Set(cx, cy);
+    b2Body* body = m_world->CreateBody(&bd);
+    body->GetUserData().pointer = id;
+    m_bodies.push_back(body);
+    b2PolygonShape shape;
+    b2Vec2 verts[3];
+    verts[0].Set(p1.re-cx, p1.im-cy);
+    verts[1].Set(p2.re-cx, p2.im-cy);
+    verts[2].Set(p3.re-cx, p3.im-cy);
+    shape.Set(verts, 3);
+    body->CreateFixture(&shape, density);
+    return id;
+}
+
+int 
+DbBox2D::NewTriangle(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, t_CKCOMPLEX &p3,     
+            t_CKCOMPLEX &pos, 
+            float density, BodyType t)
+{
+    int id = m_bodies.size();
+    b2BodyDef bd;
+    bd.type = (b2BodyType) t;
+    bd.position.Set(pos.re, pos.im);
+    b2Body* body = m_world->CreateBody(&bd);
+    body->GetUserData().pointer = id;
+    m_bodies.push_back(body);
+    b2PolygonShape shape;
+    b2Vec2 verts[3];
+    verts[0].Set(p1.re, p1.im);
+    verts[1].Set(p2.re, p2.im);
+    verts[2].Set(p3.re, p3.im);
+    shape.Set(verts, 3);
+    body->CreateFixture(&shape, density);
+    return id;
+}
+
+int 
+DbBox2D::NewPolygon(Chuck_Object *pts, t_CKCOMPLEX &pos, 
+            float density, BodyType t)
+{
+    int id = m_bodies.size();
+    b2BodyDef bd;
+    bd.type = (b2BodyType) t;
+    bd.position.Set(pos.re, pos.im);
+    b2Body* body = m_world->CreateBody(&bd);
+    body->GetUserData().pointer = id;
+    m_bodies.push_back(body);
+    Chuck_Array16 *userArray = (Chuck_Array16 *)pts;
+    std::vector<b2Vec2> bvec;
+    for(int i=0;i<userArray->m_vector.size();i++)
+    {
+        bvec.push_back(b2Vec2(userArray->m_vector[i].re, 
+                              userArray->m_vector[i].im ));
+    }
+    b2PolygonShape shape;
+    shape.Set(&bvec[0], bvec.size());
     body->CreateFixture(&shape, density);
     return id;
 }
@@ -296,6 +344,15 @@ DbBox2D::SetDensity(int bodyId, float x)
     return err;
 }
 
+b2BodyType
+DbBox2D::GetType(int bodyId)
+{
+    if(m_bodies.size() > bodyId)
+        return m_bodies[bodyId]->GetType();
+    else
+        return b2_staticBody; // no enum for invalid
+}
+
 int 
 DbBox2D::GetPosition(int bodyId, t_CKCOMPLEX &pos)
 {
@@ -333,16 +390,16 @@ DbBox2D::GetVelocity(int bodyId, t_CKCOMPLEX &vel)
 float 
 DbBox2D::GetAngle(int bodyId)
 {
-    float vel;
+    float rads;
     if(m_bodies.size() > bodyId)
     {
         m_worldMutex.lock();
-        vel = m_bodies[bodyId]->GetAngle();
+        rads = m_bodies[bodyId]->GetAngle();
         m_worldMutex.unlock();
     }
     else
-        vel = 0.f;
-    return vel;
+        rads = 0.f;
+    return rads;
 }
 
 float 

@@ -71,7 +71,7 @@ buildAudio();
 buildWorld();
 
 1::second / 60 => dur stepSize;
-for(int i;i<5000;i++)
+for(int i;i<1000;i++)
 {
     b.step(stepSize);
     stepSize => now;
@@ -102,3 +102,48 @@ b.getAvgSimTime() => dur simAvg;
 
 <<<"ringing">>>;
 3::second => now;
+
+fun void dumpWorld()
+{
+    complex pts[0];
+    b.getNumBodies() => int nbodies;
+    <<<"world has", nbodies, "bodies">>>;
+    for(int i;i<nbodies;i++)
+    {
+        b.getNumBodyShapes(i) => int nshapes;
+        <<<"  body", i, "has", nshapes, "shapes, bodytype", b.getType(i)>>>;
+        for(int j;j<nshapes;j++)
+        {
+            b.getBodyShapeType(i, j) => int type;
+            if(type == 0)
+            {
+                <<<"    shape", j, "is circle, radius", b.getCircleRadius(i, j) >>>;
+            }
+            else
+            if(type == 1)
+            {
+                b.getEdgePoints(i, j, pts);
+                <<<"    shape", j, "is edge between", pts[0], pts[1]>>>;
+            }
+            else
+            if(type == 2)
+            {
+                b.getPolygonPoints(i, j, pts);
+                <<<"    shape", j, "is polygon, npoints", pts.size()>>>;
+                for(int k;k<pts.size();k++)
+                    <<<"        ", k, pts[k]>>>;
+            }
+            else
+            if(type == 3)
+            {
+                b.getChainPoints(i, j, pts);
+                <<<"    shape", j, "is chain, npoints", pts.size()>>>;
+                for(int k;i<pts.size();k++)
+                    <<<"        ", k, pts[k]>>>;
+            }
+            else
+                <<<"   invalid shape", type>>>;
+        }
+    }
+}
+dumpWorld();

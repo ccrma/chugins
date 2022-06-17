@@ -44,6 +44,166 @@ DbBox2D::GetNumJoints()
 }
 
 /* ---------------------------------------------------------------------- */
+int 
+DbBox2D::GetNumBodyShapes(int bodyId)
+{
+    if(bodyId < m_bodies.size())
+    {
+        int cnt = 0;
+        b2Body *body = m_bodies[bodyId];
+        b2Fixture *fixture = body->GetFixtureList(); // usually a single fixture
+        while(fixture)
+        {
+            cnt++;
+            fixture = fixture->GetNext();
+        }
+        return cnt;
+    }
+    else
+        return -1;
+}
+
+int 
+DbBox2D::GetBodyShapeType(int bodyId, int shapeIndex)
+{
+    if(bodyId < m_bodies.size())
+    {
+        b2Body *body = m_bodies[bodyId];
+        b2Fixture *fixture = body->GetFixtureList(); // usually a single fixture
+        int cnt = 0;
+        while(fixture)
+        {
+            if(shapeIndex == cnt)
+                return (int) fixture->GetType();
+            cnt++;        
+            fixture = fixture->GetNext();
+
+        }
+        return -1;
+    }
+    else
+        return -1;
+}
+
+float 
+DbBox2D::GetCircleRadius(int bodyId, int shapeIndex)
+{
+    if(bodyId < m_bodies.size())
+    {
+        b2Body *body = m_bodies[bodyId];
+        b2Fixture *fixture = body->GetFixtureList(); // usually a single fixture
+        int cnt = 0;
+        while(fixture)
+        {
+            if(shapeIndex == cnt)
+                return ((b2CircleShape *) fixture->GetShape())->m_radius;
+
+            cnt++;        
+            fixture = fixture->GetNext();
+        }
+        return 0.f;
+    }
+    else
+        return 0.f;
+}
+
+// points are arrays of complex.  each complex is a pair of doubles.
+// so item size is 16 bytes, ergo Chuck_Array16.
+// An edge is just a line with two points.
+int 
+DbBox2D::GetEdgePoints(int bodyId, int shapeIndex, Chuck_Object *o)
+{ 
+    Chuck_Array16 *userArray = (Chuck_Array16 *)o;
+    userArray->m_vector.clear();
+    if(bodyId < m_bodies.size())
+    {
+        b2Body *body = m_bodies[bodyId];
+        b2Fixture *fixture = body->GetFixtureList(); // usually a single fixture
+        int cnt = 0;
+        while(fixture)
+        {
+            if(shapeIndex == cnt)
+            {
+                b2EdgeShape *s = (b2EdgeShape *) fixture->GetShape();
+                t_CKCOMPLEX c;
+                c.re = s->m_vertex1.x;
+                c.im = s->m_vertex1.y;
+                userArray->m_vector.push_back(c);
+                c.re = s->m_vertex2.x;
+                c.im = s->m_vertex2.y;
+                userArray->m_vector.push_back(c);
+                return 0; // success
+            }
+            cnt++;        
+            fixture = fixture->GetNext();
+        }
+    }
+    return -1;
+}
+
+int 
+DbBox2D::GetPolygonPoints(int bodyId, int shapeIndex, Chuck_Object *o)
+{
+    Chuck_Array16 *userArray = (Chuck_Array16 *)o;
+    userArray->m_vector.clear();
+    if(bodyId < m_bodies.size())
+    {
+        b2Body *body = m_bodies[bodyId];
+        b2Fixture *fixture = body->GetFixtureList(); // usually a single fixture
+        int cnt = 0;
+        while(fixture)
+        {
+            if(shapeIndex == cnt)
+            {
+                b2PolygonShape *s = (b2PolygonShape *) fixture->GetShape();
+                t_CKCOMPLEX c;
+                for(int i=0;i<s->m_count;i++)
+                {
+                    c.re = s->m_vertices[i].x;
+                    c.im = s->m_vertices[i].y;
+                    userArray->m_vector.push_back(c);
+                }
+                return 0; // success
+            }
+            cnt++;        
+            fixture = fixture->GetNext();
+        }
+    }
+    return -1;
+}
+
+int 
+DbBox2D::GetChainPoints(int bodyId, int shapeIndex, Chuck_Object *o)
+{
+    Chuck_Array16 *userArray = (Chuck_Array16 *)o;
+    userArray->m_vector.clear();
+    if(bodyId < m_bodies.size())
+    {
+        b2Body *body = m_bodies[bodyId];
+        b2Fixture *fixture = body->GetFixtureList(); // usually a single fixture
+        int cnt = 0;
+        while(fixture)
+        {
+            if(shapeIndex == cnt)
+            {
+                b2ChainShape *s = (b2ChainShape *) fixture->GetShape();
+                t_CKCOMPLEX c;
+                for(int i=0;i<s->m_count;i++)
+                {
+                    c.re = s->m_vertices[i].x;
+                    c.im = s->m_vertices[i].y;
+                    userArray->m_vector.push_back(c);
+                }
+                return 0; // success
+            }
+            cnt++;        
+            fixture = fixture->GetNext();
+        }
+    }
+    return -1;
+}
+
+/* ---------------------------------------------------------------------- */
 void 
 DbBox2D::Step(float timeStep) // invoked in audio thread
 {

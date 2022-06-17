@@ -14,28 +14,48 @@ CK_DLL_MFUN( dbb2d_worldBegin );
 CK_DLL_MFUN( dbb2d_newPoint );
 CK_DLL_MFUN( dbb2d_newEdge );
 CK_DLL_MFUN( dbb2d_newCircle );
-CK_DLL_MFUN( dbb2d_newTriangle );
 CK_DLL_MFUN( dbb2d_newRectangle );
+CK_DLL_MFUN( dbb2d_newTriangle );
+CK_DLL_MFUN( dbb2d_newTrianglePos );
+CK_DLL_MFUN( dbb2d_newPolygon );
 CK_DLL_MFUN( dbb2d_newRoom );
 CK_DLL_MFUN( dbb2d_newRevoluteJoint );
 CK_DLL_MFUN( dbb2d_worldEnd );
-CK_DLL_MFUN( dbb2d_getNumBodies );
 
 CK_DLL_MFUN( dbb2d_step );
 CK_DLL_MFUN( dbb2d_getAvgSimTime );
 
+CK_DLL_MFUN( dbb2d_getNumBodies );
+
+// body queries (bodyId, ...)
+CK_DLL_MFUN( dbb2d_getType );
 CK_DLL_MFUN( dbb2d_getPosition );
 CK_DLL_MFUN( dbb2d_getVelocity );
 CK_DLL_MFUN( dbb2d_getAngle );
 CK_DLL_MFUN( dbb2d_getAngularVelocity );
 CK_DLL_MFUN( dbb2d_getNumContacts );
-CK_DLL_MFUN( dbb2d_getContact );
+CK_DLL_MFUN( dbb2d_getNumBodyShapes ); // usually 1
+
+// body edits (bodyId, ...)
 CK_DLL_MFUN( dbb2d_setGravity );
 CK_DLL_MFUN( dbb2d_setFriction );
 CK_DLL_MFUN( dbb2d_setDensity );
 CK_DLL_MFUN( dbb2d_setRestitution );
 CK_DLL_MFUN( dbb2d_applyImpulse );
 CK_DLL_MFUN( dbb2d_applyAngularImpulse );
+
+// body has-a list of fixtures.
+// fixture has-a shape. (shapes can have subshapes)
+// shape queries (bodyId, shapeIndex)
+CK_DLL_MFUN( dbb2d_getBodyShapeType ); // bodyId, shapeIndex
+CK_DLL_MFUN( dbb2d_getCircleRadius );  // bodyId, shapeIndex
+CK_DLL_MFUN( dbb2d_getEdgePoints );    // bodyId, shapeIndex
+CK_DLL_MFUN( dbb2d_getPolygonPoints ); // bodyId, shapeIndex
+CK_DLL_MFUN( dbb2d_getChainPoints );   // bodyId, shapeIndex
+
+// contact queries (contactIndex)
+CK_DLL_MFUN( dbb2d_getContact );
+
 
 t_CKINT dbb2d_data_offset = 0;
 
@@ -74,6 +94,13 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_arg(QUERY, "float", "density"); 
     QUERY->add_arg(QUERY, "int", "bodyType");
 
+    QUERY->add_mfun(QUERY, dbb2d_newRectangle, "int", "newRectangle");
+    QUERY->add_arg(QUERY, "complex", "position");
+    QUERY->add_arg(QUERY, "complex", "size");
+    QUERY->add_arg(QUERY, "float", "angle");
+    QUERY->add_arg(QUERY, "float", "density"); 
+    QUERY->add_arg(QUERY, "int", "bodyType");
+
     QUERY->add_mfun(QUERY, dbb2d_newTriangle, "int", "newTriangle");
     QUERY->add_arg(QUERY, "complex", "p1");
     QUERY->add_arg(QUERY, "complex", "p2");
@@ -81,10 +108,17 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_arg(QUERY, "float", "density"); 
     QUERY->add_arg(QUERY, "int", "bodyType");
 
-    QUERY->add_mfun(QUERY, dbb2d_newRectangle, "int", "newRectangle");
-    QUERY->add_arg(QUERY, "complex", "position");
-    QUERY->add_arg(QUERY, "complex", "size");
-    QUERY->add_arg(QUERY, "float", "angle");
+    QUERY->add_mfun(QUERY, dbb2d_newTrianglePos, "int", "newTriangle");
+    QUERY->add_arg(QUERY, "complex", "p1");
+    QUERY->add_arg(QUERY, "complex", "p2");
+    QUERY->add_arg(QUERY, "complex", "p3");
+    QUERY->add_arg(QUERY, "complex", "pos");
+    QUERY->add_arg(QUERY, "float", "density"); 
+    QUERY->add_arg(QUERY, "int", "bodyType");
+
+    QUERY->add_mfun(QUERY, dbb2d_newPolygon, "int", "newPolygon");
+    QUERY->add_arg(QUERY, "complex", "pts[]");
+    QUERY->add_arg(QUERY, "complex", "pos");
     QUERY->add_arg(QUERY, "float", "density"); 
     QUERY->add_arg(QUERY, "int", "bodyType");
 
@@ -108,6 +142,9 @@ CK_DLL_QUERY(DbBox2D)
 
     QUERY->add_mfun(QUERY, dbb2d_getAvgSimTime, "dur", "getAvgSimTime");
 
+    QUERY->add_mfun(QUERY, dbb2d_getType, "int", "getType");
+    QUERY->add_arg(QUERY, "int", "bodyId");
+
     QUERY->add_mfun(QUERY, dbb2d_getPosition, "complex", "getPosition");
     QUERY->add_arg(QUERY, "int", "bodyId");
 
@@ -120,8 +157,35 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_mfun(QUERY, dbb2d_getAngularVelocity, "float", "getAngularVelocity");
     QUERY->add_arg(QUERY, "int", "bodyId");
 
-    QUERY->add_mfun(QUERY, dbb2d_getNumContacts, "int", "getNumContacts");
+    /* ---------------------------------------------------------------------- */
+    QUERY->add_mfun(QUERY, dbb2d_getNumBodyShapes, "int", "getNumBodyShapes");
+    QUERY->add_arg(QUERY, "int", "bodyId");
 
+    QUERY->add_mfun(QUERY, dbb2d_getBodyShapeType, "int", "getBodyShapeType");
+    QUERY->add_arg(QUERY, "int", "bodyId");
+    QUERY->add_arg(QUERY, "int", "shapeIndex");
+
+    QUERY->add_mfun(QUERY, dbb2d_getCircleRadius, "float", "getCircleRadius"); 
+    QUERY->add_arg(QUERY, "int", "bodyId");
+    QUERY->add_arg(QUERY, "int", "shapeIndex");
+
+    QUERY->add_mfun(QUERY, dbb2d_getEdgePoints, "int", "getEdgePoints");
+    QUERY->add_arg(QUERY, "int", "bodyId");
+    QUERY->add_arg(QUERY, "int", "shapeIndex");
+    QUERY->add_arg(QUERY, "complex", "pts[]");
+
+    QUERY->add_mfun(QUERY, dbb2d_getPolygonPoints, "int", "getPolygonPoints"); 
+    QUERY->add_arg(QUERY, "int", "bodyId");
+    QUERY->add_arg(QUERY, "int", "shapeIndex");
+    QUERY->add_arg(QUERY, "complex", "pts[]");
+
+    QUERY->add_mfun(QUERY, dbb2d_getChainPoints, "int", "getChainPoints");
+    QUERY->add_arg(QUERY, "int", "bodyId");
+    QUERY->add_arg(QUERY, "int", "shapeIndex");
+    QUERY->add_arg(QUERY, "complex", "pts[]");
+
+    /* ---------------------------------------------------------------------- */
+    QUERY->add_mfun(QUERY, dbb2d_getNumContacts, "int", "getNumContacts");
     QUERY->add_mfun(QUERY, dbb2d_getContact, "vec3", "getContact"); // bodyA, bodyB, touching
     QUERY->add_arg(QUERY, "int", "bodyId");
 
@@ -227,6 +291,20 @@ CK_DLL_MFUN(dbb2d_newCircle)
     RETURN->v_int = c->NewCircle(pos, radius, density, t);
 }
 
+CK_DLL_MFUN(dbb2d_newRectangle)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    t_CKCOMPLEX pos = GET_NEXT_COMPLEX(ARGS);
+    t_CKCOMPLEX sz = GET_NEXT_COMPLEX(ARGS);
+    float angle = GET_NEXT_FLOAT(ARGS);
+    float density = GET_NEXT_FLOAT(ARGS);
+    int bt = GET_NEXT_INT(ARGS);
+    DbBox2D::BodyType t = DbBox2D::k_Static;
+    if(bt >= 0 && bt < DbBox2D::k_NumBodyTypes)
+        t = (DbBox2D::BodyType) bt;
+    RETURN->v_int = c->NewRectangle(pos, sz, angle, density, t);
+}
+
 CK_DLL_MFUN(dbb2d_newTriangle)
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
@@ -241,18 +319,32 @@ CK_DLL_MFUN(dbb2d_newTriangle)
     RETURN->v_int = c->NewTriangle(p1, p2, p3, density, t);
 }
 
-CK_DLL_MFUN(dbb2d_newRectangle)
+CK_DLL_MFUN(dbb2d_newTrianglePos)
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    t_CKCOMPLEX p1 = GET_NEXT_COMPLEX(ARGS);
+    t_CKCOMPLEX p2 = GET_NEXT_COMPLEX(ARGS);
+    t_CKCOMPLEX p3 = GET_NEXT_COMPLEX(ARGS);
     t_CKCOMPLEX pos = GET_NEXT_COMPLEX(ARGS);
-    t_CKCOMPLEX sz = GET_NEXT_COMPLEX(ARGS);
-    float angle = GET_NEXT_FLOAT(ARGS);
     float density = GET_NEXT_FLOAT(ARGS);
     int bt = GET_NEXT_INT(ARGS);
     DbBox2D::BodyType t = DbBox2D::k_Static;
     if(bt >= 0 && bt < DbBox2D::k_NumBodyTypes)
         t = (DbBox2D::BodyType) bt;
-    RETURN->v_int = c->NewRectangle(pos, sz, angle, density, t);
+    RETURN->v_int = c->NewTriangle(p1, p2, p3, pos, density, t);
+}
+
+CK_DLL_MFUN(dbb2d_newPolygon)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    Chuck_Object *pts = GET_NEXT_OBJECT(ARGS);
+    t_CKCOMPLEX pos = GET_NEXT_COMPLEX(ARGS);
+    float density = GET_NEXT_FLOAT(ARGS);
+    int bt = GET_NEXT_INT(ARGS);
+    DbBox2D::BodyType t = DbBox2D::k_Static;
+    if(bt >= 0 && bt < DbBox2D::k_NumBodyTypes)
+        t = (DbBox2D::BodyType) bt;
+    RETURN->v_int = c->NewPolygon(pts, pos, density, t);
 }
 
 CK_DLL_MFUN(dbb2d_newRoom)
@@ -293,6 +385,13 @@ CK_DLL_MFUN(dbb2d_getAvgSimTime)
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
     RETURN->v_dur = API->vm->get_srate(API, SHRED) * c->GetAvgSimTime();
+}
+
+CK_DLL_MFUN(dbb2d_getType)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    RETURN->v_int = (int) c->GetType(bodyId);
 }
 
 CK_DLL_MFUN(dbb2d_getPosition)
@@ -391,4 +490,54 @@ CK_DLL_MFUN( dbb2d_applyAngularImpulse )
     int bodyId = GET_NEXT_INT(ARGS);
     float x = GET_NEXT_FLOAT(ARGS);
     c->ApplyAngularImpulse(bodyId, x);
+}
+
+CK_DLL_MFUN(dbb2d_getNumBodyShapes)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    RETURN->v_int = c->GetNumBodyShapes(bodyId);
+}
+
+CK_DLL_MFUN(dbb2d_getBodyShapeType)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    int shapeId = GET_NEXT_INT(ARGS);
+    RETURN->v_int = c->GetBodyShapeType(bodyId, shapeId);
+}
+
+CK_DLL_MFUN(dbb2d_getCircleRadius)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    int shapeId = GET_NEXT_INT(ARGS);
+    RETURN->v_float = c->GetCircleRadius(bodyId, shapeId);
+}
+
+CK_DLL_MFUN(dbb2d_getEdgePoints)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    int shapeId = GET_NEXT_INT(ARGS);
+    Chuck_Object *pts = GET_NEXT_OBJECT(ARGS);
+    RETURN->v_int = c->GetEdgePoints(bodyId, shapeId, pts);
+}
+
+CK_DLL_MFUN(dbb2d_getPolygonPoints)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    int shapeId = GET_NEXT_INT(ARGS);
+    Chuck_Object *pts = GET_NEXT_OBJECT(ARGS);
+    RETURN->v_int = c->GetPolygonPoints(bodyId, shapeId, pts);
+}
+
+CK_DLL_MFUN(dbb2d_getChainPoints)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    int shapeId = GET_NEXT_INT(ARGS);
+    Chuck_Object *pts = GET_NEXT_OBJECT(ARGS);
+    RETURN->v_int = c->GetChainPoints(bodyId, shapeId, pts);
 }

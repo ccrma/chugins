@@ -39,10 +39,19 @@ public:
     };
     int NewPoint(t_CKCOMPLEX &pos); // used to anchor a joint
     int NewEdge(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2);
-    int NewCircle(t_CKCOMPLEX &pos, float radius, float density, BodyType t);
-    int NewTriangle(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, t_CKCOMPLEX &p3, float density, BodyType t);
-    int NewRectangle(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float angle, float density, BodyType t);
-    int NewRoom(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float density, BodyType t);
+    int NewCircle(t_CKCOMPLEX &pos, float radius, 
+                    float density, BodyType t);
+    int NewRectangle(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float angle, 
+                    float density, BodyType t);
+    int NewTriangle(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, t_CKCOMPLEX &p3, 
+                    float density, BodyType t);
+    int NewTriangle(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, t_CKCOMPLEX &p3, 
+                    t_CKCOMPLEX &pos, 
+                    float density, BodyType t);
+    int NewPolygon(Chuck_Object *pts, t_CKCOMPLEX &pos,
+                    float density, BodyType t);
+    int NewRoom(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, 
+                    float density, BodyType t);
     // int NewPendulum1()
     // complex NewPendulum2()
 
@@ -61,11 +70,13 @@ public:
     void ApplyImpulse(int bodyId, t_CKCOMPLEX &impulse); // to center
     void ApplyAngularImpulse(int bodyId, float impulse);
 
+    // modeling utilities
     int SetGravity(t_CKCOMPLEX &g);
     int SetRestitution(int bodyId, float x);
     int SetFriction(int bodyId, float x);
     int SetDensity(int bodyId, float x);
 
+    b2BodyType GetType(int bodyId);
     int GetPosition(int bodyId, t_CKCOMPLEX &pos);
     int GetVelocity(int bodyId, t_CKCOMPLEX &vel);
     float GetAngle(int bodyId);
@@ -75,6 +86,13 @@ public:
     int GetNumJoints();
     int GetNumContacts(); 
     int GetContact(int id, int *bodyA, int *bodyB, bool *touching);
+
+    int GetNumBodyShapes(int bodyId);
+    int GetBodyShapeType(int bodyId, int shapeIndex);
+    float GetCircleRadius(int bodyId, int shapeIndex);
+    int GetEdgePoints(int bodyId, int shapeIndex, Chuck_Object *o);
+    int GetPolygonPoints(int bodyId, int shapeIndex, Chuck_Object *o);
+    int GetChainPoints(int bodyId, int shapeIndex, Chuck_Object *o);
 
     int Pause(bool p);
 
