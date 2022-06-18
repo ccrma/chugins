@@ -3,7 +3,7 @@
 
 /* Scene construction --------------------------------------------------- */
 void
-DbBox2D::WorldBegin(t_CKCOMPLEX &gravity)
+DbBox2D::WorldBegin(t_CKCOMPLEX &gravity, bool allowSleep)
 {
     m_loadWorld = true;
     this->cleanupWorld();
@@ -13,6 +13,7 @@ DbBox2D::WorldBegin(t_CKCOMPLEX &gravity)
         std::cerr << "New World with gravity " << gravity.re << " " << gravity.im << "\n";
     m_world = new b2World(g);
 	m_world->SetContactListener(this);
+	m_world->SetAllowSleeping(allowSleep);
 }
 
 void
@@ -159,7 +160,7 @@ DbBox2D::NewTriangle(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, t_CKCOMPLEX &p3,
 }
 
 int 
-DbBox2D::NewPolygon(Chuck_Object *pts, t_CKCOMPLEX &pos, 
+DbBox2D::NewPolygon(std::vector<t_CKCOMPLEX> &pts, t_CKCOMPLEX &pos, 
             float density, BodyType t)
 {
     int id = m_bodies.size();
@@ -169,12 +170,10 @@ DbBox2D::NewPolygon(Chuck_Object *pts, t_CKCOMPLEX &pos,
     b2Body* body = m_world->CreateBody(&bd);
     body->GetUserData().pointer = id;
     m_bodies.push_back(body);
-    Chuck_Array16 *userArray = (Chuck_Array16 *)pts;
     std::vector<b2Vec2> bvec;
-    for(int i=0;i<userArray->m_vector.size();i++)
+    for(int i=0;i<pts.size();i++)
     {
-        bvec.push_back(b2Vec2(userArray->m_vector[i].re, 
-                              userArray->m_vector[i].im ));
+        bvec.push_back(b2Vec2(pts[i].re, pts[i].im ));
     }
     b2PolygonShape shape;
     shape.Set(&bvec[0], bvec.size());
@@ -240,12 +239,42 @@ DbBox2D::NewRevoluteJoint(int bodyA, int bodyB,
         jd.bodyB = b;
         jd.localAnchorA.Set(anchorA.re, anchorA.im);
         jd.localAnchorB.Set(anchorB.re, anchorB.im);
-        jd.referenceAngle = refAngle;
-        jd.motorSpeed = motorSpeed;
-        jd.maxMotorTorque = maxMotorTorque;
-        jd.enableMotor = motorSpeed > 0.f;
+        if(motorSpeed != 0)
+        {
+            jd.referenceAngle = refAngle;
+            jd.motorSpeed = motorSpeed;
+            jd.maxMotorTorque = maxMotorTorque;
+            jd.enableMotor = motorSpeed > 0.f;
+        }
 
         b2RevoluteJoint *m_joint = (b2RevoluteJoint *) m_world->CreateJoint(&jd);
+        m_joints.push_back(m_joint);
+    }
+    return jid;
+}
+
+int 
+DbBox2D::NewDistanceJoint(int bodyA, int bodyB,
+        t_CKCOMPLEX &anchorA, t_CKCOMPLEX &anchorB,
+        float frequencyHz, float dampingRatio) // stiff when 0
+{
+    int jid = -1;
+    if(m_world && bodyA < m_bodies.size() && bodyB < m_bodies.size())
+    {
+        jid = m_joints.size();
+        b2Body *a = m_bodies[bodyA];
+        b2Body *b = m_bodies[bodyB];
+
+        b2DistanceJointDef jd;
+        jd.Initialize(a, b, 
+            b2Vec2(anchorA.re, anchorA.im),
+            b2Vec2(anchorB.re, anchorB.im));
+        if(frequencyHz != 0.f)
+        {
+            b2LinearStiffness(jd.stiffness, jd.damping, 
+                frequencyHz, dampingRatio, a, b);
+        }
+        b2DistanceJoint *m_joint = (b2DistanceJoint *) m_world->CreateJoint(&jd);
         m_joints.push_back(m_joint);
     }
     return jid;
@@ -337,6 +366,7 @@ DbBox2D::SetDensity(int bodyId, float x)
             f->SetDensity(x); // usually a single fixture
             f = f->GetNext();
         }
+        m_bodies[bodyId]->ResetMassData();
         m_worldMutex.unlock();
     }
     else
@@ -468,6 +498,23 @@ DbBox2D::GetContact(int id, int *bodyA, int *bodyB, bool *touching)
         *bodyB = (int) contact->GetFixtureB()->GetBody()->GetUserData().pointer;
         assert(*bodyA >= 0 && *bodyB >= 0);
         *touching = contact->IsTouching();
+        return 0;
+    }
+    else
+    {
+        *bodyA = *bodyB = -1;
+        return -1;
+    }
+}
+
+int
+DbBox2D::GetJointBodies(int jid, int *bodyA, int *bodyB)
+{
+    if(jid < m_joints.size())
+    {
+        b2Joint* j = m_joints[jid];
+        *bodyA = (int) j->GetBodyA()->GetUserData().pointer;
+        *bodyB = (int) j->GetBodyB()->GetUserData().pointer;
         return 0;
     }
     else

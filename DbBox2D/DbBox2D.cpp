@@ -2,8 +2,8 @@
 
 DbBox2D::DbBox2D() :
     m_world(nullptr),
-    m_velocityIterations(6),
-    m_positionIterations(2),
+    m_velocityIterations(8), // recommended here: https://box2d.org/documentation/md__d_1__git_hub_box2d_docs_hello.html
+    m_positionIterations(3),
     m_debug(0),
     m_done(false),
     m_loadWorld(false),
@@ -111,10 +111,9 @@ DbBox2D::GetCircleRadius(int bodyId, int shapeIndex)
 // so item size is 16 bytes, ergo Chuck_Array16.
 // An edge is just a line with two points.
 int 
-DbBox2D::GetEdgePoints(int bodyId, int shapeIndex, Chuck_Object *o)
+DbBox2D::GetEdgePoints(int bodyId, int shapeIndex, std::vector<t_CKCOMPLEX> &pts)
 { 
-    Chuck_Array16 *userArray = (Chuck_Array16 *)o;
-    userArray->m_vector.clear();
+    pts.clear();
     if(bodyId < m_bodies.size())
     {
         b2Body *body = m_bodies[bodyId];
@@ -128,10 +127,10 @@ DbBox2D::GetEdgePoints(int bodyId, int shapeIndex, Chuck_Object *o)
                 t_CKCOMPLEX c;
                 c.re = s->m_vertex1.x;
                 c.im = s->m_vertex1.y;
-                userArray->m_vector.push_back(c);
+                pts.push_back(c);
                 c.re = s->m_vertex2.x;
                 c.im = s->m_vertex2.y;
-                userArray->m_vector.push_back(c);
+                pts.push_back(c);
                 return 0; // success
             }
             cnt++;        
@@ -142,10 +141,9 @@ DbBox2D::GetEdgePoints(int bodyId, int shapeIndex, Chuck_Object *o)
 }
 
 int 
-DbBox2D::GetPolygonPoints(int bodyId, int shapeIndex, Chuck_Object *o)
+DbBox2D::GetPolygonPoints(int bodyId, int shapeIndex, std::vector<t_CKCOMPLEX> &pts)
 {
-    Chuck_Array16 *userArray = (Chuck_Array16 *)o;
-    userArray->m_vector.clear();
+    pts.clear();
     if(bodyId < m_bodies.size())
     {
         b2Body *body = m_bodies[bodyId];
@@ -161,7 +159,7 @@ DbBox2D::GetPolygonPoints(int bodyId, int shapeIndex, Chuck_Object *o)
                 {
                     c.re = s->m_vertices[i].x;
                     c.im = s->m_vertices[i].y;
-                    userArray->m_vector.push_back(c);
+                    pts.push_back(c);
                 }
                 return 0; // success
             }
@@ -173,10 +171,9 @@ DbBox2D::GetPolygonPoints(int bodyId, int shapeIndex, Chuck_Object *o)
 }
 
 int 
-DbBox2D::GetChainPoints(int bodyId, int shapeIndex, Chuck_Object *o)
+DbBox2D::GetChainPoints(int bodyId, int shapeIndex, std::vector<t_CKCOMPLEX> &pts)
 {
-    Chuck_Array16 *userArray = (Chuck_Array16 *)o;
-    userArray->m_vector.clear();
+    pts.clear();
     if(bodyId < m_bodies.size())
     {
         b2Body *body = m_bodies[bodyId];
@@ -192,7 +189,7 @@ DbBox2D::GetChainPoints(int bodyId, int shapeIndex, Chuck_Object *o)
                 {
                     c.re = s->m_vertices[i].x;
                     c.im = s->m_vertices[i].y;
-                    userArray->m_vector.push_back(c);
+                    pts.push_back(c);
                 }
                 return 0; // success
             }

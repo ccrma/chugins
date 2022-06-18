@@ -28,7 +28,7 @@ public:
     //  Chuck_Event.  For now, main.cpp ad
     ~DbBox2D();
 
-    void WorldBegin(t_CKCOMPLEX &gravity);
+    void WorldBegin(t_CKCOMPLEX &gravity, bool allowSleep=true);
     void WorldEnd();
     enum BodyType // match b2BodyType
     {
@@ -48,7 +48,7 @@ public:
     int NewTriangle(t_CKCOMPLEX &p1, t_CKCOMPLEX &p2, t_CKCOMPLEX &p3, 
                     t_CKCOMPLEX &pos, 
                     float density, BodyType t);
-    int NewPolygon(Chuck_Object *pts, t_CKCOMPLEX &pos,
+    int NewPolygon(std::vector<t_CKCOMPLEX> &pts, t_CKCOMPLEX &pos,
                     float density, BodyType t);
     int NewRoom(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, 
                     float density, BodyType t);
@@ -60,8 +60,9 @@ public:
     int NewRevoluteJoint(int bodyA, int bodyB,
         t_CKCOMPLEX &anchorA, t_CKCOMPLEX &anchorB,
         float refAngle, float motorSpeed, float maxMotorTorque);
-    int NewDistanceJoint(int body1, int body2);
-    int NewSpringJoint(int body1, int body2);
+    int NewDistanceJoint(int bodyA, int bodyB,
+        t_CKCOMPLEX &anchorA, t_CKCOMPLEX &anchorB,
+        float frequencyHz=0.f, float dampingRatio=0.f); // stiff when not provided
 
     // SetTransform(int i, t_CKCOMPLEX pos, float angle);
 
@@ -84,15 +85,16 @@ public:
 
     int GetNumBodies();
     int GetNumJoints();
+    int GetJointBodies(int jid, int *bodyA, int *bodyB);
     int GetNumContacts(); 
     int GetContact(int id, int *bodyA, int *bodyB, bool *touching);
 
     int GetNumBodyShapes(int bodyId);
     int GetBodyShapeType(int bodyId, int shapeIndex);
     float GetCircleRadius(int bodyId, int shapeIndex);
-    int GetEdgePoints(int bodyId, int shapeIndex, Chuck_Object *o);
-    int GetPolygonPoints(int bodyId, int shapeIndex, Chuck_Object *o);
-    int GetChainPoints(int bodyId, int shapeIndex, Chuck_Object *o);
+    int GetEdgePoints(int bodyId, int shapeIndex, std::vector<t_CKCOMPLEX> &pts);
+    int GetPolygonPoints(int bodyId, int shapeIndex, std::vector<t_CKCOMPLEX> &pts);
+    int GetChainPoints(int bodyId, int shapeIndex, std::vector<t_CKCOMPLEX> &pts);
 
     int Pause(bool p);
 

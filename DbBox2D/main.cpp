@@ -11,6 +11,7 @@
 CK_DLL_CTOR( dbb2d_ctor );
 CK_DLL_DTOR( dbb2d_dtor );
 CK_DLL_MFUN( dbb2d_worldBegin );
+CK_DLL_MFUN( dbb2d_worldBegin2 );
 CK_DLL_MFUN( dbb2d_newPoint );
 CK_DLL_MFUN( dbb2d_newEdge );
 CK_DLL_MFUN( dbb2d_newCircle );
@@ -20,6 +21,7 @@ CK_DLL_MFUN( dbb2d_newTrianglePos );
 CK_DLL_MFUN( dbb2d_newPolygon );
 CK_DLL_MFUN( dbb2d_newRoom );
 CK_DLL_MFUN( dbb2d_newRevoluteJoint );
+CK_DLL_MFUN( dbb2d_newDistanceJoint );
 CK_DLL_MFUN( dbb2d_worldEnd );
 
 CK_DLL_MFUN( dbb2d_step );
@@ -53,6 +55,9 @@ CK_DLL_MFUN( dbb2d_getEdgePoints );    // bodyId, shapeIndex
 CK_DLL_MFUN( dbb2d_getPolygonPoints ); // bodyId, shapeIndex
 CK_DLL_MFUN( dbb2d_getChainPoints );   // bodyId, shapeIndex
 
+CK_DLL_MFUN( dbb2d_getNumJoints );
+CK_DLL_MFUN( dbb2d_getJointBodies ); // jointId
+
 // contact queries (contactIndex)
 CK_DLL_MFUN( dbb2d_getContact );
 
@@ -77,6 +82,10 @@ CK_DLL_QUERY(DbBox2D)
 
     QUERY->add_mfun(QUERY, dbb2d_worldBegin, "void", "worldBegin");
     QUERY->add_arg(QUERY, "complex", "gravity");
+
+    QUERY->add_mfun(QUERY, dbb2d_worldBegin2, "void", "worldBegin");
+    QUERY->add_arg(QUERY, "complex", "gravity");
+    QUERY->add_arg(QUERY, "int", "allowSleep");
 
     QUERY->add_mfun(QUERY, dbb2d_worldEnd, "void", "worldEnd");
     QUERY->add_mfun(QUERY, dbb2d_getNumBodies, "int", "getNumBodies");
@@ -127,6 +136,14 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_arg(QUERY, "complex", "size");
     QUERY->add_arg(QUERY, "float", "density");
     QUERY->add_arg(QUERY, "int", "bodyType");
+
+    QUERY->add_mfun(QUERY, dbb2d_newDistanceJoint, "int", "newDistanceJoint");
+    QUERY->add_arg(QUERY, "int", "bodyA");
+    QUERY->add_arg(QUERY, "int", "bodyB");
+    QUERY->add_arg(QUERY, "complex", "localAnchorA");
+    QUERY->add_arg(QUERY, "complex", "localAnchorB");
+    QUERY->add_arg(QUERY, "float", "freqHz");
+    QUERY->add_arg(QUERY, "float", "damping");
 
     QUERY->add_mfun(QUERY, dbb2d_newRevoluteJoint, "int", "newRevoluteJoint");
     QUERY->add_arg(QUERY, "int", "bodyA");
@@ -183,6 +200,11 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_arg(QUERY, "int", "bodyId");
     QUERY->add_arg(QUERY, "int", "shapeIndex");
     QUERY->add_arg(QUERY, "complex", "pts[]");
+
+    /* ---------------------------------------------------------------------- */
+    QUERY->add_mfun(QUERY, dbb2d_getNumJoints, "int", "getNumJoints");
+    QUERY->add_mfun(QUERY, dbb2d_getJointBodies, "complex", "getJointBodies"); // follow getContact
+    QUERY->add_arg(QUERY, "int", "jointId");
 
     /* ---------------------------------------------------------------------- */
     QUERY->add_mfun(QUERY, dbb2d_getNumContacts, "int", "getNumContacts");
@@ -248,7 +270,15 @@ CK_DLL_MFUN(dbb2d_worldBegin)
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
     t_CKCOMPLEX gravity = GET_NEXT_COMPLEX(ARGS);
-    c->WorldBegin(gravity); 
+    c->WorldBegin(gravity, true); 
+}
+
+CK_DLL_MFUN(dbb2d_worldBegin2)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    t_CKCOMPLEX gravity = GET_NEXT_COMPLEX(ARGS);
+    int allowSleep = GET_NEXT_INT(ARGS);
+    c->WorldBegin(gravity, allowSleep); 
 }
 
 CK_DLL_MFUN(dbb2d_worldEnd)
@@ -338,13 +368,14 @@ CK_DLL_MFUN(dbb2d_newPolygon)
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
     Chuck_Object *pts = GET_NEXT_OBJECT(ARGS);
+    Chuck_Array16 *userArray = (Chuck_Array16 *)pts;
     t_CKCOMPLEX pos = GET_NEXT_COMPLEX(ARGS);
     float density = GET_NEXT_FLOAT(ARGS);
     int bt = GET_NEXT_INT(ARGS);
     DbBox2D::BodyType t = DbBox2D::k_Static;
     if(bt >= 0 && bt < DbBox2D::k_NumBodyTypes)
         t = (DbBox2D::BodyType) bt;
-    RETURN->v_int = c->NewPolygon(pts, pos, density, t);
+    RETURN->v_int = c->NewPolygon(userArray->m_vector, pos, density, t);
 }
 
 CK_DLL_MFUN(dbb2d_newRoom)
@@ -360,6 +391,37 @@ CK_DLL_MFUN(dbb2d_newRoom)
     RETURN->v_int = c->NewRoom(pos, sz, density, t);
 }
 
+CK_DLL_MFUN(dbb2d_getNumJoints)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    RETURN->v_int = c->GetNumJoints();
+}
+
+CK_DLL_MFUN(dbb2d_getJointBodies)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int jointId = GET_NEXT_INT(ARGS);
+    Chuck_Object *bodies = GET_NEXT_OBJECT(ARGS);
+    int bodyA, bodyB;
+    c->GetJointBodies(jointId, &bodyA, &bodyB);
+    RETURN->v_complex.re = bodyA;
+    RETURN->v_complex.im = bodyB;
+}
+
+CK_DLL_MFUN(dbb2d_newDistanceJoint)
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int bodyA = GET_NEXT_INT(ARGS);
+    int bodyB = GET_NEXT_INT(ARGS);
+    t_CKCOMPLEX anchorA = GET_NEXT_COMPLEX(ARGS);
+    t_CKCOMPLEX anchorB = GET_NEXT_COMPLEX(ARGS);
+    float freqHz = GET_NEXT_FLOAT(ARGS);
+    float damping = GET_NEXT_FLOAT(ARGS);
+    // https://box2d.org/documentation/md__d_1__git_hub_box2d_docs_dynamics.html
+    RETURN->v_int = c->NewDistanceJoint(bodyA, bodyB, anchorA, anchorB,
+                        freqHz, damping); /* set to 0 for stiff */
+}
+
 CK_DLL_MFUN(dbb2d_newRevoluteJoint)
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
@@ -371,7 +433,7 @@ CK_DLL_MFUN(dbb2d_newRevoluteJoint)
     float refAngle = GET_NEXT_FLOAT(ARGS);
     float maxMotorTorque = GET_NEXT_FLOAT(ARGS);
     RETURN->v_int = c->NewRevoluteJoint(bodyA, bodyB, anchorA, anchorB,
-        motorSpeed, refAngle, maxMotorTorque);
+                        motorSpeed, refAngle, maxMotorTorque);
 }
 
 CK_DLL_MFUN(dbb2d_step)
@@ -521,7 +583,8 @@ CK_DLL_MFUN(dbb2d_getEdgePoints)
     int bodyId = GET_NEXT_INT(ARGS);
     int shapeId = GET_NEXT_INT(ARGS);
     Chuck_Object *pts = GET_NEXT_OBJECT(ARGS);
-    RETURN->v_int = c->GetEdgePoints(bodyId, shapeId, pts);
+    Chuck_Array16 *userArray = (Chuck_Array16 *)pts;
+    RETURN->v_int = c->GetEdgePoints(bodyId, shapeId, userArray->m_vector);
 }
 
 CK_DLL_MFUN(dbb2d_getPolygonPoints)
@@ -530,7 +593,8 @@ CK_DLL_MFUN(dbb2d_getPolygonPoints)
     int bodyId = GET_NEXT_INT(ARGS);
     int shapeId = GET_NEXT_INT(ARGS);
     Chuck_Object *pts = GET_NEXT_OBJECT(ARGS);
-    RETURN->v_int = c->GetPolygonPoints(bodyId, shapeId, pts);
+    Chuck_Array16 *userArray = (Chuck_Array16 *)pts;
+    RETURN->v_int = c->GetPolygonPoints(bodyId, shapeId, userArray->m_vector);
 }
 
 CK_DLL_MFUN(dbb2d_getChainPoints)
@@ -539,5 +603,6 @@ CK_DLL_MFUN(dbb2d_getChainPoints)
     int bodyId = GET_NEXT_INT(ARGS);
     int shapeId = GET_NEXT_INT(ARGS);
     Chuck_Object *pts = GET_NEXT_OBJECT(ARGS);
-    RETURN->v_int = c->GetChainPoints(bodyId, shapeId, pts);
+    Chuck_Array16 *userArray = (Chuck_Array16 *)pts;
+    RETURN->v_int = c->GetChainPoints(bodyId, shapeId, userArray->m_vector);
 }
