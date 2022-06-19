@@ -286,8 +286,20 @@ DbBox2D::ApplyImpulse(int bodyId, t_CKCOMPLEX &impulse) // to center
     if(m_bodies.size() > bodyId)
     {
         m_worldMutex.lock();
-        m_bodies[bodyId]->ApplyLinearImpulseToCenter(   
-            b2Vec2(impulse.re, impulse.im), true/*wake*/);
+        b2Vec2 f(impulse.re, impulse.im);
+        if(bodyId >= 0)
+        {
+            m_bodies[bodyId]->ApplyLinearImpulseToCenter(f, true/*wake*/);
+        }
+        else
+        {
+            // any negative value interpretted as "kick-all".
+            for(int i=0;i<m_bodies.size();i++)
+            {
+                if(m_bodies[i]->GetType() == b2_dynamicBody)
+                    m_bodies[i]->ApplyLinearImpulseToCenter(f, true/*wake*/);
+            }
+        }
         m_worldMutex.unlock();
     }
 }
