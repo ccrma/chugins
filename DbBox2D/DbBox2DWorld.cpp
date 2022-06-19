@@ -280,15 +280,47 @@ DbBox2D::NewDistanceJoint(int bodyA, int bodyB,
     return jid;
 }
 
+/**
+ * @brief  applies an instanteous force in the direction and magnitude
+ *  given by impulse.
+ * 
+ * @param bodyId - integer index, when negative means "all dynamic bodies"
+ * @param impulse - direction and magnitude of force, when (0,0) means
+ *  add force in the direction of the velocity.
+ */
 void
-DbBox2D::ApplyImpulse(int bodyId, t_CKCOMPLEX &impulse) // to center
+DbBox2D::ApplyImpulse(int bodyId, t_CKCOMPLEX &impulse)
 {
     if(m_bodies.size() > bodyId)
     {
         m_worldMutex.lock();
         b2Vec2 f(impulse.re, impulse.im);
         if(bodyId >= 0)
+            m_bodies[bodyId]->ApplyLinearImpulseToCenter(f, true/*wake*/);
+        else
         {
+            // any negative value interpretted as "kick-all".
+            for(int i=0;i<m_bodies.size();i++)
+            {
+                if(m_bodies[i]->GetType() == b2_dynamicBody)
+                    m_bodies[i]->ApplyLinearImpulseToCenter(f, true/*wake*/);
+            }
+        }
+        m_worldMutex.unlock();
+    }
+}
+
+void
+DbBox2D::ApplyImpulse(int bodyId, float scale)  // in direction of velocity
+{
+    if(m_bodies.size() > bodyId)
+    {
+        m_worldMutex.lock();
+        if(bodyId >= 0)
+        {
+            b2Vec2 f = m_bodies[bodyId]->GetLinearVelocity(); // copy
+            f.Normalize();
+            f *= scale;
             m_bodies[bodyId]->ApplyLinearImpulseToCenter(f, true/*wake*/);
         }
         else
@@ -297,7 +329,12 @@ DbBox2D::ApplyImpulse(int bodyId, t_CKCOMPLEX &impulse) // to center
             for(int i=0;i<m_bodies.size();i++)
             {
                 if(m_bodies[i]->GetType() == b2_dynamicBody)
+                {
+                    b2Vec2 f = m_bodies[i]->GetLinearVelocity(); // copy
+                    f.Normalize();
+                    f *= scale;
                     m_bodies[i]->ApplyLinearImpulseToCenter(f, true/*wake*/);
+                }
             }
         }
         m_worldMutex.unlock();

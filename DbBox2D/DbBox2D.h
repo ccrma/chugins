@@ -68,7 +68,8 @@ public:
 
     /* can be called while the simulation is running --------------------*/
     // http://www.iforce2d.net/b2dtut/forces
-    void ApplyImpulse(int bodyId, t_CKCOMPLEX &impulse); // to center
+    void ApplyImpulse(int bodyId, t_CKCOMPLEX &impulse); // at center
+    void ApplyImpulse(int bodyId, float scale); // at center, in velocity direction
     void ApplyAngularImpulse(int bodyId, float impulse);
 
     // modeling utilities
