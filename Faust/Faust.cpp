@@ -13,10 +13,10 @@
 //-----------------------------------------------------------------------------
 
 #ifndef MAX_INPUTS
-  #define MAX_INPUTS 64
+  #define MAX_INPUTS 16384
 #endif
 #ifndef MAX_OUTPUTS
-  #define MAX_OUTPUTS 64
+  #define MAX_OUTPUTS 16384
 #endif
 
 // this should align with the correct versions of these ChucK files
@@ -75,6 +75,7 @@ CK_DLL_MFUN(faust_ctrlchange);
 CK_DLL_MFUN(faust_assets_set);
 CK_DLL_MFUN(faust_libraries_set);
 CK_DLL_MFUN(faust_groupvoices_set);
+CK_DLL_MFUN(faust_dynamicvoices_set);
 CK_DLL_MFUN(faust_panic);
 CK_DLL_MFUN(faust_dump);
 CK_DLL_MFUN(faust_ok);
@@ -323,6 +324,10 @@ public:
     
     void setGroupVoices(bool groupVoices) {
         m_groupVoices = groupVoices;
+    }
+    
+    void setDynamicVoices(bool dynamicVoices) {
+        m_dynamicVoices = dynamicVoices;
     }
     
     void panic() {
@@ -608,7 +613,7 @@ public:
         
         if (!theDsp) {
             // write zeros and return
-            for(int f = 0; f < nframes; f++)
+            for (int f = 0; f < nframes; f++)
             {
                 for (int chan = 0; chan < m_numOutputChannels; chan++)
                 {
@@ -835,6 +840,11 @@ CK_DLL_QUERY( Faust )
     QUERY->add_mfun(QUERY, faust_groupvoices_set, "int", "groupVoices");
     // add arguments
     QUERY->add_arg(QUERY, "int", "groupVoices");
+    
+    // add .dynamicVoices()
+    QUERY->add_mfun(QUERY, faust_dynamicvoices_set, "int", "dynamicVoices");
+    // add arguments
+    QUERY->add_arg(QUERY, "int", "dynamicVoices");
     
     // add .panic()
     QUERY->add_mfun(QUERY, faust_panic, "void", "panic");
@@ -1066,6 +1076,18 @@ CK_DLL_MFUN(faust_groupvoices_set)
     bool v = GET_NEXT_INT(ARGS);
     // call it
     f->setGroupVoices( v );
+    // return it
+    RETURN->v_int = 1;
+}
+
+CK_DLL_MFUN(faust_dynamicvoices_set)
+{
+    // get our c++ class pointer
+    Faust * f = (Faust *)OBJ_MEMBER_INT(SELF, faust_data_offset);
+    // get value
+    bool v = GET_NEXT_INT(ARGS);
+    // call it
+    f->setDynamicVoices( v );
     // return it
     RETURN->v_int = 1;
 }

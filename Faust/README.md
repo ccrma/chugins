@@ -22,7 +22,7 @@ FaucK uses the "on-the-fly" LLVM based version of the Faust compiler (<http://fa
 
 > On macOS, you must codesign the Faust.chug. To prepare to do this, you will set an environment variable. Find your Development Profile. Open Keychain Access, go to 'login' on the left, and look for something like Apple Development: example@example.com (ABCDE12345). Then in Terminal, run `export CODESIGN_IDENTITY="Apple Development: example@example.com (ABCDE12345)"` with your own info substituted. If you weren't able to find your profile, you need to create one. Open Xcode, go to "Accounts", add your Apple ID, click "Manage Certificates", and use the plus icon to add a profile. Then check Keychain Access again.
 
-In a Terminal/shell window, navigate to this README and run either `sh build_unix.sh`.
+In a Terminal/shell window, navigate to this README and run `sh build_unix.sh`.
 
 On macOS/Linux, the goal is to create `Faust.chug` inside `/usr/local/lib/chuck`. On macOS, we additionally want `libfaust.2.dylib` in that folder. On Linux, instead, we want `libfaust.so.2` in that folder. After checking that these files exist, run chuck with a FaucK example.
 
@@ -78,7 +78,7 @@ Finally, the `dump` method can be called at any time to print a list of the para
 
 ### Polyphony
 
-Polyphony is supported. You simply need to provide DSP code that refers to correctly named parameters such as `freq` or `note`, `gain`, and `gate`. For more information, see the FAUST [manual](https://faustdoc.grame.fr/manual/midi/#standard-polyphony-parameters). For polyphony, you must set the number of voices to 1 or higher with the `numVoices` function. The default (0) disables polyphony. Refer to `examples/polyphony-simple.ck`.
+Polyphony is supported. You simply need to provide DSP code that refers to correctly named parameters such as `freq` or `note`, `gain`, and `gate`. For more information, see the FAUST [manual](https://faustdoc.grame.fr/manual/midi/#standard-polyphony-parameters). For polyphony, you must set the number of voices to 1 or higher with the `numVoices` function. The default (0) disables polyphony. After setting the number of voices, evaluate the Faust code. Refer to `examples/polyphony-simple.ck`.
 
 ### Full API
 
@@ -91,8 +91,9 @@ A Faust Chugin has the following functions:
 * `void compile(string filepath)` Load and evaluate Faust code from a file path.
 * `void assetsDir(string dirpath)` Set the directory containing soundfiles which you want Faust to load.
 * `void librariesDir(string dirpath)` Set the directory containing your custom Faust `.lib` files.
-* `int numVoices(int value)` Get/set the number of voices. The default (0) has polyphony disabled.
-* `void groupVoices(int groupVoices)` Enable/disable grouping of voices, if polyphony is enabled. The default is enabled. Not grouping voices results in having unique parameters for each voice.
+* `int numVoices(int value)` Get/set the number of voices. The default (0) has polyphony disabled. Set this before calling `eval`/`compile`.
+* `void groupVoices(int groupVoices)` Enable/disable grouping of voices, if polyphony is enabled. The default is enabled. Not grouping voices results in having unique parameters for each voice. Set `groupVoices` before calling `eval`/`compile`.
+* `void dynamicVoices(int dynamicVoices)` Enable/disable dynamic voices, if polyphony is enabled. The default is enabled. Disabling dynamic voices results in having all voices always execute, which you probably want if groupVoices is disabled. Set `dynamicVoices` before calling `eval`/`compile`.
 * `void noteOn(int pitch, int velocity)` Turn on a note if polyphony is active.
 * `void noteOff(int pitch, int velocity)` Turn off a note if polyphony is active.
 * `void pitchWheel(int channel, int wheel)` Channel 0 means "all channels", otherwise [1-16]. `wheel` is [-8192,8192].
