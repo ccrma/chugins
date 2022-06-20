@@ -44,6 +44,7 @@ CK_DLL_MFUN( dbb2d_setFriction );
 CK_DLL_MFUN( dbb2d_setDensity );
 CK_DLL_MFUN( dbb2d_setRestitution );
 CK_DLL_MFUN( dbb2d_applyImpulse );
+CK_DLL_MFUN( dbb2d_applyImpulseMag );
 CK_DLL_MFUN( dbb2d_applyAngularImpulse );
 
 // body has-a list of fixtures.
@@ -229,6 +230,10 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_mfun(QUERY, dbb2d_applyImpulse, "void", "applyImpulse" );
     QUERY->add_arg(QUERY, "int", "bodyId");
     QUERY->add_arg(QUERY, "complex", "impulse");
+
+    QUERY->add_mfun(QUERY, dbb2d_applyImpulseMag, "void", "applyImpulse" );
+    QUERY->add_arg(QUERY, "int", "bodyId");
+    QUERY->add_arg(QUERY, "float", "impulse");
 
     QUERY->add_mfun(QUERY, dbb2d_applyAngularImpulse, "void", "applyAngularImpulse" );
     QUERY->add_arg(QUERY, "int", "bodyId");
@@ -543,6 +548,14 @@ CK_DLL_MFUN( dbb2d_applyImpulse )
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
     int bodyId = GET_NEXT_INT(ARGS);
     t_CKCOMPLEX x = GET_NEXT_COMPLEX(ARGS);
+    c->ApplyImpulse(bodyId, x);
+}
+
+CK_DLL_MFUN( dbb2d_applyImpulseMag )
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    float x = GET_NEXT_FLOAT(ARGS);
     c->ApplyImpulse(bodyId, x);
 }
 
