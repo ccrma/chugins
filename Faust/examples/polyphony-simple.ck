@@ -2,8 +2,10 @@
 // desc: Polyphonic sawtooth synthesizer.
 Faust faust => dac;
 
+// First set the number of voices
 10 => faust.numVoices;
 
+// Now we can compile Faust code.
 faust.eval(`
     import("stdfaust.lib");
     freq = hslider("freq",200,50,1000,0.01);

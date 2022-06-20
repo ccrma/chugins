@@ -37,10 +37,6 @@ mkdir "/usr/local/lib/chuck"
 
 if [[ $OSTYPE == 'darwin'* ]]; then
     # we are on macOS
-    # todo: if we can avoid this install_name_tool line, then we won't have to codesign manually below.
-    install_name_tool -change @rpath/libfaust.2.dylib @loader_path/libfaust.2.dylib build/Release/libFaucK.dylib
-    codesign --force --deep --sign "$CODESIGN_IDENTITY" build/Release/libFaucK.dylib
-
     cp "libfaust/macOS-universal/libfaust.a" "/usr/local/lib/chuck/libfaust.2.dylib"
 else
     # we are on Linux

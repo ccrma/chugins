@@ -18,10 +18,6 @@ FaucK uses the "on-the-fly" LLVM based version of the Faust compiler (<http://fa
 
 #### macOS/Linux
 
-##### Code-signing
-
-> On macOS, you must codesign the Faust.chug. To prepare to do this, you will set an environment variable. Find your Development Profile. Open Keychain Access, go to 'login' on the left, and look for something like Apple Development: example@example.com (ABCDE12345). Then in Terminal, run `export CODESIGN_IDENTITY="Apple Development: example@example.com (ABCDE12345)"` with your own info substituted. If you weren't able to find your profile, you need to create one. Open Xcode, go to "Accounts", add your Apple ID, click "Manage Certificates", and use the plus icon to add a profile. Then check Keychain Access again.
-
 In a Terminal/shell window, navigate to this README and run `sh build_unix.sh`.
 
 On macOS/Linux, the goal is to create `Faust.chug` inside `/usr/local/lib/chuck`. On macOS, we additionally want `libfaust.2.dylib` in that folder. On Linux, instead, we want `libfaust.so.2` in that folder. After checking that these files exist, run chuck with a FaucK example.

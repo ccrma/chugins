@@ -1,5 +1,5 @@
 // name: test-import.ck
-// desc: demo of Faust chugin in action!
+// desc: Demonstrate that FaucK can import a .lib file
 
 // You should hear a stereo sine tone at 440 Hz.
 

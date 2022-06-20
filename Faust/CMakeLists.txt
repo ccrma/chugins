@@ -161,6 +161,13 @@ if (MSVC)
   #                    "C:/Program\ Files\ (x86)/ChucK/bin/faust.dll")
 endif (MSVC)
 
+if (APPLE)
+    add_custom_command(TARGET ${PROJECT_NAME} 
+        POST_BUILD COMMAND
+        install_name_tool -change @rpath/libfaust.2.dylib @loader_path/libfaust.2.dylib "$<TARGET_FILE:FaucK>"
+        )
+endif()
+
 # Install library
 INSTALL(TARGETS FaucK
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
