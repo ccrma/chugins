@@ -4,7 +4,7 @@
 
 DbBox2D is a [ChucK](https://chuck.stanford.edu/) chugin built atop
 the [Box2D](https://box2d.org/) physics simulation engine.  DbBox2D
-provides a chuck-binding to a subset of of the Box2D API for scene 
+provides a chuck binding to a subset of of the Box2D API for scene 
 specification and simulation control.
 
 The Big Idea is that you can use simulated physical effects to trigger 
