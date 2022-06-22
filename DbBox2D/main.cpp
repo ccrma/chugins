@@ -43,6 +43,8 @@ CK_DLL_MFUN( dbb2d_setGravity );
 CK_DLL_MFUN( dbb2d_setFriction );
 CK_DLL_MFUN( dbb2d_setDensity );
 CK_DLL_MFUN( dbb2d_setRestitution );
+CK_DLL_MFUN( dbb2d_applyForce );
+CK_DLL_MFUN( dbb2d_applyTorque );
 CK_DLL_MFUN( dbb2d_applyImpulse );
 CK_DLL_MFUN( dbb2d_applyImpulseMag );
 CK_DLL_MFUN( dbb2d_applyAngularImpulse );
@@ -226,6 +228,15 @@ CK_DLL_QUERY(DbBox2D)
     QUERY->add_mfun(QUERY, dbb2d_setRestitution , "void", "setRestitution");
     QUERY->add_arg(QUERY, "int", "bodyId");
     QUERY->add_arg(QUERY, "float", "restitution");
+
+    QUERY->add_mfun(QUERY, dbb2d_applyForce, "void", "applyForce" );
+    QUERY->add_arg(QUERY, "int", "bodyId");
+    QUERY->add_arg(QUERY, "complex", "force");
+    QUERY->add_arg(QUERY, "complex", "pt");
+
+    QUERY->add_mfun(QUERY, dbb2d_applyTorque, "void", "applyTorque" );
+    QUERY->add_arg(QUERY, "int", "bodyId");
+    QUERY->add_arg(QUERY, "float", "torque");
 
     QUERY->add_mfun(QUERY, dbb2d_applyImpulse, "void", "applyImpulse" );
     QUERY->add_arg(QUERY, "int", "bodyId");
@@ -541,6 +552,23 @@ CK_DLL_MFUN( dbb2d_setRestitution )
     int bodyId = GET_NEXT_INT(ARGS);
     float x = GET_NEXT_FLOAT(ARGS);
     c->SetRestitution(bodyId, x);
+}
+
+CK_DLL_MFUN( dbb2d_applyForce )
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    t_CKCOMPLEX force = GET_NEXT_COMPLEX(ARGS);
+    t_CKCOMPLEX pt = GET_NEXT_COMPLEX(ARGS);
+    c->ApplyForce(bodyId, force, pt);
+}
+
+CK_DLL_MFUN( dbb2d_applyTorque )
+{
+    DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
+    int bodyId = GET_NEXT_INT(ARGS);
+    float x = GET_NEXT_FLOAT(ARGS);
+    c->ApplyTorque(bodyId, x);
 }
 
 CK_DLL_MFUN( dbb2d_applyImpulse )

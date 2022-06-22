@@ -280,6 +280,50 @@ DbBox2D::NewDistanceJoint(int bodyA, int bodyB,
     return jid;
 }
 
+void
+DbBox2D::ApplyForce(int bodyId, t_CKCOMPLEX &force, t_CKCOMPLEX &pt)
+{
+    if(m_bodies.size() > bodyId)
+    {
+        m_worldMutex.lock();
+        b2Vec2 bf(force.re, force.im);
+        b2Vec2 bpt(pt.re, pt.im);
+        if(bodyId >= 0)
+            m_bodies[bodyId]->ApplyForce(bf, bpt, true/*wake*/);
+        else
+        {
+            // any negative value interpretted as "kick-all".
+            for(int i=0;i<m_bodies.size();i++)
+            {
+                if(m_bodies[i]->GetType() == b2_dynamicBody)
+                    m_bodies[i]->ApplyForce(bf, bpt, true/*wake*/);
+            }
+        }
+        m_worldMutex.unlock();
+    }
+}
+
+void
+DbBox2D::ApplyTorque(int bodyId, float torque)
+{
+    if(m_bodies.size() > bodyId)
+    {
+        m_worldMutex.lock();
+        if(bodyId >= 0)
+            m_bodies[bodyId]->ApplyTorque(torque, true/*wake*/);
+        else
+        {
+            // any negative value interpretted as "kick-all".
+            for(int i=0;i<m_bodies.size();i++)
+            {
+                if(m_bodies[i]->GetType() == b2_dynamicBody)
+                    m_bodies[i]->ApplyTorque(torque, true/*wake*/);
+            }
+        }
+        m_worldMutex.unlock();
+    }
+}
+
 /**
  * @brief  applies an instanteous force in the direction and magnitude
  *  given by impulse.
@@ -321,6 +365,7 @@ DbBox2D::ApplyImpulse(int bodyId, float scale)  // in direction of velocity
             b2Vec2 f = m_bodies[bodyId]->GetLinearVelocity(); // copy
             f.Normalize();
             f *= scale;
+            // std::cerr << "applyImpulse " << f.x << ", " << f.y << "\n";
             m_bodies[bodyId]->ApplyLinearImpulseToCenter(f, true/*wake*/);
         }
         else
