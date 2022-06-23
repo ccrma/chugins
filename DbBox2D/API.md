@@ -37,12 +37,12 @@ as a member variable off the DbBox2D instance.
 | :------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------- |
 | `worldBegin(complex gravity)`                                                                      | cancels current world and starts a new one.                                       |
 | `worldEnd()`                                                                                       | finishes the current world definition. Simulation can now happen.                 |
-| `int newPoint(complex pos)`                                                                        | creates a static point. Often used as joint anchor ponit.                         |
-| `int newEdge(complex p1, complex p2)`                                                              | creates a solid, two-sided static line. Often used for floors.                    |
+| `int newPoint(complex pos)`                                                                        | creates a static point. Often used as joint anchor point.                         |
+| `int newEdge(complex p1, complex p2)`                                                              | creates a solid, two-sided static line. Often used for floors and walls.          |
 | `int newCircle(complex pos, float radius, float density, int bodyType)`                            | creates a solid circle.                                                           |
 | `int newTriangle(complex p1, complex p2, complex p3, float density, int bodyType)`                 | creates a solid triangle.                                                         |
 | `int newTrianglePos(complex p1, complex p2, complex p3, complex pos, float density, int bodyType)` | alternate triangle creator whose coords are relative to pos                       |
-| `int newPolygon(complex pts[], complex pos, float density, int bodyType)`                          | creates a solid polygon given an array of points.  Polygons must be concave.      |
+| `int newPolygon(complex pts[], complex pos, float density, int bodyType)`                          | creates a solid polygon given an array of points.  Polygons must be convex.      |
 | `int newRoom(complex pos, complex size, float density, int bodyType)`                              | creates a "room" comprised of 4 rectangles.  Usually staticType or kinematicType. |
 
 Joints can be added to dynamically constrain bodies in the simulation.
@@ -67,7 +67,7 @@ parties. For example, it is used to implement Fiddle's Box2D plotting surface.
 | `getPolygonPoints(int bodyId, int shapeIndex, complex pts[])` | returns the n points of the identified polygon.                                                                          |
 | `getChainPoints(int bodyId, int shapeIndex, complex pts[])`   | returns the n points of the identified chain.                                                                            |
 | `int getNumJoints()`                                          | returns the total number of joints in the world.                                                                         |
-| `complex getJointBodies()`                                    | returns two bodyIds associated with the enumerated joint (stuff into complex).                                           |
+| `complex getJointBodies(int jointId)`                         | returns two bodyIds associated with the enumerated joint (stuff into complex).                                           |
 
 #### Simulation Query + Control
 
@@ -85,12 +85,11 @@ identify the object.
 | `float getAngle(int id)`                                      | returns the angle (in radians) of the identified body.                                                                   |
 | `complex getAngularVelocity(int id)`                          | returns the angular velocity of the identified body.                                                                     |
 | `int getNumContacts()`                                        | returns the number of contact events that occured in the last frame.                                                     |
-| `vec3 getContact(int id)`                                     | returns the contact info for the identified _contact_. 3 values are stuffed into the vec2: shapeAId, shapeBId, touching. |
+| `vec3 getContact(int id)`                                     | returns the contact info for the identified _contact_. 3 values are stuffed into the vec3: shapeAId, shapeBId, touching. |
 | `setGravity(complex g)`                                       | allows you to change gravity during the simulation.                                                                      |
 | `setFriction(int id, float x)`                                | change the friction value for identified body.                                                                           |
 | `setDensity(int id, float x)`                                 | change the density value for identified body.                                                                            |
 | `setRestitution(int id, float x)`                             | change the restitution (bounciness) value for identified body.                                                           |
-| `setMotorSpeed(float x)`                                      | change the motor speed of an existing RevoluteJoint.                                                                     |
 
 #### Custom Dynamics and the Event Callback
 
