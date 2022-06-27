@@ -201,11 +201,11 @@ DbBox2D::NewRoom(t_CKCOMPLEX &pos, t_CKCOMPLEX &sz, float density, BodyType t)
     float hx = sz.re/2.f;
     float hy = sz.im/2.f;
     // |--- w ----|
-    // /==========\
+    // x==========x
     // #          #
     // #    c     #
     // #          #
-    // \==========/
+    // x==========x
     // top
     shape.SetAsBox(hx+hthick, hthick/*hy*/, b2Vec2(0.f, hy+hthick), 0.f);
     body->CreateFixture(&shape, density);

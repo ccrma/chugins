@@ -417,7 +417,6 @@ CK_DLL_MFUN(dbb2d_getJointBodies)
 {
     DbBox2D *c = (DbBox2D *) OBJ_MEMBER_INT(SELF, dbb2d_data_offset);
     int jointId = GET_NEXT_INT(ARGS);
-    Chuck_Object *bodies = GET_NEXT_OBJECT(ARGS);
     int bodyA, bodyB;
     c->GetJointBodies(jointId, &bodyA, &bodyB);
     RETURN->v_complex.re = bodyA;
