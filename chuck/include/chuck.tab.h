@@ -102,51 +102,52 @@
      NEXT = 318,
      UNTIL = 319,
      EXTERNAL = 320,
-     EVERY = 321,
-     BEFORE = 322,
-     AFTER = 323,
-     AT = 324,
-     AT_SYM = 325,
-     ATAT_SYM = 326,
-     NEW = 327,
-     SIZEOF = 328,
-     TYPEOF = 329,
-     SAME = 330,
-     PLUS_CHUCK = 331,
-     MINUS_CHUCK = 332,
-     TIMES_CHUCK = 333,
-     DIVIDE_CHUCK = 334,
-     S_AND_CHUCK = 335,
-     S_OR_CHUCK = 336,
-     S_XOR_CHUCK = 337,
-     SHIFT_RIGHT_CHUCK = 338,
-     SHIFT_LEFT_CHUCK = 339,
-     PERCENT_CHUCK = 340,
-     SHIFT_RIGHT = 341,
-     SHIFT_LEFT = 342,
-     TILDA = 343,
-     CHUCK = 344,
-     COLONCOLON = 345,
-     S_CHUCK = 346,
-     AT_CHUCK = 347,
-     LEFT_S_CHUCK = 348,
-     UNCHUCK = 349,
-     UPCHUCK = 350,
-     CLASS = 351,
-     INTERFACE = 352,
-     EXTENDS = 353,
-     IMPLEMENTS = 354,
-     PUBLIC = 355,
-     PROTECTED = 356,
-     PRIVATE = 357,
-     STATIC = 358,
-     ABSTRACT = 359,
-     CONST = 360,
-     SPORK = 361,
-     ARROW_RIGHT = 362,
-     ARROW_LEFT = 363,
-     L_HACK = 364,
-     R_HACK = 365
+     GLOBAL = 321,
+     EVERY = 322,
+     BEFORE = 323,
+     AFTER = 324,
+     AT = 325,
+     AT_SYM = 326,
+     ATAT_SYM = 327,
+     NEW = 328,
+     SIZEOF = 329,
+     TYPEOF = 330,
+     SAME = 331,
+     PLUS_CHUCK = 332,
+     MINUS_CHUCK = 333,
+     TIMES_CHUCK = 334,
+     DIVIDE_CHUCK = 335,
+     S_AND_CHUCK = 336,
+     S_OR_CHUCK = 337,
+     S_XOR_CHUCK = 338,
+     SHIFT_RIGHT_CHUCK = 339,
+     SHIFT_LEFT_CHUCK = 340,
+     PERCENT_CHUCK = 341,
+     SHIFT_RIGHT = 342,
+     SHIFT_LEFT = 343,
+     TILDA = 344,
+     CHUCK = 345,
+     COLONCOLON = 346,
+     S_CHUCK = 347,
+     AT_CHUCK = 348,
+     LEFT_S_CHUCK = 349,
+     UNCHUCK = 350,
+     UPCHUCK = 351,
+     CLASS = 352,
+     INTERFACE = 353,
+     EXTENDS = 354,
+     IMPLEMENTS = 355,
+     PUBLIC = 356,
+     PROTECTED = 357,
+     PRIVATE = 358,
+     STATIC = 359,
+     ABSTRACT = 360,
+     CONST = 361,
+     SPORK = 362,
+     ARROW_RIGHT = 363,
+     ARROW_LEFT = 364,
+     L_HACK = 365,
+     R_HACK = 366
    };
 #endif
 /* Tokens.  */
@@ -213,58 +214,59 @@
 #define NEXT 318
 #define UNTIL 319
 #define EXTERNAL 320
-#define EVERY 321
-#define BEFORE 322
-#define AFTER 323
-#define AT 324
-#define AT_SYM 325
-#define ATAT_SYM 326
-#define NEW 327
-#define SIZEOF 328
-#define TYPEOF 329
-#define SAME 330
-#define PLUS_CHUCK 331
-#define MINUS_CHUCK 332
-#define TIMES_CHUCK 333
-#define DIVIDE_CHUCK 334
-#define S_AND_CHUCK 335
-#define S_OR_CHUCK 336
-#define S_XOR_CHUCK 337
-#define SHIFT_RIGHT_CHUCK 338
-#define SHIFT_LEFT_CHUCK 339
-#define PERCENT_CHUCK 340
-#define SHIFT_RIGHT 341
-#define SHIFT_LEFT 342
-#define TILDA 343
-#define CHUCK 344
-#define COLONCOLON 345
-#define S_CHUCK 346
-#define AT_CHUCK 347
-#define LEFT_S_CHUCK 348
-#define UNCHUCK 349
-#define UPCHUCK 350
-#define CLASS 351
-#define INTERFACE 352
-#define EXTENDS 353
-#define IMPLEMENTS 354
-#define PUBLIC 355
-#define PROTECTED 356
-#define PRIVATE 357
-#define STATIC 358
-#define ABSTRACT 359
-#define CONST 360
-#define SPORK 361
-#define ARROW_RIGHT 362
-#define ARROW_LEFT 363
-#define L_HACK 364
-#define R_HACK 365
+#define GLOBAL 321
+#define EVERY 322
+#define BEFORE 323
+#define AFTER 324
+#define AT 325
+#define AT_SYM 326
+#define ATAT_SYM 327
+#define NEW 328
+#define SIZEOF 329
+#define TYPEOF 330
+#define SAME 331
+#define PLUS_CHUCK 332
+#define MINUS_CHUCK 333
+#define TIMES_CHUCK 334
+#define DIVIDE_CHUCK 335
+#define S_AND_CHUCK 336
+#define S_OR_CHUCK 337
+#define S_XOR_CHUCK 338
+#define SHIFT_RIGHT_CHUCK 339
+#define SHIFT_LEFT_CHUCK 340
+#define PERCENT_CHUCK 341
+#define SHIFT_RIGHT 342
+#define SHIFT_LEFT 343
+#define TILDA 344
+#define CHUCK 345
+#define COLONCOLON 346
+#define S_CHUCK 347
+#define AT_CHUCK 348
+#define LEFT_S_CHUCK 349
+#define UNCHUCK 350
+#define UPCHUCK 351
+#define CLASS 352
+#define INTERFACE 353
+#define EXTENDS 354
+#define IMPLEMENTS 355
+#define PUBLIC 356
+#define PROTECTED 357
+#define PRIVATE 358
+#define STATIC 359
+#define ABSTRACT 360
+#define CONST 361
+#define SPORK 362
+#define ARROW_RIGHT 363
+#define ARROW_LEFT 364
+#define L_HACK 365
+#define R_HACK 366
 
 
 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 59 "chuck.y"
+#line 62 "chuck.y"
 {
     int pos;
     int ival;
@@ -291,7 +293,7 @@ typedef union YYSTYPE
     a_Vec vec_exp; // ge: added 1.3.5.3
 }
 /* Line 1529 of yacc.c.  */
-#line 295 "chuck.tab.h"
+#line 297 "chuck.tab.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

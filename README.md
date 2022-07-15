@@ -56,6 +56,9 @@ List of Current Chugins
   - Power function ADSR envelope.
 - **Rand**
   - Gaussian random function.
+- **WarpBuf**
+  - by [@dbraun](https://github.com/dbraun)
+  - Time-stretching and pitch-stretching sound buffer that can optionally import `asd` files from Ableton Live for beatmatching.
 - **WinFuncEnv**
   - by [@ericheep](https://github.com/ericheep)
   - Envelope built on window functions.

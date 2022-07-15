@@ -34,8 +34,8 @@
 
 #include "chuck_oo.h"
 #include "chuck_ugen.h"
+#include "chuck_type.h"
 #include "chuck_carrier.h"
-#include "util_buffers.h"
 
 // tracking
 #ifdef __CHUCK_STAT_TRACK__
@@ -71,12 +71,12 @@ struct Chuck_VM;
 struct Chuck_VM_Func;
 struct Chuck_VM_FTable;
 struct Chuck_Msg;
+#ifndef __DISABLE_SERIAL__
 // hack: spencer?
 struct Chuck_IO_Serial;
+#endif
 
 class CBufferSimple;
-//XXXclass BBQ;
-//XXXclass Digitalio;
 
 
 
@@ -139,6 +139,8 @@ public:
     t_CKUINT stack_depth;
     // whether the function needs 'this' pointer or not
     t_CKBOOL need_this;
+    // whether the function is a static function inside class
+    t_CKBOOL is_static; // 1.4.1.0
     // native
     t_CKUINT native_func;
     // is ctor?
@@ -178,11 +180,13 @@ public:
     // add parent object reference (added 1.3.1.2)
     t_CKVOID add_parent_ref( Chuck_Object * obj );
     
+    #ifndef __DISABLE_SERIAL__
     // HACK - spencer (added 1.3.2.0)
     // add/remove SerialIO devices to close on shred exit
     // REFACTOR-2017: TODO -- remove
     t_CKVOID add_serialio( Chuck_IO_Serial * serial );
     t_CKVOID remove_serialio( Chuck_IO_Serial * serial );
+    #endif
     
 //-----------------------------------------------------------------------------
 // data
@@ -249,8 +253,10 @@ public: // ge: 1.3.5.3
     // loop counter pointer stack
     std::vector<t_CKUINT *> m_loopCounters;
     
+#ifndef __DISABLE_SERIAL__
 private:
     std::list<Chuck_IO_Serial *> * m_serials;
+#endif
 };
 
 
@@ -381,53 +387,8 @@ public:
 
 
 
-// Forward references for external messages, storage
-struct Chuck_Set_External_Int_Request;
-struct Chuck_Get_External_Int_Request;
-struct Chuck_Set_External_Float_Request;
-struct Chuck_Get_External_Float_Request;
-struct Chuck_Signal_External_Event_Request;
-struct Chuck_External_Int_Container;
-struct Chuck_External_Float_Container;
-struct Chuck_External_Event_Container;
-
-
-
-
-//-----------------------------------------------------------------------------
-// name: enum External_Request_Type
-// desc: what kind of external message request is this? (REFACTOR-2017)
-//-----------------------------------------------------------------------------
-enum Chuck_External_Request_Type
-{
-    set_external_int_request,
-    get_external_int_request,
-    set_external_float_request,
-    get_external_float_request,
-    signal_external_event_request,
-    spork_shred_request
-};
-
-
-
-
-//-----------------------------------------------------------------------------
-// name: strct External_Request
-// desc: an external request (REFACTOR-2017)
-//-----------------------------------------------------------------------------
-struct Chuck_External_Request
-{
-    Chuck_External_Request_Type type;
-    union {
-        Chuck_Set_External_Int_Request * setIntRequest;
-        Chuck_Get_External_Int_Request * getIntRequest;
-        Chuck_Set_External_Float_Request * setFloatRequest;
-        Chuck_Get_External_Float_Request * getFloatRequest;
-        Chuck_Signal_External_Event_Request * signalEventRequest;
-        Chuck_VM_Shred * shred;
-    };
-
-};
+// forward reference
+struct Chuck_Globals_Manager; // added 1.4.1.0 (jack)
 
 
 
@@ -472,6 +433,8 @@ public: // shreds
     Chuck_VM_Shreduler * shreduler() const;
     // the next spork ID
     t_CKUINT next_id( );
+    // the last used spork ID
+    t_CKUINT last_id( );
 
 public: // audio
     t_CKUINT srate() const;
@@ -507,44 +470,13 @@ public: // get error
     { return m_last_error.c_str(); }
 
 public:
-    // REFACTOR-2017: externally accessible variables.
-    // use these getters and setters from outside the audio thread
-    t_CKBOOL get_external_int( std::string name, void (* callback)(t_CKINT) );
-    t_CKBOOL set_external_int( std::string name, t_CKINT val );
-
-    t_CKBOOL get_external_float( std::string name, void (* callback)(t_CKFLOAT) );
-    t_CKBOOL set_external_float( std::string name, t_CKFLOAT val );
-    
-    t_CKBOOL signal_external_event( std::string name );
-    t_CKBOOL broadcast_external_event( std::string name );
-    
-public:
-    // REFACTOR-2017: externally accessible variables.
-    // these internal functions are to be used only by other
-    // chuck code in the audio thread.
-    t_CKBOOL init_external_int( std::string name );
-    t_CKINT get_external_int_value( std::string name );
-    t_CKINT * get_ptr_to_external_int( std::string name );
-    
-    t_CKBOOL init_external_float( std::string name );
-    t_CKFLOAT get_external_float_value( std::string name );
-    t_CKFLOAT * get_ptr_to_external_float( std::string name );
-    
-    t_CKBOOL init_external_event( std::string name, Chuck_Type * type );
-    Chuck_Event * get_external_event( std::string name );
-    Chuck_Event * * get_ptr_to_external_event( std::string name );
-
-protected:
-    // REFACTOR-2017: external queue
-    void handle_external_queue_messages();
-
-public:
     // REFACTOR-2017: get associated, per-VM environment, chout, cherr
     Chuck_Carrier * carrier() const { return m_carrier; }
     Chuck_Env * env() const { return m_carrier->env; }
     Chuck_IO_Chout * chout() const { return m_carrier->chout; }
     Chuck_IO_Cherr * cherr() const { return m_carrier->cherr; }
-
+    // 1.4.1.0 (jack): get associated globals manager
+    Chuck_Globals_Manager * globals_manager() const { return m_globals_manager; }
 
 //-----------------------------------------------------------------------------
 // data
@@ -567,14 +499,21 @@ public:
     // for shreduler, ge: 1.3.5.3
     const SAMPLE * input_ref() { return m_input_ref; }
     SAMPLE * output_ref() { return m_output_ref; }
+    // for shreduler, jack: planar (non-interleaved) audio buffers
+    t_CKUINT most_recent_buffer_length() { return m_current_buffer_frames; }
 
 protected:
     // for shreduler, ge: 1.3.5.3
     const SAMPLE * m_input_ref;
     SAMPLE * m_output_ref;
+    t_CKUINT m_current_buffer_frames;
+
+public:
+    // protected, but needs to be accessible from Globals Manager (1.4.1.0)
+    // generally, this should not be called except by internals such as GM
+    Chuck_VM_Shred * spork( Chuck_VM_Shred * shred );
 
 protected:
-    Chuck_VM_Shred * spork( Chuck_VM_Shred * shred );
     t_CKBOOL free( Chuck_VM_Shred * shred, t_CKBOOL cascade, 
                    t_CKBOOL dec = TRUE );
     void dump( Chuck_VM_Shred * shred );
@@ -601,15 +540,9 @@ protected:
     // TODO: vector? (added 1.3.0.0 to fix uber-crash)
     std::list<CBufferSimple *> m_event_buffers;
 
-private:
-    // external variables
-    void cleanup_external_variables();
-
-    std::map< std::string, Chuck_External_Int_Container * > m_external_ints;
-    std::map< std::string, Chuck_External_Float_Container * > m_external_floats;
-    std::map< std::string, Chuck_External_Event_Container * > m_external_events;
-    
-    XCircleBuffer< Chuck_External_Request > m_external_request_queue;
+protected:
+    // 1.4.1.0 (jack): manager for global variables
+    Chuck_Globals_Manager * m_globals_manager;
 };
 
 
@@ -634,6 +567,7 @@ enum Chuck_Msg_Type
     MSG_ABORT,
     MSG_ERROR, // added 1.3.0.0
     MSG_CLEARVM,
+    MSG_CLEARGLOBALS,
 };
 
 
