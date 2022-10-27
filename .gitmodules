@@ -4,3 +4,6 @@
 [submodule "WarpBuf/thirdparty/libsamplerate"]
 	path = WarpBuf/thirdparty/libsamplerate
 	url = https://github.com/libsndfile/libsamplerate
+[submodule "rave/nn_tilde"]
+	path = rave/nn_tilde
+	url = https://github.com/acids-ircam/nn_tilde.git
