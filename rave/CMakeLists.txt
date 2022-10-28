@@ -74,15 +74,20 @@ INSTALL(TARGETS rave
 # target_compile_options(WarpBufChugin PRIVATE)
 # endif()
 
+message(STATUS "target file for ${PROJECT_NAME}: $<TARGET_FILE:rave>")
+
 if (MSVC)
   # set_target_properties(${PROJECT_NAME} PROPERTIES
   #                       VS_DEBUGGER_COMMAND "C:\\Program\ Files\ (x86)\\ChucK\\bin\\chuck.exe"
   #                       VS_DEBUGGER_COMMAND_ARGUMENTS "..\\tests\\warpbuf_basic.ck")
 
+  message(STATUS "in MSVC!")
   add_custom_command(TARGET ${PROJECT_NAME}
                      POST_BUILD
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      "$<TARGET_FILE:rave>"
                      "%USERPROFILE%/Documents/ChucK/chugins/rave.chug")
+                     # "rave.chug")
 endif()
 
+# file(GENERATE OUTPUT target_file.txt CONTENT "$<TARGET_FILE:rave>")

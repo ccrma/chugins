@@ -6,7 +6,7 @@
 #pragma once
 
 // nn_tilde includes
-#include "nn_tilde/src/backend/backend.h"
+#include "backend.h"
 
 // this should align with the correct versions of these ChucK files
 #include "chuck_dl.h"
@@ -27,10 +27,13 @@ CK_DLL_MFUN(rave_setParam);
 CK_DLL_MFUN(rave_getParam);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
-CK_DLL_TICK(rave_tick);
+CK_DLL_TICKF(rave_tickf);
 
 // this is a special offset reserved for Chugin internal data
 t_CKINT rave_data_offset = 0;
+
+// maximum number of channels that rave can output
+const int max_channels = 64;
 
 
 // class definition for internal Chugin data
@@ -39,17 +42,63 @@ t_CKINT rave_data_offset = 0;
 class Rave
 {
 public:
+    Backend m_model;
+    std::string m_method;
+
+    // AUDIO PERFORM
+    bool m_use_thread;
+
+    // BUFFER RELATED MEMBERS
+    int m_buffer_size;
+
+    int m_in_dim, m_in_ratio, m_out_dim, m_out_ratio, m_higher_ratio;
+
     // constructor
-    Rave( t_CKFLOAT fs)
+    Rave( t_CKFLOAT fs )
     {
+        m_model = Backend();
+        m_method = "forward";
         m_param = 0;
+        m_buffer_size = 4096;
+        m_use_thread = false;
+
+        // TRY TO LOAD MODEL
+        if (m_model.load(std::string("wheel.ts"))) { // TODO stop having this be hardcoded
+            std::cerr << "error during loading" << std::endl;
+            return;
+        }
+        else {
+            std::cout << "loading succeeded" << std::endl;
+        }
+
+        m_higher_ratio = m_model.get_higher_ratio();
+
+        // GET MODEL'S METHOD PARAMETERS
+        auto params = m_model.get_method_params(m_method);
+
+        if (!params.size()) {
+            std::cerr << "method " << m_method << " not found !" << std::endl;
+        }
+
+        m_in_dim = params[0];
+        m_in_ratio = params[1];
+        m_out_dim = params[2];
+        m_out_ratio = params[3];
     }
 
     // for Chugins extending UGen
-    SAMPLE tick( SAMPLE in )
+    void tick(SAMPLE* in, SAMPLE* out, t_CKUINT nframes)
     {
         // default: this passes whatever input is patched into Chugin
-        return in;
+        // return in;
+
+        memset(out, 0, sizeof(SAMPLE) * max_channels * nframes);
+
+        for (int i = 0; i < nframes; i++) { // iterate through each frame
+            for (int j = 0; j < 1; j++) { // iterate through each channel (just hardcoding 1 for now)
+                out[i * max_channels + j] = in[0];
+            }
+        }
     }
 
     // set parameter example
@@ -86,7 +135,8 @@ CK_DLL_QUERY( rave )
     QUERY->add_dtor(QUERY, rave_dtor);
     
     // for UGen's only: add tick function
-    QUERY->add_ugen_func(QUERY, rave_tick, NULL, 1, 1);
+    // QUERY->add_ugen_func(QUERY, rave_tick, NULL, 1, 1);
+    QUERY->add_ugen_funcf(QUERY, rave_tickf, NULL, max_channels, max_channels);
     
     // NOTE: if this is to be a UGen with more than 1 channel, 
     // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
@@ -143,14 +193,14 @@ CK_DLL_DTOR(rave_dtor)
 }
 
 
-// implementation for tick function
-CK_DLL_TICK(rave_tick)
+// implementation for tickf function
+CK_DLL_TICKF(rave_tickf)
 {
     // get our c++ class pointer
     Rave * r_obj = (Rave *) OBJ_MEMBER_INT(SELF, rave_data_offset);
  
     // invoke our tick function; store in the magical out variable
-    if(r_obj) *out = r_obj->tick(in);
+    if(r_obj) r_obj->tick(in, out, nframes);
 
     // yes
     return TRUE;
