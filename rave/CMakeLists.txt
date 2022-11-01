@@ -23,6 +23,7 @@ FILE(GLOB CK_SOURCES
 
 FILE(GLOB NN_TILDE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/nn_tilde/src/backend/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/nn_tilde/src/frontend/maxmsp/shared/*.h
 )
 
 set(Sources
