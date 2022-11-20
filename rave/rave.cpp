@@ -36,6 +36,9 @@ CK_DLL_DTOR(rave_dtor);
 CK_DLL_MFUN(rave_setParam);
 CK_DLL_MFUN(rave_getParam);
 
+// load model
+CK_DLL_MFUN(rave_load);
+
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICKF(rave_tickf);
 
@@ -74,45 +77,6 @@ public:
         m_param = 0;
         m_buffer_size = 4096;
         m_use_thread = false;
-
-        // TRY TO LOAD MODEL
-        if (m_model.load(std::string("wheel.ts"))) { // TODO stop having this be hardcoded
-            std::cerr << "error during loading" << std::endl;
-            return;
-        }
-        else {
-            std::cout << "loading succeeded" << std::endl;
-        }
-
-        m_higher_ratio = m_model.get_higher_ratio();
-        std::cout << "m_higher_ratio " << m_higher_ratio << std::endl;
-
-        // GET MODEL'S METHOD PARAMETERS
-        auto params = m_model.get_method_params(m_method);
-
-        if (!params.size()) {
-            std::cerr << "method " << m_method << " not found !" << std::endl;
-        }
-
-        m_in_dim = params[0];
-        m_in_ratio = params[1];
-        m_out_dim = params[2];
-        m_out_ratio = params[3];
-        m_buffer_size = m_higher_ratio;
-
-        // Creat buffers
-        m_in_buffer = std::make_unique<circular_buffer<float, float>[]>(m_in_dim);
-        for (int i(0); i < m_in_dim; i++) {
-            m_in_buffer[i].initialize(m_buffer_size);
-            m_in_model.push_back(std::make_unique<float[]>(m_buffer_size));
-        }
-
-        m_out_buffer = std::make_unique<circular_buffer<float, float>[]>(m_out_dim);
-        for (int i(0); i < m_out_dim; i++) {
-            m_out_buffer[i].initialize(m_buffer_size);
-            m_out_model.push_back(std::make_unique<float[]>(m_buffer_size));
-        }
-
     }
 
     // for Chugins extending UGen
@@ -225,6 +189,48 @@ public:
 
     // get parameter example
     t_CKFLOAT getParam() { return m_param; }
+
+    // set and load model
+    t_CKBOOL load(const std::string& path) {
+        // TRY TO LOAD MODEL
+        if (m_model.load(std::string(path))) { // TODO stop having this be hardcoded
+            std::cerr << "error during loading" << std::endl;
+            return FALSE;
+        }
+
+        std::cout << "loading succeeded" << std::endl;
+
+        m_higher_ratio = m_model.get_higher_ratio();
+        std::cout << "m_higher_ratio " << m_higher_ratio << std::endl;
+
+        // GET MODEL'S METHOD PARAMETERS
+        auto params = m_model.get_method_params(m_method);
+
+        if (!params.size()) {
+            std::cerr << "method " << m_method << " not found !" << std::endl;
+        }
+
+        m_in_dim = params[0];
+        m_in_ratio = params[1];
+        m_out_dim = params[2];
+        m_out_ratio = params[3];
+        m_buffer_size = m_higher_ratio;
+
+        // Creat buffers
+        m_in_buffer = std::make_unique<circular_buffer<float, float>[]>(m_in_dim);
+        for (int i(0); i < m_in_dim; i++) {
+            m_in_buffer[i].initialize(m_buffer_size);
+            m_in_model.push_back(std::make_unique<float[]>(m_buffer_size));
+        }
+
+        m_out_buffer = std::make_unique<circular_buffer<float, float>[]>(m_out_dim);
+        for (int i(0); i < m_out_dim; i++) {
+            m_out_buffer[i].initialize(m_buffer_size);
+            m_out_model.push_back(std::make_unique<float[]>(m_buffer_size));
+        }
+
+        return TRUE;
+    }
     
 private:
     // instance data
@@ -263,6 +269,10 @@ CK_DLL_QUERY( rave )
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, rave_getParam, "float", "param");
+
+    // register load method
+    QUERY->add_mfun(QUERY, rave_load, "string", "load");
+    QUERY->add_arg(QUERY, "string", "path");
     
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above
@@ -339,3 +349,13 @@ CK_DLL_MFUN(rave_getParam)
     // set the return value
     RETURN->v_float = r_obj->getParam();
 }
+
+CK_DLL_MFUN(rave_load)
+{
+    // get our c++ class pointer
+    Rave* r_obj = (Rave*)OBJ_MEMBER_INT(SELF, rave_data_offset);
+    // set the return value
+    // RETURN->v_float = r_obj->setParam(GET_NEXT_FLOAT(ARGS));
+    RETURN->v_int = r_obj->load(GET_NEXT_STRING(ARGS)->str());
+}
+
