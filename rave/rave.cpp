@@ -39,6 +39,9 @@ CK_DLL_MFUN(rave_getParam);
 // load model
 CK_DLL_MFUN(rave_load);
 
+// set method
+CK_DLL_MFUN(rave_setMethod);
+
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICKF(rave_tickf);
 
@@ -121,8 +124,6 @@ public:
     }
 
     void model_perform() {
-        // std::cout << "model_perform" << std::endl;
-
         std::vector<float*> in_model, out_model;
 
         for (int c(0); c < m_in_dim; c++)
@@ -203,11 +204,23 @@ public:
         m_higher_ratio = m_model.get_higher_ratio();
         std::cout << "m_higher_ratio " << m_higher_ratio << std::endl;
 
+        // this will set the method if it hasn't been already
+        return setMethod(m_method);
+    }
+
+    t_CKBOOL setMethod(const std::string& method) {
         // GET MODEL'S METHOD PARAMETERS
-        auto params = m_model.get_method_params(m_method);
+        m_method = method;
+
+        if (!m_model.is_loaded()) {
+            return TRUE;
+        }
+
+        auto params = m_model.get_method_params(method);
 
         if (!params.size()) {
             std::cerr << "method " << m_method << " not found !" << std::endl;
+            return FALSE;
         }
 
         m_in_dim = params[0];
@@ -216,7 +229,7 @@ public:
         m_out_ratio = params[3];
         m_buffer_size = m_higher_ratio;
 
-        // Creat buffers
+        // Create buffers
         m_in_buffer = std::make_unique<circular_buffer<float, float>[]>(m_in_dim);
         for (int i(0); i < m_in_dim; i++) {
             m_in_buffer[i].initialize(m_buffer_size);
@@ -230,6 +243,7 @@ public:
         }
 
         return TRUE;
+
     }
     
 private:
@@ -271,8 +285,13 @@ CK_DLL_QUERY( rave )
     QUERY->add_mfun(QUERY, rave_getParam, "float", "param");
 
     // register load method
-    QUERY->add_mfun(QUERY, rave_load, "string", "load");
+    QUERY->add_mfun(QUERY, rave_load, "int", "load");
     QUERY->add_arg(QUERY, "string", "path");
+
+    // regist setMethod method
+    QUERY->add_mfun(QUERY, rave_setMethod, "int", "method");
+    QUERY->add_arg(QUERY, "string", "method");
+
     
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above
@@ -359,3 +378,11 @@ CK_DLL_MFUN(rave_load)
     RETURN->v_int = r_obj->load(GET_NEXT_STRING(ARGS)->str());
 }
 
+CK_DLL_MFUN(rave_setMethod)
+{
+    // get our c++ class pointer
+    Rave* r_obj = (Rave*)OBJ_MEMBER_INT(SELF, rave_data_offset);
+    // set the return value
+    // RETURN->v_float = r_obj->setParam(GET_NEXT_FLOAT(ARGS));
+    RETURN->v_int = r_obj->setMethod(GET_NEXT_STRING(ARGS)->str());
+}
