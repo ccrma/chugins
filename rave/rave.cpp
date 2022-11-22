@@ -42,6 +42,11 @@ CK_DLL_MFUN(rave_load);
 // set method
 CK_DLL_MFUN(rave_setMethod);
 
+// get channels method
+CK_DLL_MFUN(rave_getChannels);
+
+CK_DLL_MFUN(rave_getOutChannels);
+
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICKF(rave_tickf);
 
@@ -177,7 +182,6 @@ public:
         // COPY CIRCULAR BUFFER TO OUTPUT
         for (int c(0); c < m_out_dim; c++) {
             m_out_buffer[c].get_interleave(out+c, max_channels, nframes);
-            out++;
         }
     }
 
@@ -194,7 +198,7 @@ public:
     // set and load model
     t_CKBOOL load(const std::string& path) {
         // TRY TO LOAD MODEL
-        if (m_model.load(std::string(path))) { // TODO stop having this be hardcoded
+        if (m_model.load(std::string(path))) {
             std::cerr << "error during loading" << std::endl;
             return FALSE;
         }
@@ -229,6 +233,9 @@ public:
         m_out_ratio = params[3];
         m_buffer_size = m_higher_ratio;
 
+        std::cout << m_method << ", m_in_dim: " << m_in_dim << " m_in_ratio; " << m_in_ratio << " m_out_dim: "
+            << m_out_dim << " m_out_ratio: " << m_out_ratio << std::endl;
+
         // Create buffers
         m_in_buffer = std::make_unique<circular_buffer<float, float>[]>(m_in_dim);
         for (int i(0); i < m_in_dim; i++) {
@@ -242,9 +249,14 @@ public:
             m_out_model.push_back(std::make_unique<float[]>(m_buffer_size));
         }
 
-        return TRUE;
 
+        return TRUE;
     }
+
+    t_CKINT getOutChannels() {
+        std::cout << "out dim: " << &m_out_dim << std::endl;
+        return m_out_dim; }
+
     
 private:
     // instance data
@@ -288,11 +300,16 @@ CK_DLL_QUERY( rave )
     QUERY->add_mfun(QUERY, rave_load, "int", "load");
     QUERY->add_arg(QUERY, "string", "path");
 
-    // regist setMethod method
+    // register setMethod method
     QUERY->add_mfun(QUERY, rave_setMethod, "int", "method");
     QUERY->add_arg(QUERY, "string", "method");
 
-    
+    // register channels method
+    // QUERY->add_mfun(QUERY, rave_getChannels, "int", "channels");
+
+    QUERY->add_mfun(QUERY, rave_getOutChannels, "int", "outChannels");
+
+
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above
     rave_data_offset = QUERY->add_mvar(QUERY, "int", "@r_data", false);
@@ -386,3 +403,21 @@ CK_DLL_MFUN(rave_setMethod)
     // RETURN->v_float = r_obj->setParam(GET_NEXT_FLOAT(ARGS));
     RETURN->v_int = r_obj->setMethod(GET_NEXT_STRING(ARGS)->str());
 }
+
+CK_DLL_MFUN(rave_getChannels)
+{
+    // get our c++ class pointer
+    Rave* r_obj = (Rave*)OBJ_MEMBER_INT(SELF, rave_data_offset);
+    // set the return value
+    RETURN->v_int = r_obj->getOutChannels();
+}
+
+CK_DLL_MFUN(rave_getOutChannels)
+{
+    // get our c++ class pointer
+    Rave* r_obj = (Rave*)OBJ_MEMBER_INT(SELF, rave_data_offset);
+    std::cout << r_obj << std::endl;
+    // set the return value
+    RETURN->v_int = r_obj->getOutChannels();
+}
+
