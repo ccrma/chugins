@@ -5,10 +5,6 @@
 
 /*
 TODOS
-- getter for number of active channels
-- get audio output working for base case
-  - forward
-  - hardcoded everythin
 - arbitrary buffer sizes
 - look at threads(?)
 */
@@ -42,10 +38,11 @@ CK_DLL_MFUN(rave_load);
 // set method
 CK_DLL_MFUN(rave_setMethod);
 
-// get channels method
+// get channels methods
 CK_DLL_MFUN(rave_getChannels);
-
 CK_DLL_MFUN(rave_getOutChannels);
+CK_DLL_MFUN(rave_getInChannels);
+
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICKF(rave_tickf);
@@ -140,8 +137,6 @@ public:
     }
 
     void perform(SAMPLE* in, SAMPLE* out, t_CKUINT nframes) {
-        // std::cout << "perform" << std::endl;
-
         // auto vec_size = nframes;
 
         // COPY INPUT TO CIRCULAR BUFFER
@@ -151,9 +146,6 @@ public:
             m_in_buffer[c].put_interleave(in, max_channels, nframes);
             in++;
         }
-
-        // std::cout << "check if buffer full" << std::endl;
-
 
         if (m_in_buffer[0].full()) { // BUFFER IS FULL
             /*
@@ -206,7 +198,6 @@ public:
         std::cout << "loading succeeded" << std::endl;
 
         m_higher_ratio = m_model.get_higher_ratio();
-        std::cout << "m_higher_ratio " << m_higher_ratio << std::endl;
 
         // this will set the method if it hasn't been already
         return setMethod(m_method);
@@ -233,9 +224,6 @@ public:
         m_out_ratio = params[3];
         m_buffer_size = m_higher_ratio;
 
-        std::cout << m_method << ", m_in_dim: " << m_in_dim << " m_in_ratio; " << m_in_ratio << " m_out_dim: "
-            << m_out_dim << " m_out_ratio: " << m_out_ratio << std::endl;
-
         // Create buffers
         m_in_buffer = std::make_unique<circular_buffer<float, float>[]>(m_in_dim);
         for (int i(0); i < m_in_dim; i++) {
@@ -253,9 +241,8 @@ public:
         return TRUE;
     }
 
-    t_CKINT getOutChannels() {
-        std::cout << "out dim: " << &m_out_dim << std::endl;
-        return m_out_dim; }
+    t_CKINT getOutChannels() { return m_out_dim; }
+    t_CKINT getInChannels() { return m_in_dim; }
 
     
 private:
@@ -305,10 +292,10 @@ CK_DLL_QUERY( rave )
     QUERY->add_arg(QUERY, "string", "method");
 
     // register channels method
-    // QUERY->add_mfun(QUERY, rave_getChannels, "int", "channels");
+    QUERY->add_mfun(QUERY, rave_getChannels, "int", "channels");
 
-    QUERY->add_mfun(QUERY, rave_getOutChannels, "int", "outChannels");
-
+    QUERY->add_mfun(QUERY, rave_getChannels, "int", "outChannels");
+    QUERY->add_mfun(QUERY, rave_getInChannels, "int", "inChannels");
 
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above
@@ -412,12 +399,12 @@ CK_DLL_MFUN(rave_getChannels)
     RETURN->v_int = r_obj->getOutChannels();
 }
 
-CK_DLL_MFUN(rave_getOutChannels)
+CK_DLL_MFUN(rave_getInChannels)
 {
     // get our c++ class pointer
     Rave* r_obj = (Rave*)OBJ_MEMBER_INT(SELF, rave_data_offset);
-    std::cout << r_obj << std::endl;
     // set the return value
-    RETURN->v_int = r_obj->getOutChannels();
+    RETURN->v_int = r_obj->getInChannels();
 }
+
 
