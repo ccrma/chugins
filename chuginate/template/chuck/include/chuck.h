@@ -31,8 +31,8 @@
 // date: fall 2017
 //
 // additional authors:
-//         Jack Atherton (lja@ccrma.stanford.edu)
-//         Spencer Salazar (spencer@ccrma.stanford.edu)
+//       Jack Atherton (lja@ccrma.stanford.edu)
+//       Spencer Salazar (spencer@ccrma.stanford.edu)
 //-----------------------------------------------------------------------------
 #ifndef __CHUCK_H__
 #define __CHUCK_H__
@@ -40,13 +40,27 @@
 #include "chuck_compile.h"
 #include "chuck_dl.h"
 #include "chuck_vm.h"
+
+#ifndef __DISABLE_SHELL__
 #include "chuck_shell.h"
+#endif
+
 #include "chuck_carrier.h"
+#ifndef __DISABLE_OTF_SERVER
 #include "ulib_machine.h"
+#endif
+
 #include "util_math.h"
 #include "util_string.h"
+
+#ifndef __DISABLE_HID__
 #include "hidio_sdl.h"
+#endif
+
+#ifndef __DISABLE_MIDI__
 #include "midiio_rtmidi.h"
+#endif
+
 #include <string>
 #include <map>
 
@@ -69,6 +83,7 @@
 #define CHUCK_PARAM_CHUGIN_DIRECTORY        "CHUGIN_DIRECTORY"
 #define CHUCK_PARAM_USER_CHUGINS            "USER_CHUGINS"
 #define CHUCK_PARAM_USER_CHUGIN_DIRECTORIES "USER_CHUGIN_DIRECTORIES"
+#define CHUCK_PARAM_HINT_IS_REALTIME_AUDIO  "HINT_IS_REALTIME_AUDIO"
 
 
 
@@ -115,44 +130,57 @@ public:
     void run( SAMPLE * input, SAMPLE * output, int numFrames );
 
 public:
+    // is initialized
+    bool isInit() { return m_init; }
+    
+public:
     // additional native chuck bindings/types (use with extra caution)
     bool bind( f_ck_query queryFunc, const std::string & name );
+    // set a function pointer to call from the main thread loop
+    bool setMainThreadHook( Chuck_DL_MainThreadHook * hook );
+    // get pointer to current function to be called from main loop
+    Chuck_DL_MainThreadHook * getMainThreadHook();
+
+public:
+    // get globals (needed to access Globals Manager)
+    Chuck_Globals_Manager * globals();
 
 public:
     // get VM (dangerous)
     Chuck_VM * vm() { return m_carrier->vm; }
     // get compiler (dangerous)
     Chuck_Compiler * compiler() { return m_carrier->compiler; }
+    // is the VM running
+    bool vm_running() { return m_carrier->vm && m_carrier->vm->running(); }
 
 public:
-    // external variables - set and get
-    t_CKBOOL setExternalInt( const char * name, t_CKINT val );
-    t_CKBOOL getExternalInt( const char * name, void (* callback)(t_CKINT) );
-    t_CKBOOL setExternalFloat( const char * name, t_CKFLOAT val );
-    t_CKBOOL getExternalFloat( const char * name, void (* callback)(t_CKFLOAT) );
-    t_CKBOOL signalExternalEvent( const char * name );
-    t_CKBOOL broadcastExternalEvent( const char * name );
-    
-public:
-    // external callback functions
+    // global callback functions: replace printing to command line with a callback function
     t_CKBOOL setChoutCallback( void (* callback)(const char *) );
     t_CKBOOL setCherrCallback( void (* callback)(const char *) );
     static t_CKBOOL setStdoutCallback( void (* callback)(const char *) );
     static t_CKBOOL setStderrCallback( void (* callback)(const char *) );
 
 public:
-    // TODO Ge: name choice? should this exist?
-    static void finalCleanup();
+    // global initialization for all instances (called once at beginning)
+    static t_CKBOOL globalInit();
+    // global cleanup for all instances (called once at end)
+    static void globalCleanup();
+    // flag for global init
+    static t_CKBOOL o_isGlobalInit;
 
 protected:
     // shutdown
     bool shutdown();
-    
+
 public: // static functions
     // chuck version
     static const char * version();
+    #ifndef __DISABLE_OTF_SERVER__
     // chuck int size (in bits)
+    // (this depends on machine, which depends on OTF, so
+    //  disable it if we don't have OTF)
     static t_CKUINT intSize();
+    #endif
     // number of ChucK's
     static t_CKUINT numVMs() { return o_numVMs; };
     // --poop compatibilty
@@ -191,6 +219,10 @@ protected:
     std::map< std::string, std::list<std::string> > m_listParams;
     // did user init?
     t_CKBOOL m_init;
+    // did user start?
+    t_CKBOOL m_started;
+    // main thread "hook" (if there is a main thread)
+    Chuck_DL_MainThreadHook * m_hook;
 };
 
 
