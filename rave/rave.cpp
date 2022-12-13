@@ -67,8 +67,8 @@ public:
 
     // BUFFER RELATED MEMBERS
     int m_buffer_size;
-    std::unique_ptr<circular_buffer<float, float>[]> m_in_buffer;
-    std::unique_ptr<circular_buffer<float, float>[]> m_out_buffer;
+    std::unique_ptr<circular_buffer<SAMPLE, float>[]> m_in_buffer;
+    std::unique_ptr<circular_buffer<float, SAMPLE>[]> m_out_buffer;
     std::vector<std::unique_ptr<float[]>> m_in_model, m_out_model;
 
     // m_in_dim & m_out_dim correspond to number of in and out channels.
@@ -87,9 +87,6 @@ public:
     // for Chugins extending UGen
     void tick(SAMPLE* in, SAMPLE* out, t_CKUINT nframes)
     {
-        // default: this passes whatever input is patched into Chugin
-        // return in;
-
         auto dsp_vec_size = nframes;
 
         memset(out, 0, sizeof(SAMPLE) * max_channels * nframes);
@@ -99,18 +96,17 @@ public:
             return;
         }
 
-        /* TODO have variable buffer sizes to deal w/ latency
+        // TODO have variable buffer sizes to deal w/ latency
         // Check if DSP vector size is 
         if (dsp_vec_size > m_buffer_size) {
-            cerr << "vector size (" << dsp_vec_size << ") ";
-            cerr << "larger than buffer size (" << m_buffer_size << "). ";
-            cerr << "disabling model.";
-            cerr << endl;
-            enable = false;
-            fill_with_zero(output);
+            std::cerr << "vector size (" << dsp_vec_size << ") ";
+            std::cerr << "larger than buffer size (" << m_buffer_size << "). ";
+            std::cerr << "disabling model.";
+            std::cerr << std::endl;
+            // enable = false;
+            // fill_with_zero(output);
             return;
         }
-        */
 
         // std::cout << "tick" << std::endl;
         perform(in, out, nframes);
@@ -126,7 +122,7 @@ public:
     }
 
     void model_perform() {
-        std::vector<float*> in_model, out_model;
+        std::vector<SAMPLE*> in_model, out_model;
 
         for (int c(0); c < m_in_dim; c++)
             in_model.push_back(m_in_model[c].get());
@@ -225,16 +221,16 @@ public:
         m_buffer_size = m_higher_ratio;
 
         // Create buffers
-        m_in_buffer = std::make_unique<circular_buffer<float, float>[]>(m_in_dim);
+        m_in_buffer = std::make_unique<circular_buffer<SAMPLE, SAMPLE>[]>(m_in_dim);
         for (int i(0); i < m_in_dim; i++) {
             m_in_buffer[i].initialize(m_buffer_size);
-            m_in_model.push_back(std::make_unique<float[]>(m_buffer_size));
+            m_in_model.push_back(std::make_unique<SAMPLE[]>(m_buffer_size));
         }
 
-        m_out_buffer = std::make_unique<circular_buffer<float, float>[]>(m_out_dim);
+        m_out_buffer = std::make_unique<circular_buffer<SAMPLE, SAMPLE>[]>(m_out_dim);
         for (int i(0); i < m_out_dim; i++) {
             m_out_buffer[i].initialize(m_buffer_size);
-            m_out_model.push_back(std::make_unique<float[]>(m_buffer_size));
+            m_out_model.push_back(std::make_unique<SAMPLE[]>(m_buffer_size));
         }
 
 
