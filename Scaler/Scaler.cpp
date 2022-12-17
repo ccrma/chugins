@@ -302,8 +302,11 @@ CK_DLL_MFUN(scaler_setInRange)
 {
   // get our c++ class pointer
   Scaler * s_obj = (Scaler *) OBJ_MEMBER_INT(SELF, scaler_data_offset);
+
+  float inMin = GET_NEXT_FLOAT(ARGS);
+  float inMax = GET_NEXT_FLOAT(ARGS);
   // set the return value
-  s_obj->setInRange(GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS));
+  s_obj->setInRange(inMin, inMax);
 }
 
 CK_DLL_MFUN(scaler_setInRadius)
@@ -311,35 +314,54 @@ CK_DLL_MFUN(scaler_setInRadius)
   // get our c++ class pointer
   Scaler * s_obj = (Scaler *) OBJ_MEMBER_INT(SELF, scaler_data_offset);
   // set the return value
-  s_obj->setInRadius(GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS));
+  float inCenter = GET_NEXT_FLOAT(ARGS);
+  float inRadius = GET_NEXT_FLOAT(ARGS);
+  s_obj->setInRadius(inCenter, inRadius);
 }
 CK_DLL_MFUN(scaler_setOutRange)
 {
   // get our c++ class pointer
   Scaler * s_obj = (Scaler *) OBJ_MEMBER_INT(SELF, scaler_data_offset);
+
+  float outMin = GET_NEXT_FLOAT(ARGS);
+  float outMax = GET_NEXT_FLOAT(ARGS);
   // set the return value
-  s_obj->setOutRange(GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS));
+  s_obj->setOutRange(outMin, outMax);
 }
+
 CK_DLL_MFUN(scaler_setOutRadius)
 {
   // get our c++ class pointer
   Scaler * s_obj = (Scaler *) OBJ_MEMBER_INT(SELF, scaler_data_offset);
+  float outCenter = GET_NEXT_FLOAT(ARGS);
+  float outRadius = GET_NEXT_FLOAT(ARGS);
   // set the return value
-  s_obj->setOutRadius(GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS));
+  s_obj->setOutRadius(outCenter, outRadius);
 }
+
 CK_DLL_MFUN(scaler_setRange)
 {
   // get our c++ class pointer
   Scaler * s_obj = (Scaler *) OBJ_MEMBER_INT(SELF, scaler_data_offset);
   // set the return value
-  s_obj->setRange(GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS));
+  float inMin = GET_NEXT_FLOAT(ARGS);
+  float inMax = GET_NEXT_FLOAT(ARGS);
+  float outMin = GET_NEXT_FLOAT(ARGS);
+  float outMax = GET_NEXT_FLOAT(ARGS);
+  s_obj->setRange(inMin, inMax, outMin, outMax);
 }
+
 CK_DLL_MFUN(scaler_setRadius)
 {
   // get our c++ class pointer
   Scaler * s_obj = (Scaler *) OBJ_MEMBER_INT(SELF, scaler_data_offset);
+
+  float inCenter = GET_NEXT_FLOAT(ARGS);
+  float inRadius = GET_NEXT_FLOAT(ARGS);
+  float outCenter = GET_NEXT_FLOAT(ARGS);
+  float outRadius = GET_NEXT_FLOAT(ARGS);
   // set the return value
-  s_obj->setRange(GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS));
+  s_obj->setRange(inCenter, inRadius, outCenter, outRadius);
 }
 
 CK_DLL_MFUN(scaler_getInMin)
@@ -349,6 +371,7 @@ CK_DLL_MFUN(scaler_getInMin)
   // set the return value
   RETURN->v_float = s_obj->getInMin();
 }
+
 CK_DLL_MFUN(scaler_getInMax)
 {
     // get our c++ class pointer
@@ -356,6 +379,7 @@ CK_DLL_MFUN(scaler_getInMax)
     // set the return value
     RETURN->v_float = s_obj->getInMax();
 }
+
 CK_DLL_MFUN(scaler_getOutMin)
 {
     // get our c++ class pointer
@@ -363,6 +387,7 @@ CK_DLL_MFUN(scaler_getOutMin)
     // set the return value
     RETURN->v_float = s_obj->getOutMin();
 }
+
 CK_DLL_MFUN(scaler_getOutMax)
 {
     // get our c++ class pointer
@@ -370,6 +395,7 @@ CK_DLL_MFUN(scaler_getOutMax)
     // set the return value
     RETURN->v_float = s_obj->getOutMax();
 }
+
 CK_DLL_MFUN(scaler_getInCenter)
 {
     // get our c++ class pointer
@@ -377,6 +403,7 @@ CK_DLL_MFUN(scaler_getInCenter)
     // set the return value
     RETURN->v_float = s_obj->getInCenter();
 }
+
 CK_DLL_MFUN(scaler_getInRadius)
 {
     // get our c++ class pointer
@@ -384,6 +411,7 @@ CK_DLL_MFUN(scaler_getInRadius)
     // set the return value
     RETURN->v_float = s_obj->getInRadius();
 }
+
 CK_DLL_MFUN(scaler_getOutCenter)
 {
     // get our c++ class pointer
@@ -391,6 +419,7 @@ CK_DLL_MFUN(scaler_getOutCenter)
     // set the return value
     RETURN->v_float = s_obj->getOutCenter();
 }
+
 CK_DLL_MFUN(scaler_getOutRadius)
 {
     // get our c++ class pointer
