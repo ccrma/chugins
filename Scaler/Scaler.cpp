@@ -19,6 +19,21 @@ CK_DLL_DTOR(scaler_dtor);
 // example of getter/setter
 CK_DLL_MFUN(scaler_setParam);
 CK_DLL_MFUN(scaler_getParam);
+CK_DLL_MFUN(scaler_setInRange);
+CK_DLL_MFUN(scaler_setInRadius);
+CK_DLL_MFUN(scaler_setOutRange);
+CK_DLL_MFUN(scaler_setOutRadius);
+CK_DLL_MFUN(scaler_set);
+CK_DLL_MFUN(scaler_setRadius);
+
+CK_DLL_MFUN(scaler_getInMin);
+CK_DLL_MFUN(scaler_getInMax);
+CK_DLL_MFUN(scaler_getOutMin);
+CK_DLL_MFUN(scaler_getOutMax);
+CK_DLL_MFUN(scaler_getInCenter);
+CK_DLL_MFUN(scaler_getInRadius);
+CK_DLL_MFUN(scaler_getOutCenter);
+CK_DLL_MFUN(scaler_getOutRadius);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICK(scaler_tick);
@@ -37,13 +52,20 @@ public:
     Scaler( t_CKFLOAT fs)
     {
         m_param = 0;
+        m_in_min = -1;
+        m_in_max = 1;
+        m_out_min = 0;
+        m_out_max = 1;
     }
 
     // for Chugins extending UGen
     SAMPLE tick( SAMPLE in )
     {
+        SAMPLE out = (in - m_in_min) / (m_in_max - m_in_min);
+        out = out * (m_out_max - m_out_min) + m_out_min;
+
         // default: this passes whatever input is patched into Chugin
-        return in;
+        return out;
     }
 
     // set parameter example
@@ -53,12 +75,58 @@ public:
         return p;
     }
 
+    t_CKVOID setInRange( t_CKFLOAT in_min, t_CKFLOAT in_max ) {
+        m_in_min = in_min;
+        m_in_max = in_max;
+    }
+
+    t_CKVOID setInRadius( t_CKFLOAT in_center, t_CKFLOAT in_radius ) {
+        m_in_min = in_center - in_radius;
+        m_in_max = in_center + in_radius;
+    }
+
+    t_CKVOID setOutRange( t_CKFLOAT out_min, t_CKFLOAT out_max ) {
+        m_out_min = out_min;
+        m_out_max = out_max;
+    }
+
+    t_CKVOID setOutRadius( t_CKFLOAT out_center, t_CKFLOAT out_radius ) {
+        m_out_min = out_center - out_radius;
+        m_out_max = out_center + out_radius;
+    }
+
+    t_CKVOID set( t_CKFLOAT in_min, t_CKFLOAT in_max, t_CKFLOAT out_min, t_CKFLOAT out_max ) {
+        m_in_min = in_min;
+        m_in_max = in_max;
+        m_out_min = out_min;
+        m_out_max = out_max;
+    }
+
+    t_CKVOID setRadius(t_CKFLOAT in_center, t_CKFLOAT in_radius, t_CKFLOAT out_center, t_CKFLOAT out_radius) {
+        m_in_min = in_center - in_radius;
+        m_in_max = in_center + in_radius;
+        m_out_min = out_center - out_radius;
+        m_out_max = out_center + out_radius;
+    }
+
     // get parameter example
     t_CKFLOAT getParam() { return m_param; }
-    
+    t_CKFLOAT getInMin() { return m_in_min; }
+    t_CKFLOAT getInMax() { return m_in_max; }
+    t_CKFLOAT getOutMin() { return m_out_min; }
+    t_CKFLOAT getOutMax() { return m_out_max; }
+
+    t_CKFLOAT getInCenter() { return (m_in_min + m_in_max) / 2; }
+    t_CKFLOAT getInRadius() { return (m_in_max - m_in_min) / 2; }
+    t_CKFLOAT getOutCenter() { return (m_out_min + m_out_max) / 2; }
+    t_CKFLOAT getOutRadius() { return (m_out_max - m_out_min) / 2; }
+
+
 private:
     // instance data
     t_CKFLOAT m_param;
+    t_CKFLOAT m_in_min, m_in_max, m_out_min, m_out_max;
+    // t_CKFLOAT m_in_center, m_in_radius, m_out_center, m_out_radius; // just use these in methods
 };
 
 
