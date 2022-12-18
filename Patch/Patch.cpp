@@ -6,10 +6,14 @@
 // this should align with the correct versions of these ChucK files
 #include "chuck_dl.h"
 #include "chuck_def.h"
+#include "chuck_ugen.h"
+#include "chuck_type.h"
+#include "chuck_vm.h"
 
 // general includes
 #include <stdio.h>
 #include <limits.h>
+#include <iostream>
 
 // declaration of chugin constructor
 CK_DLL_CTOR(patch_ctor);
@@ -19,6 +23,9 @@ CK_DLL_DTOR(patch_dtor);
 // example of getter/setter
 CK_DLL_MFUN(patch_setParam);
 CK_DLL_MFUN(patch_getParam);
+
+CK_DLL_MFUN(patch_connect);
+CK_DLL_MFUN(patch_gain);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICK(patch_tick);
@@ -53,12 +60,63 @@ public:
         return p;
     }
 
+    // set parameter example
+    void connect( Chuck_UGen * dest )
+    {
+      // TODO check if null
+      m_dest = dest;
+      std::cout << "going to connect dest" << std::endl;
+
+      for(int i = 0; i < dest->vtable->funcs.size(); i++)
+        {
+          Chuck_Func * func = dest->vtable->funcs[i];
+          std::cout << "base name: " << func->base_name << std::endl;
+          std::cout << "name: " << func->name << std::endl;
+
+          if (func->next != NULL)  {
+            // std::cout << "next->name: " << func->next->name << std::endl;
+          }
+          if(func->name.find("tick") == 0 &&
+             // ensure has one argument
+             func->def->arg_list != NULL &&
+             // ensure first argument is float
+             // func->def->arg_list->type == SHRED->vm_ref->env()->t_float &&
+             // ensure has only one argument
+             func->def->arg_list->next == NULL
+             // &&
+             // ensure returns float
+             // func->def->ret_type == SHRED->vm_ref->env()->t_float
+             )
+            {
+              //std::cout << "found tick func" << std::endl;
+              break;
+            }
+        }
+    }
+
     // get parameter example
     t_CKFLOAT getParam() { return m_param; }
     
 private:
     // instance data
     t_CKFLOAT m_param;
+    Chuck_UGen * m_dest;
+
+    // given a name from a Chuck_Func, retrieve the base name
+    // e.g. "dump@0@Object" -> "dump"
+    // this is needed because base_name isn't being set?
+    std::string getBaseName(std::string s) 
+    {
+        std::string::size_type pos = s.find('@');
+        if (pos != std::string::npos)
+        {
+            return s.substr(0, pos);
+        }
+        else
+        {
+            return s; // TODO return error
+        }
+    }
 };
 
 
@@ -90,6 +148,16 @@ CK_DLL_QUERY( Patch )
     QUERY->add_mfun(QUERY, patch_setParam, "float", "param");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+
+    // example of adding setter method
+    QUERY->add_mfun(QUERY, patch_gain, "float", "gain");
+    // example of adding argument to the above method
+    QUERY->add_arg(QUERY, "float", "arg");
+
+
+    // connect method
+    QUERY->add_mfun(QUERY, patch_connect, "void", "connect");
+    QUERY->add_arg(QUERY, "UGen", "dest" );
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, patch_getParam, "float", "param");
@@ -160,6 +228,16 @@ CK_DLL_MFUN(patch_setParam)
     RETURN->v_float = p_obj->setParam(GET_NEXT_FLOAT(ARGS));
 }
 
+// example implementation for setter
+CK_DLL_MFUN(patch_gain)
+{
+    // get our c++ class pointer
+    Patch* p_obj = (Patch*)OBJ_MEMBER_INT(SELF, patch_data_offset);
+    // set the return value
+    RETURN->v_float = GET_NEXT_FLOAT(ARGS);
+}
+
+
 
 // example implementation for getter
 CK_DLL_MFUN(patch_getParam)
@@ -168,4 +246,26 @@ CK_DLL_MFUN(patch_getParam)
     Patch * p_obj = (Patch *) OBJ_MEMBER_INT(SELF, patch_data_offset);
     // set the return value
     RETURN->v_float = p_obj->getParam();
+}
+
+// example implementation for getter
+CK_DLL_MFUN(patch_connect)
+{
+    // get our c++ class pointer
+    Patch * p_obj = (Patch *) OBJ_MEMBER_INT(SELF, patch_data_offset);
+    Chuck_UGen * dest = (Chuck_UGen *)GET_NEXT_OBJECT(ARGS);
+
+    std::cout << "patch_connect " << dest->vtable->funcs.size() << std::endl;
+    for (int i = 0; i < dest->vtable->funcs.size(); i++)
+    {
+        Chuck_Func* func = dest->vtable->funcs[i];
+                  std::cout << "base name: " << func->base_name << " " << func->base_name.size() << std::endl;
+                  std::cout << "name: " << func->name << std::endl;
+    }
+
+    std::cout << "patch_finished" << std::endl << std::endl;
+    p_obj->connect(dest);
+    
+    // set the return value
+    // RETURN->v_float = p_obj->getParam();
 }
