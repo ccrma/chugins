@@ -32,7 +32,7 @@ WarpBuf has been tested with `asd` files created with Ableton Live 9 and 10.1.30
 Make sure you have `cmake`, `git`, and `sh` available from the command line/Terminal.
 
 Update submodules:
-`git submodule update --recursive`
+`git submodule update --init --recursive`
 
 If on Windows, create an extra folder for your chugins, `%USERPROFILE%/Documents/ChucK/chugins/`. Create a system environment variable `CHUCK_CHUGIN_PATH` equal to this path.
 
