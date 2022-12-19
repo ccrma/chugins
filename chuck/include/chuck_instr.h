@@ -54,14 +54,17 @@ struct Chuck_Func;
 struct Chuck_Instr
 {
 public:
-    Chuck_Instr();
+    Chuck_Instr() {
+        // set linepos to 0 so we can tell later whether it has been set properly
+        m_linepos = 0;
+    }
     virtual ~Chuck_Instr() { }
 
 public:
-    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred ) = 0;
+    void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
 
 public:
-    virtual const char * name() const;
+    const char * name() const;
     virtual const char * params() const 
     { return ""; }
 
@@ -2349,7 +2352,7 @@ public:
     { this->set( src ); }
 
 public:
-    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
 };
 
 

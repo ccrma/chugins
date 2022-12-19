@@ -9,6 +9,7 @@
 #include "chuck_ugen.h"
 #include "chuck_type.h"
 #include "chuck_vm.h"
+#include "chuck_instr.h"
 
 // general includes
 #include <stdio.h>
@@ -33,6 +34,7 @@ CK_DLL_TICK(patch_tick);
 // this is a special offset reserved for Chugin internal data
 t_CKINT patch_data_offset = 0;
 
+// class Derived : virtual public Chuck_Instr_Reg_Push_Deref2 {};
 
 // class definition for internal Chugin data
 // (note: this isn't strictly necessary, but serves as example
@@ -50,6 +52,12 @@ public:
     SAMPLE tick( SAMPLE in )
     {
         // default: this passes whatever input is patched into Chugin
+
+        std::vector<Chuck_Instr*> instrs;// push arg (float input)
+        instrs.push_back(new Chuck_Instr_Reg_Push_Deref2((t_CKUINT)in));
+        // new Chuck_Instr_Func_To_Code;
+
+
         return in;
     }
 
@@ -61,7 +69,7 @@ public:
     }
 
     // set parameter example
-    void connect( Chuck_UGen * dest, Chuck_VM_Shred* shred)
+    void connect( Chuck_UGen* dest, Chuck_VM_Shred* shred)
     {
       // TODO check if null
       m_dest = dest;
@@ -121,6 +129,7 @@ public:
       }
 
       std::cout << "found finished: " << found->name << std::endl;
+      m_func = found;
     }
     /*
     EM_log(CK_LOG_WARNING, "ChuGen '%s' does not define a suitable tick function",
@@ -133,8 +142,9 @@ public:
 private:
     // instance data
     t_CKFLOAT m_param;
-    Chuck_UGen * m_dest;
+    Chuck_UGen* m_dest;
     Chuck_VM_Shred* m_shred;
+    Chuck_Func* m_func;
 
     // given a name from a Chuck_Func, retrieve the base name
     // e.g. "dump@0@Object" -> "dump"
