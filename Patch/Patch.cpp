@@ -61,38 +61,71 @@ public:
     }
 
     // set parameter example
-    void connect( Chuck_UGen * dest )
+    void connect( Chuck_UGen * dest, Chuck_VM_Shred* shred)
     {
       // TODO check if null
       m_dest = dest;
       std::cout << "going to connect dest" << std::endl;
+      std::cout << "SHRED: " << shred << std::endl;
+
+      m_shred = shred;
+
+      std::string func_name = "gain";
+
+      Chuck_Func * found;
 
       for(int i = 0; i < dest->vtable->funcs.size(); i++)
-        {
-          Chuck_Func * func = dest->vtable->funcs[i];
-          std::cout << "base name: " << func->base_name << std::endl;
-          std::cout << "name: " << func->name << std::endl;
+      {
+        Chuck_Func * func = dest->vtable->funcs[i];
+        std::cout << "base name: " << func->base_name << std::endl;
+        std::cout << "name: " << func->name << std::endl;
 
-          if (func->next != NULL)  {
-            // std::cout << "next->name: " << func->next->name << std::endl;
-          }
-          if(func->name.find("tick") == 0 &&
-             // ensure has one argument
-             func->def->arg_list != NULL &&
-             // ensure first argument is float
-             // func->def->arg_list->type == SHRED->vm_ref->env()->t_float &&
-             // ensure has only one argument
-             func->def->arg_list->next == NULL
-             // &&
-             // ensure returns float
-             // func->def->ret_type == SHRED->vm_ref->env()->t_float
-             )
-            {
-              //std::cout << "found tick func" << std::endl;
-              break;
-            }
+        /*
+        if (func->next != NULL)  {
+        // std::cout << "next->name: " << func->next->name << std::endl;
         }
+        */
+
+        // found the func we're looking for
+        if (func->base_name == func_name && func->def->arg_list != NULL) {
+            found = func;
+            break;
+        }
+
+        // TOOD NEXT: ugen_xxx.cpp:1396 -> some vm instr should be how to call functions.
+
+        if(func->name.find("tick") == 0 &&
+            // ensure has one argument
+            func->def->arg_list != NULL &&
+            // ensure first argument is float
+            // func->def->arg_list->type == SHRED->vm_ref->env()->t_float &&
+            // ensure has only one argument
+            func->def->arg_list->next == NULL
+            // &&
+            // ensure returns float
+            // func->def->ret_type == SHRED->vm_ref->env()->t_float
+            )
+        {
+            //std::cout << "found tick func" << std::endl;
+            // break;
+        }
+      }
+
+      Chuck_Func* curr = found;
+      // traverse the function overloads
+      while (curr->next != NULL) {
+          if (curr->def->arg_list != NULL) {
+              found = curr;
+          }
+          curr = curr->next;
+      }
+
+      std::cout << "found finished: " << found->name << std::endl;
     }
+    /*
+    EM_log(CK_LOG_WARNING, "ChuGen '%s' does not define a suitable tick function",
+               ugen->type_ref->name.c_str());
+    */
 
     // get parameter example
     t_CKFLOAT getParam() { return m_param; }
@@ -101,6 +134,7 @@ private:
     // instance data
     t_CKFLOAT m_param;
     Chuck_UGen * m_dest;
+    Chuck_VM_Shred* m_shred;
 
     // given a name from a Chuck_Func, retrieve the base name
     // e.g. "dump@0@Object" -> "dump"
@@ -255,6 +289,7 @@ CK_DLL_MFUN(patch_connect)
     Patch * p_obj = (Patch *) OBJ_MEMBER_INT(SELF, patch_data_offset);
     Chuck_UGen * dest = (Chuck_UGen *)GET_NEXT_OBJECT(ARGS);
 
+
     std::cout << "patch_connect " << dest->vtable->funcs.size() << std::endl;
     for (int i = 0; i < dest->vtable->funcs.size(); i++)
     {
@@ -264,7 +299,7 @@ CK_DLL_MFUN(patch_connect)
     }
 
     std::cout << "patch_finished" << std::endl << std::endl;
-    p_obj->connect(dest);
+    p_obj->connect(dest, SHRED); // need the vm shred to get stuff done
     
     // set the return value
     // RETURN->v_float = p_obj->getParam();
