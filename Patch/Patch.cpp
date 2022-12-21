@@ -5,12 +5,7 @@
 
 // this should align with the correct versions of these ChucK files
 #include "chuck_dl.h"
-#include "chuck_def.h"
-#include "chuck_ugen.h"
-#include "chuck_type.h"
 #include "chuck_vm.h"
-#include "chuck_instr.h"
-#include "chuck_errmsg.h"
 
 // general includes
 #include <stdio.h>
@@ -35,8 +30,6 @@ CK_DLL_TICK(patch_tick);
 
 // this is a special offset reserved for Chugin internal data
 t_CKINT patch_data_offset = 0;
-
-// class Derived : virtual public Chuck_Instr_Reg_Push_Deref2 {};
 
 // class definition for internal Chugin data
 // (note: this isn't strictly necessary, but serves as example
@@ -81,8 +74,8 @@ public:
       m_dest = dest;
       m_vm = vm;
       m_api = api;
-      std::cout << "going to connect dest" << std::endl;
-      std::cout << "SHRED: " << shred << std::endl;
+      // std::cout << "going to connect dest" << std::endl;
+      // std::cout << "SHRED: " << shred << std::endl;
 
       m_shred = shred;
 
@@ -100,7 +93,7 @@ public:
             // ensure arg is float
             func->def->arg_list->type == shred->vm_ref->env()->t_float) 
         {
-            std::cout << "Found func: " << func->name << std::endl;
+            // std::cout << "Found func: " << func->name << std::endl;
             found = func;
             break;
         }
@@ -120,13 +113,13 @@ public:
               // ensure arg is float
               curr->def->arg_list->type == shred->vm_ref->env()->t_float) 
           {
-              std::cout << "Found being overloaded: " << curr->name << std::endl;
+              // std::cout << "Found being overloaded: " << curr->name << std::endl;
               found = curr;
           }
           curr = curr->next;
       }
 
-      std::cout << "found finished: " << found->name << std::endl;
+      // std::cout << "found finished: " << found->name << std::endl;
       m_func = found;
 
       return;
@@ -311,15 +304,5 @@ CK_DLL_MFUN(patch_connect)
     Chuck_UGen * dest = (Chuck_UGen *)GET_NEXT_OBJECT(ARGS);
     Chuck_String* method = (Chuck_String*)GET_NEXT_STRING(ARGS);
 
-
-    std::cout << "patch_connect " << dest->vtable->funcs.size() << std::endl;
-    for (int i = 0; i < dest->vtable->funcs.size(); i++)
-    {
-        Chuck_Func* func = dest->vtable->funcs[i];
-                  std::cout << "base name: " << func->base_name << " " << func->base_name.size() << std::endl;
-                  std::cout << "name: " << func->name << std::endl;
-    }
-
-    std::cout << "patch_finished" << std::endl << std::endl;
     p_obj->connect(dest, method->str(), VM, SHRED, API);
  }
