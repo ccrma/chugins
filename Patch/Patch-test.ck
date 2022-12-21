@@ -1,18 +1,25 @@
 SinOsc sin;
 
-// Patch.help();
+Step step => Patch p => blackhole;
 
-Patch p => blackhole;
-// sin => Patch p => blackhole;
-// SinOsc s;
-
-// <<< "calling method", p.method() >>>;
-
-
-
+spork~ updateStep();
 p.connect(sin);
 
 repeat (10) {
-        <<< sin.gain() >>>;
-	1::samp => now;
+    <<< "gain:", sin.gain() >>>;
+
+    if (step.next() != sin.gain()) {
+       <<< "FAILURE, input" , step.next(), "!=", sin.gain() >>>;
+    }
+    1::samp => now;
+}
+
+fun void updateStep() {
+    SinOsc lfo => blackhole;
+    3 => lfo.freq;
+    
+    while(true) {
+        (lfo.last() + 1.0) / 2.0 => step.next;
+        1::samp => now;
+    }
 }
