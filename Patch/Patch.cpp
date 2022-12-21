@@ -10,6 +10,7 @@
 #include "chuck_type.h"
 #include "chuck_vm.h"
 #include "chuck_instr.h"
+#include "chuck_errmsg.h"
 
 // general includes
 #include <stdio.h>
@@ -56,13 +57,12 @@ public:
         t_CKFLOAT val = (t_CKFLOAT)in;
         Chuck_DL_Return ret;
 
+        // these three lines took a very long time to figure out...
         Chuck_VM_Code* func = m_func->code;
-        // cast the function as a dynamically linked member func
+        // cast the function as a dynamically-linked member func
         f_mfun f = (f_mfun)func->native_func;
         // call said function
         f((Chuck_Object*)(m_dest), &val, &ret, m_vm, m_shred, m_api); // api?
-
-        std::cout << "tick: " << in << std::endl;
 
         return in;
     }
@@ -75,7 +75,7 @@ public:
     }
 
     // set parameter example
-    void connect( Chuck_UGen* dest, Chuck_VM* vm, Chuck_VM_Shred* shred, CK_DL_API api)
+    void connect( Chuck_UGen* dest, std::string method, Chuck_VM* vm, Chuck_VM_Shred* shred, CK_DL_API api)
     {
       // TODO check if null
       m_dest = dest;
@@ -86,52 +86,41 @@ public:
 
       m_shred = shred;
 
-      std::string func_name = "gain";
-
-      Chuck_Func * found;
+      Chuck_Func * found = NULL;
 
       for(int i = 0; i < dest->vtable->funcs.size(); i++)
       {
         Chuck_Func * func = dest->vtable->funcs[i];
-        std::cout << "base name: " << func->base_name << std::endl;
-        std::cout << "name: " << func->name << std::endl;
 
-        /*
-        if (func->next != NULL)  {
-        // std::cout << "next->name: " << func->next->name << std::endl;
-        }
-        */
-
-        // found the func we're looking for
-        if (func->base_name == func_name && func->def->arg_list != NULL) {
-            found = func;
-            m_tick_fun_index = i; // TODO this won't always resolve properly, fix
-            break;
-        }
-
-        // TOOD NEXT: ugen_xxx.cpp:1396 -> some vm instr should be how to call functions.
-
-        if(func->name.find("tick") == 0 &&
-            // ensure has one argument
+        // funcs can be overwritten or have multiple defn, look for the right one
+        if (func->base_name == method && 
             func->def->arg_list != NULL &&
-            // ensure first argument is float
-            // func->def->arg_list->type == SHRED->vm_ref->env()->t_float &&
-            // ensure has only one argument
-            func->def->arg_list->next == NULL
-            // &&
-            // ensure returns float
-            // func->def->ret_type == SHRED->vm_ref->env()->t_float
-            )
+            // we only want funcs with one arg
+            func->def->arg_list->next == NULL &&
+            // ensure arg is float
+            func->def->arg_list->type == shred->vm_ref->env()->t_float) 
         {
-            //std::cout << "found tick func" << std::endl;
-            // break;
+            std::cout << "Found func: " << func->name << std::endl;
+            found = func;
+            break;
         }
       }
 
+      if (!found) {
+          std::cerr << "Patch.connect(): unable to find method " << method << std::endl;
+          return;
+      }
+
       Chuck_Func* curr = found;
-      // traverse the function overloads
+      // traverse overloads to find top of stack
       while (curr->next != NULL) {
-          if (curr->def->arg_list != NULL) {
+          if (curr->def->arg_list != NULL &&
+              // we only want funcs with one arg
+              curr->def->arg_list->next == NULL &&
+              // ensure arg is float
+              curr->def->arg_list->type == shred->vm_ref->env()->t_float) 
+          {
+              std::cout << "Found being overloaded: " << curr->name << std::endl;
               found = curr;
           }
           curr = curr->next;
@@ -139,14 +128,14 @@ public:
 
       std::cout << "found finished: " << found->name << std::endl;
       m_func = found;
+
+      return;
     }
-    /*
-    EM_log(CK_LOG_WARNING, "ChuGen '%s' does not define a suitable tick function",
-               ugen->type_ref->name.c_str());
-    */
 
     // get parameter example
     t_CKFLOAT getParam() { return m_param; }
+    std::string getMethod() { return m_func->base_name; 
+    }
     
 private:
     // instance data
@@ -156,7 +145,6 @@ private:
     Chuck_VM* m_vm;
     Chuck_Func* m_func;
     CK_DL_API m_api;
-    int m_tick_fun_index;
 
     // given a name from a Chuck_Func, retrieve the base name
     // e.g. "dump@0@Object" -> "dump"
@@ -214,6 +202,7 @@ CK_DLL_QUERY( Patch )
     // connect method
     QUERY->add_mfun(QUERY, patch_connect, "void", "connect");
     QUERY->add_arg(QUERY, "UGen", "dest" );
+    QUERY->add_arg(QUERY, "string", "method");
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, patch_getParam, "float", "param");
@@ -296,8 +285,6 @@ CK_DLL_MFUN(patch_gain)
     RETURN->v_float = GET_NEXT_FLOAT(ARGS);
 }
 
-
-
 // example implementation for getter
 CK_DLL_MFUN(patch_getParam)
 {
@@ -307,20 +294,22 @@ CK_DLL_MFUN(patch_getParam)
     RETURN->v_float = p_obj->getParam();
 }
 
+// get the name of the current method being patched
 CK_DLL_MFUN(patch_method)
 {
     Patch* p_obj = (Patch*)OBJ_MEMBER_INT(SELF, patch_data_offset);
     
-    std::string gain = "gain";
-    RETURN->v_string = (Chuck_String*)API->object->create_string(API, SHRED, gain);
+    std::string method = p_obj->getMethod();
+    RETURN->v_string = (Chuck_String*)API->object->create_string(API, SHRED, method);
 }
 
-// example implementation for getter
+// connect the ugen's method so that patch's input will set it
 CK_DLL_MFUN(patch_connect)
 {
     // get our c++ class pointer
     Patch * p_obj = (Patch *) OBJ_MEMBER_INT(SELF, patch_data_offset);
     Chuck_UGen * dest = (Chuck_UGen *)GET_NEXT_OBJECT(ARGS);
+    Chuck_String* method = (Chuck_String*)GET_NEXT_STRING(ARGS);
 
 
     std::cout << "patch_connect " << dest->vtable->funcs.size() << std::endl;
@@ -332,8 +321,5 @@ CK_DLL_MFUN(patch_connect)
     }
 
     std::cout << "patch_finished" << std::endl << std::endl;
-    p_obj->connect(dest, VM, SHRED, API); // need the vm shred to get stuff done
-    
-    // set the return value
-    // RETURN->v_float = p_obj->getParam();
-}
+    p_obj->connect(dest, method->str(), VM, SHRED, API);
+ }
