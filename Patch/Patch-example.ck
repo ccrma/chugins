@@ -5,4 +5,4 @@ SinOsc lfo => Patch p => blackhole;
 
 p.connect(pan, "pan");
 
-10::second => now;
+1::hour => now;

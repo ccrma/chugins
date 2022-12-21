@@ -17,13 +17,10 @@ CK_DLL_CTOR(patch_ctor);
 // declaration of chugin desctructor
 CK_DLL_DTOR(patch_dtor);
 
-// example of getter/setter
-CK_DLL_MFUN(patch_setParam);
-CK_DLL_MFUN(patch_getParam);
-
+// Patch methods
 CK_DLL_MFUN(patch_connect);
-CK_DLL_MFUN(patch_gain);
-CK_DLL_MFUN(patch_method);
+CK_DLL_MFUN(patch_getMethod);
+CK_DLL_MFUN(patch_setMethod);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICK(patch_tick);
@@ -70,89 +67,71 @@ public:
     // set parameter example
     void connect( Chuck_UGen* dest, std::string method, Chuck_VM* vm, Chuck_VM_Shred* shred, CK_DL_API api)
     {
-      // TODO check if null
-      m_dest = dest;
-      m_vm = vm;
-      m_api = api;
-      // std::cout << "going to connect dest" << std::endl;
-      // std::cout << "SHRED: " << shred << std::endl;
+        m_dest = dest;
+        m_vm = vm;
+        m_api = api;
+        m_shred = shred;
 
-      m_shred = shred;
-
-      Chuck_Func * found = NULL;
-
-      for(int i = 0; i < dest->vtable->funcs.size(); i++)
-      {
-        Chuck_Func * func = dest->vtable->funcs[i];
-
-        // funcs can be overwritten or have multiple defn, look for the right one
-        if (func->base_name == method && 
-            func->def->arg_list != NULL &&
-            // we only want funcs with one arg
-            func->def->arg_list->next == NULL &&
-            // ensure arg is float
-            func->def->arg_list->type == shred->vm_ref->env()->t_float) 
-        {
-            // std::cout << "Found func: " << func->name << std::endl;
-            found = func;
-            break;
-        }
-      }
-
-      if (!found) {
-          std::cerr << "Patch.connect(): unable to find method " << method << std::endl;
-          return;
-      }
-
-      Chuck_Func* curr = found;
-      // traverse overloads to find top of stack
-      while (curr->next != NULL) {
-          if (curr->def->arg_list != NULL &&
-              // we only want funcs with one arg
-              curr->def->arg_list->next == NULL &&
-              // ensure arg is float
-              curr->def->arg_list->type == shred->vm_ref->env()->t_float) 
-          {
-              // std::cout << "Found being overloaded: " << curr->name << std::endl;
-              found = curr;
-          }
-          curr = curr->next;
-      }
-
-      // std::cout << "found finished: " << found->name << std::endl;
-      m_func = found;
-
-      return;
+        findMethod(method);
     }
 
-    // get parameter example
-    t_CKFLOAT getParam() { return m_param; }
-    std::string getMethod() { return m_func->base_name; 
+    std::string getMethod() { return m_func->base_name; }
+
+
+    void setMethod(std::string method) {
+        findMethod(method);
     }
     
 private:
     // instance data
-    t_CKFLOAT m_param;
     Chuck_UGen* m_dest;
     Chuck_VM_Shred* m_shred;
     Chuck_VM* m_vm;
     Chuck_Func* m_func;
     CK_DL_API m_api;
 
-    // given a name from a Chuck_Func, retrieve the base name
-    // e.g. "dump@0@Object" -> "dump"
-    // this is needed because base_name isn't being set?
-    std::string getBaseName(std::string s) 
-    {
-        std::string::size_type pos = s.find('@');
-        if (pos != std::string::npos)
+    void findMethod(std::string method) {
+        Chuck_Func* found = NULL;
+
+        for (int i = 0; i < m_dest->vtable->funcs.size(); i++)
         {
-            return s.substr(0, pos);
+            Chuck_Func* func = m_dest->vtable->funcs[i];
+
+            // funcs can be overwritten or have multiple defn, look for the right one
+            if (func->base_name == method &&
+                func->def->arg_list != NULL &&
+                // we only want funcs with one arg
+                func->def->arg_list->next == NULL &&
+                // ensure arg is float
+                func->def->arg_list->type == m_shred->vm_ref->env()->t_float)
+            {
+                found = func;
+                break;
+            }
         }
-        else
-        {
-            return s; // TODO return error
+
+        if (!found) {
+            std::cerr << "Patch.connect(): unable to find method " << method << std::endl;
+            return;
         }
+
+        Chuck_Func* curr = found;
+        // traverse overloads to find top of stack
+        while (curr->next != NULL) {
+            if (curr->def->arg_list != NULL &&
+                // we only want funcs with one arg
+                curr->def->arg_list->next == NULL &&
+                // ensure arg is float
+                curr->def->arg_list->type == m_shred->vm_ref->env()->t_float)
+            {
+                found = curr;
+            }
+            curr = curr->next;
+        }
+
+        m_func = found;
+
+        return;
     }
 };
 
@@ -181,31 +160,24 @@ CK_DLL_QUERY( Patch )
     // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
     // and declare a tickf function using CK_DLL_TICKF
 
-    // example of adding setter method
-    QUERY->add_mfun(QUERY, patch_setParam, "float", "param");
-    // example of adding argument to the above method
-    QUERY->add_arg(QUERY, "float", "arg");
-
-    // example of adding setter method
-    QUERY->add_mfun(QUERY, patch_gain, "float", "gain");
-    // example of adding argument to the above method
-    QUERY->add_arg(QUERY, "float", "arg");
-
-
     // connect method
     QUERY->add_mfun(QUERY, patch_connect, "void", "connect");
     QUERY->add_arg(QUERY, "UGen", "dest" );
     QUERY->add_arg(QUERY, "string", "method");
+    QUERY->doc_func(QUERY, "call the method in dest with Patch's input");
 
-    // example of adding getter method
-    QUERY->add_mfun(QUERY, patch_getParam, "float", "param");
+    QUERY->add_mfun(QUERY, patch_getMethod, "string", "method");
+    QUERY->doc_func(QUERY, "get method name");
 
-    QUERY->add_mfun(QUERY, patch_method, "string", "method");
+    QUERY->add_mfun(QUERY, patch_setMethod, "string", "method");
+    QUERY->add_arg(QUERY, "string", "method");
+    QUERY->doc_func(QUERY, "set method name");
 
     
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above
     patch_data_offset = QUERY->add_mvar(QUERY, "int", "@p_data", false);
+
 
     // end the class definition
     // IMPORTANT: this MUST be called!
@@ -259,42 +231,25 @@ CK_DLL_TICK(patch_tick)
     return TRUE;
 }
 
-
-// example implementation for setter
-CK_DLL_MFUN(patch_setParam)
-{
-    // get our c++ class pointer
-    Patch * p_obj = (Patch *) OBJ_MEMBER_INT(SELF, patch_data_offset);
-    // set the return value
-    RETURN->v_float = p_obj->setParam(GET_NEXT_FLOAT(ARGS));
-}
-
-// example implementation for setter
-CK_DLL_MFUN(patch_gain)
-{
-    // get our c++ class pointer
-    Patch* p_obj = (Patch*)OBJ_MEMBER_INT(SELF, patch_data_offset);
-    // set the return value
-    RETURN->v_float = GET_NEXT_FLOAT(ARGS);
-}
-
-// example implementation for getter
-CK_DLL_MFUN(patch_getParam)
-{
-    // get our c++ class pointer
-    Patch * p_obj = (Patch *) OBJ_MEMBER_INT(SELF, patch_data_offset);
-    // set the return value
-    RETURN->v_float = p_obj->getParam();
-}
-
 // get the name of the current method being patched
-CK_DLL_MFUN(patch_method)
+CK_DLL_MFUN(patch_getMethod)
 {
     Patch* p_obj = (Patch*)OBJ_MEMBER_INT(SELF, patch_data_offset);
     
     std::string method = p_obj->getMethod();
     RETURN->v_string = (Chuck_String*)API->object->create_string(API, SHRED, method);
 }
+
+// get the name of the current method being patched
+CK_DLL_MFUN(patch_setMethod)
+{
+    Patch* p_obj = (Patch*)OBJ_MEMBER_INT(SELF, patch_data_offset);
+    Chuck_String* method = (Chuck_String*)GET_NEXT_STRING(ARGS);
+
+    p_obj->setMethod(method->str());
+    RETURN->v_string = method;
+}
+
 
 // connect the ugen's method so that patch's input will set it
 CK_DLL_MFUN(patch_connect)
