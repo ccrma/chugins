@@ -5,6 +5,7 @@ SinOsc sin;
 Step step => Patch p => blackhole;
 
 spork~ updateStep();
+
 p.connect(sin, "gain");
 
 
