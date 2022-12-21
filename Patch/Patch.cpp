@@ -19,8 +19,6 @@
 // authors: Nick Shaheed (nshaheed@ccrma.stanford.edu)
 // date: Winter 2022
 //
-// NOTE: be mindful of chuck/chugin compilation, particularly on OSX
-//       compiled for 10.5 chuck may not work well with 10.10 chugin!
 //-----------------------------------------------------------------------------
 
 #include "chuck_dl.h"
@@ -159,6 +157,11 @@ CK_DLL_QUERY( Patch )
     // can change the second argument to extend a different ChucK class
     QUERY->begin_class(QUERY, "Patch", "UGen");
 
+    QUERY->doc_class(QUERY, "Pipe UGen signals into UGen methods directly! "
+        "The primary use of this is to easily and efficiently "
+        "control UGen parameters with tick-level LFOs."
+    );
+
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, patch_ctor);
     // register the destructor (probably no need to change)
@@ -171,15 +174,17 @@ CK_DLL_QUERY( Patch )
     QUERY->add_mfun(QUERY, patch_connect, "void", "connect");
     QUERY->add_arg(QUERY, "UGen", "dest" );
     QUERY->add_arg(QUERY, "string", "method");
-    QUERY->doc_func(QUERY, "call the method in dest with Patch's input");
+    QUERY->doc_func(QUERY, "Call the method in dest with Patch's input. "
+        "Method must be a method that takes a single float as an input, "
+        "i.e. setters such as SinOsc.freq and Pan2.pan.");
 
     // method getter and setter
     QUERY->add_mfun(QUERY, patch_getMethod, "string", "method");
-    QUERY->doc_func(QUERY, "get method name");
+    QUERY->doc_func(QUERY, "Get method name");
 
     QUERY->add_mfun(QUERY, patch_setMethod, "string", "method");
     QUERY->add_arg(QUERY, "string", "method");
-    QUERY->doc_func(QUERY, "set method name");
+    QUERY->doc_func(QUERY, "Set method name");
 
     
     // this reserves a variable in the ChucK internal class to store 
