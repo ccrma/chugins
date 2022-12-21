@@ -61,7 +61,7 @@ public:
     virtual ~Chuck_Instr() { }
 
 public:
-    void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    void execute(Chuck_VM* vm, Chuck_VM_Shred* shred);
 
 public:
     const char * name() const;
@@ -1904,7 +1904,7 @@ public:
 struct Chuck_Instr_Reg_Pop_Word2 : public Chuck_Instr
 {
 public:
-    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
 };
 
 
@@ -1974,7 +1974,7 @@ public:
     { this->set( val ); }
 
 public:
-    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
 };
 
 
@@ -2024,7 +2024,7 @@ protected:
 struct Chuck_Instr_Reg_Dup_Last : public Chuck_Instr
 {
 public:
-    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
 };
 
 
@@ -2500,7 +2500,7 @@ public:
 struct Chuck_Instr_EOC : public Chuck_Instr
 {
 public:
-    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
 };
 
 
@@ -2851,7 +2851,7 @@ public:
 struct Chuck_Instr_Assign_Primitive2 : public Chuck_Instr
 {
 public:
-    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
 };
 
 
@@ -3008,7 +3008,7 @@ public:
 struct Chuck_Instr_Func_To_Code : public Chuck_Instr
 {
 public:
-    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
 };
 
 
@@ -3021,7 +3021,7 @@ public:
 struct Chuck_Instr_Func_Call : public Chuck_Instr
 {
 public:
-    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
 };
 
 
@@ -3038,7 +3038,7 @@ public:
     { this->set( ret_size ); }
 
 public:
-    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
 };
 
 
@@ -3302,7 +3302,7 @@ public:
     { m_offset = offset; }
 
 public:
-    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
     virtual const char * params() const
     { static char buffer[256];
       sprintf( buffer, "offset=%ld", m_offset );

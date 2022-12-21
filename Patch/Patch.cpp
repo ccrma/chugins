@@ -27,6 +27,7 @@ CK_DLL_MFUN(patch_getParam);
 
 CK_DLL_MFUN(patch_connect);
 CK_DLL_MFUN(patch_gain);
+CK_DLL_MFUN(patch_method);
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICK(patch_tick);
@@ -52,11 +53,67 @@ public:
     SAMPLE tick( SAMPLE in )
     {
         // default: this passes whatever input is patched into Chugin
+        t_CKFLOAT output = 0;
 
-        std::vector<Chuck_Instr*> instrs;// push arg (float input)
+        /*
+        std::vector<Chuck_Instr*> instrs;
+        // push arg (float input)
         instrs.push_back(new Chuck_Instr_Reg_Push_Deref2((t_CKUINT)in));
-        // new Chuck_Instr_Func_To_Code;
+        // push this (as func arg)
+        instrs.push_back(new Chuck_Instr_Reg_Push_Imm((t_CKUINT)m_dest)); // 1.3.1.0: changed to t_CKUINT
+        // reg dup last (push this again) (for member func resolution)
+        instrs.push_back(new Chuck_Instr_Reg_Dup_Last);
+        // dot member func
+        instrs.push_back(new Chuck_Instr_Dot_Member_Func(m_tick_fun_index));
+        // func to code
+        instrs.push_back(new Chuck_Instr_Func_To_Code);
+        // push stack depth
+        instrs.push_back(new Chuck_Instr_Reg_Push_Imm(12)); // why is this 12?
+        // func call
+        instrs.push_back(new Chuck_Instr_Func_Call());
+        // push immediate
+        instrs.push_back(new Chuck_Instr_Reg_Push_Imm((t_CKUINT)&output)); // 1.3.1.0: changed to t_CKUINT
+        // assign primitive
+        instrs.push_back(new Chuck_Instr_Assign_Primitive2);
+        // pop
+        instrs.push_back(new Chuck_Instr_Reg_Pop_Word2);
+        // EOC
+        instrs.push_back(new Chuck_Instr_EOC);
+        */
 
+        /*
+        std::vector<Chuck_Instr*> instrs;
+        // reg dup last (push this again) (for member func resolution)
+        instrs.push_back(new Chuck_Instr_Reg_Dup_Last);
+        // dot member func
+        instrs.push_back(new Chuck_Instr_Dot_Member_Func(2));
+        // func to code
+        instrs.push_back(new Chuck_Instr_Func_To_Code);
+        // push immediate
+        instrs.push_back(new Chuck_Instr_Reg_Push_Imm((t_CKUINT)&output)); // 1.3.1.0: changed to t_CKUINT
+        // call member func (with return)
+        instrs.push_back(new Chuck_Instr_Func_Call_Member(2));
+        */
+        // for (int i = 0; i < instrs.size(); i++) instrs[i]->execute(m_vm, m_shred);
+
+        /*
+        Chuck_VM_Code* code = new Chuck_VM_Code;
+        code->instr = new Chuck_Instr * [instrs.size()];
+        code->num_instr = instrs.size();
+        for (int i = 0; i < instrs.size(); i++) code->instr[i] = instrs[i];
+        code->stack_depth = 0;
+        code->need_this = 0;
+        */
+
+        // API->vm->spork(code, m_shred, TRUE);
+        t_CKFLOAT val = 0.5;
+        Chuck_DL_Return ret;
+
+        Chuck_VM_Code* func = m_func->code;
+        f_mfun f = (f_mfun)func->native_func;
+        f((Chuck_Object*)(m_dest), &val, &ret, m_vm, m_shred, NULL); // api?
+
+        std::cout << "tick: " << in << " " << output << std::endl;
 
         return in;
     }
@@ -69,10 +126,11 @@ public:
     }
 
     // set parameter example
-    void connect( Chuck_UGen* dest, Chuck_VM_Shred* shred)
+    void connect( Chuck_UGen* dest, Chuck_VM* vm, Chuck_VM_Shred* shred)
     {
       // TODO check if null
       m_dest = dest;
+      m_vm = vm;
       std::cout << "going to connect dest" << std::endl;
       std::cout << "SHRED: " << shred << std::endl;
 
@@ -97,6 +155,7 @@ public:
         // found the func we're looking for
         if (func->base_name == func_name && func->def->arg_list != NULL) {
             found = func;
+            m_tick_fun_index = i; // TODO this won't always resolve properly, fix
             break;
         }
 
@@ -144,7 +203,9 @@ private:
     t_CKFLOAT m_param;
     Chuck_UGen* m_dest;
     Chuck_VM_Shred* m_shred;
+    Chuck_VM* m_vm;
     Chuck_Func* m_func;
+    int m_tick_fun_index;
 
     // given a name from a Chuck_Func, retrieve the base name
     // e.g. "dump@0@Object" -> "dump"
@@ -205,6 +266,9 @@ CK_DLL_QUERY( Patch )
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, patch_getParam, "float", "param");
+
+    QUERY->add_mfun(QUERY, patch_method, "string", "method");
+
     
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above
@@ -292,6 +356,14 @@ CK_DLL_MFUN(patch_getParam)
     RETURN->v_float = p_obj->getParam();
 }
 
+CK_DLL_MFUN(patch_method)
+{
+    Patch* p_obj = (Patch*)OBJ_MEMBER_INT(SELF, patch_data_offset);
+    
+    std::string gain = "gain";
+    RETURN->v_string = (Chuck_String*)API->object->create_string(API, SHRED, gain);
+}
+
 // example implementation for getter
 CK_DLL_MFUN(patch_connect)
 {
@@ -309,7 +381,7 @@ CK_DLL_MFUN(patch_connect)
     }
 
     std::cout << "patch_finished" << std::endl << std::endl;
-    p_obj->connect(dest, SHRED); // need the vm shred to get stuff done
+    p_obj->connect(dest, VM, SHRED); // need the vm shred to get stuff done
     
     // set the return value
     // RETURN->v_float = p_obj->getParam();

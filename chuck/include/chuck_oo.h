@@ -93,11 +93,11 @@ public:
 
 public:
     // add reference (ge: april 2013: made these virtual)
-    virtual void add_ref();
+    void add_ref();
     // release reference
-    virtual void release();
+    void release();
     // lock
-    virtual void lock();
+    void lock();
     
     // NOTE: be careful when overriding these, should always
     // explicitly call up to ChucK_VM_Object (ge: 2013)
@@ -118,7 +118,7 @@ public:
     std::vector<Chuck_VM_Object *> * m_v_ref;
 
 private:
-    void init_ref();
+    void init_ref() {};
 };
 
 
@@ -171,16 +171,16 @@ public:
 struct Chuck_Object : Chuck_VM_Object
 {
 public:
-    Chuck_Object();
-    virtual ~Chuck_Object();
+    Chuck_Object() {};
+    ~Chuck_Object() {};
 
 public:
     // output current state (can be overridden)
-    virtual void dump();
+    void dump();
 
 public:
     // output type info (can be overriden; but probably shouldn't be)
-    virtual void apropos();
+    void apropos();
     
 public:
     // virtual table

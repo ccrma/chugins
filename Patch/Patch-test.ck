@@ -1,13 +1,18 @@
 SinOsc sin;
-220 => sin.freq;
 
-Patch.help();
+// Patch.help();
 
-Patch p;
-Patch s;
+Patch p => blackhole;
+// sin => Patch p => blackhole;
+// SinOsc s;
+
+// <<< "calling method", p.method() >>>;
 
 
 
-p.connect(s);
-<<< p.gain >>>;
-1::samp => now;
+p.connect(sin);
+
+repeat (10) {
+        <<< sin.gain() >>>;
+	1::samp => now;
+}
