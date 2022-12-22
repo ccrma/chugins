@@ -16,9 +16,7 @@ CK_DLL_CTOR(scaler_ctor);
 // declaration of chugin desctructor
 CK_DLL_DTOR(scaler_dtor);
 
-// example of getter/setter
-CK_DLL_MFUN(scaler_setParam);
-CK_DLL_MFUN(scaler_getParam);
+// getters and setters
 CK_DLL_MFUN(scaler_setInRange);
 CK_DLL_MFUN(scaler_setInRadius);
 CK_DLL_MFUN(scaler_setOutRange);
@@ -68,13 +66,6 @@ public:
         return out;
     }
 
-    // set parameter example
-    t_CKFLOAT setParam( t_CKFLOAT p )
-    {
-        m_param = p;
-        return p;
-    }
-
     t_CKVOID setInRange( t_CKFLOAT in_min, t_CKFLOAT in_max ) {
         m_in_min = in_min;
         m_in_max = in_max;
@@ -110,7 +101,6 @@ public:
     }
 
     // get parameter example
-    t_CKFLOAT getParam() { return m_param; }
     t_CKFLOAT getInMin() { return m_in_min; }
     t_CKFLOAT getInMax() { return m_in_max; }
     t_CKFLOAT getOutMin() { return m_out_min; }
@@ -153,14 +143,6 @@ CK_DLL_QUERY( Scaler )
     // NOTE: if this is to be a UGen with more than 1 channel, 
     // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
     // and declare a tickf function using CK_DLL_TICKF
-
-    // example of adding setter method
-    QUERY->add_mfun(QUERY, scaler_setParam, "float", "param");
-    // example of adding argument to the above method
-    QUERY->add_arg(QUERY, "float", "arg");
-
-    // example of adding getter method
-    QUERY->add_mfun(QUERY, scaler_getParam, "float", "param");
 
     QUERY->add_mfun(QUERY, scaler_setInRange, "void", "inRange");
     QUERY->add_arg(QUERY, "float", "min");
@@ -257,74 +239,80 @@ CK_DLL_TICK(scaler_tick)
     return TRUE;
 }
 
-
-// example implementation for setter
-CK_DLL_MFUN(scaler_setParam)
-{
-    // get our c++ class pointer
-    Scaler * s_obj = (Scaler *) OBJ_MEMBER_INT(SELF, scaler_data_offset);
-    // set the return value
-    RETURN->v_float = s_obj->setParam(GET_NEXT_FLOAT(ARGS));
-}
-
-
-// example implementation for getter
-CK_DLL_MFUN(scaler_getParam)
-{
-    // get our c++ class pointer
-    Scaler * s_obj = (Scaler *) OBJ_MEMBER_INT(SELF, scaler_data_offset);
-    // set the return value
-    RETURN->v_float = s_obj->getParam();
-}
-
 CK_DLL_MFUN(scaler_setInRange)
 {
     // get our c++ class pointer
     Scaler* s_obj = (Scaler*)OBJ_MEMBER_INT(SELF, scaler_data_offset);
+
+    t_CKFLOAT inMin = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT inMax = GET_NEXT_FLOAT(ARGS);
+
     // set the return value
-    s_obj->setInRange(GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS));
+    s_obj->setInRange(inMin, inMax);
 }
 
 CK_DLL_MFUN(scaler_setInRadius)
 {
     // get our c++ class pointer
     Scaler* s_obj = (Scaler*)OBJ_MEMBER_INT(SELF, scaler_data_offset);
+
+    t_CKFLOAT inCenter = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT inRadius = GET_NEXT_FLOAT(ARGS);
+
     // set the return value
-    s_obj->setInRadius(GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS));
+    s_obj->setInRadius(inCenter, inRadius);
 }
 
 CK_DLL_MFUN(scaler_setOutRange)
 {
     // get our c++ class pointer
     Scaler* s_obj = (Scaler*)OBJ_MEMBER_INT(SELF, scaler_data_offset);
+
+    t_CKFLOAT outMin = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT outMax = GET_NEXT_FLOAT(ARGS);
+
     // set the return value
-    s_obj->setOutRange(GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS));
+    s_obj->setOutRange(outMin, outMax);
 }
 
 CK_DLL_MFUN(scaler_setOutRadius)
 {
     // get our c++ class pointer
     Scaler* s_obj = (Scaler*)OBJ_MEMBER_INT(SELF, scaler_data_offset);
+
+    t_CKFLOAT outCenter = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT outRadius = GET_NEXT_FLOAT(ARGS);
+
     // set the return value
-    s_obj->setOutRadius(GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS));
+    s_obj->setOutRadius(outCenter, outRadius);
 }
 
 CK_DLL_MFUN(scaler_setRange)
 {
     // get our c++ class pointer
     Scaler* s_obj = (Scaler*)OBJ_MEMBER_INT(SELF, scaler_data_offset);
+
+    t_CKFLOAT inMin = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT inMax = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT outMin = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT outMax = GET_NEXT_FLOAT(ARGS);
+
     // set the return value
-    s_obj->setRange(GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS), 
-        GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS));
+    s_obj->setRange(inMin, inMax, outMin, outMax);
 }
 
 CK_DLL_MFUN(scaler_setRadius)
 {
     // get our c++ class pointer
     Scaler* s_obj = (Scaler*)OBJ_MEMBER_INT(SELF, scaler_data_offset);
+
+    t_CKFLOAT inCenter = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT inRadius = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT outCenter = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT outRadius = GET_NEXT_FLOAT(ARGS);
+
     // set the return value
-    s_obj->setRadius(GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS),
-        GET_NEXT_FLOAT(ARGS), GET_NEXT_FLOAT(ARGS));
+    s_obj->setRadius(inCenter, inRadius, outCenter, outRadius);
 }
 
 CK_DLL_MFUN(scaler_getInMin)
@@ -348,7 +336,7 @@ CK_DLL_MFUN(scaler_getOutMin)
     // get our c++ class pointer
     Scaler* s_obj = (Scaler*)OBJ_MEMBER_INT(SELF, scaler_data_offset);
     // set the return value
-    RETURN->v_float = s_obj->getInMin();
+    RETURN->v_float = s_obj->getOutMin();
 }
 
 CK_DLL_MFUN(scaler_getOutMax)
@@ -356,7 +344,7 @@ CK_DLL_MFUN(scaler_getOutMax)
     // get our c++ class pointer
     Scaler* s_obj = (Scaler*)OBJ_MEMBER_INT(SELF, scaler_data_offset);
     // set the return value
-    RETURN->v_float = s_obj->getInMax();
+    RETURN->v_float = s_obj->getOutMax();
 }
 
 CK_DLL_MFUN(scaler_getInCenter)
