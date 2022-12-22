@@ -34,7 +34,7 @@ validateRadius(0, 1, 1, 1);
 fun void validate(float offset) {
 	now + 1::second => time later;
 	while(now < later) {
-		1::samp => now;
+1::samp => now;
 		(g.last()) + offset => float want;
 		if (!within(scale.last(), want, 0.001)) {
 			<<< "FAILURE, in = ", g.last(), "got = ", scale.last(), "want = ", want >>>;
