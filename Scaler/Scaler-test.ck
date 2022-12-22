@@ -31,6 +31,16 @@ validate(1.0);
 validateRange(-1, 1, 0, 2);
 validateRadius(0, 1, 1, 1);
 
+// test exceeding clip bounds
+2 => sin.gain;
+validate(1.0);
+validateRange(-1, 1, 0, 2);
+validateRadius(0, 1, 1, 1);
+
+// test with hard clipping
+1 => scale.clip;
+validateClip(1.0, 0, 2);
+
 fun void validate(float offset) {
 	now + 1::second => time later;
 	while(now < later) {
@@ -41,6 +51,20 @@ fun void validate(float offset) {
 		}
 	}
 }
+
+fun void validateClip(float offset, float min, float max) {
+	now + 1::second => time later;
+	while(now < later) {
+		1::samp => now;
+		(g.last()) + offset => float want;
+		Math.max(want, min) => want;
+		Math.min(want, max) => want;
+		if (!within(scale.last(), want, 0.001)) {
+			<<< "FAILURE, in = ", g.last(), "got = ", scale.last(), "want = ", want >>>;
+		}
+	}
+}
+
 
 // check that two floats are within err of each other
 fun int within(float a, float b, float err) {
