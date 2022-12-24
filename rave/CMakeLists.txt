@@ -69,13 +69,10 @@ INSTALL(TARGETS rave
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-# if(MSVC)
-# target_compile_options(WarpBufChugin PRIVATE /EHsc /GR)
-# else()
-# target_compile_options(WarpBufChugin PRIVATE)
-# endif()
-
-message(STATUS "target file for ${PROJECT_NAME}: $<TARGET_FILE:rave>")
+# find all libtorch dlls that eventually need to be copied over
+FILE(GLOB Torch_DLLs
+	"${Torch_DIR}/../../../lib/*.dll"
+)
 
 if (MSVC)
   # set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -83,12 +80,45 @@ if (MSVC)
   #                       VS_DEBUGGER_COMMAND_ARGUMENTS "..\\tests\\warpbuf_basic.ck")
 
   message(STATUS "in MSVC!")
+
+  # copy chugin over to the relevant chuck dir
   add_custom_command(TARGET ${PROJECT_NAME}
                      POST_BUILD
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      "$<TARGET_FILE:rave>"
                      "%USERPROFILE%/Documents/ChucK/chugins/rave.chug")
-                     # "rave.chug")
+
+  # copy libtoch dlls to build directory (for unit tests)
+  add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		${Torch_DLLs}
+        $<TARGET_FILE_DIR:rave>)
 endif()
 
-# file(GENERATE OUTPUT target_file.txt CONTENT "$<TARGET_FILE:rave>")
+############################
+### ~~~~~~ Unit Tests ~~~~~~
+############################
+
+set(UNIT_TEST_TARGET_NAME rave_test)
+add_library(${UNIT_TEST_TARGET_NAME} SHARED)
+
+target_sources(${UNIT_TEST_TARGET_NAME} PRIVATE 
+    rave_test.cpp
+)
+target_link_libraries(${UNIT_TEST_TARGET_NAME} 
+    PRIVATE 
+	MSUnitTestFramework::MSUnitTestFramework
+	rave
+	backend
+)
+	
+enable_testing()
+
+add_library(MSUnitTestFramework::MSUnitTestFramework SHARED IMPORTED)
+set_target_properties(MSUnitTestFramework::MSUnitTestFramework PROPERTIES
+  # INTERFACE_INCLUDE_DIRECTORIES "$ENV{VCInstallDir}Auxiliary/VS/UnitTest/include"
+  # IMPORTED_IMPLIB "$ENV{VCInstallDir}Auxiliary/VS/UnitTest/lib/x86/Microsoft.VisualStudio.TestTools.CppUnitTestFramework.lib"
+  IMPORTED_IMPLIB "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/VS/UnitTest/lib/x64/Microsoft.VisualStudio.TestTools.CppUnitTestFramework.lib"
+  INTERFACE_INCLUDE_DIRECTORIES "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/VS/UnitTest/include"
+)
+set(MSUnitTestFramework_FOUND TRUE)

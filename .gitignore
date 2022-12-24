@@ -46,3 +46,4 @@ ipch
 
 .vscode/*
 
+*.sln
