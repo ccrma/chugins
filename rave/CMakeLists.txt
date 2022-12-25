@@ -75,9 +75,9 @@ FILE(GLOB Torch_DLLs
 )
 
 if (MSVC)
-  # set_target_properties(${PROJECT_NAME} PROPERTIES
-  #                       VS_DEBUGGER_COMMAND "C:\\Program\ Files\ (x86)\\ChucK\\bin\\chuck.exe"
-  #                       VS_DEBUGGER_COMMAND_ARGUMENTS "..\\tests\\warpbuf_basic.ck")
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+                        VS_DEBUGGER_COMMAND "C:\\Users\\nick\\Documents\\chuck\\src\\visual-studio\\Debug\\chuck.exe"
+                        VS_DEBUGGER_COMMAND_ARGUMENTS "--chugin:build/Debug/rave.chug ../rave_test.ck")
 
   message(STATUS "in MSVC!")
 
@@ -87,6 +87,13 @@ if (MSVC)
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      "$<TARGET_FILE:rave>"
                      "%USERPROFILE%/Documents/ChucK/chugins/rave.chug")
+
+  # rename to .chug file
+  add_custom_command(TARGET ${PROJECT_NAME}
+                     POST_BUILD
+                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                     "$<TARGET_FILE:rave>"
+                     "$<TARGET_FILE_DIR:rave>/rave.chug")
 
   # copy libtoch dlls to build directory (for unit tests)
   add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
