@@ -17,6 +17,7 @@ TODOS
 // this should align with the correct versions of these ChucK files
 #include "chuck_dl.h"
 #include "chuck_def.h"
+#include "chuck_ugen.h"
 
 // general includes
 #include <stdio.h>
@@ -75,13 +76,14 @@ public:
     int m_in_dim, m_in_ratio, m_out_dim, m_out_ratio, m_higher_ratio;
 
     // constructor
-    Rave( t_CKFLOAT fs )
+    Rave( t_CKFLOAT fs, Chuck_UGen* self )
     {
         m_model = Backend();
         m_method = "forward";
         m_param = 0;
         m_buffer_size = 4096;
         m_use_thread = false;
+        m_self = self;
     }
 
     // for Chugins extending UGen
@@ -108,17 +110,7 @@ public:
             return;
         }
 
-        // std::cout << "tick" << std::endl;
         perform(in, out, nframes);
-
-        /*
-        // this needs to be reworked so that it takes in the info from perform
-        for (int i = 0; i < nframes; i++) { // iterate through each frame
-            for (int j = 0; j < 1; j++) { // iterate through each channel (just hardcoding 1 for now)
-                out[i * max_channels + j] = in[0];
-            }
-        }
-        */
     }
 
     void model_perform() {
@@ -244,6 +236,7 @@ public:
 private:
     // instance data
     t_CKFLOAT m_param;
+    Chuck_Object* m_self;
 };
 
 // query function: chuck calls this when loading the Chugin
@@ -311,9 +304,12 @@ CK_DLL_CTOR(rave_ctor)
 {
     // get the offset where we'll store our internal c++ class pointer
     OBJ_MEMBER_INT(SELF, rave_data_offset) = 0;
+
+    // cast SELF as a chuck_ugen so that we can get channel info
+    Chuck_UGen* self = (Chuck_UGen*)SELF;
     
     // instantiate our internal c++ class representation
-    Rave * r_obj = new Rave(API->vm->get_srate(API, SHRED));
+    Rave * r_obj = new Rave(API->vm->get_srate(API, SHRED), self);
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, rave_data_offset) = (t_CKINT) r_obj;
