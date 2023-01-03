@@ -5,6 +5,8 @@
 
 /*
 TODOS
+- get method
+- clean up models and stuff
 - arbitrary buffer sizes
 - look at threads(?)
 */
@@ -236,7 +238,7 @@ public:
 private:
     // instance data
     t_CKFLOAT m_param;
-    Chuck_Object* m_self;
+    Chuck_UGen* m_self;
 };
 
 // query function: chuck calls this when loading the Chugin
