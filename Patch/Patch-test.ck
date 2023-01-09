@@ -1,5 +1,3 @@
-// Patch.help();
-
 SinOsc sin;
 
 Step step => Patch p => blackhole;
