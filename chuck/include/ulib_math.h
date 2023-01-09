@@ -68,6 +68,7 @@ CK_DLL_SFUN( min_impl );
 CK_DLL_SFUN( max_impl );
 CK_DLL_SFUN( isinf_impl );
 CK_DLL_SFUN( isnan_impl );
+CK_DLL_SFUN( equal_impl );
 CK_DLL_SFUN( floatMax_impl );
 CK_DLL_SFUN( intMax_impl );
 
@@ -89,12 +90,6 @@ CK_DLL_SFUN( srandom_impl );
 
 CK_DLL_SFUN( gauss_impl );
 
-// max for random functions
-#ifdef __WINDOWS_DS__
-#define CK_RANDOM_MAX RAND_MAX
-#else
-#define CK_RANDOM_MAX 0x7fffffff
-#endif
 
 
 

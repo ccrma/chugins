@@ -73,7 +73,7 @@ CK_DLL_MFUN( object_getType );
 CK_DLL_MFUN( object_hashCode );
 CK_DLL_MFUN( object_toString );
 CK_DLL_MFUN( object_dump );
-CK_DLL_SFUN( object_apropos );
+CK_DLL_SFUN( object_help );
 
 
 //-----------------------------------------------------------------------------
@@ -180,12 +180,14 @@ CK_DLL_MFUN( array_set_size );
 CK_DLL_MFUN( array_get_size );
 CK_DLL_MFUN( array_push_back );
 CK_DLL_MFUN( array_pop_back );
+CK_DLL_MFUN( array_pop_out );
 CK_DLL_MFUN( array_push_front );
 CK_DLL_MFUN( array_pop_front );
 CK_DLL_MFUN( array_find );
 CK_DLL_MFUN( array_erase );
 CK_DLL_MFUN( array_clear );
 CK_DLL_MFUN( array_reset );
+CK_DLL_MFUN( array_get_keys );
 
 
 //-----------------------------------------------------------------------------
