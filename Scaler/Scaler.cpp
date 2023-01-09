@@ -186,18 +186,22 @@ CK_DLL_QUERY( Scaler )
     QUERY->add_mfun(QUERY, scaler_setInRange, "void", "inRange");
     QUERY->add_arg(QUERY, "float", "min");
     QUERY->add_arg(QUERY, "float", "max");
+    QUERY->doc_func(QUERY, "Set the expected input range.");
 
     QUERY->add_mfun(QUERY, scaler_setInRadius, "void", "inRadius");
     QUERY->add_arg(QUERY, "float", "center");
     QUERY->add_arg(QUERY, "float", "radius");
+    QUERY->doc_func(QUERY, "Set the expected input radius.");
 
     QUERY->add_mfun(QUERY, scaler_setOutRange, "void", "outRange");
     QUERY->add_arg(QUERY, "float", "min");
     QUERY->add_arg(QUERY, "float", "max");
+    QUERY->doc_func(QUERY, "Set the output range.");
 
     QUERY->add_mfun(QUERY, scaler_setOutRadius, "void", "outRadius");
     QUERY->add_arg(QUERY, "float", "center");
     QUERY->add_arg(QUERY, "float", "radius");
+    QUERY->doc_func(QUERY, "Set the output radius.");
 
     QUERY->add_mfun(QUERY, scaler_setRange, "void", "range");
     QUERY->add_arg(QUERY, "float", "inMin");
@@ -214,20 +218,35 @@ CK_DLL_QUERY( Scaler )
     QUERY->doc_func(QUERY, "Set the expected input range and desired output range in terms of a center with a radius.");
 
     QUERY->add_mfun(QUERY, scaler_getInMin, "float", "inMin");
+    QUERY->doc_func(QUERY, "Get input min.");
+
     QUERY->add_mfun(QUERY, scaler_getInMax, "float", "inMax");
+    QUERY->doc_func(QUERY, "Get input max.");
+
     QUERY->add_mfun(QUERY, scaler_getOutMin, "float", "outMin");
+    QUERY->doc_func(QUERY, "Get output min.");
+
     QUERY->add_mfun(QUERY, scaler_getOutMax, "float", "outMax");
+    QUERY->doc_func(QUERY, "Get output max.");
 
     QUERY->add_mfun(QUERY, scaler_getInCenter, "float", "inCenter");
+    QUERY->doc_func(QUERY, "Get input center.");
+
     QUERY->add_mfun(QUERY, scaler_getInRadius, "float", "inRad");
+    QUERY->doc_func(QUERY, "Get input radius.");
+
     QUERY->add_mfun(QUERY, scaler_getOutCenter, "float", "outCenter");
+    QUERY->doc_func(QUERY, "Get output center.");
+
     QUERY->add_mfun(QUERY, scaler_getOutRadius, "float", "outRad");
+    QUERY->doc_func(QUERY, "Get output radius.");
 
     QUERY->add_mfun(QUERY, scaler_setClip, "int", "clip");
     QUERY->add_arg(QUERY, "int", "val");
     QUERY->doc_func(QUERY, "Set Scaler's clipping mode. Accepted values are: 0 (no clipping), 1 (hard clipping). Defaults to 0");
 
     QUERY->add_mfun(QUERY, scaler_getClip, "int", "clip");
+    QUERY->doc_func(QUERY, "Get clip state.");
 
     
     // this reserves a variable in the ChucK internal class to store 
