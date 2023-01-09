@@ -1,4 +1,4 @@
-* Scaler (unit generator)
+# Scaler (unit generator)
   |- (inheritance) Scaler -> UGen -> Object
 
 
@@ -41,37 +41,53 @@ while(10::ms => now) {
 }
 ```
 
-** Scaler functions
+## Scaler Functions
 
-int clip( int val );
+* `int clip( int val );`
+
     Set Scaler's clipping mode. Accepted values are: 0 (no clipping), 1 (hard clipping). Defaults to 0
-int clip();
+* `int clip();`
+
     Get clip state.
-float inCenter();
+* `float inCenter();`
+
     Get input center.
-float inMax();
+* `float inMax();`
+
     Get input max.
-float inMin();
+* `float inMin();`
+
     Get input min.
-float inRad();
+* `float inRad();`
+
     Get input radius.
-void inRadius( float center, float radius );
+* `void inRadius( float center, float radius );`
+
     Set the expected input radius.
-void inRange( float min, float max );
+* `void inRange( float min, float max );`
+
     Set the expected input range.
-float outCenter();
+* `float outCenter();`
+
     Get output center.
-float outMax();
+* `float outMax();`
+
     Get output max.
-float outMin();
+* `float outMin();`
+
     Get output min.
-float outRad();
+* `float outRad();`
+
     Get output radius.
-void outRadius( float center, float radius );
+* `void outRadius( float center, float radius );`
+
     Set the output radius.
-void outRange( float min, float max );
+* `void outRange( float min, float max );`
+
     Set the output range.
-void radius( float inCenter, float inRadius, float outCenter, float outRadius );
+* `void radius( float inCenter, float inRadius, float outCenter, float outRadius );`
+
     Set the expected input range and desired output range in terms of a center with a radius.
-void range( float inMin, float inMax, float outMin, float outMax );
+* `void range( float inMin, float inMax, float outMin, float outMax );`
+
     Set the expected input range and desired output range.
