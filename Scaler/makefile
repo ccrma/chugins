@@ -1,10 +1,10 @@
 
 # chugin name
-CHUGIN_NAME=Scaler
+CHUGIN_NAME=Range
 
 # all of the c/cpp files that compose this chugin
 C_MODULES=
-CXX_MODULES=Scaler.cpp
+CXX_MODULES=Range.cpp
 
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/

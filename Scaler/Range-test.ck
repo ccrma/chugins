@@ -1,4 +1,4 @@
-SinOsc sin => Scaler scale => blackhole;
+SinOsc sin => Range scale => blackhole;
 sin => Gain g => blackhole;
 
 (-1, 1, 0, 2) => scale.range;

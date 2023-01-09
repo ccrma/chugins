@@ -68,10 +68,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Scaler.cpp" />
+    <ClCompile Include="Range.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Scaler.h" />
+    <ClInclude Include="Range.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Targets" />
 </Project>

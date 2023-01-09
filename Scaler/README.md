@@ -1,24 +1,24 @@
-# Scaler (unit generator)
-  |- (inheritance) Scaler -> UGen -> Object
+# Range (unit generator)
+  |- (inheritance) Range -> UGen -> Object
 
 
-  `Scaler` is a UGen that maps an input range to an output range. It currently supports linear mapping between ranges as well as clipping.
+  `Range` is a UGen that maps an input range to an output range. It currently supports linear mapping between ranges as well as clipping.
   This is particularly useful for LFOs where the useful parameter values don't center around one.
 
   You can define ranges in terms of min/max values:
 
   ```
   // Use scaler to make an easy vibrato
-SinOsc lfo => Scaler s => blackhole;
+SinOsc lfo => Range r => blackhole;
 SinOsc tone => dac;
 
 3 => lfo.freq;
 
 // Modulate frequency +- 10Hz around A440
-(-1, 1, 430, 450) => s.range 
+(-1, 1, 430, 450) => r.range 
 
 while(10::ms => now) {
-	s.last() => tone.freq;
+	r.last() => tone.freq;
 }
 ```
 
@@ -26,26 +26,26 @@ while(10::ms => now) {
 
 ```
 // Use scaler to make an easy vibrato
-SinOsc lfo => Scaler s => blackhole;
+SinOsc lfo => Range r => blackhole;
 SinOsc tone => dac;
 
 // Help reveals all secrets
-Scaler.help();
+Range.help();
 
 3 => lfo.freq;
 // Modulate frequency +- 10Hz around A440
-(0, 1, 440, 10) => s.radius;
+(0, 1, 440, 10) => r.radius;
 
 while(10::ms => now) {
-	s.last() => tone.freq;
+	r.last() => tone.freq;
 }
 ```
 
-## Scaler Functions
+## Range Functions
 
 * `int clip( int val );`
 
-    Set Scaler's clipping mode. Accepted values are: 0 (no clipping), 1 (hard clipping). Defaults to 0
+    Set Range's clipping mode. Accepted values are: 0 (no clipping), 1 (hard clipping). Defaults to 0
 * `int clip();`
 
     Get clip state.
