@@ -35,19 +35,33 @@
 
 #include <math.h>
 
-#if defined (__cplusplus) || defined(_cplusplus)  
+#if defined (__cplusplus) || defined(_cplusplus)
 extern "C" {
-#endif 
+#endif
 
+// 1.4.1.1 (ge) removed -- seems no longer needed on more modern windows
 #ifdef __PLATFORM_WIN32__
-
+#ifdef __CK_MATH_DEFINE_ROUND_TRUNC__
     double round( double a );
     double trunc( double a );
-#ifndef __WINDOWS_MODERN__
-    double remainder( long a, long b );
+#endif
 #endif
 
+// 1.4.1.0 (ge) need this since __WINDOWS_MODERN__ can be defined but remainder still not found (VC++ 2010)
+double ck_remainder( double a, double b );
+
+
+// max for random functions
+#ifdef __WINDOWS_DS__
+#define CK_RANDOM_MAX RAND_MAX
+#else
+#define CK_RANDOM_MAX 0x7fffffff
 #endif
+
+// chuck random wrapper
+long ck_random();
+// chuck srandom wrapper
+void ck_srandom( unsigned seed );
 
 // mtof
 double mtof( double f );
@@ -66,10 +80,11 @@ unsigned long nextpow2( unsigned long i );
 // ensurepow2
 unsigned long ensurepow2( unsigned long i );
 
-#if defined (__cplusplus) || defined(_cplusplus)  
+#if defined (__cplusplus) || defined(_cplusplus)
 }
 #endif
 
 
 
-#endif 
+
+#endif

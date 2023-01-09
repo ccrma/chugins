@@ -49,8 +49,8 @@ typedef enum {
     // general types
     te_none = 0, te_int, te_uint, te_single, te_float, te_double, te_time, te_dur,
     te_complex, te_polar, te_string, te_thread, te_shred, te_class,
-    te_function, te_object, te_user, te_array, te_null, te_ugen, te_uana, 
-    te_event, te_void, te_stdout, te_stderr, te_adc, te_dac, te_bunghole, 
+    te_function, te_object, te_user, te_array, te_null, te_ugen, te_uana,
+    te_event, te_void, te_stdout, te_stderr, te_adc, te_dac, te_bunghole,
     te_uanablob, te_io, te_fileio, te_chout, te_cherr, te_multi,
     te_vec3, te_vec4, te_vector // ge: added 1.3.5.3
 } te_Type;
@@ -77,7 +77,7 @@ typedef enum {
 // name: enum te_HowMuch
 // desc: how much to scan/type check
 //-----------------------------------------------------------------------------
-typedef enum { 
+typedef enum {
     te_do_all = 0, te_do_classes_only, te_do_no_classes
 } te_HowMuch;
 
@@ -111,14 +111,14 @@ public:
     // reset the scope
     void reset()
     { scope.clear(); this->push(); }
-    
+
     // atomic commit
     void commit()
     {
-        assert( scope.size() != 0 );        
+        assert( scope.size() != 0 );
         std::map<S_Symbol, Chuck_VM_Object *>::iterator iter;
 
-        // go through buffer    
+        // go through buffer
         for( iter = commit_map.begin(); iter != commit_map.end(); iter++ )
         {
             // add to front/where
@@ -135,7 +135,7 @@ public:
         assert( scope.size() != 0 );
         std::map<S_Symbol, Chuck_VM_Object *>::iterator iter;
 
-        // go through buffer    
+        // go through buffer
         for( iter = commit_map.begin(); iter != commit_map.end(); iter++ )
         {
             // release
@@ -175,8 +175,8 @@ public:
         {
             val = (*scope.back())[xid];
             // look in commit buffer if the back is the front
-            if( !val && scope.back() == scope.front() 
-                && (commit_map.find(xid) != commit_map.end()) ) 
+            if( !val && scope.back() == scope.front()
+                && (commit_map.find(xid) != commit_map.end()) )
                 val = commit_map[xid];
         }
         else if( climb > 0 )
@@ -217,18 +217,18 @@ public:
             out.push_back( (*iter).second );
         }
     }
-    
+
     // get list of top level
     void get_level( int level, std::vector<Chuck_VM_Object *> & out )
     {
         assert( scope.size() >= level );
         std::map<S_Symbol, Chuck_VM_Object *>::iterator iter;
-        
+
         // clear the out
         out.clear();
         // get the front of the array
         std::map<S_Symbol, Chuck_VM_Object *> * m = &commit_map;
-        
+
         // go through map
         for( iter = m->begin(); iter != m->end(); iter++ )
         {
@@ -236,7 +236,7 @@ public:
             out.push_back( (*iter).second );
         }
     }
-    
+
 
 protected:
     std::vector<std::map<S_Symbol, Chuck_VM_Object *> *> scope;
@@ -288,7 +288,7 @@ struct Chuck_Namespace : public Chuck_VM_Object
     t_CKUINT offset;
 
     // constructor
-    Chuck_Namespace() { pre_ctor = NULL; dtor = NULL; parent = NULL; offset = 0; 
+    Chuck_Namespace() { pre_ctor = NULL; dtor = NULL; parent = NULL; offset = 0;
                         class_data = NULL; class_data_size = 0; }
     // destructor
     virtual ~Chuck_Namespace() {
@@ -308,13 +308,13 @@ struct Chuck_Namespace : public Chuck_VM_Object
     Chuck_Func * lookup_func( S_Symbol name, t_CKINT climb = 1 );
 
     // commit the maps
-    void commit() { 
+    void commit() {
         EM_log( CK_LOG_FINER, "committing namespace: '%s'...", name.c_str() );
         type.commit(); value.commit(); func.commit();
     }
-    
+
     // rollback the maps
-    void rollback() { 
+    void rollback() {
         EM_log( CK_LOG_FINER, "rolling back namespace: '%s'...", name.c_str() );
         type.rollback(); value.rollback(); func.rollback();
     }
@@ -334,7 +334,7 @@ struct Chuck_Namespace : public Chuck_VM_Object
 // name: struct Chuck_Context
 // desc: runtime type information pertaining to a file
 //-----------------------------------------------------------------------------
-struct Chuck_Context : public Chuck_VM_Object  
+struct Chuck_Context : public Chuck_VM_Object
 {
     // src_name
     std::string filename;
@@ -370,7 +370,7 @@ struct Chuck_Context : public Chuck_VM_Object
     void rollback();
 
     // constructor
-    Chuck_Context() { parse_tree = NULL; nspc = new Chuck_Namespace; 
+    Chuck_Context() { parse_tree = NULL; nspc = new Chuck_Namespace;
                       public_class_def = NULL; has_error = FALSE;
                       progress = P_NONE; }
     // destructor
@@ -425,7 +425,7 @@ public:
         else
             return user_nspc;
     }
-    
+
     // namespace stack
     std::vector<Chuck_Namespace *> nspc_stack;
     // expression namespace
@@ -482,7 +482,7 @@ public:
         // make sure this is 0
         class_scope = 0;
     }
-    
+
     void load_user_namespace()
     {
         // user namespace
@@ -492,7 +492,7 @@ public:
         SAFE_ADD_REF(global_nspc);
         SAFE_ADD_REF(user_nspc);
     }
-    
+
     void clear_user_namespace()
     {
         if(user_nspc) SAFE_RELEASE(user_nspc->parent);
@@ -506,11 +506,11 @@ public:
     { assert( nspc_stack.size() > 0 ); return nspc_stack.back(); }
     Chuck_Type * class_top( )
     { assert( class_stack.size() > 0 ); return class_stack.back(); }
-    
+
     // check whether the context is the global context
     t_CKBOOL is_global()
     { return class_def == NULL && func == NULL && class_scope == 0; }
-    
+
 public:
     // REFACTOR-2017: public types
     Chuck_Type * t_void;
@@ -563,7 +563,7 @@ struct Chuck_UGen_Info : public Chuck_VM_Object
     t_CKUINT num_ins;
     // number of outgoing channels
     t_CKUINT num_outs;
-    
+
     // for uana, NULL for ugen
     f_tock tock;
     // number of incoming ana channels
@@ -573,7 +573,7 @@ struct Chuck_UGen_Info : public Chuck_VM_Object
 
     // constructor
     Chuck_UGen_Info()
-    { tick = NULL; tickf = NULL; pmsg = NULL; num_ins = num_outs = 1; 
+    { tick = NULL; tickf = NULL; pmsg = NULL; num_ins = num_outs = 1;
       tock = NULL; num_ins_ana = num_outs_ana = 1; }
 };
 
@@ -620,7 +620,7 @@ struct Chuck_Type : public Chuck_VM_Object
     t_CKBOOL has_destructor;
     // custom allocator
     f_alloc allocator;
-    
+
     // documentation
     std::string doc;
     // example files
@@ -650,16 +650,22 @@ public:
     const std::string & str();
     // to c string
     const char * c_name();
-    
+
 protected:
     // this for str() and c_name() use only
     std::string ret;
 
 public: // apropos | 1.4.1.0 (ge)
-    // dump info to console
+    // generate info; output to console
     void apropos();
-    // dump info to string
+    // generate info; output to string
     void apropos( std::string & output );
+
+public: // dump | 1.4.1.1 (ge)
+    // generate object state; output to console
+    void dump( Chuck_Object * obj );
+    // generate object state; output to string
+    void dump( Chuck_Object * obj, std::string & output );
 
 protected: // apropos-related helper function
     // dump top level info
@@ -711,7 +717,7 @@ struct Chuck_Value : public Chuck_VM_Object
     Chuck_Func * func_ref;
     // overloads
     t_CKINT func_num_overloads;
-	
+
     // documentation
     std::string doc;
 
@@ -720,7 +726,7 @@ struct Chuck_Value : public Chuck_VM_Object
                  t_CKBOOL c = FALSE, t_CKBOOL acc = 0, Chuck_Namespace * o = NULL,
                  Chuck_Type * oc = NULL, t_CKUINT s = 0 )
     { type = t; SAFE_ADD_REF(type); // add reference
-      name = n; offset = s; 
+      name = n; offset = s;
       is_const = c; access = acc;
       owner = o; SAFE_ADD_REF(o); // add reference
       owner_class = oc; SAFE_ADD_REF(oc); // add reference
@@ -772,13 +778,13 @@ struct Chuck_Func : public Chuck_VM_Object
     Chuck_Func * next;
     // for overriding
     Chuck_Value * up;
-	
+
     // documentation
     std::string doc;
 
     // constructor
     Chuck_Func() { def = NULL; code = NULL; is_member = FALSE; is_static = FALSE,
-        vt_index = 0xffffffff; value_ref = NULL; /*dl_code = NULL;*/ next = NULL;
+        vt_index = CK_NO_VALUE; value_ref = NULL; /*dl_code = NULL;*/ next = NULL;
         up = NULL; }
 
     // destructor
@@ -802,7 +808,7 @@ t_CKBOOL type_engine_load_context( Chuck_Env * env, Chuck_Context * context );
 t_CKBOOL type_engine_unload_context( Chuck_Env * env );
 
 // type check a program into the env
-t_CKBOOL type_engine_check_prog( Chuck_Env * env, a_Program prog, 
+t_CKBOOL type_engine_check_prog( Chuck_Env * env, a_Program prog,
                                  const std::string & filename );
 // make a context
 Chuck_Context * type_engine_make_context( a_Program prog,
@@ -834,7 +840,7 @@ t_CKBOOL iskindofint( Chuck_Env * env, Chuck_Type * type ); // added 1.3.1.0: th
 t_CKUINT getkindof( Chuck_Env * env, Chuck_Type * type ); // added 1.3.1.0: to get the kindof a type
 
 // import
-Chuck_Type * type_engine_import_class_begin( Chuck_Env * env, Chuck_Type * type, 
+Chuck_Type * type_engine_import_class_begin( Chuck_Env * env, Chuck_Type * type,
                                              Chuck_Namespace * where, f_ctor pre_ctor, f_dtor dtor = NULL,
                                              const char * doc = NULL );
 Chuck_Type * type_engine_import_class_begin( Chuck_Env * env, const char * name, const char * parent,
@@ -843,12 +849,14 @@ Chuck_Type * type_engine_import_class_begin( Chuck_Env * env, const char * name,
 Chuck_Type * type_engine_import_ugen_begin( Chuck_Env * env, const char * name, const char * parent,
                                             Chuck_Namespace * where, f_ctor pre_ctor, f_dtor dtor,
                                             f_tick tick, f_tickf tickf, f_pmsg pmsg,  // (tickf added 1.3.0.0)
-                                            t_CKUINT num_ins = 0xffffffff, t_CKUINT num_outs = 0xffffffff,
+                                            t_CKUINT num_ins = CK_NO_VALUE,
+                                            t_CKUINT num_outs = CK_NO_VALUE,
                                             const char * doc = NULL );
 Chuck_Type * type_engine_import_ugen_begin( Chuck_Env * env, const char * name, const char * parent,
                                             Chuck_Namespace * where, f_ctor pre_ctor, f_dtor dtor,
                                             f_tick tick, f_pmsg pmsg,
-                                            t_CKUINT num_ins = 0xffffffff, t_CKUINT num_outs = 0xffffffff,
+                                            t_CKUINT num_ins = CK_NO_VALUE,
+                                            t_CKUINT num_outs = CK_NO_VALUE,
                                             const char * doc = NULL );
 Chuck_Type * type_engine_import_ugen_begin( Chuck_Env * env, const char * name, const char * parent,
                                             Chuck_Namespace * where, f_ctor pre_ctor, f_dtor dtor,
@@ -856,12 +864,14 @@ Chuck_Type * type_engine_import_ugen_begin( Chuck_Env * env, const char * name, 
 Chuck_Type * type_engine_import_uana_begin( Chuck_Env * env, const char * name, const char * parent,
                                             Chuck_Namespace * where, f_ctor pre_ctor, f_dtor dtor,
                                             f_tick tick, f_tock tock, f_pmsg pmsg,
-                                            t_CKUINT num_ins = 0xffffffff, t_CKUINT num_outs = 0xffffffff,
-                                            t_CKUINT num_ins_ana = 0xffffffff, t_CKUINT num_outs_ana = 0xffffffff,
+                                            t_CKUINT num_ins = CK_NO_VALUE,
+                                            t_CKUINT num_outs = CK_NO_VALUE,
+                                            t_CKUINT num_ins_ana = CK_NO_VALUE,
+                                            t_CKUINT num_outs_ana = CK_NO_VALUE,
                                             const char * doc = NULL );
 t_CKBOOL type_engine_import_mfun( Chuck_Env * env, Chuck_DL_Func * mfun );
 t_CKBOOL type_engine_import_sfun( Chuck_Env * env, Chuck_DL_Func * sfun );
-t_CKUINT type_engine_import_mvar( Chuck_Env * env, const char * type, 
+t_CKUINT type_engine_import_mvar( Chuck_Env * env, const char * type,
                                   const char * name, t_CKUINT is_const,
                                   const char * doc = NULL );
 t_CKBOOL type_engine_import_svar( Chuck_Env * env, const char * type,
@@ -871,7 +881,7 @@ t_CKBOOL type_engine_import_ugen_ctrl( Chuck_Env * env, const char * type, const
                                        f_ctrl ctrl, t_CKBOOL write, t_CKBOOL read );
 t_CKBOOL type_engine_import_add_ex( Chuck_Env * env, const char * ex );
 t_CKBOOL type_engine_import_class_end( Chuck_Env * env );
-t_CKBOOL type_engine_register_deprecate( Chuck_Env * env, 
+t_CKBOOL type_engine_register_deprecate( Chuck_Env * env,
                                          const std::string & former, const std::string & latter );
 
 // helpers
@@ -901,6 +911,9 @@ t_CKBOOL verify_array( a_Array_Sub array );
 Chuck_Type * new_array_type( Chuck_Env * env, Chuck_Type * array_parent,
                              t_CKUINT depth, Chuck_Type * base_type,
                              Chuck_Namespace * owner_nspc );
+// make type | 1.4.1.1 (nshaheed) added
+Chuck_Type * new_array_element_type( Chuck_Env * env, Chuck_Type * base_type,
+                                     t_CKUINT depth, Chuck_Namespace * owner_nspc);
 // conversion
 const char * type_path( a_Id_List path );
 a_Id_List str2list( const std::string & path );
