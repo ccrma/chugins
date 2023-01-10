@@ -3,7 +3,7 @@ SinOsc lfo => Range r => Patch p => blackhole;
 PulseOsc tone => dac;
 
 // Help reveals all secrets
-Range.help();
+Patch.help();
 
 3 => lfo.freq;
 // Modulate frequency +- 10Hz around A440

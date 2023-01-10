@@ -21,6 +21,8 @@
 //
 //-----------------------------------------------------------------------------
 
+// TODO: add disconnect method
+
 #include "chuck_dl.h"
 #include "chuck_vm.h"
 
@@ -36,6 +38,7 @@ CK_DLL_DTOR(patch_dtor);
 
 // Patch methods
 CK_DLL_MFUN(patch_connect);
+CK_DLL_MFUN(patch_disconnect);
 CK_DLL_MFUN(patch_getMethod);
 CK_DLL_MFUN(patch_setMethod);
 
@@ -57,17 +60,19 @@ public:
     // for Chugins extending UGen
     SAMPLE tick( SAMPLE in )
     {
-        // default: this passes whatever input is patched into Chugin
-        t_CKFLOAT val = (t_CKFLOAT)in;
-        Chuck_DL_Return ret;
+        // if the method is set, patch through the value
+        if (m_func) {
+            // default: this passes whatever input is patched into Chugin
+            t_CKFLOAT val = (t_CKFLOAT)in;
+            Chuck_DL_Return ret;
 
-        // these three lines took a very long time to figure out...
-        Chuck_VM_Code* func = m_func->code;
-        // cast the function as a dynamically-linked member func
-        f_mfun f = (f_mfun)func->native_func;
-        // call said function
-        f((Chuck_Object*)(m_dest), &val, &ret, m_vm, m_shred, m_api); // api?
-
+            // these three lines took a very long time to figure out...
+            Chuck_VM_Code* func = m_func->code;
+            // cast the function as a dynamically-linked member func
+            f_mfun f = (f_mfun)func->native_func;
+            // call said function
+            f((Chuck_Object*)(m_dest), &val, &ret, m_vm, m_shred, m_api); // api?
+        }
         return in;
     }
 
@@ -81,6 +86,14 @@ public:
 
         findMethod(method);
     }
+
+    void disconnect() {
+        m_dest = NULL;
+        m_vm = NULL;
+        m_api = NULL;
+        m_shred = NULL;
+        m_func = NULL;
+    };
 
     std::string getMethod() { return m_func->base_name; }
 
@@ -177,6 +190,10 @@ CK_DLL_QUERY( Patch )
     QUERY->doc_func(QUERY, "Call the method in dest with Patch's input. "
         "Method must be a method that takes a single float as an input, "
         "i.e. setters such as SinOsc.freq and Pan2.pan.");
+    
+    QUERY->add_mfun(QUERY, patch_disconnect, "void", "disconnect");
+    QUERY->doc_func(QUERY, "Disconnect the currently attached method from Patch. "
+        "If the method is not set, nothing will happen.");
 
     // method getter and setter
     QUERY->add_mfun(QUERY, patch_getMethod, "string", "method");
@@ -274,3 +291,11 @@ CK_DLL_MFUN(patch_connect)
 
     p_obj->connect(dest, method->str(), VM, SHRED, API);
  }
+
+CK_DLL_MFUN(patch_disconnect)
+{
+    // get our c++ class pointer
+    Patch* p_obj = (Patch*)OBJ_MEMBER_INT(SELF, patch_data_offset);
+
+    p_obj->disconnect();
+}
