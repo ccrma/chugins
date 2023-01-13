@@ -53,6 +53,16 @@ t_CKINT rave_data_offset = 0;
 // maximum number of channels that rave can output
 const int max_channels = 64;
 
+unsigned power_ceil(unsigned x) {
+    if (x <= 1)
+        return 1;
+    int power = 2;
+    x--;
+    while (x >>= 1)
+        power <<= 1;
+    return power;
+}
+
 // class definition for internal Chugin data
 // (note: this isn't strictly necessary, but serves as example
 // of one recommended approach)
@@ -64,6 +74,7 @@ public:
 
     // AUDIO PERFORM
     bool m_use_thread;
+    std::unique_ptr<std::thread> m_compute_thread;
 
     // BUFFER RELATED MEMBERS
     int m_buffer_size;
@@ -81,6 +92,7 @@ public:
         m_method = "forward";
         m_buffer_size = 2048;
         m_use_thread = true;
+        m_compute_thread = nullptr;
         m_self = self;
     }
 
@@ -90,6 +102,8 @@ public:
         m_self->m_num_ins = max_channels;
         m_self->m_num_outs = max_channels;
         m_self->m_multi_chan_size = max_channels;
+
+        if (m_compute_thread) m_compute_thread->join();
     }
 
     // for Chugins extending UGen
@@ -142,12 +156,10 @@ public:
         }
 
         if (m_in_buffer[0].full()) { // BUFFER IS FULL
-            /*
             // IF USE THREAD, CHECK THAT COMPUTATION IS OVER
             if (m_compute_thread && m_use_thread) {
                 m_compute_thread->join();
             }
-            */
 
             // TRANSFER MEMORY BETWEEN INPUT CIRCULAR BUFFER AND MODEL BUFFER
             for (int c(0); c < m_in_dim; c++) {
@@ -155,12 +167,15 @@ public:
                 m_in_buffer[c].get(m_in_model[c].get(), m_buffer_size);
             }
 
-            // PROCESS DATA RIGHT NOW
-            model_perform();
+            if (!m_use_thread) // PROCESS DATA RIGHT NOW
+                model_perform();
 
             // TRANSFER MEMORY BETWEEN OUTPUT CIRCULAR BUFFER AND MODEL BUFFER
             for (int c(0); c < m_out_dim; c++)
                 m_out_buffer[c].put(m_out_model[c].get(), m_buffer_size);
+
+            if (m_use_thread) // PROCESS DATA LATER
+                m_compute_thread = std::make_unique<std::thread>(&Rave::model_perform, this);
         }
 
         // std::cout << "copy to output" << std::endl;
@@ -207,6 +222,26 @@ public:
         m_out_dim = params[2];
         m_out_ratio = params[3];
         m_buffer_size = m_higher_ratio;
+
+        // set buffer size depending on context
+        if (!m_buffer_size) {
+            // NO THREAD MODE
+            m_use_thread = false;
+            m_buffer_size = m_higher_ratio;
+        }
+        else if (m_buffer_size < m_higher_ratio) {
+            m_buffer_size = m_higher_ratio;
+            std::cerr << "buffer size too small, switching to " << m_buffer_size << std::endl;
+        }
+        else {
+            m_buffer_size = power_ceil(m_buffer_size);
+        }
+
+        // Calling forward in a thread causes memory leak in windows.
+        // See https://github.com/pytorch/pytorch/issues/24237
+#ifdef _WIN32
+        m_use_thread = false;
+#endif
 
         // Clip the UGen's inputs to the actual num of dimensions
         // as an optimization   
