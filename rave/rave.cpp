@@ -32,10 +32,6 @@ CK_DLL_CTOR(rave_ctor);
 // declaration of chugin desctructor
 CK_DLL_DTOR(rave_dtor);
 
-// example of getter/setter
-CK_DLL_MFUN(rave_setParam);
-CK_DLL_MFUN(rave_getParam);
-
 // load model
 CK_DLL_MFUN(rave_load);
 
@@ -83,9 +79,8 @@ public:
     {
         m_model = Backend();
         m_method = "forward";
-        m_param = 0;
-        m_buffer_size = 4096;
-        m_use_thread = false;
+        m_buffer_size = 2048;
+        m_use_thread = true;
         m_self = self;
     }
 
@@ -176,16 +171,6 @@ public:
         }
     }
 
-    // set parameter example
-    t_CKFLOAT setParam( t_CKFLOAT p )
-    {
-        m_param = p;
-        return p;
-    }
-
-    // get parameter example
-    t_CKFLOAT getParam() { return m_param; }
-
     // set and load model
     t_CKBOOL load(const std::string& path) {
         // TRY TO LOAD MODEL
@@ -252,7 +237,6 @@ public:
     
 private:
     // instance data
-    t_CKFLOAT m_param;
     Chuck_UGen* m_self;
 };
 
@@ -280,14 +264,6 @@ CK_DLL_QUERY( rave )
     // NOTE: if this is to be a UGen with more than 1 channel, 
     // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
     // and declare a tickf function using CK_DLL_TICKF
-
-    // example of adding setter method
-    QUERY->add_mfun(QUERY, rave_setParam, "float", "param");
-    // example of adding argument to the above method
-    QUERY->add_arg(QUERY, "float", "arg");
-
-    // example of adding getter method
-    QUERY->add_mfun(QUERY, rave_getParam, "float", "param");
 
     // register load method
     QUERY->add_mfun(QUERY, rave_load, "int", "load");
@@ -358,26 +334,6 @@ CK_DLL_TICKF(rave_tickf)
 
     // yes
     return TRUE;
-}
-
-
-// example implementation for setter
-CK_DLL_MFUN(rave_setParam)
-{
-    // get our c++ class pointer
-    Rave * r_obj = (Rave *) OBJ_MEMBER_INT(SELF, rave_data_offset);
-    // set the return value
-    RETURN->v_float = r_obj->setParam(GET_NEXT_FLOAT(ARGS));
-}
-
-
-// example implementation for getter
-CK_DLL_MFUN(rave_getParam)
-{
-    // get our c++ class pointer
-    Rave * r_obj = (Rave *) OBJ_MEMBER_INT(SELF, rave_data_offset);
-    // set the return value
-    RETURN->v_float = r_obj->getParam();
 }
 
 CK_DLL_MFUN(rave_load)
