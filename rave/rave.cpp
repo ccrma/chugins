@@ -6,9 +6,10 @@
 /*
 TODOS
 - get method
+- enable/disable
 - clean up models and stuff
-- arbitrary buffer sizes
-- look at threads(?)
+- threading
+- set buffer size method (0 will be threadless fast mode)
 */
 #pragma once
 
@@ -86,6 +87,14 @@ public:
         m_buffer_size = 4096;
         m_use_thread = false;
         m_self = self;
+    }
+
+    // destructor
+    ~Rave() {
+        // return channels sizes to initialized amount
+        m_self->m_num_ins = max_channels;
+        m_self->m_num_outs = max_channels;
+        m_self->m_multi_chan_size = max_channels;
     }
 
     // for Chugins extending UGen
@@ -214,6 +223,12 @@ public:
         m_out_ratio = params[3];
         m_buffer_size = m_higher_ratio;
 
+        // Clip the UGen's inputs to the actual num of dimensions
+        // as an optimization   
+        m_self->m_num_ins = m_in_dim;
+        m_self->m_num_outs = m_out_dim;
+        m_self->m_multi_chan_size = m_in_dim > m_out_dim ? m_in_dim: m_out_dim;
+
         // Create buffers
         m_in_buffer = std::make_unique<circular_buffer<SAMPLE, SAMPLE>[]>(m_in_dim);
         for (int i(0); i < m_in_dim; i++) {
@@ -251,7 +266,7 @@ CK_DLL_QUERY( rave )
     
     // begin the class definition
     // can change the second argument to extend a different ChucK class
-    QUERY->begin_class(QUERY, "rave", "UGen");
+    QUERY->begin_class(QUERY, "rave", "UGen_Multi");
 
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, rave_ctor);
