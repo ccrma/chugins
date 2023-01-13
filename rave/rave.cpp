@@ -312,7 +312,7 @@ CK_DLL_CTOR(rave_ctor)
     
     // instantiate our internal c++ class representation
     Rave * r_obj = new Rave(API->vm->get_srate(API, SHRED), self);
-    
+
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, rave_data_offset) = (t_CKINT) r_obj;
 }
