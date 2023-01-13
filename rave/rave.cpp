@@ -298,8 +298,6 @@ CK_DLL_QUERY( rave )
     QUERY->add_arg(QUERY, "string", "method");
 
     // register channels method
-    QUERY->add_mfun(QUERY, rave_getChannels, "int", "channels");
-
     QUERY->add_mfun(QUERY, rave_getChannels, "int", "outChannels");
     QUERY->add_mfun(QUERY, rave_getInChannels, "int", "inChannels");
 
