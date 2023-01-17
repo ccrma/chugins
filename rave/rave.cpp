@@ -5,7 +5,6 @@
 
 /*
 TODOS
-- get method
 - enable/disable
 - clean up models and stuff
 - set buffer size method (0 will be threadless fast mode)
@@ -36,6 +35,7 @@ CK_DLL_MFUN(rave_load);
 
 // set method
 CK_DLL_MFUN(rave_setMethod);
+CK_DLL_MFUN(rave_getMethod);
 
 // get channels methods
 CK_DLL_MFUN(rave_getChannels);
@@ -311,11 +311,16 @@ CK_DLL_QUERY( rave )
     // register setMethod method
     QUERY->add_mfun(QUERY, rave_setMethod, "int", "method");
     QUERY->add_arg(QUERY, "string", "method");
+    QUERY->doc_func(QUERY, "Set the model's method (default is 'forward'. Returning 1 indicates the method was found, 0 otherwise.");
+
+    QUERY->add_mfun(QUERY, rave_getMethod, "string", "method");
+    QUERY->doc_func(QUERY, "Get the current method.");
 
     // register channels method
     QUERY->add_mfun(QUERY, rave_getChannels, "int", "outChannels");
     QUERY->add_mfun(QUERY, rave_getInChannels, "int", "inChannels");
 
+    // register enable methods
     QUERY->add_mfun(QUERY, rave_setEnable, "int", "enable");
     QUERY->add_arg(QUERY, "int", "enable");
     QUERY->doc_func(QUERY, "Enable sound rendering. 1 is enable, 0 is disable.");
@@ -398,6 +403,15 @@ CK_DLL_MFUN(rave_setMethod)
     // set the return value
     // RETURN->v_float = r_obj->setParam(GET_NEXT_FLOAT(ARGS));
     RETURN->v_int = r_obj->setMethod(GET_NEXT_STRING(ARGS)->str());
+}
+
+CK_DLL_MFUN(rave_getMethod)
+{
+    // get our c++ class pointer
+    Rave* r_obj = (Rave*)OBJ_MEMBER_INT(SELF, rave_data_offset);
+
+    std::string method = r_obj->m_method;
+    RETURN->v_string = (Chuck_String*)API->object->create_string(API, SHRED, method);
 }
 
 CK_DLL_MFUN(rave_getChannels)
