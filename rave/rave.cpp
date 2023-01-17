@@ -8,7 +8,6 @@ TODOS
 - get method
 - enable/disable
 - clean up models and stuff
-- threading
 - set buffer size method (0 will be threadless fast mode)
 */
 #pragma once
@@ -42,6 +41,8 @@ CK_DLL_MFUN(rave_setMethod);
 CK_DLL_MFUN(rave_getChannels);
 CK_DLL_MFUN(rave_getOutChannels);
 CK_DLL_MFUN(rave_getInChannels);
+CK_DLL_MFUN(rave_setEnable);
+CK_DLL_MFUN(rave_getEnable);
 
 
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
@@ -85,6 +86,8 @@ public:
     // m_in_dim & m_out_dim correspond to number of in and out channels.
     int m_in_dim, m_in_ratio, m_out_dim, m_out_ratio, m_higher_ratio;
 
+    bool m_enable;
+
     // constructor
     Rave( t_CKFLOAT fs, Chuck_UGen* self )
     {
@@ -93,6 +96,7 @@ public:
         m_buffer_size = 2048;
         m_use_thread = true;
         m_compute_thread = nullptr;
+        m_enable = true;
         m_self = self;
     }
 
@@ -113,8 +117,8 @@ public:
 
         memset(out, 0, sizeof(SAMPLE) * max_channels * nframes);
 
-        // Output zeros of model isn't loaded
-        if (!m_model.is_loaded()) {
+        // Output zeros of model isn't running
+        if (!m_model.is_loaded() || !m_enable) {
             return;
         }
 
@@ -125,7 +129,7 @@ public:
             std::cerr << "larger than buffer size (" << m_buffer_size << "). ";
             std::cerr << "disabling model.";
             std::cerr << std::endl;
-            // enable = false;
+            m_enable = false;
             // fill_with_zero(output);
             return;
         }
@@ -312,6 +316,13 @@ CK_DLL_QUERY( rave )
     QUERY->add_mfun(QUERY, rave_getChannels, "int", "outChannels");
     QUERY->add_mfun(QUERY, rave_getInChannels, "int", "inChannels");
 
+    QUERY->add_mfun(QUERY, rave_setEnable, "int", "enable");
+    QUERY->add_arg(QUERY, "int", "enable");
+    QUERY->doc_func(QUERY, "Enable sound rendering. 1 is enable, 0 is disable.");
+
+    QUERY->add_mfun(QUERY, rave_getEnable, "int", "enable");
+    QUERY->doc_func(QUERY, "Get sound rendering status. 1 is enable, 0 is disable.");
+
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above
     rave_data_offset = QUERY->add_mvar(QUERY, "int", "@r_data", false);
@@ -405,4 +416,21 @@ CK_DLL_MFUN(rave_getInChannels)
     RETURN->v_int = r_obj->getInChannels();
 }
 
+CK_DLL_MFUN(rave_setEnable)
+{
+    // get our c++ class pointer
+    Rave* r_obj = (Rave*)OBJ_MEMBER_INT(SELF, rave_data_offset);
 
+    int enable = GET_NEXT_INT(ARGS);
+    r_obj->m_enable = enable;
+
+    RETURN->v_int = enable;
+}
+
+CK_DLL_MFUN(rave_getEnable)
+{
+    // get our c++ class pointer
+    Rave* r_obj = (Rave*)OBJ_MEMBER_INT(SELF, rave_data_offset);
+
+    RETURN->v_int = r_obj->m_enable;
+}
