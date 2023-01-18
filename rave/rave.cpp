@@ -5,7 +5,6 @@
 
 /*
 TODOS
-- enable/disable
 - clean up models and stuff
 - set buffer size method (0 will be threadless fast mode)
 */
@@ -225,7 +224,6 @@ public:
         m_in_ratio = params[1];
         m_out_dim = params[2];
         m_out_ratio = params[3];
-        m_buffer_size = m_higher_ratio;
 
         // set buffer size depending on context
         if (!m_buffer_size) {
@@ -309,9 +307,9 @@ CK_DLL_QUERY( rave )
     QUERY->add_arg(QUERY, "string", "path");
 
     // register setMethod method
-    QUERY->add_mfun(QUERY, rave_setMethod, "int", "method");
+    QUERY->add_mfun(QUERY, rave_setMethod, "string", "method");
     QUERY->add_arg(QUERY, "string", "method");
-    QUERY->doc_func(QUERY, "Set the model's method (default is 'forward'. Returning 1 indicates the method was found, 0 otherwise.");
+    QUERY->doc_func(QUERY, "Set the model's method (default is 'forward'). Returning an empty string indicates the method wasn't found.");
 
     QUERY->add_mfun(QUERY, rave_getMethod, "string", "method");
     QUERY->doc_func(QUERY, "Get the current method.");
@@ -401,8 +399,14 @@ CK_DLL_MFUN(rave_setMethod)
     // get our c++ class pointer
     Rave* r_obj = (Rave*)OBJ_MEMBER_INT(SELF, rave_data_offset);
     // set the return value
+
+    std::string method = "";
+
     // RETURN->v_float = r_obj->setParam(GET_NEXT_FLOAT(ARGS));
-    RETURN->v_int = r_obj->setMethod(GET_NEXT_STRING(ARGS)->str());
+    if (r_obj->setMethod(GET_NEXT_STRING(ARGS)->str())) {
+        method = r_obj->m_method;
+    }
+    RETURN->v_string = (Chuck_String*)API->object->create_string(API, SHRED, method);
 }
 
 CK_DLL_MFUN(rave_getMethod)
