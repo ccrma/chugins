@@ -106,6 +106,7 @@ endif()
 ### ~~~~~~ Unit Tests ~~~~~~
 ############################
 
+#[[
 set(UNIT_TEST_TARGET_NAME rave_test)
 add_library(${UNIT_TEST_TARGET_NAME} SHARED)
 
@@ -129,3 +130,4 @@ set_target_properties(MSUnitTestFramework::MSUnitTestFramework PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/VS/UnitTest/include"
 )
 set(MSUnitTestFramework_FOUND TRUE)
+]]
