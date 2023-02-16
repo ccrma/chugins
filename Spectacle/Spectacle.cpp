@@ -19,6 +19,7 @@
 // this should align with the correct versions of these ChucK files
 #include "chuck_dl.h"
 #include "chuck_def.h"
+#include "util_math.h"
 #include "ulib_math.h"
 
 #include "Spectacle-dsp.h"
@@ -27,6 +28,7 @@
 #include <stdio.h>
 #include <limits.h>
 
+// TODO: due to how chuck random #defines are done, this may need to be __WINDOWS_DS__
 #ifdef WIN32
 #define random rand
 #endif
