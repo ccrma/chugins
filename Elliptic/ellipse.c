@@ -63,9 +63,9 @@ ellpset(EllSect es[], float *xnorm)
 float
 ellipse(float sig, int nsects, EllSect es[], float xnorm)
 {  
-  register int     i;
-  register float   y0;
-  register EllSect *s;
+  /* register */ int     i;
+  /* register */ float   y0;
+  /* register */ EllSect *s;
   
   for (i = 0; i < nsects; i++) {
     s = &es[i];
