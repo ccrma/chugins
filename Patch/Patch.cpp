@@ -55,6 +55,7 @@ public:
     // constructor
     Patch( t_CKFLOAT fs)
     {
+        m_func = nullptr;
     }
 
     // for Chugins extending UGen
@@ -267,7 +268,7 @@ CK_DLL_MFUN(patch_getMethod)
     Patch* p_obj = (Patch*)OBJ_MEMBER_INT(SELF, patch_data_offset);
     
     std::string method = p_obj->getMethod();
-    RETURN->v_string = (Chuck_String*)API->object->create_string(API, SHRED, method);
+    RETURN->v_string = (Chuck_String*)API->object->create_string(API, SHRED, method.c_str());
 }
 
 // get the name of the current method being patched
