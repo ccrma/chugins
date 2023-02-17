@@ -52,7 +52,7 @@ double ck_remainder( double a, double b );
 
 
 // max for random functions
-#ifdef __PLATFORM_WIN32__
+#ifdef __WINDOWS_DS__
 #define CK_RANDOM_MAX RAND_MAX
 #else
 #define CK_RANDOM_MAX 0x7fffffff

@@ -35,7 +35,6 @@
 
 #include "chuck_dl.h"
 #include "chuck_errmsg.h"
-#include "util_math.h"
 
 
 
@@ -87,7 +86,7 @@ public:
         if( !m_matrix )
         {
             // error
-            CK_FPRINTF_STDERR( "[chuck]: ChaiMatrixFast allocation failure: %s, %d x %d...\n",
+            CK_FPRINTF_STDERR( "[chuck]: ChaiMatrixFast allocation failure: %s, %d x %d...",
                                typeid( T ).name(), xDim, yDim );
             // bail
             return FALSE;
@@ -107,20 +106,16 @@ public:
         if( x < 0 || x >= m_xDim || y < 0 || y >= m_yDim )
         {
             // error
-            CK_FPRINTF_STDERR( "[chuck]: ChaiMatrixFast out of bound: %s[%d][%d]...\n",
+            CK_FPRINTF_STDERR( "[chuck]: ChaiMatrixFast out of bound: %s[%d][%d]...",
                                typeid( T ).name(), x, y );
             // halt
             // TODO: this should throw (a shred-level, probably) exception
             assert( FALSE );
         }
 
+        // NOTE: this is NOT bound-checked!!!
+        // NOTE: yet, this is arguably no worse than using c 2d arrays
         return m_matrix[x * m_yDim + y];
-    }
-
-    // overloaded operator
-    T & operator()( t_CKINT x, t_CKINT y )
-    {
-        return v( x, y );
     }
 
     // get dimensions
@@ -142,6 +137,9 @@ protected:
     t_CKINT m_xDim;
     t_CKINT m_yDim;
 };
+
+
+
 
 //-----------------------------------------------------------------------------
 // name: class ChaiVectorFast | 1.4.2.0 (ge) added
@@ -187,7 +185,7 @@ public:
         if( !m_vector )
         {
             // error
-            CK_FPRINTF_STDERR( "[chuck]: ChaiVectorFast allocation failure: %s[%d]...\n",
+            CK_FPRINTF_STDERR( "[chuck]: ChaiVectorFast allocation failure: %s[%d]...",
                                typeid( T ).name(), length );
             // bail
             return FALSE;
@@ -199,57 +197,28 @@ public:
         return TRUE;
     }
 
-    void shuffle()
-    {
-        T temp;
-        t_CKINT j;
-        for( t_CKINT i = m_length - 1; i > 0; i-- )
-        {
-            j = ck_random() % ( i + 1 );
-            temp = m_vector[i];
-            m_vector[i] = m_vector[j];
-            m_vector[j] = temp;
-        }
-    }
-
     t_CKUINT length()
     { return m_length; }
 
     t_CKINT size()
     { return m_length; }
 
-    T getMax()
-    {
-        T max = m_vector[0];
-        for( t_CKINT i = 1; i < m_length; i++ )
-        {
-            if( m_vector[i] > max )
-            {
-                max = m_vector[i];
-            }
-        }
-        return max;
-    }
-
-    T & operator[]( t_CKINT i )
+    // get element value
+    T & v( t_CKINT i )
     {
         // at least do a check
         if( i < 0 || i >= m_length )
         {
             // error
-            CK_FPRINTF_STDERR( "[chuck]: ChaiVectorFast out of bound: %s[%d] (capacity=%d)...\n",
-                               typeid( T ).name(), i, m_length );
+            CK_FPRINTF_STDERR( "[chuck]: ChaiVectorFast out of bound: %s[%d]...",
+                               typeid( T ).name(), i );
             // TODO: this should throw (a shred-level, probably) exception
             assert( FALSE );
         }
 
+        // NOTE: this is NOT bound-checked!!!
+        // NOTE: yet, this is arguably no worse than using c arrays
         return m_vector[i];
-    }
-
-    // get element value
-    T & v( t_CKINT i )
-    {
-        return ( *this )[i];
     }
 
     void cleanup()
@@ -260,60 +229,9 @@ public:
         m_length = 0;
     }
 
-public:
+protected:
     T * m_vector;
     t_CKINT m_length;
 };
 
 #endif
-
-#ifndef _KD_TREE_H
-#define _KD_TREE_H
-
-#include <float.h>
-// #define DBL_EPSILON 2.2204460492503131e-16
-
-#define KDTREE_MAX_LEVEL 64
-#define KDTREE_LEFT_INDEX 0
-#define KDTREE_RIGHT_INDEX 1
-
-typedef struct knn_list
-{
-    struct kdnode * node;
-    double distance;
-    struct knn_list * prev;
-    struct knn_list * next;
-} knn_list_t;
-
-typedef struct kdnode
-{
-    long coord_index;
-    double * coord;
-    struct kdnode * left;
-    struct kdnode * right;
-    t_CKINT r;
-} kdnode_t;
-
-typedef struct kdtree
-{
-    struct kdnode * root;
-    size_t count;
-    size_t capacity;
-    double * coords;
-    double ** coord_table;
-    long * coord_indexes;
-    unsigned char * coord_deleted;
-    unsigned char * coord_passed;
-    struct knn_list knn_list_head;
-    t_CKINT dim;
-    t_CKINT knn_num;
-} kdtree_t;
-
-struct kdtree * kdtree_init( t_CKINT dim );
-void kdtree_insert( struct kdtree * tree, double * coord );
-void kdtree_rebuild( struct kdtree * tree );
-void kdtree_knn_search( struct kdtree * tree, double * coord, t_CKINT k );
-void kdtree_destroy( struct kdtree * tree );
-void kdtree_dump( struct kdtree * tree );
-
-#endif /* _KD_TREE_H */
