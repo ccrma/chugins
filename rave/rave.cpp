@@ -31,6 +31,7 @@ CK_DLL_DTOR(rave_dtor);
 
 // load model
 CK_DLL_MFUN(rave_load);
+CK_DLL_MFUN(rave_getModel);
 
 // set method
 CK_DLL_MFUN(rave_setMethod);
@@ -71,6 +72,7 @@ class Rave
 public:
     Backend m_model;
     std::string m_method;
+    std::string m_model_path;
 
     // AUDIO PERFORM
     bool m_use_thread;
@@ -190,19 +192,22 @@ public:
     }
 
     // set and load model
-    t_CKBOOL load(const std::string& path) {
+    std::string load(const std::string& path) {
         // TRY TO LOAD MODEL
         if (m_model.load(std::string(path))) {
             std::cerr << "error during loading" << std::endl;
-            return FALSE;
+            m_model_path = "";
+            return m_model_path;
         }
 
         std::cout << "loading succeeded" << std::endl;
+        m_model_path = path;
 
         m_higher_ratio = m_model.get_higher_ratio();
 
         // this will set the method if it hasn't been already
-        return setMethod(m_method);
+        setMethod(m_method);
+        return m_model_path;
     }
 
     t_CKBOOL setMethod(const std::string& method) {
@@ -303,8 +308,12 @@ CK_DLL_QUERY( rave )
     // and declare a tickf function using CK_DLL_TICKF
 
     // register load method
-    QUERY->add_mfun(QUERY, rave_load, "int", "load");
+    QUERY->add_mfun(QUERY, rave_load, "string", "model");
     QUERY->add_arg(QUERY, "string", "path");
+    QUERY->doc_func(QUERY, "Load a model from a filepath.");
+
+    QUERY->add_mfun(QUERY, rave_getModel, "string", "model");
+    QUERY->doc_func(QUERY, "Get model filepath.");
 
     // register setMethod method
     QUERY->add_mfun(QUERY, rave_setMethod, "string", "method");
@@ -391,7 +400,15 @@ CK_DLL_MFUN(rave_load)
     Rave* r_obj = (Rave*)OBJ_MEMBER_INT(SELF, rave_data_offset);
     // set the return value
     // RETURN->v_float = r_obj->setParam(GET_NEXT_FLOAT(ARGS));
-    RETURN->v_int = r_obj->load(GET_NEXT_STRING(ARGS)->str());
+    std::string model = r_obj->load(GET_NEXT_STRING(ARGS)->str());
+    RETURN->v_string = (Chuck_String*)API->object->create_string(API, SHRED, model);
+}
+
+CK_DLL_MFUN(rave_getModel)
+{
+    Rave* r_obj = (Rave*)OBJ_MEMBER_INT(SELF, rave_data_offset);
+    std::string model = r_obj->m_model_path;
+    RETURN->v_string = (Chuck_String*)API->object->create_string(API, SHRED, model);
 }
 
 CK_DLL_MFUN(rave_setMethod)

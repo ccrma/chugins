@@ -3,7 +3,7 @@
 
 fun void load() {
 	SinOsc s => Rave r => blackhole;
-	r.load(me.dir() + "rave_chafe_data_rt.ts");
+	r.model(me.dir() + "rave_chafe_data_rt.ts");
 	1::second => now;
 }
 

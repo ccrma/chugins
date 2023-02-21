@@ -7,7 +7,7 @@ s => Rave r;
 r.chan(0) => dac;
 // WvOut w => blackhole;
 
-r.load(me.dir() + "rave_chafe_data_rt.ts");
+r.model(me.dir() + "rave_chafe_data_rt.ts");
 // r.method("encode");
 
 r.help();
