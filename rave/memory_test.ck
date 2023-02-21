@@ -2,7 +2,7 @@
 
 
 fun void load() {
-	SinOsc s => rave r => blackhole;
+	SinOsc s => Rave r => blackhole;
 	r.load(me.dir() + "rave_chafe_data_rt.ts");
 	1::second => now;
 }
