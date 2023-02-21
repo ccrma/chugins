@@ -283,11 +283,11 @@ private:
 CK_DLL_QUERY( rave )
 {
     // hmm, don't change this...
-    QUERY->setname(QUERY, "rave");
+    QUERY->setname(QUERY, "Rave");
     
     // begin the class definition
     // can change the second argument to extend a different ChucK class
-    QUERY->begin_class(QUERY, "rave", "UGen_Multi");
+    QUERY->begin_class(QUERY, "Rave", "UGen_Multi");
 
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, rave_ctor);

@@ -2,7 +2,7 @@
 SinOsc s => Mix2 m => blackhole;
 
 
-s => rave r;
+s => Rave r;
 
 r.chan(0) => dac;
 // WvOut w => blackhole;
