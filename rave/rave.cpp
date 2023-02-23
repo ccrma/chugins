@@ -37,6 +37,9 @@ CK_DLL_MFUN(rave_getModel);
 CK_DLL_MFUN(rave_setMethod);
 CK_DLL_MFUN(rave_getMethod);
 
+// initialize (method and model)
+CK_DLL_MFUN(rave_init);
+
 // get channels methods
 CK_DLL_MFUN(rave_getChannels);
 CK_DLL_MFUN(rave_getOutChannels);
@@ -323,6 +326,12 @@ CK_DLL_QUERY( rave )
     QUERY->add_mfun(QUERY, rave_getMethod, "string", "method");
     QUERY->doc_func(QUERY, "Get the current method.");
 
+    // init method
+    QUERY->add_mfun(QUERY, rave_init, "void", "init");
+    QUERY->add_arg(QUERY, "string", "path");
+    QUERY->add_arg(QUERY, "string", "method");
+    QUERY->doc_func(QUERY, "Load a model and set a method.");
+
     // register channels method
     QUERY->add_mfun(QUERY, rave_getChannels, "int", "outChannels");
     QUERY->add_mfun(QUERY, rave_getInChannels, "int", "inChannels");
@@ -433,6 +442,17 @@ CK_DLL_MFUN(rave_getMethod)
 
     std::string method = r_obj->m_method;
     RETURN->v_string = (Chuck_String*)API->object->create_string(API, SHRED, method);
+}
+
+CK_DLL_MFUN(rave_init)
+{
+    Rave* r_obj = (Rave*)OBJ_MEMBER_INT(SELF, rave_data_offset);
+
+    std::string model = r_obj->load(GET_NEXT_STRING(ARGS)->str());
+    std::string method = r_obj->load(GET_NEXT_STRING(ARGS)->str());
+
+    (Chuck_String*)API->object->create_string(API, SHRED, model);
+    (Chuck_String*)API->object->create_string(API, SHRED, method);
 }
 
 CK_DLL_MFUN(rave_getChannels)
