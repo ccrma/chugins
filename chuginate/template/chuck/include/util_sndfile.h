@@ -184,6 +184,19 @@
 #define HAVE_LRINT 1
 #endif
 
+#ifdef __EMSCRIPTEN__
+#define CPU_CLIPS_POSITIVE 1
+#define CPU_IS_BIG_ENDIAN 0
+#define CPU_IS_LITTLE_ENDIAN 1
+#define HAVE_LRINTF 1
+#define HAVE_LRINT 1
+#define HAVE_PREAD 1
+#define HAVE_PWRITE 1
+#define OS_IS_MACOSX 0
+#define OS_IS_WIN32 0
+#define TYPEOF_SF_COUNT_T off_t
+#endif
+
 
 
 // XXX 'inline' is necessary for C compilation
@@ -1735,7 +1748,9 @@ enum
 {
   /* keep sorted for wav_w64_format_str() */
     WAVE_FORMAT_UNKNOWN                 = 0x0000,       /* Microsoft Corporation */
+#ifndef WAVE_FORMAT_PCM
     WAVE_FORMAT_PCM                     = 0x0001,       /* Microsoft PCM format */
+#endif
     WAVE_FORMAT_MS_ADPCM                = 0x0002,       /* Microsoft ADPCM */
     WAVE_FORMAT_IEEE_FLOAT              = 0x0003,       /* Micrososft 32 bit float format */
     WAVE_FORMAT_VSELP                   = 0x0004,       /* Compaq Computer Corporation */

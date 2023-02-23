@@ -23,5 +23,7 @@ make
 make install
 ```
 
-Now run `chuginate [chugin_name] [destination_directory]` to create a new chugin from the template. 
+Now, determine your `destination_directory` and make that directory (i.e. `mkdir [destination_director]`).
+
+Next, run `chuginate [chugin_name] [destination_directory]` to create a new chugin from the template. 
 If this doesn't work, try running the local `chuginate` script: `python ./chuginate [chugin_name] [destination_directory]`
