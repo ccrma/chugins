@@ -155,19 +155,19 @@ namespace Chuck_DL_Api { struct Api; }
 
 // chuck dll export linkage and calling convention
 #if defined (__PLATFORM_WIN32__)
-  #define CK_DLL_LINKAGE extern "C" __declspec( dllexport )
+#define CK_DLL_LINKAGE extern "C" __declspec( dllexport )
 #else
-  #define CK_DLL_LINKAGE extern "C"
+#define CK_DLL_LINKAGE extern "C"
 #endif
 
 // calling convention of functions provided by chuck to the dll
 #if defined(__WINDOWS_DS__)
-  #define CK_DLL_CALL    _cdecl
+#define CK_DLL_CALL    _cdecl
 #else
-  #define CK_DLL_CALL
+#define CK_DLL_CALL
 #endif
 
-typedef const Chuck_DL_Api::Api *CK_DL_API;
+typedef const Chuck_DL_Api::Api* CK_DL_API;
 
 // macro for defining ChucK DLL export functions
 // example: CK_DLL_EXPORT(int) foo() { return 1; }
@@ -240,28 +240,28 @@ typedef const Chuck_DL_Api::Api *CK_DL_API;
 // dynamic linking class interface prototypes
 //-----------------------------------------------------------------------------
 extern "C" {
-// query
-typedef t_CKUINT (CK_DLL_CALL * f_ck_declversion)();
-typedef t_CKBOOL (CK_DLL_CALL * f_ck_query)( Chuck_DL_Query * QUERY );
-// object
-typedef Chuck_Object * (CK_DLL_CALL * f_alloc)( Chuck_VM * VM, Chuck_VM_Shred * SHRED, CK_DL_API API );
-typedef t_CKVOID (CK_DLL_CALL * f_ctor)( Chuck_Object * SELF, void * ARGS, Chuck_VM * VM, Chuck_VM_Shred * SHRED, CK_DL_API API );
-typedef t_CKVOID (CK_DLL_CALL * f_dtor)( Chuck_Object * SELF, Chuck_VM * VM, Chuck_VM_Shred * SHRED, CK_DL_API API );
-typedef t_CKVOID (CK_DLL_CALL * f_mfun)( Chuck_Object * SELF, void * ARGS, Chuck_DL_Return * RETURN, Chuck_VM * VM, Chuck_VM_Shred * SHRED, CK_DL_API API );
-// 1.4.1.0 (ge) added TYPE to static prototype
-typedef t_CKVOID (CK_DLL_CALL * f_sfun)( Chuck_Type * TYPE, void * ARGS, Chuck_DL_Return * RETURN, Chuck_VM * VM, Chuck_VM_Shred * SHRED, CK_DL_API API );
-// ugen specific
-typedef t_CKBOOL (CK_DLL_CALL * f_tick)( Chuck_Object * SELF, SAMPLE in, SAMPLE * out, CK_DL_API API );
-typedef t_CKBOOL (CK_DLL_CALL * f_tickf)( Chuck_Object * SELF, SAMPLE * in, SAMPLE * out, t_CKUINT nframes, CK_DL_API API );
-typedef t_CKVOID (CK_DLL_CALL * f_ctrl)( Chuck_Object * SELF, void * ARGS, Chuck_DL_Return * RETURN, Chuck_VM * VM, Chuck_VM_Shred * SHRED, CK_DL_API API );
-typedef t_CKVOID (CK_DLL_CALL * f_cget)( Chuck_Object * SELF, void * ARGS, Chuck_DL_Return * RETURN, Chuck_VM * VM, Chuck_VM_Shred * SHRED, CK_DL_API API );
-typedef t_CKBOOL (CK_DLL_CALL * f_pmsg)( Chuck_Object * SELF, const char * MSG, void * ARGS, Chuck_VM * VM, Chuck_VM_Shred * SHRED, CK_DL_API API );
-// uana specific
-typedef t_CKBOOL (CK_DLL_CALL * f_tock)( Chuck_Object * SELF, Chuck_UAna * UANA, Chuck_UAnaBlobProxy * BLOB, CK_DL_API API );
-// "main thread" hook
-typedef t_CKBOOL (CK_DLL_CALL * f_mainthreadhook)( void * bindle );
-// "main thread" quit (stop running hook)
-typedef t_CKBOOL (CK_DLL_CALL * f_mainthreadquit)( void * bindle );
+    // query
+    typedef t_CKUINT(CK_DLL_CALL* f_ck_declversion)();
+    typedef t_CKBOOL(CK_DLL_CALL* f_ck_query)(Chuck_DL_Query* QUERY);
+    // object
+    typedef Chuck_Object* (CK_DLL_CALL* f_alloc)(Chuck_VM* VM, Chuck_VM_Shred* SHRED, CK_DL_API API);
+    typedef t_CKVOID(CK_DLL_CALL* f_ctor)(Chuck_Object* SELF, void* ARGS, Chuck_VM* VM, Chuck_VM_Shred* SHRED, CK_DL_API API);
+    typedef t_CKVOID(CK_DLL_CALL* f_dtor)(Chuck_Object* SELF, Chuck_VM* VM, Chuck_VM_Shred* SHRED, CK_DL_API API);
+    typedef t_CKVOID(CK_DLL_CALL* f_mfun)(Chuck_Object* SELF, void* ARGS, Chuck_DL_Return* RETURN, Chuck_VM* VM, Chuck_VM_Shred* SHRED, CK_DL_API API);
+    // 1.4.1.0 (ge) added TYPE to static prototype
+    typedef t_CKVOID(CK_DLL_CALL* f_sfun)(Chuck_Type* TYPE, void* ARGS, Chuck_DL_Return* RETURN, Chuck_VM* VM, Chuck_VM_Shred* SHRED, CK_DL_API API);
+    // ugen specific
+    typedef t_CKBOOL(CK_DLL_CALL* f_tick)(Chuck_Object* SELF, SAMPLE in, SAMPLE* out, CK_DL_API API);
+    typedef t_CKBOOL(CK_DLL_CALL* f_tickf)(Chuck_Object* SELF, SAMPLE* in, SAMPLE* out, t_CKUINT nframes, CK_DL_API API);
+    typedef t_CKVOID(CK_DLL_CALL* f_ctrl)(Chuck_Object* SELF, void* ARGS, Chuck_DL_Return* RETURN, Chuck_VM* VM, Chuck_VM_Shred* SHRED, CK_DL_API API);
+    typedef t_CKVOID(CK_DLL_CALL* f_cget)(Chuck_Object* SELF, void* ARGS, Chuck_DL_Return* RETURN, Chuck_VM* VM, Chuck_VM_Shred* SHRED, CK_DL_API API);
+    typedef t_CKBOOL(CK_DLL_CALL* f_pmsg)(Chuck_Object* SELF, const char* MSG, void* ARGS, Chuck_VM* VM, Chuck_VM_Shred* SHRED, CK_DL_API API);
+    // uana specific
+    typedef t_CKBOOL(CK_DLL_CALL* f_tock)(Chuck_Object* SELF, Chuck_UAna* UANA, Chuck_UAnaBlobProxy* BLOB, CK_DL_API API);
+    // "main thread" hook
+    typedef t_CKBOOL(CK_DLL_CALL* f_mainthreadhook)(void* bindle);
+    // "main thread" quit (stop running hook)
+    typedef t_CKBOOL(CK_DLL_CALL* f_mainthreadquit)(void* bindle);
 }
 
 
@@ -277,49 +277,49 @@ typedef t_CKBOOL (CK_DLL_CALL * f_mainthreadquit)( void * bindle );
 // chuck DLL query functions, implemented on chuck side for portability
 //-----------------------------------------------------------------------------
 extern "C" {
-// set name of ckx
-typedef void ( CK_DLL_CALL * f_setname)( Chuck_DL_Query * query, const char * name );
+    // set name of ckx
+    typedef void (CK_DLL_CALL* f_setname)(Chuck_DL_Query* query, const char* name);
 
-// begin class/namespace, can be nested
-typedef void (CK_DLL_CALL * f_begin_class)( Chuck_DL_Query * query, const char * name, const char * parent );
-// add constructor, must be betwen begin/end_class : use f_add_arg to add arguments immediately after
-typedef void (CK_DLL_CALL * f_add_ctor)( Chuck_DL_Query * query, f_ctor ctor );
-// add destructor - cannot have args
-typedef void (CK_DLL_CALL * f_add_dtor)( Chuck_DL_Query * query, f_dtor dtor );
-// add member function - args to follow
-typedef void (CK_DLL_CALL * f_add_mfun)( Chuck_DL_Query * query, f_mfun mfun, const char * type, const char * name );
-// add static function - args to follow
-typedef void (CK_DLL_CALL * f_add_sfun)( Chuck_DL_Query * query, f_sfun sfun, const char * type, const char * name );
-// add member variable
-typedef t_CKUINT (CK_DLL_CALL * f_add_mvar)( Chuck_DL_Query * query,
-             const char * type, const char * name, t_CKBOOL is_const ); // TODO: public/protected/private
-// add static variable
-typedef void (CK_DLL_CALL * f_add_svar)( Chuck_DL_Query * query,
-             const char * type, const char * name,
-             t_CKBOOL is_const, void * static_addr ); // TODO: public/protected/private
-// add arg - follows ctor mfun sfun
-typedef void (CK_DLL_CALL * f_add_arg)( Chuck_DL_Query * query, const char * type, const char * name );
-// ** functions for adding unit generators, must extend ugen
-typedef void (CK_DLL_CALL * f_add_ugen_func)( Chuck_DL_Query * query, f_tick tick, f_pmsg pmsg, t_CKUINT num_in, t_CKUINT num_out );
-typedef void (CK_DLL_CALL * f_add_ugen_funcf)( Chuck_DL_Query * query, f_tickf tickf, f_pmsg pmsg, t_CKUINT num_in, t_CKUINT num_out );
-typedef void (CK_DLL_CALL * f_add_ugen_funcf_auto_num_channels)( Chuck_DL_Query * query, f_tickf tickf, f_pmsg psmg );
-// ** add a ugen control (not used) | 1.4.1.0 removed
-//typedef void (CK_DLL_CALL * f_add_ugen_ctrl)( Chuck_DL_Query * query, f_ctrl ctrl, f_cget cget,
-//                                              const char * type, const char * name );
-// end class/namespace - must correspondent with begin_class.  returns false on error
-typedef t_CKBOOL (CK_DLL_CALL * f_end_class)( Chuck_DL_Query * query );
-// create main thread hook- used for executing a "hook" function in the main thread of a primary chuck instance
-typedef Chuck_DL_MainThreadHook * (CK_DLL_CALL * f_create_main_thread_hook)( Chuck_DL_Query * query, f_mainthreadhook hook, f_mainthreadquit quit, void * bindle );
+    // begin class/namespace, can be nested
+    typedef void (CK_DLL_CALL* f_begin_class)(Chuck_DL_Query* query, const char* name, const char* parent);
+    // add constructor, must be betwen begin/end_class : use f_add_arg to add arguments immediately after
+    typedef void (CK_DLL_CALL* f_add_ctor)(Chuck_DL_Query* query, f_ctor ctor);
+    // add destructor - cannot have args
+    typedef void (CK_DLL_CALL* f_add_dtor)(Chuck_DL_Query* query, f_dtor dtor);
+    // add member function - args to follow
+    typedef void (CK_DLL_CALL* f_add_mfun)(Chuck_DL_Query* query, f_mfun mfun, const char* type, const char* name);
+    // add static function - args to follow
+    typedef void (CK_DLL_CALL* f_add_sfun)(Chuck_DL_Query* query, f_sfun sfun, const char* type, const char* name);
+    // add member variable
+    typedef t_CKUINT(CK_DLL_CALL* f_add_mvar)(Chuck_DL_Query* query,
+        const char* type, const char* name, t_CKBOOL is_const); // TODO: public/protected/private
+    // add static variable
+    typedef void (CK_DLL_CALL* f_add_svar)(Chuck_DL_Query* query,
+        const char* type, const char* name,
+        t_CKBOOL is_const, void* static_addr); // TODO: public/protected/private
+    // add arg - follows ctor mfun sfun
+    typedef void (CK_DLL_CALL* f_add_arg)(Chuck_DL_Query* query, const char* type, const char* name);
+    // ** functions for adding unit generators, must extend ugen
+    typedef void (CK_DLL_CALL* f_add_ugen_func)(Chuck_DL_Query* query, f_tick tick, f_pmsg pmsg, t_CKUINT num_in, t_CKUINT num_out);
+    typedef void (CK_DLL_CALL* f_add_ugen_funcf)(Chuck_DL_Query* query, f_tickf tickf, f_pmsg pmsg, t_CKUINT num_in, t_CKUINT num_out);
+    typedef void (CK_DLL_CALL* f_add_ugen_funcf_auto_num_channels)(Chuck_DL_Query* query, f_tickf tickf, f_pmsg psmg);
+    // ** add a ugen control (not used) | 1.4.1.0 removed
+    //typedef void (CK_DLL_CALL * f_add_ugen_ctrl)( Chuck_DL_Query * query, f_ctrl ctrl, f_cget cget,
+    //                                              const char * type, const char * name );
+    // end class/namespace - must correspondent with begin_class.  returns false on error
+    typedef t_CKBOOL(CK_DLL_CALL* f_end_class)(Chuck_DL_Query* query);
+    // create main thread hook- used for executing a "hook" function in the main thread of a primary chuck instance
+    typedef Chuck_DL_MainThreadHook* (CK_DLL_CALL* f_create_main_thread_hook)(Chuck_DL_Query* query, f_mainthreadhook hook, f_mainthreadquit quit, void* bindle);
 
-// documentation
-// set current class documentation
-typedef t_CKBOOL (CK_DLL_CALL * f_doc_class)( Chuck_DL_Query * query, const char * doc );
-// add example of current class
-typedef t_CKBOOL (CK_DLL_CALL * f_add_example)( Chuck_DL_Query * query, const char * ex );
-// set current function documentation
-typedef t_CKBOOL (CK_DLL_CALL * f_doc_func)( Chuck_DL_Query * query, const char * doc );
-// set last mvar documentation
-typedef t_CKBOOL (CK_DLL_CALL * f_doc_var)( Chuck_DL_Query * query, const char * doc );
+    // documentation
+    // set current class documentation
+    typedef t_CKBOOL(CK_DLL_CALL* f_doc_class)(Chuck_DL_Query* query, const char* doc);
+    // add example of current class
+    typedef t_CKBOOL(CK_DLL_CALL* f_add_example)(Chuck_DL_Query* query, const char* ex);
+    // set current function documentation
+    typedef t_CKBOOL(CK_DLL_CALL* f_doc_func)(Chuck_DL_Query* query, const char* doc);
+    // set last mvar documentation
+    typedef t_CKBOOL(CK_DLL_CALL* f_doc_var)(Chuck_DL_Query* query, const char* doc);
 }
 
 
@@ -331,14 +331,14 @@ struct Chuck_DL_Query
 {
 protected:
     // REFACTOR-2017: carrier ref
-    Chuck_Carrier * m_carrier;
+    Chuck_Carrier* m_carrier;
 
 public:
     // REFACTOR-2017: get associated compiler, vm, env
-    Chuck_Compiler * compiler() const { return m_carrier->compiler; }
-    Chuck_VM * vm() const { return m_carrier->vm; }
-    Chuck_Env * env() const { return m_carrier->env; }
-    Chuck_Carrier * carrier() const { return m_carrier; }
+    Chuck_Compiler* compiler() const { return m_carrier->compiler; }
+    Chuck_VM* vm() const { return m_carrier->vm; }
+    Chuck_Env* env() const { return m_carrier->env; }
+    Chuck_Carrier* carrier() const { return m_carrier; }
 
 public:
     // function pointers - to be called from client module
@@ -374,7 +374,7 @@ public:
     f_end_class end_class;
 
     // added 1.3.5
-    Chuck_DL_Value * last_var;
+    Chuck_DL_Value* last_var;
     f_doc_class doc_class;
     f_doc_func doc_func;
     f_doc_var doc_var;
@@ -390,9 +390,9 @@ public:
     // fixed during REFACTOR-2017; warning by the guilt-ridden Ge Wang
 
     // dll
-    Chuck_DLL * dll_ref;
+    Chuck_DLL* dll_ref;
     // reserved
-    void * reserved;
+    void* reserved;
     // sample rate
     t_CKUINT srate;
     // line pos
@@ -401,18 +401,18 @@ public:
     std::string dll_name;
 
     // current class
-    Chuck_DL_Class * curr_class;
+    Chuck_DL_Class* curr_class;
     // current function
-    Chuck_DL_Func * curr_func;
+    Chuck_DL_Func* curr_func;
     // name
     std::string name;
     // collection of class
-    std::vector<Chuck_DL_Class *> classes;
+    std::vector<Chuck_DL_Class*> classes;
     // stack
-    std::vector<Chuck_DL_Class * >stack;
+    std::vector<Chuck_DL_Class* >stack;
 
     // constructor
-    Chuck_DL_Query( Chuck_Carrier * carrier );
+    Chuck_DL_Query(Chuck_Carrier* carrier);
     // desctructor
     ~Chuck_DL_Query() { this->clear(); }
     // clear
@@ -433,17 +433,17 @@ struct Chuck_DL_Class
     // the name of the parent
     std::string parent;
     // ctor
-    std::vector<Chuck_DL_Func *> ctors;
+    std::vector<Chuck_DL_Func*> ctors;
     // dtor
-    Chuck_DL_Func * dtor;
+    Chuck_DL_Func* dtor;
     // mfun
-    std::vector<Chuck_DL_Func *> mfuns;
+    std::vector<Chuck_DL_Func*> mfuns;
     // sfun
-    std::vector<Chuck_DL_Func *> sfuns;
+    std::vector<Chuck_DL_Func*> sfuns;
     // mdata
-    std::vector<Chuck_DL_Value *> mvars;
+    std::vector<Chuck_DL_Value*> mvars;
     // sdata
-    std::vector<Chuck_DL_Value *> svars;
+    std::vector<Chuck_DL_Value*> svars;
     // ugen_tick
     f_tick ugen_tick;
     // ugen_tickf
@@ -451,11 +451,11 @@ struct Chuck_DL_Class
     // ugen_pmsg
     f_pmsg ugen_pmsg;
     // ugen_ctrl/cget
-    std::vector<Chuck_DL_Ctrl *> ugen_ctrl;
+    std::vector<Chuck_DL_Ctrl*> ugen_ctrl;
     // uana_tock
     f_tock uana_tock;
     // collection of recursive classes
-    std::vector<Chuck_DL_Class *> classes;
+    std::vector<Chuck_DL_Class*> classes;
     // current mvar offset
     t_CKUINT current_mvar_offset;
 
@@ -486,14 +486,16 @@ struct Chuck_DL_Value
     // is const
     t_CKBOOL is_const;
     // addr static
-    void * static_addr;
+    void* static_addr;
     // description
     std::string doc;
 
     // constructor
     Chuck_DL_Value() { is_const = FALSE; static_addr = NULL; }
-    Chuck_DL_Value( const char * t, const char * n, t_CKBOOL c = FALSE, void * a = NULL )
-    { name = n; type = t; is_const = c; static_addr = a; }
+    Chuck_DL_Value(const char* t, const char* n, t_CKBOOL c = FALSE, void* a = NULL)
+    {
+        name = n; type = t; is_const = c; static_addr = a;
+    }
 };
 
 
@@ -512,19 +514,23 @@ struct Chuck_DL_Func
     // the pointer
     union { f_ctor ctor; f_dtor dtor; f_mfun mfun; f_sfun sfun; t_CKUINT addr; };
     // arguments
-    std::vector<Chuck_DL_Value *> args;
+    std::vector<Chuck_DL_Value*> args;
     // description
     std::string doc;
 
     // constructor
     Chuck_DL_Func() { ctor = NULL; }
-    Chuck_DL_Func( const char * t, const char * n, t_CKUINT a )
-    { name = n; type = t; addr = a; }
+    Chuck_DL_Func(const char* t, const char* n, t_CKUINT a)
+    {
+        name = n; type = t; addr = a;
+    }
     // destructor
     ~Chuck_DL_Func();
     // add arg
-    void add_arg( const char * t, const char * n )
-    { args.push_back( new Chuck_DL_Value( t, n ) ); }
+    void add_arg(const char* t, const char* n)
+    {
+        args.push_back(new Chuck_DL_Value(t, n));
+    }
 };
 
 
@@ -554,11 +560,11 @@ struct Chuck_DL_Ctrl
 //------------------------------------------------------------------------------
 // alternative functions to make stuff
 //------------------------------------------------------------------------------
-Chuck_DL_Func * make_new_mfun( const char * t, const char * n, f_mfun mfun );
-Chuck_DL_Func * make_new_sfun( const char * t, const char * n, f_sfun sfun );
-Chuck_DL_Value * make_new_arg( const char * t, const char * n );
-Chuck_DL_Value * make_new_mvar( const char * t, const char * n, t_CKBOOL c = FALSE );
-Chuck_DL_Value * make_new_svar( const char * t, const char * n, t_CKBOOL c, void * a );
+Chuck_DL_Func* make_new_mfun(const char* t, const char* n, f_mfun mfun);
+Chuck_DL_Func* make_new_sfun(const char* t, const char* n, f_sfun sfun);
+Chuck_DL_Value* make_new_arg(const char* t, const char* n);
+Chuck_DL_Value* make_new_mvar(const char* t, const char* n, t_CKBOOL c = FALSE);
+Chuck_DL_Value* make_new_svar(const char* t, const char* n, t_CKBOOL c, void* a);
 
 
 
@@ -578,8 +584,8 @@ union Chuck_DL_Return
     t_CKPOLAR v_polar;
     t_CKVEC3 v_vec3; // ge: added 1.3.5.3
     t_CKVEC4 v_vec4; // ge: added 1.3.5.3
-    Chuck_Object * v_object;
-    Chuck_String * v_string;
+    Chuck_Object* v_object;
+    Chuck_String* v_string;
 
     Chuck_DL_Return() { v_vec4.x = v_vec4.y = v_vec4.z = v_vec4.w = 0; }
 };
@@ -595,28 +601,28 @@ struct Chuck_DLL : public Chuck_VM_Object
 {
 public:
     // load dynamic ckx/dll from filename
-    t_CKBOOL load( const char * filename,
-                   const char * func = CK_QUERY_FUNC,
-                   t_CKBOOL lazy = FALSE );
-    t_CKBOOL load( f_ck_query query_func, t_CKBOOL lazy = FALSE );
+    t_CKBOOL load(const char* filename,
+        const char* func = CK_QUERY_FUNC,
+        t_CKBOOL lazy = FALSE);
+    t_CKBOOL load(f_ck_query query_func, t_CKBOOL lazy = FALSE);
     // get address in loaded ckx
-    void * get_addr( const char * symbol );
+    void* get_addr(const char* symbol);
     // get last error
-    const char * last_error() const;
+    const char* last_error() const;
     // unload the ckx
-    t_CKBOOL unload( );
+    t_CKBOOL unload();
     // query the content of the dll
-    const Chuck_DL_Query * query( );
+    const Chuck_DL_Query* query();
     // is good
     t_CKBOOL good() const;
     // name
-    const char * name() const;
+    const char* name() const;
 
 public:
     // constructor
-    Chuck_DLL( Chuck_Carrier * carrier, const char * xid = NULL )
+    Chuck_DLL(Chuck_Carrier* carrier, const char* xid = NULL)
         : m_handle(NULL), m_id(xid ? xid : ""),
-        m_query( carrier ),
+        m_query(carrier),
         m_done_query(FALSE), m_query_func(NULL), m_version_func(NULL)
     { }
     // destructor
@@ -624,7 +630,7 @@ public:
 
 protected:
     // data
-    void * m_handle;
+    void* m_handle;
     std::string m_last_error;
     std::string m_filename;
     std::string m_id;
@@ -641,14 +647,14 @@ struct Chuck_DL_MainThreadHook
 {
 public:
     Chuck_DL_MainThreadHook(f_mainthreadhook hook, f_mainthreadquit quit,
-                            void * bindle, Chuck_Carrier * carrier);
-    t_CKBOOL (* const activate)(Chuck_DL_MainThreadHook *);
-    t_CKBOOL (* const deactivate)(Chuck_DL_MainThreadHook *);
+        void* bindle, Chuck_Carrier* carrier);
+    t_CKBOOL(* const activate)(Chuck_DL_MainThreadHook*);
+    t_CKBOOL(* const deactivate)(Chuck_DL_MainThreadHook*);
 
-    Chuck_Carrier * const m_carrier;
+    Chuck_Carrier* const m_carrier;
     f_mainthreadhook const m_hook;
     f_mainthreadquit const m_quit;
-    void * const m_bindle;
+    void* const m_bindle;
     t_CKBOOL m_active;
 };
 
@@ -656,60 +662,62 @@ public:
 /* API to ChucK's innards */
 namespace Chuck_DL_Api
 {
-typedef void * Object;
-typedef void * Type;
-typedef void * String;
+    typedef void* Object;
+    typedef void* Type;
+    typedef void* String;
 
-struct Api
-{
-public:
-    static Api g_api;
-    static inline const Api * instance() { return &g_api; }
-
-    struct VMApi
+    struct Api
     {
-        VMApi();
-        t_CKUINT (* const get_srate)( CK_DL_API, Chuck_VM_Shred * );
-    } * const vm;
-
-    struct ObjectApi
-    {
-        ObjectApi();
-
-    // 1.4.2.1 (nshaheed and ge and anonymous pr-lab member) | changed from private to public
-    // also changed all std::string & in this section to const char *
-    // intent: this allows for chugins to access member variables and create chuck strings
     public:
-        // function pointer get_type()
-        Type (* const get_type)( CK_DL_API, Chuck_VM_Shred *, const char * name );
-        // function pointer create()
-        Object (* const create)( CK_DL_API, Chuck_VM_Shred *, Type type );
-        // function pointer create_string()
-        String (* const create_string)( CK_DL_API, Chuck_VM_Shred *, const char * value );
-        // function pointers for get_mvar_*()
-        t_CKBOOL (* const get_mvar_int)( CK_DL_API, Object object, const char * name, t_CKINT & value );
-        t_CKBOOL (* const get_mvar_float)( CK_DL_API, Object object, const char * name, t_CKFLOAT & value );
-        t_CKBOOL (* const get_mvar_dur)( CK_DL_API, Object object, const char * name, t_CKDUR & value );
-        t_CKBOOL (* const get_mvar_time)( CK_DL_API, Object object, const char * name, t_CKTIME & value );
-        t_CKBOOL (* const get_mvar_string)( CK_DL_API, Object object, const char * name, String & value );
-        t_CKBOOL (* const get_mvar_object)( CK_DL_API, Object object, const char * name, Object & value );
-        // function pointer for set_string()
-        t_CKBOOL (* const set_string)( CK_DL_API, String string, const char * value );
-    } * const object;
+        static Api g_api;
+        static inline const Api* instance() { return &g_api; }
 
-    Api() :
-        vm(new VMApi),
-        object(new ObjectApi)
-    { }
+        struct VMApi
+        {
+            VMApi();
+            t_CKUINT(* const get_srate)(CK_DL_API, Chuck_VM_Shred*);
+        }* const vm;
 
-private:
-    Api( Api & a ) :
-        vm(a.vm),
-        object(a.object)
-    { assert(0); };
+        struct ObjectApi
+        {
+            ObjectApi();
 
-    Api & operator=( Api & a ) { assert(0); return a; }
-};
+            // 1.4.2.1 (nshaheed and ge and anonymous pr-lab member) | changed from private to public
+            // also changed all std::string & in this section to const char *
+            // intent: this allows for chugins to access member variables and create chuck strings
+        public:
+            // function pointer get_type()
+            Type(* const get_type)(CK_DL_API, Chuck_VM_Shred*, const char* name);
+            // function pointer create()
+            Object(* const create)(CK_DL_API, Chuck_VM_Shred*, Type type);
+            // function pointer create_string()
+            String(* const create_string)(CK_DL_API, Chuck_VM_Shred*, const char* value);
+            // function pointers for get_mvar_*()
+            t_CKBOOL(* const get_mvar_int)(CK_DL_API, Object object, const char* name, t_CKINT& value);
+            t_CKBOOL(* const get_mvar_float)(CK_DL_API, Object object, const char* name, t_CKFLOAT& value);
+            t_CKBOOL(* const get_mvar_dur)(CK_DL_API, Object object, const char* name, t_CKDUR& value);
+            t_CKBOOL(* const get_mvar_time)(CK_DL_API, Object object, const char* name, t_CKTIME& value);
+            t_CKBOOL(* const get_mvar_string)(CK_DL_API, Object object, const char* name, String& value);
+            t_CKBOOL(* const get_mvar_object)(CK_DL_API, Object object, const char* name, Object& value);
+            // function pointer for set_string()
+            t_CKBOOL(* const set_string)(CK_DL_API, String string, const char* value);
+        }* const object;
+
+        Api() :
+            vm(new VMApi),
+            object(new ObjectApi)
+        { }
+
+    private:
+        Api(Api& a) :
+            vm(a.vm),
+            object(a.object)
+        {
+            assert(0);
+        };
+
+        Api& operator=(Api& a) { assert(0); return a; }
+    };
 }
 
 
@@ -726,34 +734,34 @@ private:
 
 #elif defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__)
 
-          #ifdef __cplusplus
-          extern "C" {
-          #endif
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-          #define RTLD_LAZY         0x1
-          #define RTLD_NOW          0x2
-          #define RTLD_LOCAL        0x4
-      #define RTLD_GLOBAL       0x8
-          #define RTLD_NOLOAD       0x10
-          #define RTLD_SHARED       0x20    /* not used, the default */
-          #define RTLD_UNSHARED     0x40
-          #define RTLD_NODELETE     0x80
-          #define RTLD_LAZY_UNDEF   0x100
+#define RTLD_LAZY         0x1
+#define RTLD_NOW          0x2
+#define RTLD_LOCAL        0x4
+#define RTLD_GLOBAL       0x8
+#define RTLD_NOLOAD       0x10
+#define RTLD_SHARED       0x20    /* not used, the default */
+#define RTLD_UNSHARED     0x40
+#define RTLD_NODELETE     0x80
+#define RTLD_LAZY_UNDEF   0x100
 
-          void * dlopen( const char * path, int mode );
-          void * dlsym( void * handle, const char * symbol );
-          const char * dlerror( void );
-          int dlclose( void * handle );
-          // 1.4.2.0 (ge) | added DLERROR_BUFFER_LENGTH
-          #define DLERROR_BUFFER_LENGTH 128
-          static char dlerror_buffer[DLERROR_BUFFER_LENGTH];
+    void* dlopen(const char* path, int mode);
+    void* dlsym(void* handle, const char* symbol);
+    const char* dlerror(void);
+    int dlclose(void* handle);
+    // 1.4.2.0 (ge) | added DLERROR_BUFFER_LENGTH
+#define DLERROR_BUFFER_LENGTH 128
+    static char dlerror_buffer[DLERROR_BUFFER_LENGTH];
 
-          #ifdef __cplusplus
-          }
-          #endif
+#ifdef __cplusplus
+}
+#endif
 
 #else
-  #include "dlfcn.h"
+#include "dlfcn.h"
 #endif
 
 
