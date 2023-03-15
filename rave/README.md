@@ -19,6 +19,7 @@ How to make visual studio project:
 - Make sure CMake is installed
 - Go into the terminal (preferably powershell or cygwin).
 - Navigate to the `chugins/rave/` directory.
+- `git submodule update --init`
 - Make a `build` directory
 - `cd build`
 - `cmake . -S ..\  -DCMAKE_BUILD_TYPE:STRING=Release -G "Visual Studio 17 2022" -A x64 -DTorch_DIR="<Path to LibTorch>\libtorch\share\cmake\Torch"`
