@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26403.7
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32929.386
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PanN", "PanN\PanN.vcxproj", "{60835FCD-BB1A-478C-8B1B-766E14987F23}"
 EndProject
@@ -52,6 +52,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WPDiodeLadder", "WPDiodeLadder\WPDiodeLadder.vcxproj", "{9D8437D9-5D6D-4D01-8EB0-06072C8290C6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WPKorg35", "WPKorg35\WPKorg35.vcxproj", "{65CFF1C6-A32C-46DA-91F0-C99E498182C4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Overdrive", "Overdrive\Overdrive.vcxproj", "{96B7FC6E-AB4C-4688-AFC9-C27BC57331E6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -261,8 +263,18 @@ Global
 		{65CFF1C6-A32C-46DA-91F0-C99E498182C4}.Release|Win32.Build.0 = Release|Win32
 		{65CFF1C6-A32C-46DA-91F0-C99E498182C4}.Release|x64.ActiveCfg = Release|x64
 		{65CFF1C6-A32C-46DA-91F0-C99E498182C4}.Release|x64.Build.0 = Release|x64
+		{96B7FC6E-AB4C-4688-AFC9-C27BC57331E6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{96B7FC6E-AB4C-4688-AFC9-C27BC57331E6}.Debug|Win32.Build.0 = Debug|Win32
+		{96B7FC6E-AB4C-4688-AFC9-C27BC57331E6}.Debug|x64.ActiveCfg = Debug|Win32
+		{96B7FC6E-AB4C-4688-AFC9-C27BC57331E6}.Release|Win32.ActiveCfg = Release|Win32
+		{96B7FC6E-AB4C-4688-AFC9-C27BC57331E6}.Release|Win32.Build.0 = Release|Win32
+		{96B7FC6E-AB4C-4688-AFC9-C27BC57331E6}.Release|x64.ActiveCfg = Release|x64
+		{96B7FC6E-AB4C-4688-AFC9-C27BC57331E6}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0420CF46-AEBD-4BE2-AF46-2E9043C8AD5B}
 	EndGlobalSection
 EndGlobal
