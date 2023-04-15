@@ -56,7 +56,7 @@ struct Chuck_Compiler
 protected: // data
     // carrier
     Chuck_Carrier * m_carrier;
-    
+
 public: // get protected data
     // REFACTOR-2017: get associated, per-compiler environment
     Chuck_Env * env() const { return m_carrier->env; }
@@ -67,7 +67,6 @@ public: // get protected data
     // set carrier
     t_CKBOOL setCarrier( Chuck_Carrier * c ) { m_carrier = c; return TRUE; }
 
-    
 public: // data
     // emitter
     Chuck_Emitter * emitter;
@@ -78,10 +77,16 @@ public: // data
     t_CKBOOL m_auto_depend;
     // recent map
     std::map<std::string, Chuck_Context *> m_recent;
-    
+
+    // chugins
     std::list<Chuck_DLL *> m_dlls;
+    // libraries (ck code) to import
     std::list<std::string> m_cklibs_to_preload;
-    
+
+    // origin hint; this flag is set to different te_Origin values
+    // to denote where new entities originate | 1.5.0.0 (ge) added
+    te_Origin m_originHint;
+
 public: // to all
     // contructor
     Chuck_Compiler();
@@ -89,8 +94,7 @@ public: // to all
     virtual ~Chuck_Compiler();
 
     // initialize
-    t_CKBOOL initialize( std::list<std::string> & chugin_search_paths,
-                         std::list<std::string> & named_dls );
+    t_CKBOOL initialize();
     // shutdown
     void shutdown();
 
@@ -103,21 +107,26 @@ public: // compile
     // set auto depend
     void set_auto_depend( t_CKBOOL v );
     // parse, type-check, and emit a program
-    t_CKBOOL go( const std::string & filename, FILE * fd = NULL, 
+    t_CKBOOL go( const std::string & filename, FILE * fd = NULL,
                  const char * str_src = NULL, const std::string & full_path = "" );
     // resolve a type automatically, if auto_depend is on
     t_CKBOOL resolve( const std::string & type );
     // get the code generated from the last go()
     Chuck_VM_Code * output( );
 
-public: // replace-dac | added 1.4.1.0 (jack) 
+public: // replace-dac | added 1.4.1.0 (jack)
     // sets a "replacement dac": one global UGen is secretly used
     // as a stand-in for "dac" for this compilation;
     // for example, ChuckSubInstances in Chunity use a global Gain as a
     // replacement dac, then use the global getUGenSamples() function to
-    // get the samples of the gain. this enables the creation 
+    // get the samples of the gain. this enables the creation
     // of a new sample sucker.
     void setReplaceDac( t_CKBOOL shouldReplaceDac, const std::string & replacement );
+
+public: // chugin load | refactored 1.4.1.0 (ge)
+    t_CKBOOL load_external_modules( const char * extension,
+                                    std::list<std::string> & chugin_search_paths,
+                                    std::list<std::string> & named_dls );
 
 protected: // internal
     // do entire file
@@ -127,8 +136,11 @@ protected: // internal
     // do all excect classes
     t_CKBOOL do_all_except_classes( Chuck_Context * context );
     // do normal compile
-    t_CKBOOL do_normal( const std::string & path, FILE * fd = NULL, 
-                        const char * str_src = NULL, const std::string & full_path = "" );
+    t_CKBOOL do_normal_depend( const std::string & path, FILE * fd = NULL,
+        const char * str_src = NULL, const std::string & full_path = "" );
+    // do auto-depend compile
+    t_CKBOOL do_auto_depend( const std::string & path, FILE * fd = NULL,
+        const char * str_src = NULL, const std::string & full_path = "" );
     // look up in recent
     Chuck_Context * find_recent_path( const std::string & path );
     // look up in recent
