@@ -98,6 +98,8 @@ public:
     virtual void release();
     // lock
     virtual void lock();
+    // unlock | 1.5.0.0 (ge) added
+    virtual void unlock();
 
     // NOTE: be careful when overriding these, should always
     // explicitly call up to ChucK_VM_Object (ge: 2013)
@@ -228,8 +230,14 @@ public:
     virtual t_CKINT find( const std::string & key ) = 0; // find
     virtual t_CKINT erase( const std::string & key ) = 0; // erase
     virtual void clear( ) = 0; // clear
+    virtual void zero( t_CKUINT start, t_CKUINT end ) = 0; // zero
+    virtual void zero() = 0; // zero (all)
     // get map keys | added (1.4.2.0) nshaheed
     virtual void get_keys( std::vector<std::string> & keys ) = 0;
+    // reverse array order | added (1.5.0.0) azaday
+    virtual void reverse() = 0;
+    // reverse array order | added (1.5.0.0) kunwoo, nshaheed, azaday, ge
+    virtual void shuffle() = 0;
 
     Chuck_Type * m_array_type;
 };
@@ -259,6 +267,7 @@ public:
     t_CKINT pop_out( t_CKINT pos );
     t_CKINT back( t_CKUINT * val ) const;
     void    zero( t_CKUINT start, t_CKUINT end );
+    void    zero() { this->zero(0, m_vector.size()); }
 
     virtual void    clear( );
     virtual t_CKINT size( ) { return m_vector.size(); }
@@ -271,11 +280,18 @@ public:
     virtual t_CKINT data_type_kind( ) { return CHUCK_ARRAY4_DATAKIND; }
     // get map keys | added (1.4.2.0) nshaheed
     virtual void get_keys( std::vector<std::string> & keys );
+    // reverse array order | added (1.5.0.0) azaday
+    virtual void reverse();
+    // reverse array order | added (1.5.0.0) kunwoo, nshaheed, azaday, ge
+    virtual void shuffle();
 
 public:
     std::vector<t_CKUINT> m_vector;
     std::map<std::string, t_CKUINT> m_map;
     t_CKBOOL m_is_obj;
+
+    // TODO: may need additional information here for set_size, if this is part of a multi-dim array
+
     // t_CKINT m_size;
     // t_CKINT m_capacity;
 };
@@ -305,6 +321,7 @@ public:
     t_CKINT pop_out( t_CKINT pos );
     t_CKINT back( t_CKFLOAT * val ) const;
     void    zero( t_CKUINT start, t_CKUINT end );
+    void    zero() { this->zero(0, m_vector.size()); }
 
     virtual void    clear( );
     virtual t_CKINT size( ) { return m_vector.size(); }
@@ -317,6 +334,10 @@ public:
     virtual t_CKINT data_type_kind( ) { return CHUCK_ARRAY8_DATAKIND; }
     // get map keys | added (1.4.2.0) nshaheed
     virtual void get_keys( std::vector<std::string> & keys );
+    // reverse array order | added (1.5.0.0) azaday
+    virtual void reverse();
+    // reverse array order | added (1.5.0.0) kunwoo, nshaheed, azaday, ge
+    virtual void shuffle();
 
 public:
     std::vector<t_CKFLOAT> m_vector;
@@ -350,6 +371,7 @@ public:
     t_CKINT pop_out( t_CKINT pos );
     t_CKINT back( t_CKCOMPLEX * val ) const;
     void    zero( t_CKUINT start, t_CKUINT end );
+    void    zero() { this->zero(0, m_vector.size()); }
 
     virtual void    clear( );
     virtual t_CKINT size( ) { return m_vector.size(); }
@@ -362,6 +384,10 @@ public:
     virtual t_CKINT data_type_kind( ) { return CHUCK_ARRAY16_DATAKIND; }
     // get map keys | added (1.4.2.0) nshaheed
     virtual void get_keys( std::vector<std::string> & keys );
+    // reverse array order | added (1.5.0.0) azaday
+    virtual void reverse();
+    // reverse array order | added (1.5.0.0) kunwoo, nshaheed, azaday, ge
+    virtual void shuffle();
 
 public:
     std::vector<t_CKCOMPLEX> m_vector;
@@ -395,6 +421,7 @@ public:
     t_CKINT pop_out( t_CKUINT pos );
     t_CKINT back( t_CKVEC3 * val ) const;
     void    zero( t_CKUINT start, t_CKUINT end );
+    void    zero() { this->zero(0, m_vector.size()); }
 
     virtual void    clear( );
     virtual t_CKINT size( ) { return m_vector.size(); }
@@ -407,6 +434,10 @@ public:
     virtual t_CKINT data_type_kind( ) { return CHUCK_ARRAY24_DATAKIND; }
     // get map keys | added (1.4.2.0) nshaheed
     virtual void get_keys( std::vector<std::string> & keys );
+    // reverse array order | added (1.5.0.0) azaday
+    virtual void reverse();
+    // reverse array order | added (1.5.0.0) kunwoo, nshaheed, azaday, ge
+    virtual void shuffle();
 
 public:
     std::vector<t_CKVEC3> m_vector;
@@ -438,6 +469,7 @@ public:
     t_CKINT pop_out( t_CKUINT pos );
     t_CKINT back( t_CKVEC4 * val ) const;
     void    zero( t_CKUINT start, t_CKUINT end );
+    void    zero() { this->zero(0, m_vector.size()); }
 
     virtual void    clear( );
     virtual t_CKINT size( ) { return m_vector.size(); }
@@ -450,6 +482,10 @@ public:
     virtual t_CKINT data_type_kind( ) { return CHUCK_ARRAY32_DATAKIND; }
     // get map keys | added (1.4.1.2) nshaheed
     virtual void get_keys( std::vector<std::string> & keys );
+    // reverse array order | added (1.5.0.0) azaday
+    virtual void reverse();
+    // reverse array order | added (1.5.0.0) kunwoo, nshaheed, azaday, ge
+    virtual void shuffle();
 
 public:
     std::vector<t_CKVEC4> m_vector;
@@ -589,15 +625,23 @@ public:
     virtual void write( t_CKINT val, t_CKINT flags ) = 0;
     virtual void write( t_CKFLOAT val ) = 0;
 
-    // constants
 public:
+    // type | moved to IO in 1.5.0.0 (ge)
+    static const t_CKINT TYPE_ASCII;
+    static const t_CKINT TYPE_BINARY;
+    // datatype
     static const t_CKINT INT32;
     static const t_CKINT INT16;
     static const t_CKINT INT8;
-
+    // flags | moved to IO in 1.5.0.0 (ge)
+    static const t_CKINT FLAG_READ_WRITE;
+    static const t_CKINT FLAG_READONLY;
+    static const t_CKINT FLAG_WRITEONLY;
+    static const t_CKINT FLAG_APPEND;
     // asynchronous I/O members
     static const t_CKINT MODE_SYNC;
     static const t_CKINT MODE_ASYNC;
+
     Chuck_Event * m_asyncEvent;
     #ifndef __DISABLE_THREADS__
     XThread * m_thread;
@@ -614,7 +658,7 @@ public:
 
 
 
-#ifndef __DISABLE_FILEIO__
+// #ifndef __DISABLE_FILEIO__
 //-----------------------------------------------------------------------------
 // name: Chuck_IO_File
 // desc: Chuck File IO class
@@ -673,15 +717,6 @@ public:
     static THREAD_RETURN ( THREAD_TYPE writeFloat_thread ) ( void *data );
     #endif
 
-public:
-    // constants
-    static const t_CKINT FLAG_READ_WRITE;
-    static const t_CKINT FLAG_READONLY;
-    static const t_CKINT FLAG_WRITEONLY;
-    static const t_CKINT FLAG_APPEND;
-    static const t_CKINT TYPE_ASCII;
-    static const t_CKINT TYPE_BINARY;
-
 protected:
     // open flags
     t_CKINT m_flags;
@@ -698,7 +733,7 @@ protected:
     // vm and shred
     Chuck_VM * m_vmRef;
 };
-#endif // __DISABLE_FILEIO__
+// #endif // __DISABLE_FILEIO__
 
 
 
