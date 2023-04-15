@@ -120,9 +120,17 @@ CK_DLL_TICK(bitcrusher_tick)
     
     // convert to 32-bit int
     t_CKINT shift = 32-bcdata->bits;
-    int q32 = theSample * INT_MAX;
+    // cast to double for avoid floating point precision warning/error | (ge) 2023.4.14
+    // "implicit conversion from 'int' to 'float' changes value from 2147483647 to 2147483648"
+    // https://stackoverflow.com/questions/23420783/convert-int-max-to-float-and-then-back-to-integer
+    // for example...
+    //     int i = ((float)(INT_MAX)); // on mac (intel and arm64) seem to produce arbitrary and different values
+    //     int i = ((float)(INT_MAX)-64); // on mac appears stable
+    //     int i = ((double)(INT_MAX)); // on mac appears stable
+    //     int i = ((double)(INT_MAX)+.1); // on mac appears stable
+    //     int i = ((double)(INT_MAX)+1); // on mac not stable
+    int q32 = ((double)theSample) * INT_MAX;
     q32 = (q32 >> shift) << shift;
-    
     *out = q32 / ((float) INT_MAX);
 
     return TRUE;
