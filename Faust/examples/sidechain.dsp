@@ -4,13 +4,7 @@ declare description "Compressor demo application";
 
 import("stdfaust.lib");
 
-stereo_sidechain(ratio,thresh,att,rel,main_L, main_R, aux_L, aux_R) = cgm*main_L, cgm*main_R with {
-    gain_view = _ <: attach(_,abs : ba.linear2db : vbargraph("Level",-60,10));
-
-    cgm = gain_view(co.compression_gain_mono(ratio,thresh,att,rel,abs(aux_L)+abs(aux_R)));
-};
-
-compressor_demo(main_L, main_R, aux_L, aux_R) = result
+compressor_demo(aux_L, aux_R, main_L, main_R) = result
 with{
 	comp_group(x) = hgroup("COMPRESSOR [tooltip: Reference:
 		http://en.wikipedia.org/wiki/Dynamic_range_compression]", x);
@@ -20,7 +14,10 @@ with{
 
     gain_view = _ <: attach(_,abs : ba.linear2db : meter_group(vbargraph("Level",-60,10)));
 
-    cgm = gain_view(co.compression_gain_mono(ratio,threshold,attack,release,abs(aux_L)+abs(aux_R)));
+    cgm = gain_view(co.compression_gain_mono(ratio,threshold,attack,release,aux))
+    with {
+        aux = 0.5*(abs(aux_L)+abs(aux_R));
+    };
 
     compressor_stereo_demo = main_L * cgm * makeupgain , main_R * cgm * makeupgain;
 

@@ -17,10 +17,13 @@ SndBuf2 buf;
 
 "special:mandpluk" => buf.read;
 
-sinOsc.chan(0) => faust.chan(0);
-sinOsc.chan(0) => faust.chan(1);
-buf.chan(0) => faust.chan(2);
-buf.chan(1) => faust.chan(3);
+// the aux channels that go into the level detector
+buf.chan(0) => faust.chan(0);
+buf.chan(1) => faust.chan(1);
+
+// the main channels whose gains get adjusted
+sinOsc.chan(0) => faust.chan(2);
+sinOsc.chan(0) => faust.chan(3);
 
 faust.v("/COMPRESSOR/Settings/Threshold", -30.);
 faust.v("/COMPRESSOR/Settings/Attack", 5.);
