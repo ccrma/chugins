@@ -139,7 +139,7 @@ public:
         }
 
         perform(in, out, nframes);
-    }
+        }
 
     void model_perform() {
         std::vector<SAMPLE*> in_model, out_model;
@@ -250,7 +250,10 @@ public:
         // Calling forward in a thread causes memory leak in windows.
         // See https://github.com/pytorch/pytorch/issues/24237
 #ifdef _WIN32
-        m_use_thread = false;
+        // only enable threading when GPU drivers are available
+        if (!m_model.m_cuda_available) {
+            m_use_thread = false;
+        }
 #endif
 
         // Clip the UGen's inputs to the actual num of dimensions
@@ -409,7 +412,9 @@ CK_DLL_MFUN(rave_load)
     Rave* r_obj = (Rave*)OBJ_MEMBER_INT(SELF, rave_data_offset);
     // set the return value
     // RETURN->v_float = r_obj->setParam(GET_NEXT_FLOAT(ARGS));
-    std::string model = r_obj->load(GET_NEXT_STRING(ARGS)->str());
+    Chuck_String* mdl = GET_NEXT_STRING(ARGS);
+    std::string model_name = std::string(mdl->c_str());
+    std::string model = r_obj->load(model_name);
     RETURN->v_string = (Chuck_String*)API->object->create_string(API, SHRED, model.c_str());
 }
 

@@ -9,6 +9,9 @@
 # installatio notes
 installing gtest: https://stackoverflow.com/questions/53583286/cmake-file-for-integrated-visual-studio-unit-testing
 
+## build with GPU on windows
+follow the instructions here https://stackoverflow.com/questions/56636714/cuda-compile-problems-on-windows-cmake-error-no-cuda-toolset-found
+
 ## cmake
 make visual studio project:
 
