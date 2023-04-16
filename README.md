@@ -25,6 +25,9 @@ List of Current Chugins
 - **KasFilter**
   - by [@Kassen](http://github.com/Kassen)
   - Undersampling-based resonant lowpass filter
+- **Faust**
+  - by [Romain Michon](https://ccrma.stanford.edu/~rmichon/) & [Ge Wang](https://gewang.com/), with updates by [@dbraun](https://github.com/DBraun/)
+  - [Faust](https://faust.grame.fr/) language integration
 - **FIR**
   - by [Perry Cook](http://www.cs.princeton.edu/~prc/)
   - Arbitrary order FIR filter
