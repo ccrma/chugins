@@ -47,3 +47,4 @@ ipch
 .vscode/*
 
 *.sln
+/rave/build_gpu

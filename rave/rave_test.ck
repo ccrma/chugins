@@ -1,20 +1,40 @@
 <<< "rave test" >>>;
 SinOsc s => Mix2 m => blackhole;
 
+/* problems and stuffs with GPU
 
-s => Rave r;
+- fucks up on second call? after making a compute thread?
 
-r.chan(0) => dac;
-// WvOut w => blackhole;
+*/
 
-r.model(me.dir() + "rave_chafe_data_rt.ts");
+repeat(6) {
+adc => Rave r1;
+r1.chan(0) => dac;
+r1.model(me.dir() + "rave_chafe_data_rt.ts");
+}
+
+/*
+// 1024::samp => now; 
+adc => Rave r2;
+r2.chan(0) => dac;
+r2.model(me.dir() + "rave_chafe_data_rt.ts");
+
+2048::samp => now;
+*/
+
+
+while(true) {
+100::ms => now;
+<<< "jfkdl" >>>;
+}
+
 // r.method("encode");
 
-r.help();
+// r.help();
 // m.help();
-<<< r.channels() >>>;
+// <<< r.channels() >>>;
 
-<<< r.chan(0).channels() >>>;
+// <<< r.chan(0).channels() >>>;
 
 // "chuck_forward.wav" => w.wavFilename;
 
@@ -22,10 +42,10 @@ r.help();
 // null @=> w;
 
 /*
-now + 5::second => time later;
+// now + 5::second => time later;
 
-
-while (now < later) {
+1::hour => now;
+while (true) {
 	// chout <= "last: " <= r.chan(0).last() <= IO.newline() <= IO.newline();
 	1::samp => now;
 }
