@@ -26,7 +26,7 @@ if not exist "thirdparty/faust/" (
 	cd ..
 )
 
-cmake -Bbuild -DFAUST_DIR="thirdparty/faust" -DSndFile_DIR="thirdparty/libsndfile-1.2.0-win64/cmake"
+cmake -Bbuild -DFAUST_DIR="thirdparty/faust" -DFAUST_LIB_DIR="libfaust/windows-x86_64" -DSndFile_DIR="thirdparty/libsndfile-1.2.0-win64/cmake"
 cmake --build build --config Release
 
 cp "libfaust/windows-x86_64/lib/faust.dll" "%CHUCK_DIR%/bin/faust.dll"

@@ -24,6 +24,7 @@ set(ALL_FILES
 # Create shared library
 add_library(FaucK SHARED ${ALL_FILES})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
+set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Find sndfile and link it
 find_package(SndFile REQUIRED HINTS ${SndFile_DIR})
@@ -35,15 +36,8 @@ include_directories(${FAUST_DIR}/compiler)
 include_directories(${FAUST_DIR}/compiler/utils)
 
 # Link libfaust based on platform
-if(APPLE)
-    target_link_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/libfaust/macOS-universal)
-elseif(MSVC)
-    target_link_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/libfaust/windows-x86_64/lib)
-else()
-    target_link_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/libfaust/ubuntu-aarch64)
-    target_link_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/libfaust/ubuntu-x86_64)
-endif()
-target_link_libraries(${PROJECT_NAME} PRIVATE faust)
+target_link_directories(${PROJECT_NAME} PRIVATE ${FAUST_LIB_DIR}/lib)
+target_link_libraries(${PROJECT_NAME} PRIVATE libfaustwithllvm.a)
 
 # Platform-specific libraries and definitions
 if(APPLE)
@@ -80,13 +74,6 @@ if (MSVC)
                      "$<TARGET_FILE:FaucK>"
                      "%USERPROFILE%/Documents/ChucK/chugins/Faust.chug")
 endif (MSVC)
-
-if (APPLE)
-    add_custom_command(TARGET ${PROJECT_NAME} 
-        POST_BUILD COMMAND
-        install_name_tool -change @rpath/libfaust.2.dylib @loader_path/libfaust.2.dylib "$<TARGET_FILE:FaucK>"
-        )
-endif()
 
 # Install library
 INSTALL(TARGETS FaucK

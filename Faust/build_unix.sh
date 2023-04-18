@@ -1,6 +1,35 @@
 rm "/usr/local/lib/chuck/Faust.chug"
 rm "/usr/local/lib/chuck/libfaust.2.dylib"
 
+if [ "$(uname)" = "Darwin" ]; then
+    if [[ $(uname -m) == 'arm64' ]]; then
+        export FAUST_LIB_DIR=$PWD/libfaust/darwin-arm64/
+    else
+        export FAUST_LIB_DIR=$PWD/libfaust/darwin-x86_64/
+    fi
+else
+    export FAUST_LIB_DIR=$PWD/libfaust/ubuntu-x86_64/
+fi
+
+mkdir -p $FAUST_LIB_DIR
+
+# if [ "$(uname)" = "Darwin" ]; then
+#     echo "You are running macOS"
+#     # curl -L https://github.com/DBraun/faust/suites/12075724181/artifacts/635656964 -o faust-2.58.18-arm64.dmg.zip
+#     # unzip -o faust-2.58.18-arm64.dmg.zip
+#     # hdiutil attach faust-2.58.18-arm64.dmg
+#     cp -R /Volumes/Faust-2.58.18/Faust-2.58.18/* $FAUST_LIB_DIR
+#     # hdiutil detach /Volumes/Faust-2.58.18/
+# elif [ "$(expr substr $(uname -s) 1 5)" = "Linux" ]; then
+#     echo "You are running Linux"
+# elif [ "$(expr substr $(uname -s) 1 10)" = "MINGW32_NT" ] || [ "$(expr substr $(uname -s) 1 10)" = "MINGW64_NT" ]; then
+#     echo "You are running Windows"
+#     exit
+# else
+#     echo "Unknown operating system"
+#     exit
+# fi
+
 mkdir thirdparty
 
 # Clone libsndfile
@@ -12,9 +41,11 @@ then
     echo "Downloaded libsndfile." 
     echo "Building libsndfile"
     cd libsndfile
-    cmake -Bbuild -DCMAKE_BUILD_TYPE=Release $CMAKEOPTS -DCMAKE_VERBOSE_MAKEFILE=ON -DENABLE_EXTERNAL_LIBS=off
+    cmake -Bbuild $CMAKEOPTS -DCMAKE_VERBOSE_MAKEFILE=ON -DENABLE_EXTERNAL_LIBS=off
     cmake --build build --config Release
     cd ../..
+else
+    git -C thirdparty/libsndfile pull
 fi
 
 # Clone Faust
@@ -25,26 +56,12 @@ then
     git clone https://github.com/grame-cncm/faust.git
     echo "Downloaded faust."
     cd ..
+else
+    git -C thirdparty/faust pull
 fi
 
-cmake -Bbuild -DCMAKE_BUILD_TYPE=Release $CMAKEOPTS -G "Xcode" -DFAUST_DIR="thirdparty/faust" -DSndFile_DIR="thirdparty/libsndfile/build"
+cmake -Bbuild $CMAKEOPTS -DFAUST_DIR="thirdparty/faust" -DFAUST_LIB_DIR="$FAUST_LIB_DIR" -DSndFile_DIR="thirdparty/libsndfile/build"
 cmake --build build --config Release
 
 mkdir "/usr/local/lib/chuck"
-
-if [[ $OSTYPE == 'darwin'* ]]; then
-    # we are on macOS
-    cp "libfaust/macOS-universal/libfaust.a" "/usr/local/lib/chuck/libfaust.2.dylib"
-else
-    # we are on Linux
-    if [[ $(uname -m) == 'x86_64' ]]; then
-        echo "building for x86_64"
-        cp "libfaust/ubuntu-x86_64/libfaust.so.2" "/usr/local/lib/chuck/libfaust.so.2"
-    else
-        cp "libfaust/ubuntu-$(uname -m)/libfaust.so.2" "/usr/local/lib/chuck/libfaust.so.2"
-    fi
-
-    ln "/usr/local/lib/chuck/libfaust.so.2" "/usr/local/lib/chuck/libfaust.so"
-fi
-
-cp "build/Release/libFaucK.dylib" "/usr/local/lib/chuck/Faust.chug"
+cp "build/libFaucK.dylib" "/usr/local/lib/chuck/Faust.chug"
