@@ -14,11 +14,7 @@
 #include <string>
 using namespace std;
 
-#if defined(__CK_SNDFILE_NATIVE__)
 #include <sndfile.h>
-#else
-#include "util_sndfile.h"
-#endif
 
 #include "rubberband/RubberBandStretcher.h"
 #include "AbletonClipInfo.h"

@@ -1,5 +1,3 @@
-#pragma once
-
 #include "WarpBufChugin.h"
 
 // declaration of chugin constructor
