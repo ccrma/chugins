@@ -5,8 +5,9 @@
 
 /*
 TODOS
-- clean up models and stuff
 - set buffer size method (0 will be threadless fast mode)
+- add .cpu() and .gpu() methods to set rendering option
+- copy everything over to everything
 */
 #pragma once
 
