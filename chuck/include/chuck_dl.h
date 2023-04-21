@@ -161,8 +161,8 @@ namespace Chuck_DL_Api { struct Api; }
 #endif
 
 // calling convention of functions provided by chuck to the dll
-#if defined(__WINDOWS_DS__)
-#define CK_DLL_CALL    _cdecl
+#if defined(__PLATFORM_WIN32__)
+  #define CK_DLL_CALL    _cdecl
 #else
 #define CK_DLL_CALL
 #endif
@@ -682,26 +682,26 @@ namespace Chuck_DL_Api
         {
             ObjectApi();
 
-            // 1.4.2.1 (nshaheed and ge and anonymous pr-lab member) | changed from private to public
-            // also changed all std::string & in this section to const char *
-            // intent: this allows for chugins to access member variables and create chuck strings
-        public:
-            // function pointer get_type()
-            Type(* const get_type)(CK_DL_API, Chuck_VM_Shred*, const char* name);
-            // function pointer create()
-            Object(* const create)(CK_DL_API, Chuck_VM_Shred*, Type type);
-            // function pointer create_string()
-            String(* const create_string)(CK_DL_API, Chuck_VM_Shred*, const char* value);
-            // function pointers for get_mvar_*()
-            t_CKBOOL(* const get_mvar_int)(CK_DL_API, Object object, const char* name, t_CKINT& value);
-            t_CKBOOL(* const get_mvar_float)(CK_DL_API, Object object, const char* name, t_CKFLOAT& value);
-            t_CKBOOL(* const get_mvar_dur)(CK_DL_API, Object object, const char* name, t_CKDUR& value);
-            t_CKBOOL(* const get_mvar_time)(CK_DL_API, Object object, const char* name, t_CKTIME& value);
-            t_CKBOOL(* const get_mvar_string)(CK_DL_API, Object object, const char* name, String& value);
-            t_CKBOOL(* const get_mvar_object)(CK_DL_API, Object object, const char* name, Object& value);
-            // function pointer for set_string()
-            t_CKBOOL(* const set_string)(CK_DL_API, String string, const char* value);
-        }* const object;
+    // 1.5.0.0 (nshaheed and ge and anonymous pr-lab member) | changed from private to public
+    // also changed all std::string & in this section to const char *
+    // intent: this allows for chugins to access member variables and create chuck strings
+    public:
+        // function pointer get_type()
+        Type (* const get_type)( CK_DL_API, Chuck_VM_Shred *, const char * name );
+        // function pointer create()
+        Object (* const create)( CK_DL_API, Chuck_VM_Shred *, Type type );
+        // function pointer create_string()
+        String (* const create_string)( CK_DL_API, Chuck_VM_Shred *, const char * value );
+        // function pointers for get_mvar_*()
+        t_CKBOOL (* const get_mvar_int)( CK_DL_API, Object object, const char * name, t_CKINT & value );
+        t_CKBOOL (* const get_mvar_float)( CK_DL_API, Object object, const char * name, t_CKFLOAT & value );
+        t_CKBOOL (* const get_mvar_dur)( CK_DL_API, Object object, const char * name, t_CKDUR & value );
+        t_CKBOOL (* const get_mvar_time)( CK_DL_API, Object object, const char * name, t_CKTIME & value );
+        t_CKBOOL (* const get_mvar_string)( CK_DL_API, Object object, const char * name, String & value );
+        t_CKBOOL (* const get_mvar_object)( CK_DL_API, Object object, const char * name, Object & value );
+        // function pointer for set_string()
+        t_CKBOOL (* const set_string)( CK_DL_API, String string, const char * value );
+    } * const object;
 
         Api() :
             vm(new VMApi),
@@ -732,7 +732,7 @@ namespace Chuck_DL_Api
 
 #error ChucK not support on Mac OS X 10.3 or lower
 
-#elif defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__)
+#elif defined(__PLATFORM_WIN32__)
 
 #ifdef __cplusplus
 extern "C" {

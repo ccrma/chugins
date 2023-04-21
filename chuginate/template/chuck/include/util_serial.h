@@ -32,9 +32,10 @@
 #ifndef __UTIL_SERIAL_H__
 #define __UTIL_SERIAL_H__
 
+#include "chuck_def.h"
+
 #include <vector>
 #include <string>
-using namespace std;
 
 
 
@@ -46,10 +47,10 @@ using namespace std;
 class SerialIOManager
 {
 public:
-    static vector<string> availableSerialDevices();
-    
+    static std::vector<std::string> availableSerialDevices();
+
 private:
-    static vector<string> s_availableSerialDevices;
+    static std::vector<std::string> s_availableSerialDevices;
 };
 
 

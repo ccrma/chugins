@@ -58,7 +58,7 @@ struct Chuck_Instr
 {
 public:
     Chuck_Instr();
-    virtual ~Chuck_Instr() { }
+    virtual ~Chuck_Instr() { SAFE_DELETE(m_codestr); }
 
 public:
     virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred ) = 0;
@@ -69,8 +69,14 @@ public:
     { return ""; }
 
 public:
+    // store line position for error messages
     void set_linepos( t_CKUINT linepos );
     t_CKUINT m_linepos;
+
+    // set codestr associated with this instruction
+    void set_codestr( const std::string & str );
+    // (used in instruction dump) | 1.5.0.0 (ge) added
+    std::string * m_codestr;
 };
 
 
@@ -2018,6 +2024,23 @@ protected:
 
 
 //-----------------------------------------------------------------------------
+// name: struct Chuck_Instr_Reg_Push_Zero
+// desc: push immediate value 0 to reg stack with specific width
+//-----------------------------------------------------------------------------
+struct Chuck_Instr_Reg_Push_Zero : public Chuck_Instr_Unary_Op
+{
+public:
+    Chuck_Instr_Reg_Push_Zero( t_CKUINT sizeInBytes )
+    { this->set( sizeInBytes ); }
+
+public:
+    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+};
+
+
+
+
+//-----------------------------------------------------------------------------
 // name: struct Chuck_Instr_Reg_Dup_Last
 // desc: duplicate last value on reg stack
 //-----------------------------------------------------------------------------
@@ -2960,6 +2983,7 @@ public:
 //-----------------------------------------------------------------------------
 // name: struct Chuck_Instr_Reg_AddRef_Object3
 // desc: added 1.3.0.0 -- does the ref add in-place
+//       operates on top of the register stack
 //-----------------------------------------------------------------------------
 struct Chuck_Instr_Reg_AddRef_Object3 : public Chuck_Instr
 {
@@ -2972,7 +2996,7 @@ public:
 
 //-----------------------------------------------------------------------------
 // name: struct Chuck_Instr_Release_Object
-// desc: ...
+// desc: release object on stack by its offset
 //-----------------------------------------------------------------------------
 struct Chuck_Instr_Release_Object : public Chuck_Instr
 {
@@ -2992,6 +3016,38 @@ struct Chuck_Instr_Release_Object2 : public Chuck_Instr_Unary_Op
 {
 public:
     Chuck_Instr_Release_Object2( t_CKUINT offset )
+    { this->set( offset ); }
+
+public:
+    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+};
+
+
+
+
+//-----------------------------------------------------------------------------
+// name: struct Chuck_Instr_Release_Object3_Pop_Word
+// desc: release object reference + pop from reg stack | 1.5.0.0 (ge) added
+//       the variant assumes object pointer directly on stack (not offset)
+//-----------------------------------------------------------------------------
+struct Chuck_Instr_Release_Object3_Pop_Word : public Chuck_Instr
+{
+public:
+    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+};
+
+
+
+
+//-----------------------------------------------------------------------------
+// name: struct Chuck_Instr_Release_Object4
+// desc: release object reference from reg stack (no pop) | 1.5.0.0 (ge) added
+//       the variant assumes object pointer directly on stack (not offset)
+//-----------------------------------------------------------------------------
+struct Chuck_Instr_Release_Object4 : public Chuck_Instr_Unary_Op
+{
+public:
+    Chuck_Instr_Release_Object4( t_CKUINT offset )
     { this->set( offset ); }
 
 public:
@@ -3034,11 +3090,14 @@ public:
 struct Chuck_Instr_Func_Call_Member : public Chuck_Instr_Unary_Op
 {
 public:
-    Chuck_Instr_Func_Call_Member( t_CKUINT ret_size )
-    { this->set( ret_size ); }
+    Chuck_Instr_Func_Call_Member( t_CKUINT ret_size, Chuck_Func * func_ref )
+    { this->set( ret_size ); m_func_ref = func_ref; }
 
 public:
     virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+
+public:
+    Chuck_Func * m_func_ref; // 1.5.0.0 (ge) | added for arg list cleanup
 };
 
 
@@ -3051,11 +3110,14 @@ public:
 struct Chuck_Instr_Func_Call_Static : public Chuck_Instr_Unary_Op
 {
 public:
-    Chuck_Instr_Func_Call_Static( t_CKUINT ret_size )
-    { this->set( ret_size ); }
+    Chuck_Instr_Func_Call_Static( t_CKUINT ret_size, Chuck_Func * func_ref )
+    { this->set( ret_size ); m_func_ref = func_ref; }
 
 public:
     virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+
+public:
+    Chuck_Func * m_func_ref; // 1.5.0.0 (ge) | added for arg list cleanup
 };
 
 
@@ -3162,8 +3224,9 @@ protected:
 struct Chuck_Instr_Array_Alloc : public Chuck_Instr
 {
 public: // REFACTOR-2017: added env
-    Chuck_Instr_Array_Alloc( Chuck_Env * env, t_CKUINT depth, Chuck_Type * the_type,
-        t_CKUINT offset, t_CKBOOL ref );
+    Chuck_Instr_Array_Alloc( Chuck_Env * env, t_CKUINT depth,
+        Chuck_Type * contentType, t_CKUINT offset, t_CKBOOL ref,
+        Chuck_Type * arrayType );
     virtual ~Chuck_Instr_Array_Alloc();
 
 public:
@@ -3172,7 +3235,8 @@ public:
 
 protected:
     t_CKUINT m_depth;
-    Chuck_Type * m_type_ref;
+    Chuck_Type * m_type_ref_content;
+    Chuck_Type * m_type_ref_array; // 1.5.0.0 (ge) added
     t_CKBOOL m_is_obj;
     char * m_param_str;
     t_CKUINT m_stack_offset;
