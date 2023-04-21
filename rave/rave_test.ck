@@ -1,5 +1,5 @@
 <<< "rave test" >>>;
-SinOsc s => Mix2 m => blackhole;
+// SinOsc s => Mix2 m => blackhole;
 
 /* problems and stuffs with GPU
 
@@ -7,11 +7,11 @@ SinOsc s => Mix2 m => blackhole;
 
 */
 
-repeat(6) {
+//repeat(1) {
 adc => Rave r1;
 r1.chan(0) => dac;
 r1.model(me.dir() + "rave_chafe_data_rt.ts");
-}
+//}
 
 /*
 // 1024::samp => now; 
@@ -24,8 +24,8 @@ r2.model(me.dir() + "rave_chafe_data_rt.ts");
 
 
 while(true) {
-100::ms => now;
-<<< "jfkdl" >>>;
+1::samp => now;
+// <<< r1.chan(0).last() >>>;
 }
 
 // r.method("encode");
