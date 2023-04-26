@@ -160,7 +160,7 @@ public:
         for (int c(0); c < m_in_dim; c++) {
             // std::cout << "copy input " << c << std::endl;
 
-            m_in_buffer[c].put_interleave(in, max_channels, nframes);
+            m_in_buffer[c].put_interleave(in, m_in_dim, nframes);
             in++;
         }
 
@@ -191,7 +191,7 @@ public:
 
         // COPY CIRCULAR BUFFER TO OUTPUT
         for (int c(0); c < m_out_dim; c++) {
-            m_out_buffer[c].get_interleave(out+c, max_channels, nframes);
+            m_out_buffer[c].get_interleave(out+c, m_out_dim, nframes);
         }
     }
 
@@ -263,7 +263,7 @@ public:
         m_self->m_num_outs = m_out_dim;
         m_self->m_multi_chan_size = m_in_dim > m_out_dim ? m_in_dim: m_out_dim;
 
-        // Create buffers
+        // Create buffers (multiple single streams)
         m_in_buffer = std::make_unique<circular_buffer<SAMPLE, SAMPLE>[]>(m_in_dim);
         for (int i(0); i < m_in_dim; i++) {
             m_in_buffer[i].initialize(m_buffer_size);
