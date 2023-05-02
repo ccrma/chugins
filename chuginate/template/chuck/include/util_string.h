@@ -53,6 +53,8 @@ std::string trim( const std::string & val );
 std::string ltrim( const std::string & val );
 // rtrim
 std::string rtrim( const std::string & val );
+// return capitalized copy of a string
+std::string capitalize( const std::string & s );
 
 // argument extraction
 t_CKBOOL extract_args( const std::string & token,
@@ -86,6 +88,8 @@ t_CKBOOL is_absolute_path( const std::string & path );
 // desc: split "x:y:z"-style path list into {"x","y","z"}
 //-----------------------------------------------------------------------------
 void parse_path_list( std::string & str, std::list<std::string> & lst );
+
+
 
 
 #endif
