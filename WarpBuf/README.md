@@ -1,6 +1,6 @@
 # WarpBuf
 
-With WarpBuf you can time-stretch and independently transpose the pitch of a sound buffer. If you don't have an Ableton `.asd` file to go with the audio file, then the BPM will be assumed to be 120. Therefore, to play the file twice as fast, do `240. => myWarpBuf.bpm;`
+With WarpBuf you can time-stretch and independently transpose the pitch of an audio file. The supported formats include wav, flac, mp3, ogg, opus, and vorbis. If you don't have an Ableton `.asd` file to go with the audio file, then the BPM will be assumed to be 120. Therefore, to play the file twice as fast, do `240. => myWarpBuf.bpm;` Any mono channel UGen can be chucked to `.bpm` too.
 
 Control parameters:
 * .read - ( string , WRITE only ) - loads file for reading
@@ -22,6 +22,8 @@ With WarpBuf, you can also use Ableton Live `.asd` files to [warp](https://www.a
 Two audio files might have different tempos, but you can "beatmatch" them by giving them the same tempo:
 
 ```chuck
+WarpBuf warpBuf1 => dac;
+WarpBuf warpBuf2 => dac;
 130. => warpBuf1.bpm => warpBuf2.bpm;
 ```
 
@@ -29,7 +31,7 @@ WarpBuf has been tested with `asd` files created with Ableton Live 9 and 10.1.30
 
 ## Installation
 
-Make sure you have `cmake`, `git`, and `sh` available from the command line/Terminal.
+Make sure you have `cmake`, `git`, and `sh` available from the command line/Terminal. On macOS/Linux, you also need `pkg-config`.
 
 Update submodules:
 `git submodule update --init --recursive`
@@ -46,6 +48,5 @@ WarpBuf uses [Rubber Band Library](https://github.com/breakfastquay/rubberband/)
 
 ## Todo:
 
-* Get/set the list of warp markers
+* Get/set the list of warp markers.
 * Optionally pre-read the entire audio buffer and hold it in a buffer.
-* Support other audio formats (MP3)
