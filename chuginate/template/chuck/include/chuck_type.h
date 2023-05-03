@@ -198,7 +198,10 @@ public:
         else if( climb > 0 )
         {
             for( t_CKUINT i = scope.size(); i > 0; i-- )
-            { if( ( val = (*scope[i-1])[xid] ) ) break; }
+            {
+                val = (*scope[i - 1])[xid];
+                if( val ) break;
+            }
 
             // look in commit buffer
             if( !val && (commit_map.find(xid) != commit_map.end()) )
@@ -871,6 +874,7 @@ t_CKBOOL isa( Chuck_Type * lhs, Chuck_Type * rhs );
 t_CKBOOL isprim( Chuck_Env * env, Chuck_Type * type );
 t_CKBOOL isobj( Chuck_Env * env, Chuck_Type * type );
 t_CKBOOL isfunc( Chuck_Env * env, Chuck_Type * type );
+t_CKBOOL isvoid( Chuck_Env * env, Chuck_Type * type );
 t_CKBOOL iskindofint( Chuck_Env * env, Chuck_Type * type ); // added 1.3.1.0: this includes int + pointers
 t_CKUINT getkindof( Chuck_Env * env, Chuck_Type * type ); // added 1.3.1.0: to get the kindof a type
 
@@ -942,6 +946,8 @@ Chuck_Value * type_engine_find_value( Chuck_Type * type, const std::string & xid
 Chuck_Value * type_engine_find_value( Chuck_Type * type, S_Symbol xid );
 Chuck_Value * type_engine_find_value( Chuck_Env * env, const std::string & xid, t_CKBOOL climb, int linepos = 0 );
 Chuck_Namespace * type_engine_find_nspc( Chuck_Env * env, a_Id_List path );
+// convert a vector of type names to a vector of Types | 1.5.0.0 (ge) added
+void type_engine_names2types( Chuck_Env * env, const std::vector<std::string> & typeNames, std::vector<Chuck_Type *> & types );
 
 
 //-----------------------------------------------------------------------------
@@ -979,6 +985,8 @@ t_CKINT str2char( const char * char_lit, int linepos );
 t_CKBOOL same_arg_lists( a_Arg_List lhs, a_Arg_List rhs );
 // generate a string from an argument list (types only)
 std::string arglist2string( a_Arg_List list );
+
+
 
 
 //-----------------------------------------------------------------------------
