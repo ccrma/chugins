@@ -7,7 +7,11 @@
 TODOS
 - set buffer size method (0 will be threadless fast mode)
 - add .cpu() and .gpu() methods to set rendering option
-- copy everything over to everything
+  - would have to do this before anything is instantiated, could be tricky... not high priority
+  - hmm, maybe just add a method in backend to do tensor.to(cpu/gpu) to handle this (and check if it's instantiated at all yet)
+    will cause interrupts, but whatever
+- copy everything over to everything [DONE]
+- fix --adaptive issue
 */
 #pragma once
 
@@ -140,7 +144,76 @@ public:
         }
 
         perform(in, out, nframes);
+    }
+
+    // test tick to validate circular buffers
+    void tick2(SAMPLE* in, SAMPLE* out, t_CKUINT nframes) {
+        memset(out, 0, sizeof(SAMPLE) * max_channels * nframes);
+
+        // COPY INPUT TO CIRCULAR BUFFER
+        for (int c(0); c < m_in_dim; c++) {
+            // std::cout << "copy input " << c << std::endl;
+
+            m_in_buffer[c].put_interleave(in, m_in_dim, nframes);
+
+            float* out_tmp;
+            out_tmp = (float*) malloc(sizeof(float) * max_channels * nframes);
+            memset(out_tmp, 0, sizeof(float) * max_channels * nframes);
+
+            m_in_buffer[c].get_interleave(out_tmp, m_in_dim, nframes);
+            m_out_buffer[c].put_interleave(out_tmp, m_in_dim, nframes);
+            in++;
         }
+
+
+        //if (m_in_buffer[0].full()) { // buffer is full
+        //    // transfer memory between input circular buffer and model buffer
+        //    for (int c(0); c < m_in_dim; c++) {
+        //        // std::cout << "m_in_buffer[" << c << "]" << std::endl;
+        //        m_in_buffer[c].get(m_in_model[c].get(), m_buffer_size);
+        //    }
+
+        //    //if (!m_use_thread) // process data right now
+        //    //    model_perform();
+
+        //    /*
+        //    std::vector<sample*> in_model, out_model;
+
+        //    
+        //    for (int c(0); c < m_in_dim; c++)
+        //        in_model.push_back(m_in_model[c].get());
+        //    for (int c(0); c < m_out_dim; c++)
+        //        out_model.push_back(m_out_model[c].get());
+
+        //    m_model.perform(in_model, out_model, m_buffer_size, m_method, 1);
+
+        //    */
+        //    // transfer memory between output circular buffer and model buffer
+        //    for (int c(0); c < m_out_dim; c++)
+        //        m_out_buffer[c].put(m_in_model[c].get(), m_buffer_size);
+
+        //}
+
+        // COPY CIRCULAR BUFFER TO OUTPUT
+        for (int c(0); c < m_out_dim; c++) {
+            m_out_buffer[c].get_interleave(out + c, m_out_dim, nframes);
+        }
+
+        // kind of hacky, check to make sure it's a method that's outputting
+        // audio and not latent values, then copy to every channel so the mono
+        // output is right volume.
+        if (m_method == "forward" || m_method == "decode") {
+            int chans = m_self->m_multi_chan_size;
+            for (int c(1); c < chans; c++) {
+                for (int i(0); i < nframes; i++) {
+                    // assuming mono for now
+                    out[i * chans + c] = out[i * chans];
+                }
+            }
+        }
+
+
+    }
 
     void model_perform() {
         std::vector<SAMPLE*> in_model, out_model;
@@ -150,7 +223,13 @@ public:
         for (int c(0); c < m_out_dim; c++)
             out_model.push_back(m_out_model[c].get());
 
-        m_model.perform(in_model, out_model, m_buffer_size, m_method, 1);
+        // DELETE - copy from one buffer to the other
+        // assuming in dim of 1
+        //for (int c(0); c < m_out_dim; c++)
+
+        
+
+        // m_model.perform(in_model, out_model, m_buffer_size, m_method, 1);
     }
 
     void perform(SAMPLE* in, SAMPLE* out, t_CKUINT nframes) {
@@ -192,6 +271,19 @@ public:
         // COPY CIRCULAR BUFFER TO OUTPUT
         for (int c(0); c < m_out_dim; c++) {
             m_out_buffer[c].get_interleave(out+c, m_out_dim, nframes);
+        }
+
+        // kind of hacky, check to make sure it's a method that's outputting
+        // audio and not latent values, then copy to every channel so the mono
+        // output is right volume.
+        if (m_method == "forward" || m_method == "decode") {
+            int chans = m_self->m_multi_chan_size;
+            for (int c(1); c < chans; c++) {
+                for (int i(0); i < nframes; i++) {
+                    // assuming mono for now
+                    out[i * chans + c] = out[i * chans];
+                }
+            }
         }
     }
 
