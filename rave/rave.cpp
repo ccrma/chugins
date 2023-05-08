@@ -202,6 +202,7 @@ public:
         // kind of hacky, check to make sure it's a method that's outputting
         // audio and not latent values, then copy to every channel so the mono
         // output is right volume.
+        /*
         if (m_method == "forward" || m_method == "decode") {
             int chans = m_self->m_multi_chan_size;
             for (int c(1); c < chans; c++) {
@@ -211,7 +212,7 @@ public:
                 }
             }
         }
-
+        */
 
     }
 
@@ -229,7 +230,7 @@ public:
 
         
 
-        // m_model.perform(in_model, out_model, m_buffer_size, m_method, 1);
+        m_model.perform(in_model, out_model, m_buffer_size, m_method, 1);
     }
 
     void perform(SAMPLE* in, SAMPLE* out, t_CKUINT nframes) {

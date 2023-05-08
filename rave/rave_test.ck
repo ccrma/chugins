@@ -2,10 +2,15 @@
 
 // I can get 7 here on the laptop w/ gpu (rtx 3050)
 // Need to now test w/ cpu
-repeat(1) {
-SinOsc s => Rave r => dac;
-// r.chan(0) => dac;
+//repeat(1) {
+TriOsc s => Rave r => blackhole;
+//adc => Rave r => blackhole;
+
+r.chan(0) => dac;
 r.model(me.dir() + "rave_chafe_data_rt.ts");
 
-}
-1::week => now;
+220 => s.freq;
+0 => r.gain;
+
+//}
+1::eon => now;
