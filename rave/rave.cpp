@@ -352,9 +352,11 @@ public:
 
         // Clip the UGen's inputs to the actual num of dimensions
         // as an optimization   
+        /*
         m_self->m_num_ins = m_in_dim;
         m_self->m_num_outs = m_out_dim;
         m_self->m_multi_chan_size = m_in_dim > m_out_dim ? m_in_dim: m_out_dim;
+        */
 
         // Create buffers (multiple single streams)
         m_in_buffer = std::make_unique<circular_buffer<SAMPLE, SAMPLE>[]>(m_in_dim);
