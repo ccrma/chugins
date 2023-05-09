@@ -271,7 +271,7 @@ public:
 
         // COPY CIRCULAR BUFFER TO OUTPUT
         for (int c(0); c < m_out_dim; c++) {
-            m_out_buffer[c].get_interleave(out+c, m_out_dim, nframes);
+            m_out_buffer[c].get_interleave(out+c, max_channels, nframes);
         }
 
         // kind of hacky, check to make sure it's a method that's outputting
