@@ -198,6 +198,8 @@ public:
         */
 
         if (m_in_buffer[0].full()) { // BUFFER IS FULL
+            if (m_compute_thread && m_use_thread)
+                m_compute_thread->join();
 
             // TRANSFER MEMORY BETWEEN INPUT CIRCULAR BUFFER AND MODEL BUFFER
             for (int c(0); c < m_in_dim; c++) {
@@ -209,21 +211,22 @@ public:
                 model_perform();
             }
 
-            if (m_use_thread) // PROCESS DATA LATER
-                m_compute_thread = std::make_unique<std::thread>(&Rave::model_perform, this);
-
             // TRANSFER MEMORY BETWEEN OUTPUT CIRCULAR BUFFER AND MODEL BUFFER
             for (int c(0); c < m_out_dim; c++)
                 m_out_buffer[c].put(m_out_model[c].get(), m_buffer_size);
+
+            if (m_use_thread) // PROCESS DATA LATER
+                m_compute_thread = std::make_unique<std::thread>(&Rave::model_perform, this);
         }
 
         // std::cout << "copy to output" << std::endl;
 
+        /*
         // COPY CIRCULAR BUFFER TO OUTPUT
         for (int c(0); c < m_out_dim; c++) {
             m_out_buffer[c].get_interleave(out+c, max_channels, nframes);
         }
-
+        */
         // kind of hacky, check to make sure it's a method that's outputting
         // audio and not latent values, then copy to every channel so the mono
         // output is right volume.
@@ -298,7 +301,7 @@ public:
         if (!m_model.m_cuda_available) {
             m_use_thread = false;
         }
-        m_use_thread = false;
+        // m_use_thread = false;
 #endif
 
         // Clip the UGen's inputs to the actual num of dimensions
