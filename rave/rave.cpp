@@ -28,6 +28,9 @@ TODOS
 #include <stdio.h>
 #include <limits.h>
 
+#include <chrono>
+using namespace std::chrono;
+
 
 // declaration of chugin constructor
 CK_DLL_CTOR(rave_ctor);
@@ -122,7 +125,7 @@ public:
     // for Chugins extending UGen
     void tick(SAMPLE* in, SAMPLE* out, t_CKUINT nframes)
     {
-        std::cout << nframes << std::endl;
+        //std::cout << nframes << std::endl;
         auto dsp_vec_size = nframes;
 
         memset(out, 0, sizeof(SAMPLE) * max_channels * nframes);
@@ -160,8 +163,11 @@ public:
         //for (int c(0); c < m_out_dim; c++)
 
         
-
+        auto start = high_resolution_clock::now();
         m_model.perform(in_model, out_model, m_buffer_size, m_method, 1);
+        auto stop = high_resolution_clock::now();
+        auto duration = duration_cast<milliseconds>(stop - start);
+        std::cout << duration.count() << std::endl;
     }
 
     void perform(SAMPLE* in, SAMPLE* out, t_CKUINT nframes) {
