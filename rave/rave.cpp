@@ -122,6 +122,7 @@ public:
     // for Chugins extending UGen
     void tick(SAMPLE* in, SAMPLE* out, t_CKUINT nframes)
     {
+        std::cout << nframes << std::endl;
         auto dsp_vec_size = nframes;
 
         memset(out, 0, sizeof(SAMPLE) * max_channels * nframes);
@@ -144,76 +145,6 @@ public:
         }
 
         perform(in, out, nframes);
-    }
-
-    // test tick to validate circular buffers
-    void tick2(SAMPLE* in, SAMPLE* out, t_CKUINT nframes) {
-        memset(out, 0, sizeof(SAMPLE) * max_channels * nframes);
-
-        // COPY INPUT TO CIRCULAR BUFFER
-        for (int c(0); c < m_in_dim; c++) {
-            // std::cout << "copy input " << c << std::endl;
-
-            m_in_buffer[c].put_interleave(in, m_in_dim, nframes);
-
-            float* out_tmp;
-            out_tmp = (float*) malloc(sizeof(float) * max_channels * nframes);
-            memset(out_tmp, 0, sizeof(float) * max_channels * nframes);
-
-            m_in_buffer[c].get_interleave(out_tmp, m_in_dim, nframes);
-            m_out_buffer[c].put_interleave(out_tmp, m_in_dim, nframes);
-            in++;
-        }
-
-
-        //if (m_in_buffer[0].full()) { // buffer is full
-        //    // transfer memory between input circular buffer and model buffer
-        //    for (int c(0); c < m_in_dim; c++) {
-        //        // std::cout << "m_in_buffer[" << c << "]" << std::endl;
-        //        m_in_buffer[c].get(m_in_model[c].get(), m_buffer_size);
-        //    }
-
-        //    //if (!m_use_thread) // process data right now
-        //    //    model_perform();
-
-        //    /*
-        //    std::vector<sample*> in_model, out_model;
-
-        //    
-        //    for (int c(0); c < m_in_dim; c++)
-        //        in_model.push_back(m_in_model[c].get());
-        //    for (int c(0); c < m_out_dim; c++)
-        //        out_model.push_back(m_out_model[c].get());
-
-        //    m_model.perform(in_model, out_model, m_buffer_size, m_method, 1);
-
-        //    */
-        //    // transfer memory between output circular buffer and model buffer
-        //    for (int c(0); c < m_out_dim; c++)
-        //        m_out_buffer[c].put(m_in_model[c].get(), m_buffer_size);
-
-        //}
-
-        // COPY CIRCULAR BUFFER TO OUTPUT
-        for (int c(0); c < m_out_dim; c++) {
-            m_out_buffer[c].get_interleave(out + c, m_out_dim, nframes);
-        }
-
-        // kind of hacky, check to make sure it's a method that's outputting
-        // audio and not latent values, then copy to every channel so the mono
-        // output is right volume.
-        /*
-        if (m_method == "forward" || m_method == "decode") {
-            int chans = m_self->m_multi_chan_size;
-            for (int c(1); c < chans; c++) {
-                for (int i(0); i < nframes; i++) {
-                    // assuming mono for now
-                    out[i * chans + c] = out[i * chans];
-                }
-            }
-        }
-        */
-
     }
 
     void model_perform() {
@@ -240,15 +171,33 @@ public:
         for (int c(0); c < m_in_dim; c++) {
             // std::cout << "copy input " << c << std::endl;
 
-            m_in_buffer[c].put_interleave(in, m_in_dim, nframes);
+            m_in_buffer[c].put_interleave(in, max_channels, nframes);
             in++;
         }
 
+        // This needs to be before the calculations, because in the adaptive
+        // case if the previous nframes == m_buffer_size, then it will calculate
+        // and consume all samples and so the output will just be 0s if the next
+        // nframes != m_buffer_size
+        // COPY CIRCULAR BUFFER TO OUTPUT
+        for (int c(0); c < m_out_dim; c++) {
+            m_out_buffer[c].get_interleave(out + c, max_channels, nframes);
+        }
+
+
+        /*
+        // IF USE THREAD, CHECK THAT COMPUTATION IS OVER
+        if (m_compute_thread && m_use_thread) {
+            m_compute_thread->join();
+
+            // TRANSFER MEMORY BETWEEN OUTPUT CIRCULAR BUFFER AND MODEL BUFFER
+            for (int c(0); c < m_out_dim; c++)
+                m_out_buffer[c].put(m_out_model[c].get(), m_buffer_size);
+
+        }
+        */
+
         if (m_in_buffer[0].full()) { // BUFFER IS FULL
-            // IF USE THREAD, CHECK THAT COMPUTATION IS OVER
-            if (m_compute_thread && m_use_thread) {
-                m_compute_thread->join();
-            }
 
             // TRANSFER MEMORY BETWEEN INPUT CIRCULAR BUFFER AND MODEL BUFFER
             for (int c(0); c < m_in_dim; c++) {
@@ -256,15 +205,16 @@ public:
                 m_in_buffer[c].get(m_in_model[c].get(), m_buffer_size);
             }
 
-            if (!m_use_thread) // PROCESS DATA RIGHT NOW
+            if (!m_use_thread) { // PROCESS DATA RIGHT NOW
                 model_perform();
+            }
+
+            if (m_use_thread) // PROCESS DATA LATER
+                m_compute_thread = std::make_unique<std::thread>(&Rave::model_perform, this);
 
             // TRANSFER MEMORY BETWEEN OUTPUT CIRCULAR BUFFER AND MODEL BUFFER
             for (int c(0); c < m_out_dim; c++)
                 m_out_buffer[c].put(m_out_model[c].get(), m_buffer_size);
-
-            if (m_use_thread) // PROCESS DATA LATER
-                m_compute_thread = std::make_unique<std::thread>(&Rave::model_perform, this);
         }
 
         // std::cout << "copy to output" << std::endl;
@@ -348,6 +298,7 @@ public:
         if (!m_model.m_cuda_available) {
             m_use_thread = false;
         }
+        m_use_thread = false;
 #endif
 
         // Clip the UGen's inputs to the actual num of dimensions
