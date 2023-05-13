@@ -1,4 +1,4 @@
 build
-thirdparty
-libfaust
+thirdparty/libsndfile*
+thirdparty/faust
 *.exe
