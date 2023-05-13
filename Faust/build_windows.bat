@@ -1,10 +1,4 @@
-rem mkdir libfaust\windows-x86_64
-rem Faust-2.58.18-win64.exe /S /D=%cd%\libfaust\windows-x86_64
-
-rem set CHUCK_DIR="C:/Program Files (x86)/ChucK/"
-set CHUCK_DIR=C:/Program Files/chuck/
-
-mkdir thirdparty
+set CHUCK_DIR=C:/Program Files/ChucK
 
 rem Download libsndfile
 if not exist "thirdparty/libsndfile-1.2.0-win64/" (
@@ -22,13 +16,15 @@ if not exist "thirdparty/faust/" (
     echo "Downloading faust..." 
 	cd thirdparty
 	git clone https://github.com/grame-cncm/faust.git
+	cd faust
+	git checkout 28a5eacb0acbb80203b93ee71663d9a097536641
 	echo "Downloaded faust." 
-	cd ..
+	cd ../..
 )
 
-cmake -Bbuild -DFAUST_DIR="thirdparty/faust" -DFAUST_LIB_DIR="libfaust/windows-x86_64" -DSndFile_DIR="thirdparty/libsndfile-1.2.0-win64/cmake"
+cmake -Bbuild -DFAUST_DIR="thirdparty/faust" -DLIBFAUST_DIR="thirdparty/libfaust/win64/Release" -DSndFile_DIR="thirdparty/libsndfile-1.2.0-win64/cmake"
 cmake --build build --config Release
 
-cp "libfaust/windows-x86_64/lib/faust.dll" "%CHUCK_DIR%/bin/faust.dll"
-xcopy "libfaust/windows-x86_64/share/faust" "%CHUCK_DIR%/share/faust" /E /I /D
-cp "thirdparty/libsndfile-1.2.0-win64/bin/sndfile.dll" "%CHUCK_DIR%/bin/sndfile.dll"
+cp "thirdparty/libfaust/win64/Release/lib/faust.dll" "%CHUCK_DIR%/faust.dll"
+xcopy "thirdparty/libfaust/win64/Release/share/faust" "%CHUCK_DIR%/../share/faust" /E /I /D
+cp "thirdparty/libsndfile-1.2.0-win64/bin/sndfile.dll" "%CHUCK_DIR%/sndfile.dll"

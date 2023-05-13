@@ -36,8 +36,12 @@ include_directories(${FAUST_DIR}/compiler)
 include_directories(${FAUST_DIR}/compiler/utils)
 
 # Link libfaust based on platform
-target_link_directories(${PROJECT_NAME} PRIVATE ${FAUST_LIB_DIR}/lib)
+target_link_directories(${PROJECT_NAME} PRIVATE ${LIBFAUST_DIR}/lib)
+if(MSVC)
+target_link_libraries(${PROJECT_NAME} PRIVATE libfaustwithllvm.lib)
+else()
 target_link_libraries(${PROJECT_NAME} PRIVATE libfaustwithllvm.a)
+endif()
 
 # Platform-specific libraries and definitions
 if(APPLE)

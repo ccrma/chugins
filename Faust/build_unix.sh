@@ -3,34 +3,13 @@ rm "/usr/local/lib/chuck/libfaust.2.dylib"
 
 if [ "$(uname)" = "Darwin" ]; then
     if [[ $(uname -m) == 'arm64' ]]; then
-        export FAUST_LIB_DIR=$PWD/libfaust/darwin-arm64/
+        export LIBFAUST_DIR=$PWD/thirdparty/libfaust/darwin-arm64/Release
     else
-        export FAUST_LIB_DIR=$PWD/libfaust/darwin-x86_64/
+        export LIBFAUST_DIR=$PWD/thirdparty/libfaust/darwin-x64/Release
     fi
 else
-    export FAUST_LIB_DIR=$PWD/libfaust/ubuntu-x86_64/
+    export LIBFAUST_DIR=$PWD/thirdparty/libfaust/ubuntu-x86_64/Release
 fi
-
-mkdir -p $FAUST_LIB_DIR
-
-# if [ "$(uname)" = "Darwin" ]; then
-#     echo "You are running macOS"
-#     # curl -L https://github.com/DBraun/faust/suites/12075724181/artifacts/635656964 -o faust-2.58.18-arm64.dmg.zip
-#     # unzip -o faust-2.58.18-arm64.dmg.zip
-#     # hdiutil attach faust-2.58.18-arm64.dmg
-#     cp -R /Volumes/Faust-2.58.18/Faust-2.58.18/* $FAUST_LIB_DIR
-#     # hdiutil detach /Volumes/Faust-2.58.18/
-# elif [ "$(expr substr $(uname -s) 1 5)" = "Linux" ]; then
-#     echo "You are running Linux"
-# elif [ "$(expr substr $(uname -s) 1 10)" = "MINGW32_NT" ] || [ "$(expr substr $(uname -s) 1 10)" = "MINGW64_NT" ]; then
-#     echo "You are running Windows"
-#     exit
-# else
-#     echo "Unknown operating system"
-#     exit
-# fi
-
-mkdir thirdparty
 
 # Clone libsndfile
 if [ ! -d "thirdparty/libsndfile/" ] 
@@ -54,13 +33,15 @@ then
     echo "Downloading faust..." 
     cd thirdparty
     git clone https://github.com/grame-cncm/faust.git
+    cd faust
+    git checkout 28a5eacb0acbb80203b93ee71663d9a097536641
     echo "Downloaded faust."
-    cd ..
+    cd ../..
 else
     git -C thirdparty/faust pull
 fi
 
-cmake -Bbuild $CMAKEOPTS -DFAUST_DIR="thirdparty/faust" -DFAUST_LIB_DIR="$FAUST_LIB_DIR" -DSndFile_DIR="thirdparty/libsndfile/build"
+cmake -Bbuild $CMAKEOPTS -DFAUST_DIR="thirdparty/faust" -DLIBFAUST_DIR="$LIBFAUST_DIR" -DSndFile_DIR="thirdparty/libsndfile/build"
 cmake --build build --config Release
 
 mkdir "/usr/local/lib/chuck"
