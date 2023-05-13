@@ -12,7 +12,7 @@ You must install [cmake](https://cmake.org/download/) and [git](https://git-scm.
 
 ### Faust Libraries
 
-If you are compiling locally, skip this paragraph. If you are *not* compiling locally (someone gave you a Faust.chug file), you still need to install the [Faust Libraries](https://faustlibraries.grame.fr/). If on macOS/Linux, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `/usr/local/share/faust/`. For example, this should result in the existence of this file: `/usr/local/share/faust/all.lib`. If on Windows, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `C:/Program Files/share/faust`. What's important is that the `share` folder is next to the folder which contains `chuck.exe` (which we are assuming is `C:/Program Files/chuck.exe`).
+If you are compiling locally, skip this paragraph. If you are **not** compiling locally (someone gave you a Faust.chug file), you still need to install the [Faust Libraries](https://faustlibraries.grame.fr/). If on macOS/Linux, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `/usr/local/share/faust/`. For example, this should result in the existence of this file: `/usr/local/share/faust/all.lib`. If on Windows, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `C:/Program Files/share/faust`. What's important is that the `share` folder is next to the folder which contains `chuck.exe` (which we are assuming is `C:/Program Files/chuck.exe`).
 
 ### Building FaucK
 
@@ -22,7 +22,7 @@ Navigate to `thirdparty/libfaust` and run `sh download_libfaust.sh` in Terminal.
 
 In a Terminal window, navigate to this README and run `sh build_unix.sh`.
 
-On macOS/Linux, the goal is to create `Faust.chug` inside `/usr/local/lib/chuck`. On macOS, we additionally want `libfaust.2.dylib` in that folder. On Linux, instead, we want `libfaust.so.2` in that folder. After checking that these files exist, run chuck with a FaucK example.
+On macOS/Linux, the goal is to create `Faust.chug` inside `/usr/local/lib/chuck`. After checking that this file exists, run chuck with a FaucK example.
 
 #### Windows
 
@@ -32,9 +32,9 @@ Next, create a **permanent** environment variable `CHUCK_CHUGIN_PATH` and set it
 
 Navigate to `thirdparty/libfaust`. Run `call download_libfaust.bat` in a cmd prompt.
 
-Navigate to this README in a cmd window and run `call build_windows.bat`.
+Navigate to this README in a cmd prompt and run `call build_windows.bat`.
 
-On Windows, the goal is to create `Faust.chug` inside `%USERPROFILE%/Documents/ChucK/chugins` and both `faust.dll` and `sndfile.dll` inside `C:/Program Files/ChucK/`, so check that these files exist. Then run `chuck.exe` with a FaucK example.
+On Windows, the goal is to create `Faust.chug` inside `%USERPROFILE%/Documents/ChucK/chugins` and `sndfile.dll` inside `C:/Program Files/ChucK/`. After checking that these files exist, run chuck with a FaucK example.
 
 ## Using FaucK
 

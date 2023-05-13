@@ -38,12 +38,11 @@ then
     git checkout 28a5eacb0acbb80203b93ee71663d9a097536641
     echo "Downloaded faust."
     cd ../..
-else
-    git -C thirdparty/faust pull
 fi
 
 cmake -Bbuild $CMAKEOPTS -DFAUST_DIR="thirdparty/faust" -DLIBFAUST_DIR="$LIBFAUST_DIR" -DSndFile_DIR="thirdparty/libsndfile/install"
 cmake --build build --config Release
 
-mkdir "/usr/local/lib/chuck"
+mkdir -p "/usr/local/lib/chuck"
 cp "build/libFaucK.dylib" "/usr/local/lib/chuck/Faust.chug"
+cp -r $LIBFAUST_DIR/share/faust /usr/local/share/faust
