@@ -33,7 +33,10 @@
 #define __ULIB_MACHINE_H__
 
 #include "chuck_dl.h"
+
+#ifndef  __DISABLE_OTF_SERVER__
 #include "chuck_otf.h"
+#endif
 
 // forward reference
 struct Chuck_VM;
@@ -53,9 +56,6 @@ t_CKBOOL machine_init( Chuck_Compiler * compiler, proc_msg_func func );
 // machine exports
 t_CKUINT machine_intsize();
 
-
-// ckdoc query
-DLL_QUERY ckdoc_query( Chuck_DL_Query * QUERY );
 
 
 
