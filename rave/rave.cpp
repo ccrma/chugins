@@ -163,11 +163,12 @@ public:
         //for (int c(0); c < m_out_dim; c++)
 
         
-        auto start = high_resolution_clock::now();
+        // Code for debugging render time
+        //auto start = high_resolution_clock::now();
         m_model.perform(in_model, out_model, m_buffer_size, m_method, 1);
-        auto stop = high_resolution_clock::now();
-        auto duration = duration_cast<milliseconds>(stop - start);
-        std::cout << duration.count() << std::endl;
+        //auto stop = high_resolution_clock::now();
+        //auto duration = duration_cast<milliseconds>(stop - start);
+        //std::cout << duration.count() << std::endl;
     }
 
     void perform(SAMPLE* in, SAMPLE* out, t_CKUINT nframes) {
@@ -307,7 +308,6 @@ public:
         if (!m_model.m_cuda_available) {
             m_use_thread = false;
         }
-        // m_use_thread = false;
 #endif
 
         // Clip the UGen's inputs to the actual num of dimensions
