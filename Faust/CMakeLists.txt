@@ -27,8 +27,24 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Find sndfile and link it
-find_package(SndFile REQUIRED HINTS ${SndFile_DIR})
-target_link_libraries(${PROJECT_NAME} PRIVATE SndFile::sndfile)
+if (MSVC)
+    find_package(SndFile REQUIRED HINTS ${SndFile_DIR})
+    target_link_libraries(${PROJECT_NAME} PRIVATE SndFile::sndfile)
+else()
+    find_package(PkgConfig REQUIRED)
+    # We expect the user to have built libsndfile as a static lib
+    # and for it to be accessible via `pkg-config --static libsndfile`
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+    list(APPEND PKG_CONFIG_EXECUTABLE "--static")  # append temporarily
+    pkg_check_modules(SNDFILE REQUIRED IMPORTED_TARGET sndfile)
+    pkg_check_modules(FLAC REQUIRED IMPORTED_TARGET flac)
+    pkg_check_modules(VORBIS REQUIRED IMPORTED_TARGET vorbis)
+    pkg_check_modules(OGG REQUIRED IMPORTED_TARGET ogg)
+    pkg_check_modules(OPUS REQUIRED IMPORTED_TARGET opus)
+    pkg_check_modules(MPG123 REQUIRED IMPORTED_TARGET libmpg123)
+    list(POP_BACK PKG_CONFIG_EXECUTABLE)  # undo the append above
+    target_link_libraries (${PROJECT_NAME} PRIVATE PkgConfig::SNDFILE PkgConfig::FLAC PkgConfig::VORBIS PkgConfig::OGG PkgConfig::OPUS PkgConfig::MPG123)
+endif()
 
 # Include directories for libfaust
 include_directories(${FAUST_DIR}/architecture)

@@ -6,13 +6,32 @@ FaucK is a Chugin allowing to combine the powerful, succinct [Functional AUdio S
 
 ## Compilation and Installation
 
-### Pre-requisites for all platforms
+### Prerequisites for all platforms
 
 You must install [cmake](https://cmake.org/download/) and [git](https://git-scm.com/downloads) so that they're accessible in Terminal/cmd prompts.
 
 ### Faust Libraries
 
-If you are compiling locally, skip this paragraph. If you are **not** compiling locally (someone gave you a Faust.chug file), you still need to install the [Faust Libraries](https://faustlibraries.grame.fr/). If on macOS/Linux, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `/usr/local/share/faust/`. For example, this should result in the existence of this file: `/usr/local/share/faust/all.lib`. If on Windows, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `C:/Program Files/share/faust`. What's important is that the `share` folder is next to the folder which contains `chuck.exe` (which we are assuming is `C:/Program Files/chuck.exe`).
+If you are compiling locally, skip this paragraph. If you are **not** compiling locally (someone gave you a Faust.chug file), you still need to install the [Faust Libraries](https://faustlibraries.grame.fr/).
+
+If on macOS/Linux, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `/usr/local/share/faust/`. For example, this should result in the existence of this file: `/usr/local/share/faust/all.lib`.
+
+If on Windows, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `C:/Program Files/share/faust`. What's important is that the `share` folder is next to the folder which contains `chuck.exe` (which we are assuming is `C:/Program Files/chuck.exe`).
+
+### Libsndfile
+
+On Windows, the later scripts will automatically download `libsndfile`, so no action is needed.
+
+On macOS, install the dependencies for libsndfile with `brew`:
+
+```brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config```
+
+On Linux:
+```
+sudo apt install autoconf autogen automake build-essential libasound2-dev \
+libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev \
+libmpg123-dev pkg-config python
+```
 
 ### Building FaucK
 

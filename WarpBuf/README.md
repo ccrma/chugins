@@ -29,7 +29,7 @@ WarpBuf warpBuf2 => dac;
 
 WarpBuf has been tested with `asd` files created with Ableton Live 9 and 10.1.30.
 
-## Installation
+## Preparation
 
 Make sure you have `cmake`, `git`, and `sh` available from the command line/Terminal. On macOS/Linux, you also need `pkg-config`.
 
@@ -37,6 +37,23 @@ Update submodules:
 `git submodule update --init --recursive`
 
 If on Windows, create an extra folder for your chugins, `%USERPROFILE%/Documents/ChucK/chugins/`. Create a system environment variable `CHUCK_CHUGIN_PATH` equal to this path.
+
+## Libsndfile
+
+On Windows, the later scripts will automatically download libsndfile so no action is needed.
+
+On macOS, install the dependencies for libsndfile with `brew`:
+
+```brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config```
+
+On Linux:
+```
+sudo apt install autoconf autogen automake build-essential libasound2-dev \
+libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev \
+libmpg123-dev pkg-config python
+```
+
+## Compiling WarpBuf
 
 In `chugins/WarpBuf`, open a command window on Windows or Terminal window on macOS and run `sh build_all_platforms.sh`. On Windows, the `WarpBuf.chug` should appear inside `%USERPROFILE%/Documents/ChucK/chugins/`, and on macOS/Linux it should appear in `/usr/local/lib/chuck`.
 
