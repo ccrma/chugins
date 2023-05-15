@@ -1,4 +1,5 @@
-// Use scaler to make an easy vibrato
+// Use Patch and Range to smoothly modulate the width of
+// the pulse oscillator.
 SinOsc lfo => Range r => Patch p => blackhole;
 PulseOsc tone => dac;
 
@@ -6,9 +7,10 @@ PulseOsc tone => dac;
 Patch.help();
 
 0.1 => lfo.freq;
-// Modulate frequency +- 10Hz around A440
+// Modulate pulse width
 (-1, 1, 0.07, 0.93) => r.range;
 
+// Connect to the "width" member function of tone.
 p.connect(tone, "width");
 
 1::week => now;
