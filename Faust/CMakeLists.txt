@@ -28,12 +28,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Find sndfile and link it
 if (MSVC)
-    find_package(SndFile REQUIRED HINTS ${SndFile_DIR})
+    find_package(SndFile REQUIRED HINTS "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile-1.2.0-win64/cmake")
     target_link_libraries(${PROJECT_NAME} PRIVATE SndFile::sndfile)
 else()
     find_package(PkgConfig REQUIRED)
-    # We expect the user to have built libsndfile as a static lib
-    # and for it to be accessible via `pkg-config --static libsndfile`
+    # We expect the user to have used brew to install the dependencies
+    # for libsndfile, to have built libsndfile as a static lib,
+    # and for it to be accessible via `pkg-config --static libsndfile`.
     set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
     list(APPEND PKG_CONFIG_EXECUTABLE "--static")  # append temporarily
     pkg_check_modules(SNDFILE REQUIRED IMPORTED_TARGET sndfile)
@@ -47,9 +48,13 @@ else()
 endif()
 
 # Include directories for libfaust
+if(NOT FAUST_DIR)
+    set(FAUST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/faust")
+endif()
 include_directories(${FAUST_DIR}/architecture)
 include_directories(${FAUST_DIR}/compiler)
 include_directories(${FAUST_DIR}/compiler/utils)
+unset(FAUST_DIR CACHE)
 
 # Link libfaust based on platform
 target_link_directories(${PROJECT_NAME} PRIVATE ${LIBFAUST_DIR}/lib)

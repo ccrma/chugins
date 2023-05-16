@@ -22,7 +22,7 @@ if not exist "thirdparty/faust/" (
 	cd ../..
 )
 
-cmake -Bbuild -DFAUST_DIR="thirdparty/faust" -DLIBFAUST_DIR="thirdparty/libfaust/win64/Release" -DSndFile_DIR="thirdparty/libsndfile-1.2.0-win64/cmake"
+cmake -Bbuild -DLIBFAUST_DIR="thirdparty/libfaust/win64/Release"
 cmake --build build --config Release
 
 xcopy "thirdparty/libfaust/win64/Release/share/faust" "%CHUCK_DIR%/../share/faust" /E /I /D

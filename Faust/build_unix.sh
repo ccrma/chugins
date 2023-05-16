@@ -35,12 +35,12 @@ then
     cd thirdparty
     git clone https://github.com/grame-cncm/faust.git
     cd faust
-    git checkout 28a5eacb0acbb80203b93ee71663d9a097536641
+    git checkout a1c3a515abbcafea0a6e4e2ec7ecb0f092de5349
     echo "Downloaded faust."
     cd ../..
 fi
 
-cmake -Bbuild $CMAKEOPTS -DFAUST_DIR="thirdparty/faust" -DLIBFAUST_DIR="$LIBFAUST_DIR" -DSndFile_DIR="thirdparty/libsndfile/install"
+cmake -Bbuild $CMAKEOPTS -DLIBFAUST_DIR="$LIBFAUST_DIR" -DSndFile_DIR="thirdparty/libsndfile/install"
 cmake --build build --config Release
 
 mkdir -p "/usr/local/lib/chuck"
