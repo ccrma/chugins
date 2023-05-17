@@ -206,6 +206,11 @@ CK_DLL_QUERY( Multicomb )
   QUERY->add_ctor(QUERY, multicomb_ctor);
   // register the destructor (probably no need to change)
   QUERY->add_dtor(QUERY, multicomb_dtor);
+
+  QUERY->doc_class(QUERY, "Multiple simultaneous comb filters randomly "
+                   "chosen within a specified frequency range "
+                   "and spread across the stereo field.");
+  QUERY->add_ex(QUERY, "filter/Multicomb.ck");
   
   // for UGen's only: add tickf function
   QUERY->add_ugen_funcf(QUERY, multicomb_tickf, NULL, 2, 2);
@@ -216,25 +221,34 @@ CK_DLL_QUERY( Multicomb )
   
   QUERY->add_mfun(QUERY, multicomb_setNum, "int", "num");
   QUERY->add_arg(QUERY, "int", "num");
+  QUERY->doc_func(QUERY, "Set number of comb filters. Default 5.");
 
   QUERY->add_mfun(QUERY, multicomb_setMinfreq, "float", "minfreq");
   QUERY->add_arg(QUERY, "float", "minfreq");
+  QUERY->doc_func(QUERY, "Set low frequency. Default 220.");
 
   QUERY->add_mfun(QUERY, multicomb_setMaxfreq, "float", "maxfreq");
   QUERY->add_arg(QUERY, "float", "maxfreq");
+  QUERY->doc_func(QUERY, "Set max frequency. Default 880.");
 
   QUERY->add_mfun(QUERY, multicomb_setRange, "void", "set");
   QUERY->add_arg(QUERY, "float", "minfreq");
   QUERY->add_arg(QUERY, "float", "maxfreq");
+  QUERY->doc_func(QUERY, "Set both low and high frequencies.");  
 
   QUERY->add_mfun(QUERY, multicomb_setRevtime, "dur", "revtime");
   QUERY->add_arg(QUERY, "dur", "revtime");
+  QUERY->doc_func(QUERY, "Set total ring time. Default 1::second.");
   
   // example of adding getter method
   QUERY->add_mfun(QUERY, multicomb_getNum, "int", "num");
+  QUERY->doc_func(QUERY, "Get number of comb filters. Default 5.");
   QUERY->add_mfun(QUERY, multicomb_getMinfreq, "float", "minfreq");
+  QUERY->doc_func(QUERY, "Get low frequency. Default 220.");
   QUERY->add_mfun(QUERY, multicomb_getMaxfreq, "float", "maxfreq");
+  QUERY->doc_func(QUERY, "Get max frequency. Default 880.");
   QUERY->add_mfun(QUERY, multicomb_getRevtime, "dur", "revtime");
+  QUERY->doc_func(QUERY, "Get total ring time. Default 1::second.");
   
   // this reserves a variable in the ChucK internal class to store 
   // referene to the c++ class we defined above

@@ -194,6 +194,9 @@ CK_DLL_QUERY( PitchTrack )
     QUERY->add_ctor(QUERY, pitchtrack_ctor);
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, pitchtrack_dtor);
+
+    QUERY->doc_class(QUERY, "PitchTrack is a monophonic autocorrelation pitch tracker with a fast response and extremely high accuracy, even at low frequencies. It is adapted from [helmholtz~] for Pd by Katja, documented at http://www.katjaas.nl/helmholtz/helmholtz.html");
+    QUERY->add_ex(QUERY, "analysis/PitchTrack.ck");
     
     // for UGen's only: add tick function
     QUERY->add_ugen_func(QUERY, pitchtrack_tick, NULL, 1, 1);
@@ -207,35 +210,54 @@ CK_DLL_QUERY( PitchTrack )
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
 
+    QUERY->doc_func(QUERY, "Set the threshold for certainty about the result. A highly periodic signal (i.e. one that has a strong pitch center) should produce a result with a high fidelity, which a non-periodic signal (eg noise) will have a very low fidelity. Setting this parameter close to 1 should reduce the number of inaccurate reports. [0-1], default 0.95.");
+
     // example of adding setter method
     QUERY->add_mfun(QUERY, pitchtrack_setSensitivity, "float", "sensitivity");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Set the minimum RMS value to trigger a pitch calculation. Setting this parameter low forces PitchTrack to attempt to find the pitch of even very quiet sounds. Higher values will cause it to trigger only on louder notes. [0-1], default 0.003.");
 
     // example of adding setter method
     QUERY->add_mfun(QUERY, pitchtrack_setOverlap, "int", "overlap");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->doc_func(QUERY, "Set how much to overlap successive analysis frames. Higher values should produce smoother values, at the cost of an increase of CPU load. [1-?], default 2.");
 
     // example of adding setter method
     QUERY->add_mfun(QUERY, pitchtrack_setFrame, "int", "frame");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->doc_func(QUERY, "Set size of FFT frame for analysis. Smaller values result in lower latency and high responsiveness but less accuracy. Higher values result in considerably greater CPU load. Values that aren't powers of 2 get rounded up to the next power of 2. Recommend 512, 1024, or 2048. [128-?], default 2048.");
 
     // example of adding setter method
     QUERY->add_mfun(QUERY, pitchtrack_setBias, "float", "bias");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
 
+    QUERY->doc_func(QUERY, "Set the bias. Katja's pitch tracker introduces a small bias to help with the tracking. See the link above.");
+
     // example of adding getter method
     QUERY->add_mfun(QUERY, pitchtrack_getFreq, "float", "get");
+    QUERY->doc_func(QUERY, "Get calculated frequency.");
+
     QUERY->add_mfun(QUERY, pitchtrack_getFidelity, "float", "fidelity");
+    QUERY->doc_func(QUERY, "Get the threshold for certainty about the result. A highly periodic signal (i.e. one that has a strong pitch center) should produce a result with a high fidelity, which a non-periodic signal (eg noise) will have a very low fidelity. Setting this parameter close to 1 should reduce the number of inaccurate reports. [0-1], default 0.95.");
+
     QUERY->add_mfun(QUERY, pitchtrack_getSensitivity, "float", "sensitivity");
+    QUERY->doc_func(QUERY, "Get the minimum RMS value to trigger a pitch calculation. Setting this parameter low forces PitchTrack to attempt to find the pitch of even very quiet sounds. Higher values will cause it to trigger only on louder notes. [0-1], default 0.003.");
+
+
     QUERY->add_mfun(QUERY, pitchtrack_getOverlap, "int", "overlap");
+    QUERY->doc_func(QUERY, "Get how much to overlap successive analysis frames. Higher values should produce smoother values, at the cost of an increase of CPU load. [1-?], default 2.");
+
     QUERY->add_mfun(QUERY, pitchtrack_getFrame, "int", "frame");
+    QUERY->doc_func(QUERY, "Get size of FFT frame for analysis. Smaller values result in lower latency and high responsiveness but less accuracy. Higher values result in considerably greater CPU load. Values that aren't powers of 2 get rounded up to the next power of 2. Recommend 512, 1024, or 2048. [128-?], default 2048.");
+
     QUERY->add_mfun(QUERY, pitchtrack_getBias, "float", "bias");
+    QUERY->doc_func(QUERY, "Get the bias. Katja's pitch tracker introduces a small bias to help with the tracking. See the link above.");
     
-    // this reserves a variable in the ChucK internal class to store 
+    // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
     pitchtrack_data_offset = QUERY->add_mvar(QUERY, "int", "@pt_data", false);
 

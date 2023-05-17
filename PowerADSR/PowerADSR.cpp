@@ -399,6 +399,8 @@ CK_DLL_QUERY( PowerADSR)
 
     QUERY->begin_class(QUERY, "PowerADSR", "Envelope");
     QUERY->doc_class(QUERY, "ADSR envelope that uses a power function to create curved envelope phases. In general, curves under 1.0 are sharp, while curves over 1.0 are soft.");
+    QUERY->add_ex(QUERY, "effects/PowerADSR-feedback-beatings.ck");
+    QUERY->add_ex(QUERY, "effects/PowerADSR.ck");
 
     QUERY->add_ctor(QUERY, poweradsr_ctor);
     QUERY->add_dtor(QUERY, poweradsr_dtor);

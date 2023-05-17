@@ -24,7 +24,7 @@
 /*-----------------------------------------------------------------------------
 "kasfilter";
 Under-sampling-based resonant lowpass filter, 
-based on two sample&holds with a cosine crossfading between them. Each S&H 
+based on two sample & holds with a cosine crossfading between them. Each S&H
 samples at the moment it's faded out.
 The frequency of the crossfading and sampling of the input sets the cutoff.
 This leads to a infinitely steep cutoff, at the price of aliasing.
@@ -85,23 +85,61 @@ CK_DLL_QUERY(KasFilter)
     
     QUERY->add_ctor(QUERY, kasfilter_ctor);
     QUERY->add_dtor(QUERY, kasfilter_dtor);
+
+    QUERY->doc_class(QUERY, "Under-sampling-based resonant lowpass filter, "
+                     "based on two sample & holds with a cosine crossfading between them. Each S&H "
+                     "samples at the moment it's faded out.\n"
+                     "The frequency of the crossfading and sampling of the input sets the cutoff. "
+                     "This leads to a infinitely steep cutoff, at the price of aliasing. "
+                     "Negative feedback is used for resonance at the cutoff frequency, a technique "
+                     "that I believe is new here.\n"
+                     "In addition to the traditional modulation options waveshaping of "
+                     "the crossfading "
+                     "signal is provided. This leads to distortion at the cutoff frequency. "
+                     "At extreme values (and assuming no feedback is used) that makes the "
+                     "effect closer "
+                     "to traditional under-sampling.\n"
+                     "Linear interpolation is used on the input signal to avoid the S&Hs "
+                     "being quantised to ChucK's sample rate; This technique causes quite a few "
+                     "interesting artifacts that result from the ratio between the frequency of the "
+                     "input and the cutoff frequency. To emphasise those it makes sense to try to "
+                     "minimise artifacts induced by the digital environment itself. Thanks to "
+                     "Rob Hordijk for sharing his insights there.");
+    QUERY->add_ex(QUERY, "filter/KasFilter.ck");
     
     QUERY->add_ugen_func(QUERY, kasfilter_tick, NULL, 1, 1);
     
     QUERY->add_mfun(QUERY, kasfilter_setFreq, "float", "freq");
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Sets the cutoff frequency. "
+                    "This sets both the frequency at which the two "
+                    "sample & holds sample the input signal "
+                    " and the frequency of the sine that crossfades between them.");
 
     QUERY->add_mfun(QUERY, kasfilter_getFreq, "float", "freq");
+    QUERY->doc_func(QUERY, "Gets the cutoff frequency. "
+                    "This sets both the frequency at which the two "
+                    "sample & holds sample the input signal "
+                    " and the frequency of the sine that crossfades between them.");
+
 
     QUERY->add_mfun(QUERY, kasfilter_setResonance, "float", "resonance");
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Sets the resonance, which is implemented "
+                    "as negative feedback [0 - 0.95].");
 
     QUERY->add_mfun(QUERY, kasfilter_getResonance, "float", "resonance");
+    QUERY->doc_func(QUERY, "Gets the resonance, which is implemented "
+                    "as negative feedback [0 - 0.95].");
 
     QUERY->add_mfun(QUERY, kasfilter_setAccent, "float", "accent");
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Sets the amount of waveshaping on the crossfading sine [0 - 1]. "
+                    "1 is close to regular under-sampling (if no resonance is used).");
     
     QUERY->add_mfun(QUERY, kasfilter_getAccent, "float", "accent");
+    QUERY->doc_func(QUERY, "Gets the amount of waveshaping on the crossfading sine [0 - 1]. "
+                    "1 is close to regular under-sampling (if no resonance is used).");
 
     kasfilter_data_offset = QUERY->add_mvar(QUERY, "int", "@data", false);
     
