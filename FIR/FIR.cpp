@@ -41,31 +41,48 @@ CK_DLL_QUERY(FIR)
     
     QUERY->add_ctor(QUERY, FIR_ctor);
     QUERY->add_dtor(QUERY, FIR_dtor);
+
+    QUERY->doc_class(QUERY, "Yo!  This here is a ChugIn for ChucK. "
+                     "It's a general-purpose FIR filter.\n"
+                     "You make a new one:\n\n"
+                     "FIR myFilter;\n\n"
+                     "Then specify order:\n\n"
+                     "N => myFilter.order;"
+                     );
     
     QUERY->add_ugen_func(QUERY, FIR_tick, NULL, 1, 1);
     
     QUERY->add_mfun(QUERY, FIR_setOrder, "int", "order");
     QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->doc_func(QUERY, "Set filter's order.");
 
     QUERY->add_mfun(QUERY, FIR_getOrder, "int", "order");
+    QUERY->doc_func(QUERY, "Get filter's order.");
 
     QUERY->add_mfun(QUERY, FIR_setCoeff, "float", "coeff");
-    QUERY->add_arg(QUERY, "int", "arg");
-    QUERY->add_arg(QUERY, "float", "arg2");
+    QUERY->add_arg(QUERY, "int", "idx");
+    QUERY->add_arg(QUERY, "float", "coeff");
+    QUERY->doc_func(QUERY, "Set filter idx's coefficient to coeff.");
 
     QUERY->add_mfun(QUERY, FIR_getCoeff, "float", "coeff");
-    QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->add_arg(QUERY, "int", "idx");
+    QUERY->doc_func(QUERY, "Set filter idx's coefficient.");
 
     QUERY->add_mfun(QUERY, FIR_gaussian, "int", "gaussian");
-    QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->add_arg(QUERY, "float", "cutoff_freq");
+    QUERY->doc_func(QUERY, "Create a gaussian lowpass filter with cutoff cutoff_freq.");
 
     QUERY->add_mfun(QUERY, FIR_sinc, "int", "sinc");
-    QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->add_arg(QUERY, "float", "cutoff_freq");
+    QUERY->doc_func(QUERY, "Create a sinc lowpass filter with cutoff cutoff_freq.");
 
     QUERY->add_mfun(QUERY, FIR_hpHetero, "int", "hpHetero");
+    QUERY->doc_func(QUERY, ".");
+    QUERY->doc_func(QUERY, "Cosine modulate lowpass filter to 1/2 the sample rate.");
 
     QUERY->add_mfun(QUERY, FIR_bpHetero, "int", "bpHetero");
-    QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->add_arg(QUERY, "float", "freq");
+    QUERY->doc_func(QUERY, "Cosine modulate lowpass filter to freq.");
 
     FIR_data_offset = QUERY->add_mvar(QUERY, "int", "@lpc_data", false);  // CHECK THIS!!
     

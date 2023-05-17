@@ -681,6 +681,8 @@ CK_DLL_QUERY( WinFuncEnv )
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, winfuncenv_dtor);
 
+    QUERY->doc_class(QUERY, "WinFunEnv is an Attack/Release envelope built around window functions!");
+
     // for UGen's only: add tick function
     QUERY->add_ugen_func(QUERY, winfuncenv_tick, NULL, 1, 1);
 

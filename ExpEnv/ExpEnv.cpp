@@ -116,6 +116,15 @@ CK_DLL_QUERY(ExpEnv)
     
     QUERY->add_ctor(QUERY, expenv_ctor);
     QUERY->add_dtor(QUERY, expenv_dtor);
+
+    QUERY->doc_class(QUERY,  "ChucK Simple Decaying Exponential Envelope UGen\n\n"
+                     "Simple single time constant exponential decay, applied to any "
+                     "signal passed through it.  Obeys:  value, T60, radius, and keyOn "
+                     "Especially useful for Modal synthesis.  One of these for each mode:\n"
+                     "SinOsc s => ExpEnv e => dac;\n\n"
+
+                     "Also useful for noise excitation pulse, using it like:\n"
+                     "Noise n => ExpEnv e => dac;");
     
     QUERY->add_ugen_func(QUERY, expenv_tick, NULL, 1, 1);
     
@@ -131,8 +140,10 @@ CK_DLL_QUERY(ExpEnv)
     
     QUERY->add_mfun(QUERY, expenv_setT60, "dur", "T60");
     QUERY->add_arg(QUERY, "dur", "arg");
+    QUERY->doc_func(QUERY, "Set T60 delay time (time for sounds to decay by 60dB");
 
     QUERY->add_mfun(QUERY, expenv_getT60, "dur", "T60");
+    QUERY->doc_func(QUERY, "Get T60 delay time (time for sounds to decay by 60dB");
     
     QUERY->add_mfun(QUERY, expenv_keyOn, "int", "keyOn");
     QUERY->add_arg(QUERY, "int", "arg");

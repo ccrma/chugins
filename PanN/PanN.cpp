@@ -199,11 +199,11 @@ CK_DLL_QUERY( PanN )
     QUERY->add_mfun(QUERY, pan4_setPan, "float", "pan");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
-    QUERY->doc_class(QUERY, "Pan position [0-4]. ");
+    QUERY->doc_func(QUERY, "Set pan position [0-4].");
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, pan4_getPan, "float", "pan");
-    QUERY->doc_class(QUERY, "Pan position [0-4]. ");
+    QUERY->doc_func(QUERY, "Get pan position [0-4].");
     
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
@@ -222,6 +222,8 @@ CK_DLL_QUERY( PanN )
     QUERY->add_ctor(QUERY, pan8_ctor);
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, pan8_dtor);
+
+    QUERY->doc_class(QUERY, "Eight-channel equal-power panner.");
     
     // for UGen's only: add tick function
     QUERY->add_ugen_funcf(QUERY, pan8_tickf, NULL, 8, 8);
@@ -230,9 +232,11 @@ CK_DLL_QUERY( PanN )
     QUERY->add_mfun(QUERY, pan8_setPan, "float", "pan");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Set pan position [0-8].");
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, pan8_getPan, "float", "pan");
+    QUERY->doc_func(QUERY, "Get pan position [0-8].");
     
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
@@ -251,6 +255,8 @@ CK_DLL_QUERY( PanN )
     QUERY->add_ctor(QUERY, pan16_ctor);
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, pan16_dtor);
+
+    QUERY->doc_class(QUERY, "Sixteen-channel equal-power panner.");
     
     // for UGen's only: add tick function
     QUERY->add_ugen_funcf(QUERY, pan16_tickf, NULL, 16, 16);
@@ -259,9 +265,11 @@ CK_DLL_QUERY( PanN )
     QUERY->add_mfun(QUERY, pan16_setPan, "float", "pan");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Set pan position [0-16].");    
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, pan16_getPan, "float", "pan");
+    QUERY->doc_func(QUERY, "Get pan position [0-16].");        
     
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above

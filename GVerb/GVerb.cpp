@@ -298,6 +298,16 @@ CK_DLL_QUERY( GVerb )
     QUERY->add_ctor(QUERY, gverb_ctor);
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, gverb_dtor);
+
+    QUERY->doc_class(QUERY, "GVerb is a very smooth reverberator with the "
+                     "ability to produce very long "
+                     "reverb times.\n"
+
+                     "GVERB is based on the original \"gverb/gigaverb\" by Juhana Sadeharju "
+                     "(kouhia at nic.funet.fi). The code for this version was adapted from "
+                     "RTcmix (http:rtcmix.org), which in turn adapted it from the Max/MSP "
+                     "version by Olaf Mtthes (olaf.matthes at gmx.de).");
+
     
     // for UGen's only: add tick function
     QUERY->add_ugen_funcf(QUERY, gverb_tick, NULL, 2, 2);
@@ -310,57 +320,75 @@ CK_DLL_QUERY( GVerb )
     QUERY->add_mfun(QUERY, gverb_setRoomsize, "float", "roomsize");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Set room size [1.0 - 300.0]. Default 30.0.");
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, gverb_getRoomsize, "float", "roomsize");
+    QUERY->doc_func(QUERY, "Get room size [1.0 - 300.0].");
 
     // example of adding setter method
     QUERY->add_mfun(QUERY, gverb_setRevTime, "dur", "revtime");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "dur", "arg");
+    QUERY->doc_func(QUERY, "Set reverberation time. Default 5::second.");
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, gverb_getRevTime, "dur", "revtime");
+    QUERY->doc_func(QUERY, "Get reverberation time.");
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, gverb_getDamping, "float", "damping");
+    QUERY->doc_func(QUERY, "Get high frequency rolloff [0 - 1]. "
+                    "0 damps the reverb signal completely, 1 not at all. Default 0.");
 
     // example of adding setter method
     QUERY->add_mfun(QUERY, gverb_setDamping, "float", "damping");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Set high frequency rolloff [0 - 1]. "
+                    "0 damps the reverb signal completely, 1 not at all. Default 0.");
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, gverb_getBandwidth, "float", "bandwidth");
+    QUERY->doc_func(QUERY, "Get the input bandwidth [0 - 1]. "
+                    "Same as damping control, but on the input signal. Default 0.5.");
 
     // example of adding setter method
     QUERY->add_mfun(QUERY, gverb_setBandwidth, "float", "bandwidth");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Set the input bandwidth [0 - 1]. "
+                    "Same as damping control, but on the input signal. Default 0.5.");
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, gverb_getDryLevel, "float", "dry");
+    QUERY->doc_func(QUERY, "Get the amount of dry signal [0 - 1]. Default 0.5.");
 
     // example of adding setter method
     QUERY->add_mfun(QUERY, gverb_setDryLevel, "float", "dry");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Set the amount of dry signal [0 - 1]. Default 0.5.");
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, gverb_getEarlyLevel, "float", "early");
+    QUERY->doc_func(QUERY, "Get the early reflection level [0 - 1]. Default 0.4.");
 
     // example of adding setter method
     QUERY->add_mfun(QUERY, gverb_setEarlyLevel, "float", "early");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Set the early reflection level [0 - 1]. Default 0.4.");
 
     // example of adding getter method
     QUERY->add_mfun(QUERY, gverb_getTailLevel, "float", "tail");
+    QUERY->doc_func(QUERY, "Get the tail level [0 - 1]. Default 0.5.");
 
     // example of adding setter method
     QUERY->add_mfun(QUERY, gverb_setTailLevel, "float", "tail");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Set the tail level [0 - 1]. Default 0.5.");
     
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above

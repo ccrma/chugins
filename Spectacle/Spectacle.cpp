@@ -502,6 +502,8 @@ CK_DLL_QUERY( Spectacle )
   QUERY->add_ctor(QUERY, spectacle_ctor);
   // register the destructor (probably no need to change)
   QUERY->add_dtor(QUERY, spectacle_dtor);
+
+  QUERY->doc_class(QUERY, "FFT-based spectral delay and EQ by John Gibson. Inspired by the totally awesome Spektral Delay plug-in by Native Instruments.");
   
   // for UGen's only: add tick function
   QUERY->add_ugen_funcf(QUERY, spectacle_tick, NULL, 2, 2);
@@ -512,113 +514,139 @@ CK_DLL_QUERY( Spectacle )
   
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_clear, "void", "clear");
+  QUERY->doc_func(QUERY, "Reset Spectacle.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setHold, "int", "hold");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "int", "arg");
+  QUERY->doc_func(QUERY, "Set hold. True to suppress input, false disables.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_getHold, "int", "hold");
+  QUERY->doc_func(QUERY, "Get hold. True to suppress input, false disables.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setPostEQ, "int", "posteq");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "int", "arg");
+  QUERY->doc_func(QUERY, "Set posteq to true to apply EQ after delay, rather than before.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_getPostEQ, "int", "posteq");
+  QUERY->doc_func(QUERY, "Get posteq. True applies EQ after delay, rather than before.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setFFTlen, "int", "fftlen");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "int", "arg");
+  QUERY->doc_func(QUERY, "Set FFT frame size (power of 2).");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_getFFTlen, "int", "fftlen");
+  QUERY->doc_func(QUERY, "Get FFT frame size (power of 2).");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setOverlap, "int", "overlap");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "int", "arg");
+  QUERY->doc_func(QUERY, "Set frame overlap; best between 2 and 6.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_getOverlap, "int", "overlap");
+  QUERY->doc_func(QUERY, "Get frame overlap; best between 2 and 6.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setMaxDelay, "dur", "delayMax");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "dur", "delay");
+  QUERY->doc_func(QUERY, "Set maximum delay time.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_getMaxDelay, "dur", "delayMax");
+  QUERY->doc_func(QUERY, "Get maximum delay time.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setMinDelay, "dur", "delayMin");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "dur", "delay");
+  QUERY->doc_func(QUERY, "Set minimum delay time.");
 
-  // example of adding setter method
+  // example of adding getter method
   QUERY->add_mfun(QUERY, spectacle_getMinDelay, "dur", "delayMin");
+  QUERY->doc_func(QUERY, "Get minimum delay time.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setMinFreq, "float", "freqMin");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "float", "arg");
+  QUERY->doc_func(QUERY, "Set minimum frequency processed by Spectacle.");
 
   // example of adding getter method
   QUERY->add_mfun(QUERY, spectacle_getMinFreq, "float", "freqMin");
+  QUERY->doc_func(QUERY, "Get minimum frequency processed by Spectacle.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setMaxFreq, "float", "freqMax");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "float", "arg");
+  QUERY->doc_func(QUERY, "Set maximum frequency processed by Spectacle.");
 
   // example of adding getter method
   QUERY->add_mfun(QUERY, spectacle_getMaxFreq, "float", "freqMax");
+  QUERY->doc_func(QUERY, "Get maximum frequency processed by Spectacle.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setMix, "float", "mix");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "float", "mix");
+  QUERY->doc_func(QUERY, "Set mix of processed and unprocessed signal [0 - 1].");
 
   // example of adding getter method
   QUERY->add_mfun(QUERY, spectacle_getMix, "float", "mix");
+  QUERY->doc_func(QUERY, "Get mix of processed and unprocessed signal [0 - 1].");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setFreqRange, "void", "range");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "float", "arg1");
   QUERY->add_arg(QUERY, "float", "arg2");
+  QUERY->doc_func(QUERY, "Set both min and max freqs in one command.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setTableLen, "int", "bands");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "int", "arg");
+  QUERY->doc_func(QUERY, "Set number of frequency bands, [1 - 512], default 64");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_getTableLen, "int", "bands");
+  QUERY->doc_func(QUERY, "Get number of frequency bands, [1 - 512], default 64");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setTable, "int", "table");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "string", "table");
   QUERY->add_arg(QUERY, "string", "type");
+  QUERY->doc_func(QUERY, "Set \"delay\", “eq”, or \"feedback\" tables to the types \"random\", \"ascending\", or \"descending.\" Example: table(\"delay\", \"random\");");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setDelay, "dur", "delay");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "dur", "delay");
+  QUERY->doc_func(QUERY, "Set the same delay duration for all bands.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setEQ, "float", "eq");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "float", "eq");
+  QUERY->doc_func(QUERY, "Set the same EQ value for all bands (value is +/- dB).");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, spectacle_setFB, "float", "feedback");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "float", "feedback");
+  QUERY->doc_func(QUERY, "Set the same feedback value for all bands [-1.0 - 1.0].");
   
   // this reserves a variable in the ChucK internal class to store 
   // referene to the c++ class we defined above

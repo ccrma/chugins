@@ -205,6 +205,25 @@ CK_DLL_QUERY( Elliptic )
   QUERY->add_ctor(QUERY, elliptic_ctor);
   // register the destructor (probably no need to change)
   QUERY->add_dtor(QUERY, elliptic_dtor);
+
+  QUERY->doc_class(QUERY, "Elliptic implements cascaded IIR filters and a built-in "
+"elliptical filter design. It is capable of low-pass, "
+"high-pass, or bandpass filtering with very steep "
+"slopes.\n"
+"The atten determines how much of the signal is "
+"attenuated outside the passband.\n"
+"Elliptic filters come with a trade-off for their steep "
+"slopes: they have a certain amount of ripple outside "
+"the passbands. A very small ripple (0.1 or 0.2 dB) "
+"produces very little ringing, whereas a large ripple "
+"(eg. 20 dB) produces a very strong harmonic ring.\n"
+"The filter design algorithm sometimes can't fulfill the "
+"design criteria -- a particular combination of cutoff "
+"frequencies, ripple, and attenuation. If that happens, "
+"the user is warned that the filter is not initialized, "
+"and the filter is bypassed. This may happen, for "
+"instance, if you ask for a very steep attenuation with "
+"very low ripple.");
   
   // for UGen's only: add tick function
   QUERY->add_ugen_funcf(QUERY, elliptic_tick, NULL, 2, 2);
@@ -217,27 +236,34 @@ CK_DLL_QUERY( Elliptic )
   QUERY->add_mfun(QUERY, elliptic_setRipple, "float", "ripple");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "float", "arg");
+  QUERY->doc_func(QUERY, "Set filter ripple in dB. Default 0.2");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, elliptic_setAtten, "float", "atten");
+  QUERY->doc_func(QUERY, "Set filter attenuation in dB. Default 90.0");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "float", "arg");
   
   // example of adding getter method
   QUERY->add_mfun(QUERY, elliptic_getRipple, "float", "ripple");
+  QUERY->doc_func(QUERY, "Get filter ripple in dB.");
   // example of adding getter method
   QUERY->add_mfun(QUERY, elliptic_getAtten, "float", "atten");
+  QUERY->doc_func(QUERY, "Get filter attenuation in dB.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, elliptic_setBypass, "int", "bypass");
+  QUERY->doc_func(QUERY, "Set switch bypass. 1 is on, 0 is off. Default 0");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "int", "arg");
   
   // example of adding getter method
   QUERY->add_mfun(QUERY, elliptic_getBypass, "int", "bypass");
+  QUERY->doc_func(QUERY, "Get switch bypass. 1 is on, 0 is off.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, elliptic_lop, "void", "lpf");
+  QUERY->doc_func(QUERY, "Create a low-pass filter.");
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "float", "stop");
   QUERY->add_arg(QUERY, "float", "pass");
@@ -247,6 +273,7 @@ CK_DLL_QUERY( Elliptic )
   // example of adding argument to the above method
   QUERY->add_arg(QUERY, "float", "stop");
   QUERY->add_arg(QUERY, "float", "pass");
+  QUERY->doc_func(QUERY, "Create a high-pass filter.");
 
   // example of adding setter method
   QUERY->add_mfun(QUERY, elliptic_hip, "void", "bpf");
@@ -254,6 +281,7 @@ CK_DLL_QUERY( Elliptic )
   QUERY->add_arg(QUERY, "float", "stop");
   QUERY->add_arg(QUERY, "float", "hip");
   QUERY->add_arg(QUERY, "float", "lop");
+  QUERY->doc_func(QUERY, "Create a band-pass filter.");
   
   // this reserves a variable in the ChucK internal class to store 
   // referene to the c++ class we defined above

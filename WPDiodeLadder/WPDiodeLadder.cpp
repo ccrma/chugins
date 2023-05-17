@@ -153,30 +153,35 @@ CK_DLL_QUERY( WPDiodeLadder )
     QUERY->doc_func(QUERY, "Resonance goes between [0...17]. ");
 
     QUERY->add_mfun(QUERY, wpdiodeladder_getResonance, "float", "resonance");
+    QUERY->doc_func(QUERY, "Get resonance [0 - 17].");
 
     QUERY->add_mfun(QUERY, wpdiodeladder_setCutoff, "float", "cutoff");
     QUERY->add_arg(QUERY, "float", "arg");
     QUERY->doc_func(QUERY, "Cuttoff is in Hz [0..Nyquist). ");
 
     QUERY->add_mfun(QUERY, wpdiodeladder_getCutoff, "float", "cutoff");
+    QUERY->doc_func(QUERY, "Get cuttoff frequency in Hz [0..Nyquist).");
 
     QUERY->add_mfun(QUERY, wpdiodeladder_setSaturation, "float", "saturation");
     QUERY->add_arg(QUERY, "float", "arg");
     QUERY->doc_func(QUERY, "Saturation is a scalar gain, and can be used to drive the non-linearity. ");
 
     QUERY->add_mfun(QUERY, wpdiodeladder_getSaturation, "float", "saturation");
+    QUERY->doc_func(QUERY, "Get saturation. Saturation is a scalar gain, and can be used to drive the non-linearity.");
     
     QUERY->add_mfun(QUERY, wpdiodeladder_setNonLinearProcessing, "int", "nonlinear");
     QUERY->add_arg(QUERY, "int", "arg");
     QUERY->doc_func(QUERY, "Enable non linear saturator. ");
 
     QUERY->add_mfun(QUERY, wpdiodeladder_getNonLinearProcessing, "int", "nonlinear");
+    QUERY->doc_func(QUERY, "Get non-linear saturator setting. 1 is enabled.");
     
     QUERY->add_mfun(QUERY, wpdiodeladder_setNonLinearType, "int", "nlp_type");
     QUERY->add_arg(QUERY, "int", "arg");
     QUERY->doc_func(QUERY, "Set to 1 to normalize non-linear output. ");
 
     QUERY->add_mfun(QUERY, wpdiodeladder_getNonLinearType, "int", "nlp_type");
+    QUERY->doc_func(QUERY, "Get non-linear output setting. 1 is normalized.");
     
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above
