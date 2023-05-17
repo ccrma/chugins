@@ -309,6 +309,7 @@ CK_DLL_QUERY( Sigmund )
   // can change the second argument to extend a different ChucK class
   QUERY->begin_class(QUERY, "Sigmund", "UGen");
   QUERY->doc_class(QUERY, "Sinusoidal analysis & pitch tracking. Adapted from Miller Puckette’s sigmund~ Max object.");
+  QUERY->add_ex(QUERY, "analysis/Sigmund.ck");
   
   // register the constructor (probably no need to change)
   QUERY->add_ctor(QUERY, sigmund_ctor);

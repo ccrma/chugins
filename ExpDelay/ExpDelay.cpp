@@ -207,6 +207,7 @@ CK_DLL_QUERY( ExpDelay )
   QUERY->add_dtor(QUERY, expdelay_dtor);
 
   QUERY->doc_class(QUERY, "Feedback delay at exponentially changing delay times.");
+  QUERY->add_ex(QUERY, "effects/ExpDelay.ck");
   
   // for UGen's only: add tick function
   QUERY->add_ugen_func(QUERY, expdelay_tick, NULL, 1, 1);

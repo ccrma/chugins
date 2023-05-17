@@ -135,6 +135,7 @@ CK_DLL_QUERY( WPDiodeLadder )
     // can change the second argument to extend a different ChucK class
     QUERY->begin_class(QUERY, "WPDiodeLadder", "UGen");
     QUERY->doc_class(QUERY, "Virtual analog low pass filter based on Will Pirkle's Diode Ladder application notes");
+    QUERY->add_ex(QUERY, "filter/WPDiodeLadder.ck");
 
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, wpdiodeladder_ctor);

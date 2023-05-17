@@ -186,6 +186,7 @@ CK_DLL_QUERY( PanN )
     // begin the class definition
     QUERY->begin_class(QUERY, "Pan4", "UGen");
     QUERY->doc_class(QUERY, "Four-channel equal-power panner. ");
+    QUERY->add_ex(QUERY, "spatial/Pan4.ck");
     
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, pan4_ctor);
@@ -224,6 +225,7 @@ CK_DLL_QUERY( PanN )
     QUERY->add_dtor(QUERY, pan8_dtor);
 
     QUERY->doc_class(QUERY, "Eight-channel equal-power panner.");
+    QUERY->add_ex(QUERY, "spatial/Pan8.ck");
     
     // for UGen's only: add tick function
     QUERY->add_ugen_funcf(QUERY, pan8_tickf, NULL, 8, 8);

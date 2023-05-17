@@ -122,6 +122,7 @@ CK_DLL_QUERY( WPKorg35 )
     // can change the second argument to extend a different ChucK class
     QUERY->begin_class(QUERY, "WPKorg35", "UGen");
     QUERY->doc_class(QUERY, "Virtual analog low pass filter based on Will Pirkle's Korg35 application notes");
+    QUERY->add_ex(QUERY, "filter/WPKorg35.ck");
 
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, wpkorg35_ctor);

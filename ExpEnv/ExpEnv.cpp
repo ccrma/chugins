@@ -125,6 +125,8 @@ CK_DLL_QUERY(ExpEnv)
 
                      "Also useful for noise excitation pulse, using it like:\n"
                      "Noise n => ExpEnv e => dac;");
+    QUERY->add_ex(QUERY, "effects/ExpEnv.ck");
+    QUERY->add_ex(QUERY, "effects/ExpEnv-modes.ck");
     
     QUERY->add_ugen_func(QUERY, expenv_tick, NULL, 1, 1);
     

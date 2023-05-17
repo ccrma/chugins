@@ -161,6 +161,7 @@ private:
         "This is a digital waveguide model, making its "
         "use possibly subject to patents held by Stanford "
         "University, Yamaha, and others. ");
+    QUERY->add_ex(QUERY, "special/Mesh2D.ck");
     
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, mesh2d_ctor);

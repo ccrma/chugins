@@ -191,6 +191,7 @@ CK_DLL_QUERY( AmbPan3 )
     QUERY->begin_class(QUERY, "AmbPan3", "UGen");
 
     QUERY->doc_class(QUERY, "Third-order ambisonics panner (https://en.wikipedia.org/wiki/Ambisonics)");
+    QUERY->add_ex(QUERY, "spatial/AmbPan3-CCRMA.ck");
 
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, ambpan3_ctor);

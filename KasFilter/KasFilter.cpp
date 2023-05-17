@@ -105,6 +105,7 @@ CK_DLL_QUERY(KasFilter)
                      "input and the cutoff frequency. To emphasise those it makes sense to try to "
                      "minimise artifacts induced by the digital environment itself. Thanks to "
                      "Rob Hordijk for sharing his insights there.");
+    QUERY->add_ex(QUERY, "filter/KasFilter.ck");
     
     QUERY->add_ugen_func(QUERY, kasfilter_tick, NULL, 1, 1);
     

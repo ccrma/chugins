@@ -36,6 +36,8 @@ CK_DLL_QUERY(FoldbackSaturator)
     
     QUERY->begin_class(QUERY, "FoldbackSaturator", "UGen");
     QUERY->doc_class(QUERY, "Foldback saturator that inverts a signal and multiplies it by an index as it passes a threshold.");
+    QUERY->add_ex(QUERY, "effects/FoldbackSaturator-index.ck");
+    QUERY->add_ex(QUERY, "effects/FoldbackSaturator-threshold.ck");
     
     QUERY->add_ctor(QUERY, foldback_ctor);
     QUERY->add_dtor(QUERY, foldback_dtor);

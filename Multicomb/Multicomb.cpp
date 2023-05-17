@@ -210,6 +210,7 @@ CK_DLL_QUERY( Multicomb )
   QUERY->doc_class(QUERY, "Multiple simultaneous comb filters randomly "
                    "chosen within a specified frequency range "
                    "and spread across the stereo field.");
+  QUERY->add_ex(QUERY, "filter/Multicomb.ck");
   
   // for UGen's only: add tickf function
   QUERY->add_ugen_funcf(QUERY, multicomb_tickf, NULL, 2, 2);

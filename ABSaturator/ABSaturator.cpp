@@ -169,6 +169,7 @@ CK_DLL_QUERY(ABSaturator)
     
     QUERY->begin_class(QUERY, "ABSaturator", "UGen");
     QUERY->doc_class(QUERY, "Soft clip saturating distortion, based on examples from Abel/Berners' Music 424 course at Stanford.");
+    QUERY->add_ex(QUERY, "effects/ABSaturator.ck");
     
     QUERY->add_ctor(QUERY, absaturator_ctor);
     QUERY->add_dtor(QUERY, absaturator_dtor);

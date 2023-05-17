@@ -224,6 +224,7 @@ CK_DLL_QUERY( Elliptic )
 "and the filter is bypassed. This may happen, for "
 "instance, if you ask for a very steep attenuation with "
 "very low ripple.");
+  QUERY->add_ex(QUERY, "filter/Elliptic-help.ck");
   
   // for UGen's only: add tick function
   QUERY->add_ugen_funcf(QUERY, elliptic_tick, NULL, 2, 2);

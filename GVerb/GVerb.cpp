@@ -307,7 +307,7 @@ CK_DLL_QUERY( GVerb )
                      "(kouhia at nic.funet.fi). The code for this version was adapted from "
                      "RTcmix (http:rtcmix.org), which in turn adapted it from the Max/MSP "
                      "version by Olaf Mtthes (olaf.matthes at gmx.de).");
-
+    QUERY->add_ex(QUERY, "effects/GVerb.ck");
     
     // for UGen's only: add tick function
     QUERY->add_ugen_funcf(QUERY, gverb_tick, NULL, 2, 2);

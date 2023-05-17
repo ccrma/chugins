@@ -504,6 +504,7 @@ CK_DLL_QUERY( Spectacle )
   QUERY->add_dtor(QUERY, spectacle_dtor);
 
   QUERY->doc_class(QUERY, "FFT-based spectral delay and EQ by John Gibson. Inspired by the totally awesome Spektral Delay plug-in by Native Instruments.");
+  QUERY->add_ex(QUERY, "effects/Spectacle.ck");
   
   // for UGen's only: add tick function
   QUERY->add_ugen_funcf(QUERY, spectacle_tick, NULL, 2, 2);

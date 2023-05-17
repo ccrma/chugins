@@ -49,7 +49,10 @@ CK_DLL_QUERY(FIR)
                      "Then specify order:\n\n"
                      "N => myFilter.order;"
                      );
-    
+    QUERY->add_ex(QUERY, "filter/FIR-convolve-homer.ck");
+    QUERY->add_ex(QUERY, "filter/FIR-greyhole-down-up-decimate.ck");
+    QUERY->add_ex(QUERY, "filter/FIR-sinc-explicit.ck");
+
     QUERY->add_ugen_func(QUERY, FIR_tick, NULL, 1, 1);
     
     QUERY->add_mfun(QUERY, FIR_setOrder, "int", "order");
