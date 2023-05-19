@@ -190,6 +190,9 @@ CK_DLL_QUERY( AmbPan3 )
     // can change the second argument to extend a different ChucK class
     QUERY->begin_class(QUERY, "AmbPan3", "UGen");
 
+    QUERY->doc_class(QUERY, "Third-order ambisonics panner (https://en.wikipedia.org/wiki/Ambisonics)");
+    QUERY->add_ex(QUERY, "spatial/AmbPan3-CCRMA.ck");
+
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, ambpan3_ctor);
     // register the destructor (probably no need to change)
@@ -202,22 +205,27 @@ CK_DLL_QUERY( AmbPan3 )
     QUERY->add_mfun(QUERY, ambpan3_setAzimuth, "float", "azimuth");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Set horizontal angle of point source");
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, ambpan3_getAzimuth, "float", "azimuth");
+    QUERY->doc_func(QUERY, "Get horizontal angle of point source");
     
     // example of adding setter method
     QUERY->add_mfun(QUERY, ambpan3_setElevation, "float", "elevation");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Set vertical angle of point source");
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, ambpan3_getElevation, "float", "elevation");
-    
+    QUERY->doc_func(QUERY, "Get vertical angle of point source");
+
     // example of adding setter method
     QUERY->add_mfun(QUERY, ambpan3_setChannelMap, "void", "channelMap");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "int[]", "arg");
+    QUERY->doc_func(QUERY, "Set the mapping of channels for the amibsonic system");
     
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
