@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{c6423405-ec46-4e4c-ad43-134a15fc2b8f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\regex">
+      <UniqueIdentifier>{c26eddc2-178a-4f76-8749-b9aa4ede1c12}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="regex\config.h">
+      <Filter>source\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="regex\regex.h">
+      <Filter>source\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="regex\tre.h">
+      <Filter>source\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="regex\tre-ast.h">
+      <Filter>source\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="regex\tre-compile.h">
+      <Filter>source\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="regex\tre-config.h">
+      <Filter>source\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="regex\tre-filter.h">
+      <Filter>source\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="regex\tre-internal.h">
+      <Filter>source\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="regex\tre-match-utils.h">
+      <Filter>source\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="regex\tre-mem.h">
+      <Filter>source\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="regex\tre-parse.h">
+      <Filter>source\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="regex\tre-stack.h">
+      <Filter>source\regex</Filter>
+    </ClInclude>
+    <ClInclude Include="regex\xmalloc.h">
+      <Filter>source\regex</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="regex\regcomp.c">
+      <Filter>source\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="regex\regerror.c">
+      <Filter>source\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="regex\regexec.c">
+      <Filter>source\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="regex\tre-ast.c">
+      <Filter>source\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="regex\tre-compile.c">
+      <Filter>source\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="regex\tre-filter.c">
+      <Filter>source\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="regex\tre-match-approx.c">
+      <Filter>source\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="regex\tre-match-backtrack.c">
+      <Filter>source\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="regex\tre-match-parallel.c">
+      <Filter>source\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="regex\tre-mem.c">
+      <Filter>source\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="regex\tre-parse.c">
+      <Filter>source\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="regex\tre-stack.c">
+      <Filter>source\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="regex\xmalloc.c">
+      <Filter>source\regex</Filter>
+    </ClCompile>
+    <ClCompile Include="RegEx.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

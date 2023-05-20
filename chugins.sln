@@ -55,7 +55,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WPKorg35", "WPKorg35\WPKorg
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Overdrive", "Overdrive\Overdrive.vcxproj", "{96B7FC6E-AB4C-4688-AFC9-C27BC57331E6}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Regex", "Regex\Regex.vcxproj", "{9DD847B4-603E-4736-AC74-5B9C60D8140C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RegEx", "RegEx\RegEx.vcxproj", "{9DD847B4-603E-4736-AC74-5B9C60D8140C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

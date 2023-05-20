@@ -18,10 +18,42 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="regex\config.h" />
+    <ClInclude Include="regex\regex.h" />
+    <ClInclude Include="regex\tre-ast.h" />
+    <ClInclude Include="regex\tre-compile.h" />
+    <ClInclude Include="regex\tre-config.h" />
+    <ClInclude Include="regex\tre-filter.h" />
+    <ClInclude Include="regex\tre-internal.h" />
+    <ClInclude Include="regex\tre-match-utils.h" />
+    <ClInclude Include="regex\tre-mem.h" />
+    <ClInclude Include="regex\tre-parse.h" />
+    <ClInclude Include="regex\tre-stack.h" />
+    <ClInclude Include="regex\tre.h" />
+    <ClInclude Include="regex\xmalloc.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="RegEx.cpp" />
+    <ClCompile Include="regex\regcomp.c" />
+    <ClCompile Include="regex\regerror.c" />
+    <ClCompile Include="regex\regexec.c" />
+    <ClCompile Include="regex\tre-ast.c" />
+    <ClCompile Include="regex\tre-compile.c" />
+    <ClCompile Include="regex\tre-filter.c" />
+    <ClCompile Include="regex\tre-match-approx.c" />
+    <ClCompile Include="regex\tre-match-backtrack.c" />
+    <ClCompile Include="regex\tre-match-parallel.c" />
+    <ClCompile Include="regex\tre-mem.c" />
+    <ClCompile Include="regex\tre-parse.c" />
+    <ClCompile Include="regex\tre-stack.c" />
+    <ClCompile Include="regex\xmalloc.c" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <SccProjectName />
     <SccLocalPath />
     <ProjectGuid>{D9C37683-180A-4818-A25D-3E0C9EDF36CE}</ProjectGuid>
+    <ProjectName>RegEx</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -95,7 +127,7 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules />
     <CodeAnalysisRuleAssemblies />
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);regex</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);RegEx</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -110,7 +142,7 @@
       <AdditionalIncludeDirectories>..\chuck\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;__PLATFORM_WIN32__;__WINDOWS_DS__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Debug\</AssemblerListingLocation>
-      <PrecompiledHeaderOutputFile>.\Debug\Regex.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>.\Debug\RegEx.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\Debug\</ObjectFileName>
       <ProgramDataBaseFileName>.\Debug\</ProgramDataBaseFileName>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -118,7 +150,7 @@
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <TypeLibraryName>.\Debug\Regex.tlb</TypeLibraryName>
+      <TypeLibraryName>.\Debug\RegEx.tlb</TypeLibraryName>
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <TargetEnvironment>Win32</TargetEnvironment>
     </Midl>
@@ -128,15 +160,15 @@
     </ResourceCompile>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Debug\Regex.bsc</OutputFile>
+      <OutputFile>.\Debug\RegEx.bsc</OutputFile>
     </Bscmake>
     <Link>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <LinkDLL>true</LinkDLL>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <OutputFile>Debug/Regex.chug</OutputFile>
-      <ImportLibrary>.\Debug\Regex.lib</ImportLibrary>
+      <OutputFile>Debug/RegEx.chug</OutputFile>
+      <ImportLibrary>.\Debug\RegEx.lib</ImportLibrary>
       <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -152,7 +184,7 @@
       <AdditionalIncludeDirectories>..\chuck\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;__PLATFORM_WIN32__;__WINDOWS_DS__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Debug\</AssemblerListingLocation>
-      <PrecompiledHeaderOutputFile>.\Debug\Regex.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>.\Debug\RegEx.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\Debug\</ObjectFileName>
       <ProgramDataBaseFileName>.\Debug\</ProgramDataBaseFileName>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -160,7 +192,7 @@
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <TypeLibraryName>.\Debug\Regex.tlb</TypeLibraryName>
+      <TypeLibraryName>.\Debug\RegEx.tlb</TypeLibraryName>
       <MkTypLibCompatible>true</MkTypLibCompatible>
     </Midl>
     <ResourceCompile>
@@ -169,15 +201,15 @@
     </ResourceCompile>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Debug\Regex.bsc</OutputFile>
+      <OutputFile>.\Debug\RegEx.bsc</OutputFile>
     </Bscmake>
     <Link>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <LinkDLL>true</LinkDLL>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <OutputFile>Debug/Regex.chug</OutputFile>
-      <ImportLibrary>.\Debug\Regex.lib</ImportLibrary>
+      <OutputFile>Debug/RegEx.chug</OutputFile>
+      <ImportLibrary>.\Debug\RegEx.lib</ImportLibrary>
       <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -193,7 +225,7 @@
       <AdditionalIncludeDirectories>..\chuck\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;__PLATFORM_WIN32__;__WINDOWS_DS__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Release\</AssemblerListingLocation>
-      <PrecompiledHeaderOutputFile>.\Release\Regex.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>.\Release\RegEx.pch</PrecompiledHeaderOutputFile>
       <PrecompiledHeader />
       <ObjectFileName>.\Release\</ObjectFileName>
       <ProgramDataBaseFileName>.\Release\</ProgramDataBaseFileName>
@@ -201,7 +233,7 @@
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <TypeLibraryName>.\Release\Regex.tlb</TypeLibraryName>
+      <TypeLibraryName>.\Release\RegEx.tlb</TypeLibraryName>
       <MkTypLibCompatible>true</MkTypLibCompatible>
       <TargetEnvironment>Win32</TargetEnvironment>
     </Midl>
@@ -211,14 +243,14 @@
     </ResourceCompile>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Release\Regex.bsc</OutputFile>
+      <OutputFile>.\Release\RegEx.bsc</OutputFile>
     </Bscmake>
     <Link>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <LinkDLL>true</LinkDLL>
       <SubSystem>Console</SubSystem>
-      <OutputFile>Release/Regex.chug</OutputFile>
-      <ImportLibrary>.\Release\Regex.lib</ImportLibrary>
+      <OutputFile>Release/RegEx.chug</OutputFile>
+      <ImportLibrary>.\Release\RegEx.lib</ImportLibrary>
       <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -234,7 +266,7 @@
       <AdditionalIncludeDirectories>..\chuck\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_CONFIG_H;__WINDOWS_MODERN__;WIN32;NDEBUG;_WINDOWS;_USRDLL;__PLATFORM_WIN32__;__WINDOWS_DS__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Release\</AssemblerListingLocation>
-      <PrecompiledHeaderOutputFile>.\Release\Regex.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>.\Release\RegEx.pch</PrecompiledHeaderOutputFile>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <ObjectFileName>.\Release\</ObjectFileName>
@@ -243,7 +275,7 @@
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <TypeLibraryName>.\Release\Regex.tlb</TypeLibraryName>
+      <TypeLibraryName>.\Release\RegEx.tlb</TypeLibraryName>
       <MkTypLibCompatible>true</MkTypLibCompatible>
     </Midl>
     <ResourceCompile>
@@ -252,48 +284,17 @@
     </ResourceCompile>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Release\Regex.bsc</OutputFile>
+      <OutputFile>.\Release\RegEx.bsc</OutputFile>
     </Bscmake>
     <Link>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <LinkDLL>true</LinkDLL>
       <SubSystem>Console</SubSystem>
-      <OutputFile>Release/Regex.chug</OutputFile>
-      <ImportLibrary>.\Release\Regex.lib</ImportLibrary>
+      <OutputFile>Release/RegEx.chug</OutputFile>
+      <ImportLibrary>.\Release\RegEx.lib</ImportLibrary>
       <AdditionalDependencies>odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="Regex.cpp" />
-    <ClCompile Include="regex\regcomp.c" />
-    <ClCompile Include="regex\regerror.c" />
-    <ClCompile Include="regex\regexec.c" />
-    <ClCompile Include="regex\tre-ast.c" />
-    <ClCompile Include="regex\tre-compile.c" />
-    <ClCompile Include="regex\tre-filter.c" />
-    <ClCompile Include="regex\tre-match-approx.c" />
-    <ClCompile Include="regex\tre-match-backtrack.c" />
-    <ClCompile Include="regex\tre-match-parallel.c" />
-    <ClCompile Include="regex\tre-mem.c" />
-    <ClCompile Include="regex\tre-parse.c" />
-    <ClCompile Include="regex\tre-stack.c" />
-    <ClCompile Include="regex\xmalloc.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="regex\config.h" />
-    <ClInclude Include="regex\regex.h" />
-    <ClInclude Include="regex\tre-ast.h" />
-    <ClInclude Include="regex\tre-compile.h" />
-    <ClInclude Include="regex\tre-config.h" />
-    <ClInclude Include="regex\tre-filter.h" />
-    <ClInclude Include="regex\tre-internal.h" />
-    <ClInclude Include="regex\tre-match-utils.h" />
-    <ClInclude Include="regex\tre-mem.h" />
-    <ClInclude Include="regex\tre-parse.h" />
-    <ClInclude Include="regex\tre-stack.h" />
-    <ClInclude Include="regex\tre.h" />
-    <ClInclude Include="regex\xmalloc.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
