@@ -1,10 +1,10 @@
 
 # chugin name
-CHUGIN_NAME=Regex
+CHUGIN_NAME=RegEx
 
 # all of the c/cpp files that compose this chugin
 C_MODULES=
-CXX_MODULES=Regex.cpp
+CXX_MODULES=RegEx.cpp
 
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include
@@ -26,8 +26,8 @@ MAKECMDGOALS:=$(.DEFAULT_GOAL)
 endif
 endif
 
-.PHONY: mac mac-ub linux linux-oss linux-jack linux-alsa win32
-mac mac-ub linux linux-oss linux-jack linux-alsa: all
+.PHONY: osx mac mac-ub linux linux-oss linux-jack linux-alsa win32
+osx mac mac-ub linux linux-oss linux-jack linux-alsa: all
 
 win32:
 	make -f makefile.win32
@@ -37,6 +37,10 @@ CXX=gcc
 LD=g++
 
 CHUGIN_PATH=/usr/local/lib/chuck
+
+ifneq (,$(strip $(filter osx bin-dist-osx,$(MAKECMDGOALS))))
+include makefile.mac
+endif
 
 ifneq (,$(strip $(filter mac bin-dist-osx,$(MAKECMDGOALS))))
 include makefile.mac

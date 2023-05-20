@@ -25,7 +25,8 @@ CK_DLL_SFUN( regex_replace );
 CK_DLL_SFUN( regex_replaceAll );
 
 // dynamic linking query function
-DLL_QUERY regex_query( Chuck_DL_Query * QUERY )
+// DLL_QUERY regex_query( Chuck_DL_Query * QUERY )
+CK_DLL_QUERY(RegEx)
 {
     // set name
     QUERY->setname( QUERY, "RegEx" );
