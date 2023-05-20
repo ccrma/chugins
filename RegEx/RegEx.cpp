@@ -79,13 +79,13 @@ CK_DLL_SFUN( regex_match )
     if(pattern == NULL)
     {
         // throw_exception(SHRED, "NullPointerException", "RegEx.match: argument 'pattern' is null");
-        fprintf( stderr, "RegEx.match(): argument 'pattern' is null" );
+        fprintf( stderr, "RegEx.match(): argument 'pattern' is null\n" );
         goto error;
     }
     if(str == NULL)
     {
         // throw_exception(SHRED, "NullPointerException", "RegEx.match: argument 'str' is null");
-        fprintf( stderr, "RegEx.match(): argument 'str' is null" );
+        fprintf( stderr, "RegEx.match(): argument 'str' is null\n" );
         goto error;
     }
 
@@ -109,7 +109,7 @@ error:
     {
         char buf[256];
         regerror(result, &regex, buf, 256);
-        fprintf( stderr, "RegEx.match(): regex reported error: %s", buf);
+        fprintf( stderr, "RegEx.match(): regex reported error: %s\n", buf);
     }
 
     if(r_free)
@@ -137,19 +137,19 @@ CK_DLL_SFUN( regex_match2 )
     if(pattern == NULL)
     {
         // throw_exception(SHRED, "NullPointerException", "RegEx.match: argument 'pattern' is null");
-        fprintf( stderr, "RegEx.match(): argument 'pattern' is null" );
+        fprintf( stderr, "RegEx.match(): argument 'pattern' is null\n" );
         goto error;
     }
     if(str == NULL)
     {
         // throw_exception(SHRED, "NullPointerException", "RegEx.match: argument 'str' is null");
-        fprintf( stderr, "RegEx.match(): argument 'str' is null" );
+        fprintf( stderr, "RegEx.match(): argument 'str' is null\n" );
         goto error;
     }
     if(matches == NULL)
     {
         // throw_exception(SHRED, "NullPointerException", "RegEx.match: argument 'matches' is null");
-        fprintf( stderr, "RegEx.match(): argument 'matches' is null" );
+        fprintf( stderr, "RegEx.match(): argument 'matches' is null\n" );
         goto error;
     }
 
@@ -198,7 +198,7 @@ error:
         char errbuf[256];
 
         regerror(result, &regex, errbuf, 256);
-        fprintf( stderr, "RegEx.match(): regex reported error: %s", errbuf);
+        fprintf( stderr, "RegEx.match(): regex reported error: %s\n", errbuf);
     }
 
     if(r_free)
@@ -232,21 +232,21 @@ CK_DLL_SFUN( regex_replace )
     {
         // throw_exception(SHRED, "NullPointerException",
         //                 "RegEx.match: argument 'pattern' is null");
-        fprintf( stderr, "RegEx.replace(): argument 'pattern' is null" );
+        fprintf( stderr, "RegEx.replace(): argument 'pattern' is null\n" );
         goto error;
     }
     if(str == NULL)
     {
         // throw_exception(SHRED, "NullPointerException",
         //                 "RegEx.match: argument 'str' is null");
-        fprintf( stderr, "RegEx.replace(): argument 'str' is null" );
+        fprintf( stderr, "RegEx.replace(): argument 'str' is null\n" );
         goto error;
     }
     if(replace == NULL)
     {
         // throw_exception(SHRED, "NullPointerException",
         //                 "RegEx.match: argument 'replace' is null");
-        fprintf( stderr, "RegEx.replace(): argument 'replace' is null" );
+        fprintf( stderr, "RegEx.replace(): argument 'replace' is null\n" );
         goto error;
     }
 
@@ -285,7 +285,7 @@ error:
         char errbuf[256];
 
         regerror(result, &regex, errbuf, 256);
-        fprintf( stderr, "RegEx.replace(): regex reported error: %s", errbuf);
+        fprintf( stderr, "RegEx.replace(): regex reported error: %s\n", errbuf);
     }
 
     if(r_free)
@@ -318,21 +318,21 @@ CK_DLL_SFUN( regex_replaceAll )
     {
         // throw_exception(SHRED, "NullPointerException",
         //                 "RegEx.match: argument 'pattern' is null");
-        fprintf( stderr, "RegEx.replaceAll(): argument 'pattern' is null" );
+        fprintf( stderr, "RegEx.replaceAll(): argument 'pattern' is null\n" );
         goto error;
     }
     if(str == NULL)
     {
         // throw_exception(SHRED, "NullPointerException",
         //                 "RegEx.match: argument 'str' is null");
-        fprintf( stderr, "RegEx.replaceAll(): argument 'str' is null" );
+        fprintf( stderr, "RegEx.replaceAll(): argument 'str' is null\n" );
         goto error;
     }
     if(replace == NULL)
     {
         // throw_exception(SHRED, "NullPointerException",
         //                 "RegEx.match: argument 'replace' is null");
-        fprintf( stderr, "RegEx.replaceAll(): argument 'replace' is null" );
+        fprintf( stderr, "RegEx.replaceAll(): argument 'replace' is null\n" );
         goto error;
     }
 
@@ -380,7 +380,7 @@ error:
         char errbuf[256];
 
         regerror(result, &regex, errbuf, 256);
-        fprintf( stderr, "RegEx.replaceAll(): regex reported error: %s", errbuf);
+        fprintf( stderr, "RegEx.replaceAll(): regex reported error: %s\n", errbuf);
     }
 
     if(r_free)
