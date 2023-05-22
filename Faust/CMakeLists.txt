@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 
-project(FaucK VERSION 0.0.1)
+set(ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+
+set (VERSION "0.0.1")
+
+project(FaucK VERSION ${VERSION})
 
 # Set startup project for Visual Studio
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT FaucK)
@@ -21,10 +25,50 @@ set(ALL_FILES
     ${Sources}
 )
 
+
+#######################################
+# faust libraries
+file (GLOB DSPLIBS ${LIBFAUST_DIR}/share/faust/*.lib)
+
 # Create shared library
-add_library(FaucK SHARED ${ALL_FILES})
+add_library(FaucK MODULE ${ALL_FILES} ${DSPLIBS})
+
+####################################
+# Install - used for packaging
+####################################
+set (PACKDIR ${ROOT}/package)
+set (DST fauck-${VERSION})
+install ( TARGETS FaucK
+    RUNTIME DESTINATION ${PACKDIR}/${DST}
+    LIBRARY DESTINATION ${PACKDIR}/${DST}
+    ARCHIVE DESTINATION ${PACKDIR}/${DST}
+)
+
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+if(APPLE)
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    LINK_FLAGS "-Wl,-U,_object_new_imp -Wl,-U,_object_method_imp"
+    BUNDLE TRUE
+    BUNDLE_EXTENSION chug
+    OUTPUT_NAME Faust
+    RESOURCE "${DSPLIBS}"
+    MACOSX_BUNDLE_GUI_IDENTIFIER edu.stanford.chuck.${PROJECT_NAME}
+    MACOSX_BUNDLE_BUNDLE_NAME ${PROJECT_NAME}
+    MACOSX_BUNDLE_BUNDLE_VERSION ${VERSION}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${VERSION}
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/Info.plist
+)
+else()
+set_target_properties (${PROJECT_NAME} PROPERTIES 
+    SUFFIX ".chug"
+    OUTPUT_NAME Faust)
+install (
+    FILES ${DSPLIBS} DESTINATION ${PACKDIR}/${DST}/faustlibraries
+    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
+)
+endif()
 
 # Find sndfile and link it
 if (MSVC)
@@ -91,17 +135,16 @@ target_include_directories(FaucK PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../chuck/include>
     $<INSTALL_INTERFACE:FaucK> )
 
-# Copy library to ChucK chugins directory
-if (MSVC)
-  add_custom_command(TARGET ${PROJECT_NAME}
-                     POST_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     "$<TARGET_FILE:FaucK>"
-                     "%USERPROFILE%/Documents/ChucK/chugins/Faust.chug")
-endif (MSVC)
+if (WIN32)
+####################################
+# install sndfile
+install (
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile-1.2.0-win64/bin/sndfile.dll DESTINATION ${PACKDIR}/${DST}
+)
+endif()
 
-# Install library
-INSTALL(TARGETS FaucK
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} )
+if (APPLE)
+install (
+    CODE "execute_process (COMMAND codesign --sign - --deep --force ${PACKDIR}/${DST}/Faust.chug)" 
+    )
+endif()

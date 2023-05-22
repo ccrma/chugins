@@ -10,14 +10,6 @@ FaucK is a Chugin allowing to combine the powerful, succinct [Functional AUdio S
 
 You must install [cmake](https://cmake.org/download/) and [git](https://git-scm.com/downloads) so that they're accessible in Terminal/cmd prompts.
 
-### Faust Libraries
-
-If you are compiling locally, skip this paragraph. If you are **not** compiling locally (someone gave you a Faust.chug file), you still need to install the [Faust Libraries](https://faustlibraries.grame.fr/).
-
-If on macOS/Linux, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `/usr/local/share/faust/`. For example, this should result in the existence of this file: `/usr/local/share/faust/all.lib`.
-
-If on Windows, [download the libraries](https://github.com/grame-cncm/faustlibraries/archive/refs/heads/master.zip) to `C:/Program Files/share/faust`. What's important is that the `share` folder is next to the folder which contains `chuck.exe` (which we are assuming is `C:/Program Files/chuck.exe`).
-
 ### Libsndfile
 
 On Windows, the later scripts will automatically download `libsndfile`, so no action is needed.
@@ -41,11 +33,19 @@ Navigate to `thirdparty/libfaust` and run `sh download_libfaust.sh` in Terminal.
 
 In a Terminal window, navigate to this README and run `sh build_unix.sh`.
 
-On macOS/Linux, the goal is to create `Faust.chug` inside `/usr/local/lib/chuck`. After checking that this file exists, run chuck with a FaucK example.
+Navigate to the `package` directory and find the latest `fauck` version such as `fauck-0.0.1`.
+
+On macOS, you should expect to see a `Faust.chug` directory. Copy it to `usr/local/lib/chuck`.
+
+On Linux you should see `Faust.chug` and a `faustlibraries` sibling. Copy both as siblings to `usr/local/lib/chuck`.
+
+Then run chuck with a FaucK example.
 
 #### Windows
 
 On Windows, make sure that [7z.exe](https://www.7-zip.org/download.html) is in your system PATH.
+
+You must have Visual Studio 2022 installed.
 
 Next, create a **permanent** environment variable `CHUCK_CHUGIN_PATH` and set it equal to `%USERPROFILE%/Documents/ChucK/chugins`.
 
@@ -53,7 +53,9 @@ Navigate to `thirdparty/libfaust`. Run `call download_libfaust.bat` in a cmd pro
 
 Navigate to this README in a cmd prompt and run `call build_windows.bat`.
 
-On Windows, the goal is to create `Faust.chug` inside `%USERPROFILE%/Documents/ChucK/chugins` and `sndfile.dll` inside `C:/Program Files/ChucK/`. After checking that these files exist, run chuck with a FaucK example.
+Navigate to the `package` directory and find the latest `fauck` version such as `fauck-0.0.1`. You should see a file `sndfile.dll`, which you should copy next to wherever `chuck.exe` exists on your computer (likely `C:/Program Files/ChucK/chuck.exe`). Next, copy `faustlibraries` and `Faust.chug` to `%USERPROFILE%/Documents/ChucK/chugins`.
+
+Then run chuck with a FaucK example.
 
 ## Using FaucK
 

@@ -1,5 +1,3 @@
-set CHUCK_DIR=C:/Program Files/ChucK
-
 rem Download libsndfile
 if not exist "thirdparty/libsndfile-1.2.0-win64/" (
     echo "Downloading libsndfile..." 
@@ -24,6 +22,4 @@ if not exist "thirdparty/faust/" (
 
 cmake -Bbuild -DLIBFAUST_DIR="thirdparty/libfaust/win64/Release"
 cmake --build build --config Release
-
-xcopy "thirdparty/libfaust/win64/Release/share/faust" "%CHUCK_DIR%/../share/faust" /E /I /D
-cp "thirdparty/libsndfile-1.2.0-win64/bin/sndfile.dll" "%CHUCK_DIR%/sndfile.dll"
+cmake --build build --config Release --target install
