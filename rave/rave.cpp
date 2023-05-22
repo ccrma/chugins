@@ -6,12 +6,14 @@
 /*
 TODOS
 - set buffer size method (0 will be threadless fast mode)
-- add .cpu() and .gpu() methods to set rendering option
+  - I'm not sure how much sense this actually makes tbh
+- add .cpu() and .gpu() methods to set rendering option [deprioritize]
   - would have to do this before anything is instantiated, could be tricky... not high priority
   - hmm, maybe just add a method in backend to do tensor.to(cpu/gpu) to handle this (and check if it's instantiated at all yet)
     will cause interrupts, but whatever
 - copy everything over to everything [DONE]
-- fix --adaptive issue
+- fix --adaptive issue [DONE]
+- add cuda check on backend in mutex
 */
 #pragma once
 
