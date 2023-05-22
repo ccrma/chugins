@@ -55,6 +55,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WPKorg35", "WPKorg35\WPKorg
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Overdrive", "Overdrive\Overdrive.vcxproj", "{96B7FC6E-AB4C-4688-AFC9-C27BC57331E6}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RegEx", "RegEx\RegEx.vcxproj", "{9DD847B4-603E-4736-AC74-5B9C60D8140C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -270,6 +272,13 @@ Global
 		{96B7FC6E-AB4C-4688-AFC9-C27BC57331E6}.Release|Win32.Build.0 = Release|Win32
 		{96B7FC6E-AB4C-4688-AFC9-C27BC57331E6}.Release|x64.ActiveCfg = Release|x64
 		{96B7FC6E-AB4C-4688-AFC9-C27BC57331E6}.Release|x64.Build.0 = Release|x64
+		{9DD847B4-603E-4736-AC74-5B9C60D8140C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9DD847B4-603E-4736-AC74-5B9C60D8140C}.Debug|Win32.Build.0 = Debug|Win32
+		{9DD847B4-603E-4736-AC74-5B9C60D8140C}.Debug|x64.ActiveCfg = Debug|Win32
+		{9DD847B4-603E-4736-AC74-5B9C60D8140C}.Release|Win32.ActiveCfg = Release|Win32
+		{9DD847B4-603E-4736-AC74-5B9C60D8140C}.Release|Win32.Build.0 = Release|Win32
+		{9DD847B4-603E-4736-AC74-5B9C60D8140C}.Release|x64.ActiveCfg = Release|x64
+		{9DD847B4-603E-4736-AC74-5B9C60D8140C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
