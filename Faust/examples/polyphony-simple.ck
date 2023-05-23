@@ -9,9 +9,10 @@ Faust faust => dac;
 faust.eval(`
     import("stdfaust.lib");
     freq = hslider("freq",200,50,1000,0.01);
-    gain = hslider("gain",0.5,0,1,0.01) * .1;
+    gain = hslider("gain",0.5,0,1,0.01);
     gate = button("gate");
-    process = os.sawtooth(freq)*gain*gate;
+    vol = gate : en.adsr(0.01, .2, 0.9, .1) : _*gain*.1;
+    process = os.sawtooth(freq)*vol;
     effect = _, _; // remember to declare effect when using polyphony
 `);
 
