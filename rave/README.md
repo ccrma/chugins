@@ -1,3 +1,7 @@
+# Installation Instructions
+## Linux
+Copy the contents of the `rave_chugin_release` folder to `/usr/local/lib/chuck`.
+
 # TODO
 ## need to store dlls in same dir as chuck.exe
 - is there any way around this?
