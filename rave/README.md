@@ -2,6 +2,8 @@
 ## Linux
 Copy the contents of the `rave_chugin_release` folder to `/usr/local/lib/chuck`.
 
+If you are building on your machine, call `sudo cmake --build . --config Release --target install` to install everything.
+
 # TODO
 ## need to store dlls in same dir as chuck.exe
 - is there any way around this?
@@ -34,3 +36,4 @@ How to make visual studio project:
 How to build:
 - Navigate to build directory from above
 - `cmake --build . --config Release`
+- `sudo cmake --build . --config Release --target install` to install
