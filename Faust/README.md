@@ -29,6 +29,10 @@ libmpg123-dev pkg-config python
 
 #### macOS/Linux
 
+macOS Requirements:
+
+* macOS version 11.0 or higher (due to Libfaust)
+
 Navigate to `thirdparty/libfaust` and run `sh download_libfaust.sh` in Terminal.
 
 In a Terminal window, navigate to this README and run `sh build_unix.sh`.
@@ -43,15 +47,14 @@ Then run chuck with a FaucK example.
 
 #### Windows
 
-On Windows, make sure that [7z.exe](https://www.7-zip.org/download.html) is in your system PATH.
-
-You must have Visual Studio 2022 installed.
+* [7z.exe](https://www.7-zip.org/download.html) must be in your system PATH.
+* You must have Visual Studio 2022 installed (due to Libfaust)
 
 Next, create a **permanent** environment variable `CHUCK_CHUGIN_PATH` and set it equal to `%USERPROFILE%/Documents/ChucK/chugins`.
 
-Navigate to `thirdparty/libfaust`. Run `call download_libfaust.bat` in a cmd prompt.
+Navigate to `thirdparty/libfaust`. Run `call download_libfaust.bat` in an cmd prompt.
 
-Navigate to this README in a cmd prompt and run `call build_windows.bat`.
+Open an `x64 Native Tools Command Prompt for Visual Studio 2022`, navigate to this README, and run `call build_windows.bat`.
 
 Navigate to the `package` directory and find the latest `fauck` version such as `fauck-0.0.1`. You should see a file `sndfile.dll`, which you should copy next to wherever `chuck.exe` exists on your computer (likely `C:/Program Files/ChucK/chuck.exe`). Next, copy `faustlibraries` and `Faust.chug` to `%USERPROFILE%/Documents/ChucK/chugins`.
 
