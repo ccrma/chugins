@@ -8,7 +8,7 @@ SinOsc LFO => blackhole;
 1 => LFO.freq;
 
 // evaluate faust code
-string.compile("string.dsp");
+string.compile(me.dir() + "string.dsp");
 
 cryBaby.eval(` 
 process = dm.crybaby_demo <: _,_ ;
