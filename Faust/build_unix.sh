@@ -37,7 +37,7 @@ then
     cd ../..
 fi
 
-cmake -Bbuild $CMAKEOPTS -DLIBFAUST_DIR="$LIBFAUST_DIR" -DSndFile_DIR="thirdparty/libsndfile/install"
+cmake -Bbuild $CMAKEOPTS -DLIBFAUST_DIR="$LIBFAUST_DIR" -DCMAKE_PREFIX_PATH="thirdparty/libsndfile/install"
 cmake --build build --config Release
 cmake --build build --config Release --target install
 
