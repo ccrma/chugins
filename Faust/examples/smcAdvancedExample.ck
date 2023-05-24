@@ -9,7 +9,7 @@ SinOsc LFO => blackhole;
 6 => LFO.freq;
 
 // string is implemented in an external Faust file
-string.compile("string.dsp");
+string.compile(me.dir() +"string.dsp");
 
 // crybaby_demo is part of the effect.lib Faust library
 cryBaby.eval(` 
