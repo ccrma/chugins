@@ -702,3 +702,49 @@ CK_DLL_MFUN(ladspa_verbose)
   // set the return value
   RETURN->v_int = bcdata->LADSPAverbose(GET_NEXT_INT(ARGS));
 }
+
+
+// windows
+#if defined(__PLATFORM_WIN32__)
+extern "C"
+{
+#ifndef __CHUNREAL_ENGINE__
+#include <windows.h>
+#else
+	// 1.5.0.0 (ge) | #chunreal
+	// unreal engine on windows disallows including windows.h
+#include "Windows/MinWindows.h"
+#endif // #ifndef __CHUNREAL_ENGINE__
+
+	void* dlopen(const char* path, int mode)
+	{
+#ifndef __CHUNREAL_ENGINE__
+		return (void*)LoadLibrary(path);
+#else
+		// 1.5.0.0 (ge) | #chunreal; explicitly call ASCII version
+		// the build envirnment seems to force UNICODE
+		return (void*)LoadLibraryA(path);
+#endif
+	}
+
+	int dlclose(void* handle)
+	{
+		FreeLibrary((HMODULE)handle);
+		return 1;
+	}
+
+	void* dlsym(void* handle, const char* symbol)
+	{
+		return (void*)GetProcAddress((HMODULE)handle, symbol);
+	}
+
+	const char* dlerror(void)
+	{
+		int error = GetLastError();
+		if (error == 0) return NULL;
+		// 1.4.2.0 (ge) | changed to snprintf
+		snprintf(dlerror_buffer, DLERROR_BUFFER_LENGTH, "%i", error);
+		return dlerror_buffer;
+	}
+}
+#endif
