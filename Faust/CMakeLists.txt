@@ -33,6 +33,9 @@ file (GLOB DSPLIBS ${LIBFAUST_DIR}/share/faust/*.lib)
 # Create shared library
 add_library(FaucK MODULE ${ALL_FILES} ${DSPLIBS})
 
+# set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+
 ####################################
 # Install - used for packaging
 ####################################
@@ -115,6 +118,10 @@ if(APPLE)
 elseif(MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 winmm wsock32 dsound dinput8 dxguid)
     target_compile_definitions(${PROJECT_NAME} PRIVATE "WIN32;_WIN32;_WINDOWS;NOMINMAX;_USRDLL;__WINDOWS_DS__;__WINDOWS_MODERN__;__PLATFORM_WIN32__")
+else()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE "__PLATFORM_LINUX__")
+    # target_compile_options(${PROJECT_NAME} PUBLIC "-std=c++17")
+    # target_link_libraries(${PROJECT_NAME} PUBLIC "stdc++fs")
 endif()
 
 # MSVC-specific options

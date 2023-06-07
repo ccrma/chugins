@@ -32,6 +32,7 @@
 #include <vector>
 #include <map>
 #include <fstream>
+//#include <filesystem>
 using namespace std;
 
 // faust include
@@ -186,9 +187,11 @@ std::string getPathToFaustLibraries() {
     // this applies to __APPLE__ and LINUX
     const char* myDLLPath = getMyDLLPath();
     // std::cerr << "myDLLPath: " << myDLLPath << std::endl;
-    std::filesystem::path p = std::filesystem::path(myDLLPath);
-    p = p.parent_path() / "faustlibraries";
-    return p.string();
+    //std::filesystem::path p = std::filesystem::path(myDLLPath);
+    //p = p.parent_path() / "faustlibraries";
+    //std::cerr << "p.string(): " << p.string() << endl;
+    //return p.string();
+    return "";
 #endif
   } catch (...) {
     throw std::runtime_error("Error getting path to faustlibraries.");

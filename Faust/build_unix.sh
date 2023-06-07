@@ -17,7 +17,7 @@ then
     echo "Downloaded libsndfile." 
     echo "Building libsndfile"
     cd libsndfile
-    cmake -Bbuild $CMAKEOPTS -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_INSTALL_PREFIX="./install"
+    cmake -Bbuild $CMAKEOPTS -DCMAKE_C_FLAGS="-fPIC" -DCMAKE_CXX_FLAGS="-fPIC" -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_INSTALL_PREFIX="./install"
     cmake --build build --config Release
     cmake --build build --target install
     cd ../..
