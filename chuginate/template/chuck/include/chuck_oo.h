@@ -88,8 +88,8 @@ enum Chuck_Global_Get_Callback_Type
 struct Chuck_VM_Object
 {
 public:
-    Chuck_VM_Object() { this->init_ref(); }
-    virtual ~Chuck_VM_Object() { }
+    Chuck_VM_Object();
+    virtual ~Chuck_VM_Object();
 
 public:
     // add reference (ge: april 2013: made these virtual)
@@ -170,7 +170,7 @@ public:
 // name: struct Chuck_Object
 // dsec: base object
 //-----------------------------------------------------------------------------
-struct Chuck_Object : Chuck_VM_Object
+struct Chuck_Object : public Chuck_VM_Object
 {
 public:
     Chuck_Object();
@@ -213,7 +213,7 @@ public:
 // name: struct Chuck_Array
 // desc: native ChucK arrays ( virtual base class )
 //-----------------------------------------------------------------------------
-struct Chuck_Array : Chuck_Object
+struct Chuck_Array : public Chuck_Object
 {
     // functionality that we can keep in common...
 
@@ -249,7 +249,7 @@ public:
 // name: struct Chuck_Array4
 // desc: native ChucK arrays (for 4-byte)
 //-----------------------------------------------------------------------------
-struct Chuck_Array4 : Chuck_Array
+struct Chuck_Array4 : public Chuck_Array
 {
 public:
     Chuck_Array4( t_CKBOOL is_obj, t_CKINT capacity = 8 );
@@ -278,6 +278,7 @@ public:
     virtual t_CKINT erase( const std::string & key );
     virtual t_CKINT data_type_size( ) { return CHUCK_ARRAY4_DATASIZE; }
     virtual t_CKINT data_type_kind( ) { return CHUCK_ARRAY4_DATAKIND; }
+    virtual t_CKBOOL contains_objects( ) { return m_is_obj; } // 1.5.0.1 (ge) added
     // get map keys | added (1.4.2.0) nshaheed
     virtual void get_keys( std::vector<std::string> & keys );
     // reverse array order | added (1.5.0.0) azaday
@@ -303,7 +304,7 @@ public:
 // name: struct Chuck_Array8
 // desc: native ChucK arrays (for 8-byte)
 //-----------------------------------------------------------------------------
-struct Chuck_Array8 : Chuck_Array
+struct Chuck_Array8 : public Chuck_Array
 {
 public:
     Chuck_Array8( t_CKINT capacity = 8 );
@@ -353,7 +354,7 @@ public:
 // name: struct Chuck_Array16
 // desc: native ChucK arrays (for 16-byte)
 //-----------------------------------------------------------------------------
-struct Chuck_Array16 : Chuck_Array
+struct Chuck_Array16 : public Chuck_Array
 {
 public:
     Chuck_Array16( t_CKINT capacity = 8 );
@@ -403,7 +404,7 @@ public:
 // name: struct Chuck_Array24
 // desc: native ChucK arrays (for vec3)
 //-----------------------------------------------------------------------------
-struct Chuck_Array24 : Chuck_Array
+struct Chuck_Array24 : public Chuck_Array
 {
 public:
     Chuck_Array24( t_CKINT capacity = 8 );
@@ -451,7 +452,7 @@ public:
 // name: struct Chuck_Array32
 // desc: native ChucK arrays (for vec4)
 //-----------------------------------------------------------------------------
-struct Chuck_Array32 : Chuck_Array
+struct Chuck_Array32 : public Chuck_Array
 {
 public:
     Chuck_Array32( t_CKINT capacity = 8 );
@@ -521,7 +522,7 @@ struct Chuck_Global_Event_Listener
 // name: Chuck_Event
 // desc: base Chuck Event class
 //-----------------------------------------------------------------------------
-struct Chuck_Event : Chuck_Object
+struct Chuck_Event : public Chuck_Object
 {
 public:
     // signal/broadcast "local" -- signal ChucK Events
@@ -569,13 +570,13 @@ protected:
 // name: Chuck_String
 // desc: base Chuck string class
 //-----------------------------------------------------------------------------
-struct Chuck_String : Chuck_Object
+struct Chuck_String : public Chuck_Object
 {
 public:
     // constructor
     Chuck_String( const std::string & s = "" ) { set( s ); }
-    // destructor
-    ~Chuck_String() { }
+    // destructor | 1.5.0.1 (ge) made destructor virtual
+    virtual ~Chuck_String() { }
 
     // set string (makes copy)
     void set( const std::string & s ) { m_str = s; m_charptr = m_str.c_str(); }
@@ -598,7 +599,7 @@ private:
 // name: Chuck_IO
 // desc: base Chuck IO class
 //-----------------------------------------------------------------------------
-struct Chuck_IO : Chuck_Event
+struct Chuck_IO : public Chuck_Event
 {
 public:
     Chuck_IO();
@@ -616,6 +617,7 @@ public:
     virtual Chuck_String * readLine() = 0;
     virtual t_CKINT readInt( t_CKINT flags ) = 0;
     virtual t_CKFLOAT readFloat() = 0;
+    virtual t_CKFLOAT readFloat( t_CKINT flags ) = 0;
     virtual t_CKBOOL readString( std::string & str ) = 0;
     virtual t_CKBOOL eof() = 0;
 
@@ -624,15 +626,32 @@ public:
     virtual void write( t_CKINT val ) = 0;
     virtual void write( t_CKINT val, t_CKINT flags ) = 0;
     virtual void write( t_CKFLOAT val ) = 0;
+    virtual void write( t_CKFLOAT val, t_CKINT flags ) = 0;
 
 public:
     // type | moved to IO in 1.5.0.0 (ge)
     static const t_CKINT TYPE_ASCII;
     static const t_CKINT TYPE_BINARY;
     // datatype
-    static const t_CKINT INT32;
-    static const t_CKINT INT16;
     static const t_CKINT INT8;
+    static const t_CKINT INT16;
+    static const t_CKINT INT24; // 1.5.0.1 (ge) added
+    static const t_CKINT INT32;
+    static const t_CKINT INT64; // 1.5.0.1 (ge) added
+    // 1.5.0.1 (ge) added SINT and UINT type flags
+    static const t_CKINT SINT8;
+    static const t_CKINT SINT16;
+    static const t_CKINT SINT24;
+    static const t_CKINT SINT32;
+    static const t_CKINT SINT64;
+    static const t_CKINT UINT8;
+    static const t_CKINT UINT16;
+    static const t_CKINT UINT24;
+    static const t_CKINT UINT32;
+    static const t_CKINT UINT64;
+    // 1.5.0.1 (ge) added FLOAT type flags
+    static const t_CKINT FLOAT32;
+    static const t_CKINT FLOAT64;
     // flags | moved to IO in 1.5.0.0 (ge)
     static const t_CKINT FLAG_READ_WRITE;
     static const t_CKINT FLAG_READONLY;
@@ -663,7 +682,7 @@ public:
 // name: Chuck_IO_File
 // desc: Chuck File IO class
 //-----------------------------------------------------------------------------
-struct Chuck_IO_File : Chuck_IO
+struct Chuck_IO_File : public Chuck_IO
 {
 public:
     // REFACTOR-2017
@@ -693,6 +712,7 @@ public:
     virtual Chuck_String * readLine();
     virtual t_CKINT readInt( t_CKINT flags );
     virtual t_CKFLOAT readFloat();
+    virtual t_CKFLOAT readFloat( t_CKINT flags );
     virtual t_CKBOOL readString( std::string & str );
     virtual t_CKBOOL eof();
 
@@ -709,6 +729,7 @@ public:
     virtual void write( t_CKINT val );
     virtual void write( t_CKINT val, t_CKINT flags );
     virtual void write( t_CKFLOAT val );
+    virtual void write( t_CKFLOAT val, t_CKINT flags );
 
     #ifndef __DISABLE_THREADS__
     // writing -- async
@@ -742,7 +763,7 @@ protected:
 // name: Chuck_IO_Chout
 // desc: Chuck console IO out
 //-----------------------------------------------------------------------------
-struct Chuck_IO_Chout : Chuck_IO
+struct Chuck_IO_Chout : public Chuck_IO
 {
 public:
     Chuck_IO_Chout( Chuck_Carrier * carrier );
@@ -760,6 +781,7 @@ public:
     virtual Chuck_String * readLine();
     virtual t_CKINT readInt( t_CKINT flags );
     virtual t_CKFLOAT readFloat();
+    virtual t_CKFLOAT readFloat( t_CKINT flags );
     virtual t_CKBOOL readString( std::string & str );
     virtual t_CKBOOL eof();
 
@@ -768,6 +790,7 @@ public:
     virtual void write( t_CKINT val );
     virtual void write( t_CKINT val, t_CKINT flags );
     virtual void write( t_CKFLOAT val );
+    virtual void write( t_CKFLOAT val, t_CKINT flags );
 
 public: // REFACTOR-2017
     // set callback
@@ -787,7 +810,7 @@ private:
 // name: Chuck_IO_Cherr
 // desc: Chuck console IO err
 //-----------------------------------------------------------------------------
-struct Chuck_IO_Cherr : Chuck_IO
+struct Chuck_IO_Cherr : public Chuck_IO
 {
 public:
     Chuck_IO_Cherr( Chuck_Carrier * carrier );
@@ -805,6 +828,7 @@ public:
     virtual Chuck_String * readLine();
     virtual t_CKINT readInt( t_CKINT flags );
     virtual t_CKFLOAT readFloat();
+    virtual t_CKFLOAT readFloat( t_CKINT flags );
     virtual t_CKBOOL readString( std::string & str );
     virtual t_CKBOOL eof();
 
@@ -813,6 +837,7 @@ public:
     virtual void write( t_CKINT val );
     virtual void write( t_CKINT val, t_CKINT flags );
     virtual void write( t_CKFLOAT val );
+    virtual void write( t_CKFLOAT val, t_CKINT flags );
 
 public:
     // set callback | REFACTOR-2017
