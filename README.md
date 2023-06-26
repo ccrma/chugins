@@ -1,21 +1,67 @@
-Repository for Officially Supported ChuGins [![Build Status](https://travis-ci.org/ccrma/chugins.svg?branch=master)](https://travis-ci.org/ccrma/chugins)
-==
+# Repository for Officially Supported ChuGins
+A _chugin_ (or ChuGin) is a plug-in for the [ChucK audio programming language](https://github.com/ccrma/chuck). Chugins are loaded at runtime by [ChucK](https://github.com/ccrma/chuck) or [miniAudicle](https://github.com/ccrma/miniAudicle) and are fundmental to extending the capabilities of the language by adding class libraries and audio Unit Generators (UGens) and Unit Analyzers (UAnae). Once loaded, the contents of chugins can be used directly from the language. This repository contains a number of chugins maintained for all supported platforms (macOS, Linux, Windows) by the ChucK Team in collaboration with their respective authors (see list below). The ChucK Team invites developers to envision and create new chugins, and to help maintain and evolve existing ones. Join in on the [ChucK Discord Server](https://discord.gg/ENr3nurrx8), part of the [ChucK Community](https://chuck.stanford.edu/community/).
 
-Prepackaged Binaries
---
-Binaries for most chugins in this repository are automatically included by the ChucK installers for Mac OS X and Windows. If you haven't installed ChucK already, these are available at [http://chuck.stanford.edu/release/](http://chuck.stanford.edu/release/).
+## Prepackaged Binaries
+Binaries for most chugins in this repository are automatically included by the ChucK installers for macOS and Windows. Install the latest at [http://chuck.stanford.edu/release/](http://chuck.stanford.edu/release/). You can read the [class library reference](https://chuck.stanford.edu/doc/reference/chugins.html) for these packaged chugins. Linux users (and advanced users on macOS and Windows) can build chugins from source.
 
-### Linux/Advanced Users
-To compile and install all chugins:
+## Building ChuGins
+Clone this repository:
+```
+git clone --recurse-submodules https://github.com/ccrma/chugins.git
+cd chugins
+```
+To compile all chugins in this repository, run `make linux` (Linux) or `make osx` (macOS). Windows users can compile using the Visual Studio solution `chugins.sln`.
 
-    git clone https://github.com/ccrma/chugins.git
-    cd chugins
-    make [osx|win32|linux]
-    sudo make install
+Optionally, (Linux and macOS, requires administrative privileges) install the chugins:
+```
+sudo make install
+```
+
+## Working with Chugins
+Chugins are loaded automatically by command-line **chuck**, or when **miniAudicle** starts the ChucK VM. Class library documentation for the pre-packaged chugins can be found [here](https://chuck.stanford.edu/doc/reference/chugins.html). To see which chugins are being loaded on your system, do one of the following.
+
+If you are using command-line **chuck**, use the `--chugin-probe` flag (need chuck-1.5.0.4 or higher) to see a diagnostic of chugins on your system. (Note this option does not actually run any chuck programs.)
+```
+chuck --chugin-probe
+```
+You can increase the amount of information by additionally specifying the verbosity with `--verbose` or simply `-v`:
+```
+chuck --chugin-probe -v5
+```
+In addition to the chugins and their versions (and any errors), `-v5` will show you the default search directories that chuck is scanning for chugins (see below).
+
+Alternately, if you are running chuck programs, you can simply add the `-v` flag (we recommend `-v3` or higher) to whatever chuck files you are running, e.g.,
+```
+chuck blit2.ck foo.ck -v3
+```
+
+If you are using **miniAudicle**, you can similarly probe chugins from the main menu: File->Preferences...->ChuGins tab, using the `Probe ChuGins` button. This will print the chugins diagnostic to the miniAudicle Console Monitor. You can change the verbosity level from the main menu: ChucK->Log Level.
+
+
+### Chugins Search Paths
+By deafult, the chugin loader searches, recursively, for chugins (.chug) and chuck extensions (.ck) in the following directories. It is possible to customize these in miniAudicle (which only affects miniAudicle, not command line chuck) Note some of these requires chuck-1.5.0.4 or higher.
+#### macOS
+```
+/usr/local/lib/chuck
+/Library/Application Support/ChucK/ChuGins
+~/Library/Application Support/ChucK/ChuGins
+~/.chuck/lib
+````
+#### Linux
+```
+/usr/local/lib/chuck
+~/.chuck/lib/
+```
+#### Windows
+```
+C:\WINDOWS\system32\ChucK
+C:\Program Files\ChucK\chugins
+C:\Program Files (x86)\ChucK\chugins
+C:\Users\%USERNAME%\chuck\lib
+```
 
 List of Current Chugins
 --
-
 - **ABSaturator**
   - soft clip saturating distortion, based on examples from Abel/Berners' Music 424 course at Stanford.
 - **Bitcrusher**
@@ -63,12 +109,20 @@ List of Current Chugins
 
 Chugins That We Are Working On
 --
+- Faust (FAUST in ChucK, or FaucK)
+- NHHall
+- Fluidsynth
+- XML, MusicXML
 - MAUI for chuck
 - GlucK (OpenGL)
 - AudioUnit loader
+- Ladspa
 - Ambisonics
+- Rave
 
 Chugins We would like to see happen
 --
-- More configurable reverbs, dynamics processors, and distortion units
+- More configurable audio effects: reverbs, dynamics processors, and distortion units
 - VST loader
+- Algorithmic composition tools (as UGens or new classes)
+- class libraries of all kinds
