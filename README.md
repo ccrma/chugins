@@ -18,7 +18,13 @@ sudo make install
 ```
 
 ## Working with Chugins
-Chugins are loaded automatically by command-line **chuck**, or when **miniAudicle** starts the ChucK VM. Class library documentation for the pre-packaged chugins can be found [here](https://chuck.stanford.edu/doc/reference/chugins.html). To see which chugins are being loaded on your system, do one of the following.
+Chugins are loaded automatically by command-line **chuck**, or when **miniAudicle** starts the ChucK VM, and can be used directly from the language (see [class library documentation](https://chuck.stanford.edu/doc/reference/chugins.html) for the pre-packaged chugins).
+
+For a chugin to load properly:
+1. the chugin version must be compatible with the host version
+2. the chugin must be located somewhere within one of the default search directories, or be explicitly specified, e.g., using the `--chugin:<file>` flag on the command line.
+
+To see which chugins are being loaded on your system and their versions, do one of the following.
 
 If you are using command-line **chuck**, use the `--chugin-probe` flag (need chuck-1.5.0.4 or higher) to see a diagnostic of chugins on your system. (Note this option does not actually run any chuck programs.)
 ```
@@ -32,14 +38,18 @@ In addition to the chugins and their versions (and any errors), `-v5` will show 
 
 Alternately, if you are running chuck programs, you can simply add the `-v` flag (we recommend `-v3` or higher) to whatever chuck files you are running, e.g.,
 ```
-chuck blit2.ck foo.ck -v3
+chuck FILE1.ck foo.ck -v3
+```
+You can also toggle whether to load chugins using the `--chugin-load` command line flag, for example, to run chuck with chugins disabled:
+```
+chuck  FILE1.ck FILE2.ck --chugin-load:off
 ```
 
-If you are using **miniAudicle**, you can similarly probe chugins from the main menu: File->Preferences...->ChuGins tab, using the `Probe ChuGins` button. This will print the chugins diagnostic to the miniAudicle Console Monitor. You can change the verbosity level from the main menu: ChucK->Log Level.
+If you are using **miniAudicle**, you can similarly configure and probe chugins in Preferences. From the main menu, navigate to File->Preferences...->ChuGins tab. Using the `Probe ChuGins` button, for example, will print the chugins diagnostic to the miniAudicle Console Monitor. You can change the verbosity level from the main menu: ChucK->Log Level.
 
 
 ### Chugins Search Paths
-By deafult, the chugin loader searches recursively in the following directories for chugins (.chug) and chuck extensions (.ck). It is possible to customize these search paths in miniAudicle (which only affects miniAudicle and does not affect command-line chuck). Note: some of these requires chuck-1.5.0.4 or higher.
+By deafult, the chugin loader searches recursively in the following directories for chugins (.chug) and chuck extensions (.ck). It is possible to customize these search paths using the `--chugin-path:<path>` flag with command-line **chuck** or through Preferences/ChuGins tab in **miniAudicle**. Note: some of these requires chuck-1.5.0.4 or higher; we recommend always using the latest released version or the `main` development branch of this repository.
 #### macOS
 ```
 /usr/local/lib/chuck
@@ -60,7 +70,7 @@ C:\Program Files (x86)\ChucK\chugins
 C:\Users\%USERNAME%\chuck\lib
 ```
 
-List of Current Chugins
+List of Chugins in This Repository
 --
 - **ABSaturator**
   - soft clip saturating distortion, based on examples from Abel/Berners' Music 424 course at Stanford.
@@ -110,19 +120,25 @@ List of Current Chugins
 Chugins That We Are Working On
 --
 - Faust (FAUST in ChucK, or FaucK)
-- NHHall
 - Fluidsynth
 - XML, MusicXML
 - MAUI for chuck
-- GlucK (OpenGL)
+- ChuGL/GlucK (grahics in in ChucK)
+- NHHall
+- Convolution Reverb
+- Text2Speech synthesizer
 - AudioUnit loader
 - Ladspa
 - Ambisonics
 - Rave
 
-Chugins We would like to see happen
+Chugins We Would Like to See Happen
 --
-- More configurable audio effects: reverbs, dynamics processors, and distortion units
-- VST loader
+- More Configurable audio effects: reverbs, dynamics processors, and distortion units
+- More synthesis algorithms / physical models
 - Algorithmic composition tools (as UGens or new classes)
-- class libraries of all kinds
+- Class libraries of all kinds
+- A VST loader
+- More [Unit Analyzers](https://chuck.stanford.edu/doc/reference/uanae.html) and/or [interactive AI tools](https://chuck.stanford.edu/doc/reference/ai.html)
+- Expressive tools for art making
+- Tools for education and research
