@@ -1,6 +1,8 @@
 # Repository for Officially Supported ChuGins
 A _chugin_ (or ChuGin) is a plug-in for the [ChucK audio programming language](https://github.com/ccrma/chuck). Chugins are loaded at runtime by [ChucK](https://github.com/ccrma/chuck) or [miniAudicle](https://github.com/ccrma/miniAudicle) and are fundmental to extending the capabilities of the language by adding class libraries and audio Unit Generators (UGens) and Unit Analyzers (UAnae). Once loaded, the contents of chugins can be used directly from the language. This repository contains a number of chugins maintained for all supported platforms (macOS, Linux, Windows) by the ChucK Team in collaboration with their respective authors (see list below). The ChucK Team invites developers to envision and create new chugins, and to help maintain and evolve existing ones. Join in on the [ChucK Discord Server](https://discord.gg/ENr3nurrx8), part of the [ChucK Community](https://chuck.stanford.edu/community/).
 
+Read more about it in [the original chugins paper](https://mcd.stanford.edu/publish/files/2012-icmc-extend.pdf) and [three ways to extend ChucK](https://chuck.stanford.edu/extend/).
+
 ## Prepackaged Binaries
 Binaries for most chugins in this repository are automatically included by the ChucK installers for macOS and Windows. Install the latest at [http://chuck.stanford.edu/release/](http://chuck.stanford.edu/release/). You can read the [class library reference](https://chuck.stanford.edu/doc/reference/chugins.html) for these packaged chugins. Linux users (and advanced users on macOS and Windows) can build chugins from source.
 
