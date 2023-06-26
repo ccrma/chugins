@@ -56,8 +56,8 @@ By deafult, the chugin loader searches recursively in the following directories 
 #### macOS
 ```
 /usr/local/lib/chuck
-/Library/Application Support/ChucK/ChuGins
-~/Library/Application Support/ChucK/ChuGins
+/Library/Application Support/ChucK/chugins
+~/Library/Application Support/ChucK/chugins
 ~/.chuck/lib
 ````
 #### Linux
@@ -67,7 +67,7 @@ By deafult, the chugin loader searches recursively in the following directories 
 ```
 #### Windows
 ```
-C:\WINDOWS\system32\ChucK
+C:\Windows\system32\ChucK
 C:\Program Files\ChucK\chugins
 C:\Program Files (x86)\ChucK\chugins
 C:\Users\%USERNAME%\Documents\ChucK\chugins
