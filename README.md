@@ -70,7 +70,7 @@ By deafult, the chugin loader searches recursively in the following directories 
 C:\WINDOWS\system32\ChucK
 C:\Program Files\ChucK\chugins
 C:\Program Files (x86)\ChucK\chugins
-C:\Users\%USERNAME%\chuck\lib
+C:\Users\%USERNAME%\Documents\ChucK\chugins
 ```
 
 List of Chugins in This Repository
