@@ -39,7 +39,7 @@ If you are using **miniAudicle**, you can similarly probe chugins from the main 
 
 
 ### Chugins Search Paths
-By deafult, the chugin loader searches, recursively, for chugins (.chug) and chuck extensions (.ck) in the following directories. It is possible to customize these in miniAudicle (which only affects miniAudicle, not command line chuck) Note some of these requires chuck-1.5.0.4 or higher.
+By deafult, the chugin loader searches recursively in the following directories for chugins (.chug) and chuck extensions (.ck). It is possible to customize these search paths in miniAudicle (which only affects miniAudicle and does not affect command-line chuck). Note: some of these requires chuck-1.5.0.4 or higher.
 #### macOS
 ```
 /usr/local/lib/chuck
