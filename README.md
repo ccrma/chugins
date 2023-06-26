@@ -18,13 +18,13 @@ sudo make install
 ```
 
 ## Working with Chugins
-Chugins are loaded automatically by command-line **chuck**, or when **miniAudicle** starts the ChucK VM, and can be used directly from the language (see [class library documentation](https://chuck.stanford.edu/doc/reference/chugins.html) for the pre-packaged chugins).
+Chugins are loaded automatically when command-line **chuck** starts, or when **miniAudicle** starts the ChucK VM. Once loaded, the contents of chugins can be used directly from the language (see [class library documentation](https://chuck.stanford.edu/doc/reference/chugins.html) for the pre-packaged chugins).
 
 For a chugin to load properly:
 1. the chugin version must be compatible with the host version
-2. the chugin must be located somewhere within one of the default search directories, or be explicitly specified, e.g., using the `--chugin:<file>` flag on the command line.
+3. the chugin must be located somewhere within one of the default search directories, or be explicitly specified, e.g., using the `--chugin:<file>` flag on the command line.
 
-To see which chugins are being loaded on your system and their versions, do one of the following.
+To see which chugins are being loaded on your system and their versions (and to detect any version incompatibilities), do one of the following.
 
 If you are using command-line **chuck**, use the `--chugin-probe` flag (need chuck-1.5.0.4 or higher) to see a diagnostic of chugins on your system. (Note this option does not actually run any chuck programs.)
 ```
@@ -76,40 +76,44 @@ List of Chugins in This Repository
   - soft clip saturating distortion, based on examples from Abel/Berners' Music 424 course at Stanford.
 - **Bitcrusher**
   - sample-width reducer + sample rate decimator, bringing to mind the sounds of your favorite low-fidelity vintage audio equipment.
-- **MagicSine**
-  - Efficient means of computing a sine wave with 2 adds and 2 multiples per sample, at the expense of being able to dynamically adjust phase.
-- **KasFilter**
-  - by [@Kassen](http://github.com/Kassen)
-  - Undersampling-based resonant lowpass filter
+- **Elliptic**
+  - by [@jwmatthys](https://github.com/jwmatthys)
+  - Elliptic filter, capable of very steep slopes or interesting harmonic ripples
+- **Faust**
+  - by [@rmichon](https://github.com/rmichon) and [@gewang](https://github.com/gewang)
+  - runtime FAUST compiler running strongly-timed in ChucK; also known as [FaucK](https://ccrma.stanford.edu/~rmichon/fauck/)
+  - Faust 2023 update by [@dbraun](https://github.com/dbraun)
 - **FIR**
   - by [Perry Cook](http://www.cs.princeton.edu/~prc/)
   - Arbitrary order FIR filter
 - **FoldbackSaturator**
   - by [Ness Morris](https://github.com/biikatto)
   - Foldback Saturator for nasty distortion
+- **GVerb**
+  - by [@jwmatthys](https://github.com/jwmatthys)
+  - Good quality stereo reverb with adjustable parameters
+- **KasFilter**
+  - by [@Kassen](http://github.com/Kassen)
+  - Undersampling-based resonant lowpass filter
+- **MagicSine**
+  - Efficient means of computing a sine wave with 2 adds and 2 multiples per sample, at the expense of being able to dynamically adjust phase.
 - **Pan4 / Pan8 / Pan16**
   - Basic equal-power panners for 4, 8, and 16 channels
 - **PitchTrack**
   - by [@jwmatthys](https://github.com/jwmatthys)
   - Monophonic autocorrelation pitch tracker, based on [helmholtz~] by Katja, http://www.katjaas.nl/helmholtz/helmholtz.html
-- **GVerb**
-  - by [@jwmatthys](https://github.com/jwmatthys)
-  - Good quality stereo reverb with adjustable parameters
 - **Mesh2D**
   - by [@jwmatthys](https://github.com/jwmatthys)
   - STK instrument that simulates a rectilinear, 2-dimensional digital waveguide mesh structure. Basically sounds like striking a metal plate.
-- **Spectacle**
-  - by [@jwmatthys](https://github.com/jwmatthys)
-  - FFT-based spectral delay and EQ
-- **Elliptic**
-  - by [@jwmatthys](https://github.com/jwmatthys)
-  - Elliptic filter, capable of very steep slopes or interesting harmonic ripples
 - **MIAP**
   - by [@ericheep](https://github.com/ericheep)
   - Manifold-Interface Amplitude Panner inspired by the research of [Zachary Seldess](http://www.zacharyseldess.com/miap/) and [Steve Ellison](http://www.lightingandsoundamerica.com/reprint/MeyerSpaceMap.pdf).
 - **PowerADSR**
   - by [@ericheep](https://github.com/ericheep)
   - Power function ADSR envelope.
+- **Spectacle**
+  - by [@jwmatthys](https://github.com/jwmatthys)
+  - FFT-based spectral delay and EQ
 - **WarpBuf**
   - by [@dbraun](https://github.com/dbraun)
   - Time-stretching and pitch-stretching sound buffer that can optionally import `asd` files from Ableton Live for beatmatching.
