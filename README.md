@@ -45,8 +45,9 @@ You can also toggle whether to load chugins using the `--chugin-load` command li
 chuck  FILE1.ck FILE2.ck --chugin-load:off
 ```
 
-If you are using **miniAudicle**, you can similarly configure and probe chugins in Preferences. From the main menu, navigate to File->Preferences...->ChuGins tab. Using the `Probe ChuGins` button, for example, will print the chugins diagnostic to the miniAudicle Console Monitor. You can change the verbosity level from the main menu: ChucK->Log Level.
+If you are using **miniAudicle**, you can similarly configure and probe chugins in Preferences. From the main menu, navigate to File->Preferences...->ChuGins tab (see image below). Here you can enable/disable chugins loading, configure the chuings search path, and perform some chugins diagnostic. Pressing the `Probe ChuGins` button, for example, will print the diagnostic to the miniAudicle Console Monitor. You can control the verbosity level from the main menu: ChucK->Log Level.
 
+<img width="720" alt="ma-mac-probe-chug" src="https://github.com/ccrma/chugins/assets/669967/9f12d3bf-1d7b-4b1c-9dfe-6623c198e11f">
 
 ### Chugins Search Paths
 By deafult, the chugin loader searches recursively in the following directories for chugins (.chug) and chuck extensions (.ck). It is possible to customize these search paths using the `--chugin-path:<path>` flag with command-line **chuck** or through Preferences/ChuGins tab in **miniAudicle**. Note: some of these requires chuck-1.5.0.4 or higher; we recommend always using the latest released version or the `main` development branch of this repository.
