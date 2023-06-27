@@ -69,7 +69,7 @@
 
 // ChucK version string -- retrieve using ChucK::version()
 // 1.5.0.0 (ge) | moved here for at-a-glance visibility (e.g., for chugins)
-#define CHUCK_VERSION_STRING                "1.5.0.3 (chai)"
+#define CHUCK_VERSION_STRING                "1.5.0.4 (chai)"
 
 // ChucK param names -- used in setParam(...) and getParam*(...)
 #define CHUCK_PARAM_SAMPLE_RATE             "SAMPLE_RATE"
@@ -211,6 +211,10 @@ protected:
     t_CKBOOL initChugins();
     // init OTF programming system
     t_CKBOOL initOTF();
+
+public:
+    // probe chugins (print info on all chugins as seen under current config)
+    void probeChugins(); // 1.5.0.4 (ge) added
 
 protected:
     // core elements: compiler, VM, etc.
