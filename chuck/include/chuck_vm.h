@@ -26,11 +26,16 @@
 // file: chuck_vm.h
 // desc: chuck virtual machine
 //
-// author: Ge Wang (ge@ccrma.stanford.edu | gewang@cs.princeton.edu)
+// author: Ge Wang (https://ccrma.stanford.edu/~ge/)
 // date: Autumn 2002
 //-----------------------------------------------------------------------------
 #ifndef __CHUCK_VM_H__
 #define __CHUCK_VM_H__
+
+#include <string>
+#include <map>
+#include <vector>
+#include <list>
 
 #include "chuck_oo.h"
 #include "chuck_ugen.h"
@@ -41,11 +46,6 @@
 #ifdef __CHUCK_STAT_TRACK__
 #include "chuck_stats.h"
 #endif
-
-#include <string>
-#include <map>
-#include <vector>
-#include <list>
 
 
 #define CK_DEBUG_MEMORY_MGMT (0)
@@ -71,19 +71,19 @@ struct Chuck_VM;
 struct Chuck_VM_Func;
 struct Chuck_VM_FTable;
 struct Chuck_Msg;
+struct Chuck_Globals_Manager; // added 1.4.1.0 (jack)
+class CBufferSimple;
 #ifndef __DISABLE_SERIAL__
 // hack: spencer?
 struct Chuck_IO_Serial;
 #endif
-
-class CBufferSimple;
 
 
 
 
 //-----------------------------------------------------------------------------
 // name: struct Chuck_VM_Stack
-// desc: ...
+// desc: a VM stack; each shred has at least two (mem and reg)
 //-----------------------------------------------------------------------------
 struct Chuck_VM_Stack
 {
@@ -91,11 +91,15 @@ struct Chuck_VM_Stack
 // functions
 //-----------------------------------------------------------------------------
 public:
+    // constructor
     Chuck_VM_Stack();
+    // destructor
     ~Chuck_VM_Stack();
 
 public:
+    // initialize stack
     t_CKBOOL initialize( t_CKUINT size );
+    // shutdown and cleanup stack
     t_CKBOOL shutdown();
 
 //-----------------------------------------------------------------------------
@@ -121,11 +125,13 @@ public: // state
 // name: struct Chuck_VM_Code
 // desc: ...
 //-----------------------------------------------------------------------------
-struct Chuck_VM_Code : Chuck_Object
+struct Chuck_VM_Code : public Chuck_Object
 {
 public:
+    // constructor
     Chuck_VM_Code();
-    ~Chuck_VM_Code();
+    // destructor
+    virtual ~Chuck_VM_Code();
 
 public:
     // array of Chuck_Instr *, should always end with Chuck_Instr_EOF
@@ -160,21 +166,28 @@ public:
 // name: struct Chuck_VM_Shred
 // desc: ...
 //-----------------------------------------------------------------------------
-struct Chuck_VM_Shred : Chuck_Object
+struct Chuck_VM_Shred : public Chuck_Object
 {
 //-----------------------------------------------------------------------------
 // functions
 //-----------------------------------------------------------------------------
 public:
+    // constructor
     Chuck_VM_Shred( );
-    ~Chuck_VM_Shred( );
+    // destructor
+    virtual ~Chuck_VM_Shred( );
 
+    // initialize shred
     t_CKBOOL initialize( Chuck_VM_Code * c,
                          t_CKUINT mem_st_size = CVM_MEM_STACK_SIZE,
                          t_CKUINT reg_st_size = CVM_REG_STACK_SIZE );
+    // shutdown shred
     t_CKBOOL shutdown();
+    // run the shred on vm
     t_CKBOOL run( Chuck_VM * vm );
+    // associate ugen with shred
     t_CKBOOL add( Chuck_UGen * ugen );
+    // unassociate ugen with shred
     t_CKBOOL remove( Chuck_UGen * ugen );
 
     // add parent object reference (added 1.3.1.2)
@@ -207,25 +220,24 @@ public: // machine components
     std::map<t_CKUINT, Chuck_VM_Shred *> children;
     t_CKUINT pc;
 
-    // vm
-    Chuck_VM * vm_ref;
-
     // time
     t_CKTIME now;
     t_CKTIME start;
-
-    // state (no longer needed, see array_alloc)
-    // t_CKUINT * obj_array;
-    // t_CKUINT obj_array_size;
+    // vm reference
+    Chuck_VM * vm_ref;
 
 public:
+    // shred state
     t_CKTIME wake_time;
     t_CKUINT next_pc;
     t_CKBOOL is_done;
     t_CKBOOL is_running;
     t_CKBOOL is_abort;
     t_CKBOOL is_dumped;
-    Chuck_Event * event;  // event shred is waiting on
+
+    // event shred is waiting on
+    Chuck_Event * event;
+    // map of ugens for the shred
     std::map<Chuck_UGen *, Chuck_UGen *> m_ugen_map;
     // references kept by the shred itself (e.g., when sporking member functions)
     // to be released when shred is done -- added 1.3.1.2
@@ -237,6 +249,7 @@ public: // id
     std::vector<std::string> args;
 
 public:
+    // linked list
     Chuck_VM_Shred * prev;
     Chuck_VM_Shred * next;
 
@@ -255,6 +268,7 @@ public: // ge: 1.3.5.3
 
 #ifndef __DISABLE_SERIAL__
 private:
+    // serial IO list for event synchronization
     std::list<Chuck_IO_Serial *> * m_serials;
 #endif
 };
@@ -264,9 +278,9 @@ private:
 
 //-----------------------------------------------------------------------------
 // name: struct Chuck_VM_Shred_Status
-// desc: ...
+// desc: status pertaining to a single shred
 //-----------------------------------------------------------------------------
-struct Chuck_VM_Shred_Status : Chuck_Object
+struct Chuck_VM_Shred_Status : public Chuck_Object
 {
 public:
     t_CKUINT xid;
@@ -275,6 +289,7 @@ public:
     t_CKBOOL has_event;
 
 public:
+    // constructor
     Chuck_VM_Shred_Status( t_CKUINT _id, const std::string & n, t_CKTIME _start, t_CKBOOL e )
     {
         xid = _id;
@@ -282,6 +297,9 @@ public:
         start = _start;
         has_event = e;
     }
+
+    // destructor
+    virtual ~Chuck_VM_Shred_Status() { }
 };
 
 
@@ -289,13 +307,13 @@ public:
 
 //-----------------------------------------------------------------------------
 // name: struct Chuck_VM_Status
-// desc: ...
+// desc: vm status
 //-----------------------------------------------------------------------------
-struct Chuck_VM_Status : Chuck_Object
+struct Chuck_VM_Status : public Chuck_Object
 {
 public:
     Chuck_VM_Status();
-    ~Chuck_VM_Status();
+    virtual ~Chuck_VM_Status();
     void clear();
 
 public:
@@ -316,7 +334,7 @@ public:
 
 //-----------------------------------------------------------------------------
 // name: struct Chuck_VM_Shreduler
-// desc: ...
+// desc: a ChucK shreduler shredules shreds
 //-----------------------------------------------------------------------------
 struct Chuck_VM_Shreduler : Chuck_Object
 {
@@ -324,28 +342,46 @@ struct Chuck_VM_Shreduler : Chuck_Object
 // functions
 //-----------------------------------------------------------------------------
 public:
+    // constructor
     Chuck_VM_Shreduler();
-    ~Chuck_VM_Shreduler();
+    // destructor
+    virtual ~Chuck_VM_Shreduler();
 
 public:
+    // initialize shreduler
     t_CKBOOL initialize();
+    // shutdown shreduler
     t_CKBOOL shutdown();
 
 public: // shreduling
+    // shredule a shred in the shreduler (equivalent to ADD)
     t_CKBOOL shredule( Chuck_VM_Shred * shred );
+    // shredule a shred in the shreduler with a specific wake time
     t_CKBOOL shredule( Chuck_VM_Shred * shred, t_CKTIME wake_time );
-    Chuck_VM_Shred * get( );
+    // get next shred to run
+    Chuck_VM_Shred * get();
+    // advance shreduler
     void advance( t_CKINT N );
+    // advance shreduler vectorized edition
     void advance_v( t_CKINT & num_left, t_CKINT & offset );
+    // set adaptive mode and adaptive max block size
     void set_adaptive( t_CKUINT max_block_size );
 
 public: // high-level shred interface
+    // remove a shred from the shreduler
     t_CKBOOL remove( Chuck_VM_Shred * shred );
+    // replace a shred with another shred
     t_CKBOOL replace( Chuck_VM_Shred * out, Chuck_VM_Shred * in );
+    // look a shred by ID
     Chuck_VM_Shred * lookup( t_CKUINT xid );
-    void status( );
-    void status( Chuck_VM_Status * status );
+    // get ID of shred with the highest
     t_CKUINT highest();
+    // print status
+    void status( );
+    // get status
+    void status( Chuck_VM_Status * status );
+    // retrieve list of active shreds
+    void get_active_shreds( std::vector<Chuck_VM_Shred *> & shreds );
 
 public: // for event related shred queue
     t_CKBOOL add_blocked( Chuck_VM_Shred * shred );
@@ -355,9 +391,8 @@ public: // for event related shred queue
 // data
 //-----------------------------------------------------------------------------
 public:
-    // time and audio
+    // time and audio -- this is the chuck `now`
     t_CKTIME now_system;
-    t_CKBOOL rt_audio;
     // added ge: 1.3.5.3
     Chuck_VM * vm_ref;
 
@@ -365,8 +400,8 @@ public:
     Chuck_VM_Shred * shred_list;
     // shreds waiting on events
     std::map<Chuck_VM_Shred *, Chuck_VM_Shred *> blocked;
-    // current shred
-    Chuck_VM_Shred * m_current_shred; // TODO: ref count?
+    // current shred | TODO: ref count?
+    Chuck_VM_Shred * m_current_shred;
 
     // ugen
     Chuck_UGen * m_dac;
@@ -387,15 +422,9 @@ public:
 
 
 
-// forward reference
-struct Chuck_Globals_Manager; // added 1.4.1.0 (jack)
-
-
-
-
 //-----------------------------------------------------------------------------
 // name: struct Chuck_VM
-// desc: ...
+// desc: ChucK virtual machine
 //-----------------------------------------------------------------------------
 struct Chuck_VM : Chuck_Object
 {
@@ -403,15 +432,22 @@ struct Chuck_VM : Chuck_Object
 // functions
 //-----------------------------------------------------------------------------
 public:
+    // constructor
     Chuck_VM();
-    ~Chuck_VM();
+    // destructor
+    virtual ~Chuck_VM();
 
-public: // init
+public:
+    // initialize VM
     t_CKBOOL initialize( t_CKUINT srate, t_CKUINT dac_chan, t_CKUINT adc_chan,
                          t_CKUINT adaptive, t_CKBOOL halt );
+    // initialize synthesis
     t_CKBOOL initialize_synthesis( );
+    // set carrier reference
     t_CKBOOL setCarrier( Chuck_Carrier * c ) { m_carrier = c; return TRUE; }
+    // shutdown VM
     t_CKBOOL shutdown();
+    // return whether VM is initialized
     t_CKBOOL has_init() { return m_init; }
 
 public: // run state; 1.3.5.3
@@ -454,12 +490,14 @@ public: // garbage collection
     void gc();
     void gc( t_CKUINT amount );
 
-public: // msg
+public: // VM message queue
     t_CKBOOL queue_msg( Chuck_Msg * msg, int num_msg );
     // CBufferSimple added 1.3.0.0 to fix uber-crash
     t_CKBOOL queue_event( Chuck_Event * event, int num_msg, CBufferSimple * buffer = NULL );
+    // process a VM message
     t_CKUINT process_msg( Chuck_Msg * msg );
-    Chuck_Msg * get_reply( );
+    // get reply from reply buffer
+    Chuck_Msg * get_reply();
 
     // added 1.3.0.0 to fix uber-crash
     CBufferSimple * create_event_buffer();
@@ -514,6 +552,9 @@ public:
     Chuck_VM_Shred * spork( Chuck_VM_Shred * shred );
 
 protected:
+    // remove all shreds from VM
+    void removeAll();
+    // free shred
     t_CKBOOL free( Chuck_VM_Shred * shred, t_CKBOOL cascade,
                    t_CKBOOL dec = TRUE );
     void dump( Chuck_VM_Shred * shred );
@@ -550,7 +591,7 @@ protected:
 
 //-----------------------------------------------------------------------------
 // name: enum Chuck_Msg_Type
-// desc: ...
+// desc: message types
 //-----------------------------------------------------------------------------
 enum Chuck_Msg_Type
 {
@@ -577,7 +618,7 @@ enum Chuck_Msg_Type
 typedef void (* ck_msg_func)( const Chuck_Msg * msg );
 //-----------------------------------------------------------------------------
 // name: struct Chuck_Msg
-// desc: ...
+// desc: chuck message, used to communicate with VM
 //-----------------------------------------------------------------------------
 struct Chuck_Msg
 {
