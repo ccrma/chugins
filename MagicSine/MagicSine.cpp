@@ -71,7 +71,7 @@ public:
     t_CKFLOAT setFreq(t_CKFLOAT f)
     {
         m_freq = f;
-        m_epsilon = 2.0*sin(2.0*ONE_PI*(m_freq/m_fs)/2.0);
+        m_epsilon = 2.0*sin(2.0*CK_ONE_PI*(m_freq/m_fs)/2.0);
         return m_freq;
     }
     

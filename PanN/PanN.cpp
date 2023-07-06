@@ -32,8 +32,8 @@ public:
         if(c_l == c_r) c_r = (c_l+1)%m_chans;
         float mod = m_pan - floorf(m_pan);
         
-        float g_l = cosf(ONE_PI/2.0*mod);
-        float g_r = sinf(ONE_PI/2.0*mod);
+        float g_l = cosf(CK_ONE_PI/2.0*mod);
+        float g_r = sinf(CK_ONE_PI/2.0*mod);
         
         memset(out, 0, sizeof(SAMPLE)*m_chans*nframes);
         
@@ -53,8 +53,8 @@ public:
         // int c_r = ((int)ceilf(m_pan))%m_chans;
         // float mod = m_pan - floorf(m_pan);
         // 
-        // float g_l = cosf(ONE_PI/2.0*mod);
-        // float g_r = sinf(ONE_PI/2.0*mod);
+        // float g_l = cosf(CK_ONE_PI/2.0*mod);
+        // float g_r = sinf(CK_ONE_PI/2.0*mod);
         // 
         // fprintf(stderr, "**** c_l, c_r: %i, %i; mod, g_l, g_r: %f, %f, %f ****\n", c_l, c_r, mod, g_l, g_r);
         
