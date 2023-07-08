@@ -69,7 +69,7 @@
 
 // ChucK version string -- retrieve using ChucK::version()
 // 1.5.0.0 (ge) | moved here for at-a-glance visibility (e.g., for chugins)
-#define CHUCK_VERSION_STRING                "1.5.0.5 (chai)"
+#define CHUCK_VERSION_STRING                "1.5.0.6 (chai)"
 
 // ChucK param names -- used in setParam(...) and getParam*(...)
 #define CHUCK_PARAM_SAMPLE_RATE                 "SAMPLE_RATE"
@@ -133,8 +133,15 @@ public:
     t_CKBOOL start();
 
 public:
-    // run engine (call from callback)
-    void run( SAMPLE * input, SAMPLE * output, t_CKINT numFrames );
+    // run ChucK and synthesize audio for `numFrames`...
+    //     (NOTE this function is often called from audio callback)
+    // `input`: the incoming input array of audio samples
+    //        input array size expected to == `numFrames` * number-of-input-chanels, as initialized in setParam(CHUCK_PARAM_INPUT_CHANNELS, ...)
+    // `output`: the outgoing output array of audio samples
+    //         output array size expected to == `numFrames` * number-of-output-chanels, as initialized in setParam(CHUCK_PARAM_OUTPUT_CHANNELS, ...)
+    // `numFrames` : the number of audio frames to run
+    //             each audio frame corresponds to one point in time, and contains values for every audio channel
+    void run( const SAMPLE * input, SAMPLE * output, t_CKINT numFrames );
 
 public:
     // is initialized
