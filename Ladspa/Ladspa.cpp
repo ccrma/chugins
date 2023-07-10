@@ -705,7 +705,7 @@ CK_DLL_MFUN(ladspa_verbose)
 
 
 // windows
-#if defined(__PLATFORM_WIN32__)
+#if defined(__PLATFORM_WINDOWS__)
 extern "C"
 {
 #ifndef __CHUNREAL_ENGINE__
