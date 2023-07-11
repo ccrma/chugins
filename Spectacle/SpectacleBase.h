@@ -68,7 +68,7 @@ class SpectacleBase {
   void print_bin_groups(int bin_groups[], const char *type);
   
   // helper functions
-  float _ampdb(float db) { return powf(10.0f, db * 0.05f); }
+  float _ampdb(float db) { return (float)powf(10.0f, db * 0.05f); }
   float _fclamp(float min, float val, float max) {
     return (val < min) ? min : ((val > max) ? max : val); }
   void _fswap(float *a, float *b) { float tmp = *a; *a = *b; *b = tmp; }

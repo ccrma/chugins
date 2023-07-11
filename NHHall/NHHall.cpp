@@ -34,15 +34,15 @@ public:
     nh_ugens::NHHall<> m_core;
 
     float m_rt60 = 1.0f;
-    float m_stereo = 0.5;
+    float m_stereo = 0.5f;
     float m_lowFreq = 200;
-    float m_lowRatio = 0.5;
+    float m_lowRatio = 0.5f;
     float m_hiFreq = 4000;
-    float m_hiRatio = 0.5;
-    float m_earlyDiffusion = 0.5;
-    float m_lateDiffusion = 0.5;
-    float m_modRate = 0.2;
-    float m_modDepth = 0.3;
+    float m_hiRatio = 0.5f;
+    float m_earlyDiffusion = 0.5f;
+    float m_lateDiffusion = 0.5f;
+    float m_modRate = 0.2f;
+    float m_modDepth = 0.3f;
 
     NHHall(float sample_rate)
     : m_core(sample_rate)

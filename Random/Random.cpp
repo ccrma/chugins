@@ -14,12 +14,12 @@
 #include <math.h>
 
 
-#ifdef WIN32
+#ifdef _WIN32
 static long random() { return rand(); }
 static void srandom( unsigned s ) { srand( s ); }
-#endif // WIN32
+#endif // _WIN32
 
-#ifdef WIN32
+#ifdef _WIN32
 #define CK_RANDOM_MAX RAND_MAX
 #else
 #define CK_RANDOM_MAX 0x7fffffff

@@ -86,7 +86,7 @@ public:
     
     SAMPLE tick(SAMPLE in)
     {
-        double isignal, fsignal, osignal, usignal, dsignal;
+        double fsignal, usignal, dsignal; // osignal isignal
         
         fsignal = m_drive*in;
         

@@ -64,7 +64,7 @@ public:
 	bypass = false;
     nsects = 0;
     srate = fs;
-    ripple = 0.2;
+    ripple = 0.2f;
     atten = 90;
     f1 = 400;
     f2 = 800;

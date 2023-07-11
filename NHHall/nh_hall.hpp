@@ -168,8 +168,8 @@ namespace nh_ugens {
 typedef std::array<float, 2> Stereo;
 
 static inline float flush_denormals(float x) {
-    x += 1.0e-25;
-    x -= 1.0e-25;
+    x += 1.0e-25f;
+    x -= 1.0e-25f;
     return x;
 }
 
@@ -188,9 +188,9 @@ static inline int next_power_of_two(int x) {
 
 static float interpolate_cubic(float x, float y0, float y1, float y2, float y3) {
     float c0 = y1;
-    float c1 = y2 - 1 / 3.0 * y0 - 1 / 2.0 * y1 - 1 / 6.0 * y3;
-    float c2 = 1 / 2.0 * (y0 + y2) - y1;
-    float c3 = 1 / 6.0 * (y3 - y0) + 1 / 2.0 * (y1 - y2);
+    float c1 = y2 - 1 / 3.0f * y0 - 1 / 2.0f * y1 - 1 / 6.0f * y3;
+    float c2 = 1 / 2.0f * (y0 + y2) - y1;
+    float c3 = 1 / 6.0f * (y3 - y0) + 1 / 2.0f * (y1 - y2);
     return ((c3 * x + c2) * x + c1) * x + c0;
 }
 
@@ -283,7 +283,7 @@ public:
 
     Stereo process(void) {
         if (m_timeout <= 0) {
-            m_timeout = run_lcg() * 0.1f / m_frequency * m_sample_rate / 48000.0f;
+            m_timeout = (int)(run_lcg() * 0.1f / m_frequency * m_sample_rate / 48000.0f);
             m_increment = (run_lcg() * (1.0f / 32767.0f) - 0.5f) * m_frequency / m_sample_rate;
         }
         m_timeout -= 1;
@@ -361,7 +361,7 @@ public:
         float cos_w0 = cosf(w0);
         float a = sqrtf(ratio);
         float s = 1.0f;
-        float alpha = sin_w0 * 0.5 * sqrtf((a + 1 / a) * (1 / s - 1) + 2);
+        float alpha = sin_w0 * 0.5f * sqrtf((a + 1 / a) * (1 / s - 1) + 2);
         float x = 2 * sqrtf(a) * alpha;
         float a0 = (a + 1) - (a - 1) * cos_w0 + x;
         float inv_a0 = 1 / a0;
@@ -407,7 +407,7 @@ public:
         float cos_w0 = cosf(w0);
         float a = sqrtf(ratio);
         float s = 1.0f;
-        float alpha = sin_w0 * 0.5 * sqrtf((a + 1 / a) * (1 / s - 1) + 2);
+        float alpha = sin_w0 * 0.5f * sqrtf((a + 1 / a) * (1 / s - 1) + 2);
         float x = 2 * sqrtf(a) * alpha;
         float a0 = (a + 1) + (a - 1) * cos_w0 + x;
         float inv_a0 = 1 / a0;
@@ -451,14 +451,14 @@ public:
     ) :
     m_sample_rate(sample_rate)
     {
-        int max_delay_in_samples = m_sample_rate * max_delay;
+        int max_delay_in_samples = (int)(m_sample_rate * max_delay);
         m_size = next_power_of_two(max_delay_in_samples);
         m_mask = m_size - 1;
 
         m_read_position = 0;
 
         m_delay = delay;
-        m_delay_in_samples = m_sample_rate * delay;
+        m_delay_in_samples = (int)(m_sample_rate * delay);
     }
 
 protected:
@@ -489,7 +489,7 @@ public:
     }
 
     float tap(float delay) {
-        int delay_in_samples = delay * m_sample_rate;
+        int delay_in_samples = (int)(delay * m_sample_rate);
         int position = m_read_position - 1 - delay_in_samples;
         float out = m_buffer[position & m_mask];
         return out;
@@ -539,7 +539,7 @@ public:
         float max_mod_depth,
         float diffusion_sign
     ) :
-    BaseDelay(sample_rate, delay + max_mod_depth + 4.0 / sample_rate, delay),
+    BaseDelay(sample_rate, delay + max_mod_depth + 4.0f / sample_rate, delay),
     m_diffusion_sign(diffusion_sign)
     {
     }
@@ -557,7 +557,7 @@ public:
         // (m_delay + offset) * m_sample_rate < m_size.
         position += m_size;
 
-        int iposition = position;
+        int iposition = (int)position;
         float position_frac = position - iposition;
 
         float y0 = m_buffer[iposition & m_mask];
@@ -610,10 +610,10 @@ public:
     }},
 
     m_early_delays {{
-        Delay(sample_rate, 5.45e-3),
-        Delay(sample_rate, 3.25e-3),
-        Delay(sample_rate, 2.36e-3),
-        Delay(sample_rate, 7.17e-3)
+        Delay(sample_rate, 5.45e-3f),
+        Delay(sample_rate, 3.25e-3f),
+        Delay(sample_rate, 2.36e-3f),
+        Delay(sample_rate, 7.17e-3f)
     }},
 
     m_late_variable_allpasses {{

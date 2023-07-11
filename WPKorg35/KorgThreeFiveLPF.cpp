@@ -57,7 +57,7 @@ void CKorgThreeFiveLPF::updateFilters()
 	double g  = wa*T/2;    
 
 	// G - the feedforward coeff in the VA One Pole
-	float G = g/(1.0 + g);
+	float G = (float)(g/(1.0 + g));
 
 	// set alphas
 	m_LPF1.m_fAlpha = G;

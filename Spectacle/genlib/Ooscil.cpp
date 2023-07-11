@@ -36,7 +36,7 @@ float Ooscil::nexti()
 	int i = (int) _phase;
 	int k = (i + 1) % _length;
 	double frac = _phase - (double) i;
-	float output = _array[i] + ((_array[k] - _array[i]) * frac);
+	float output = (float)(_array[i] + ((_array[k] - _array[i]) * frac));
 
 	// prepare for next call
 	_phase += _si;

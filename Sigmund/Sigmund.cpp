@@ -115,7 +115,7 @@ public:
   {
     if (x >= npeak)
       {
-	printf("Sigmund error: peak number must be between 0 and %ld.\n", npeak-1);
+	printf("Sigmund error: peak number must be between 0 and %ld.\n", (long)npeak-1); // 1.5.0.7 (ge) cast to long
 	return 0;
       }
     if (x < nfound)
@@ -132,7 +132,7 @@ public:
   {
     if (x >= npeak)
       {
-	printf("Sigmund error: amp number must be between 0 and %ld.\n", npeak-1);
+	printf("Sigmund error: amp number must be between 0 and %ld.\n", (long)npeak-1); // 1.5.0.7 (ge) cast to long
 	return 0;
       }
     if (x < nfound)
@@ -184,8 +184,8 @@ public:
 	npts = x;
 	if (npts < NPOINTS_MIN)
 	  npts = NPOINTS_MIN;
-	if (npts != (1 << sigmund_ilog2((int)npts)))
-	  printf("Sigmund: adjusting analysis size to %ld points\n", (npts = (1 << sigmund_ilog2((int)npts))));
+	if (npts != (1LL << sigmund_ilog2((int)npts)))
+	  printf("Sigmund: adjusting analysis size to %ld points\n", (long)((npts = (1LL << sigmund_ilog2((int)npts)))));
 	if (npts != nwas)
 	  inbufIndex = 0;
 	if (mode==MODE_STREAM)

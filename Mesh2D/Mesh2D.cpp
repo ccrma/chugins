@@ -53,7 +53,7 @@ public:
     _y = 4;
     _xpos = 0;
     _ypos = 0;
-    _decay = 0.999;
+    _decay = 0.999f;
 	m_mesh->setInputPosition(_xpos,_ypos);
 	m_mesh->setDecay(_decay);
   }

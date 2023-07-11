@@ -11,7 +11,7 @@
 #include "chuck_type.h"
 #include "chuck_vm.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include "regex/regex.h"
 #else
 #include <regex.h>

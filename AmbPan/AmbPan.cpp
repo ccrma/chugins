@@ -68,8 +68,8 @@ public:
     
     void setChannelMap(Chuck_Array4 * map)
     {
-        int len = ck_min(map->m_vector.size(), 16);
-        for(int i = 0; i < len; i++)
+        t_CKINT len = ck_min(map->m_vector.size(), 16);
+        for(t_CKINT i = 0; i < len; i++)
             m_channel_map[i] = map->m_vector[i];
     }
     
