@@ -187,6 +187,8 @@ public:
 
     // add parent object reference (added 1.3.1.2)
     t_CKVOID add_parent_ref( Chuck_Object * obj );
+    // add get shred id | 1.5.0.8 (ge)
+    t_CKUINT get_id() const { return this->xid; }
 
     #ifndef __DISABLE_SERIAL__
     // HACK - spencer (added 1.3.2.0)
@@ -342,13 +344,13 @@ public:
     // destructor
     virtual ~Chuck_VM_Shreduler();
 
-public:
+public: // initialization and shutdown
     // initialize shreduler
     t_CKBOOL initialize();
     // shutdown shreduler
     t_CKBOOL shutdown();
 
-public: // shreduling
+public: // shreduling (shred interface part 1)
     // shredule a shred in the shreduler (equivalent to ADD)
     t_CKBOOL shredule( Chuck_VM_Shred * shred );
     // shredule a shred in the shreduler with a specific wake time
@@ -362,23 +364,60 @@ public: // shreduling
     // set adaptive mode and adaptive max block size
     void set_adaptive( t_CKUINT max_block_size );
 
-public: // high-level shred interface
+public: // remove, replace, status (shred interface part 2)
     // remove a shred from the shreduler
     t_CKBOOL remove( Chuck_VM_Shred * shred );
     // replace a shred with another shred
     t_CKBOOL replace( Chuck_VM_Shred * out, Chuck_VM_Shred * in );
-    // look a shred by ID
-    Chuck_VM_Shred * lookup( t_CKUINT xid );
-    // get ID of shred with the highest
-    t_CKUINT highest();
     // print status
-    void status( );
+    void status();
     // get status
     void status( Chuck_VM_Status * status );
-    // retrieve list of active shreds
-    void get_active_shreds( std::vector<Chuck_VM_Shred *> & shreds );
 
-public: // for event related shred queue
+public: // shred lookup and retrieval (shred interface part 3)
+    // look a shred by ID
+    Chuck_VM_Shred * lookup( t_CKUINT xid ) const;
+    // get ID of shred currently with the highest ID
+    t_CKUINT highest() const;
+
+    // retrieve the ready list of shreds in the shreduler
+    // NOTE shreds on the shreduler's ready list are sorted by
+    //      wake-up time (e.g., as specifiedy by `second => now`)
+    // NOTE the ready list DO NOT include shreds waiting on Events
+    //      waiting shreds are on the shreduler's blocked list
+    // NOTE the ready list does not include the shred currently
+    //      executing in the VM
+    void get_ready_shreds( std::vector<Chuck_VM_Shred *> & shreds,
+                           t_CKBOOL clearVector = TRUE ) const;
+    // retrieve list of active shred IDs
+    void get_ready_shred_ids( std::vector<t_CKUINT> & shredIDs,
+                              t_CKBOOL clearVector = TRUE ) const;
+
+    // retrieve the list of waiting shreds in the shreduler
+    // NOTE a waiting shred is on the shreduler's blocked list as long as
+    //      it is currently waiting on an Event (e.g., `event => now;`)
+    // NOTE the shreduler's blocked list is unsorted; FYI a sorted list of
+    //      shreds is maintained by each Event
+    void get_blocked_shreds( std::vector<Chuck_VM_Shred *> & shreds,
+                             t_CKBOOL clearVector = TRUE ) const;
+    // retrieve list of blocked shred IDs
+    void get_blocked_shred_ids( std::vector<t_CKUINT> & shredIDs,
+                                t_CKBOOL clearVector = TRUE ) const;
+
+    // get currently executing shred
+    // NOTE this can only be non-NULL during a Chuck_VM::compute() cycle
+    Chuck_VM_Shred * get_current_shred() const;
+
+    // retrieve all shreds currently in the shreduler; this includes the
+    // ready list, the blocked list, and the currently executing shred
+    void get_all_shreds( std::vector<Chuck_VM_Shred *> & shreds,
+                         t_CKBOOL clearVector = TRUE ) const;
+    // retrieve list of all shred IDs
+    void get_all_shred_ids( std::vector<t_CKUINT> & shredIDs,
+                            t_CKBOOL clearVector = TRUE ) const;
+
+public: // for event related shred queue (shred interface part 4)
+    // (should only be called from under the hood)
     t_CKBOOL add_blocked( Chuck_VM_Shred * shred );
     t_CKBOOL remove_blocked( Chuck_VM_Shred * shred );
 
@@ -437,7 +476,7 @@ public:
     t_CKBOOL initialize( t_CKUINT srate, t_CKUINT dac_chan, t_CKUINT adc_chan,
                          t_CKUINT adaptive, t_CKBOOL halt );
     // initialize synthesis
-    t_CKBOOL initialize_synthesis( );
+    t_CKBOOL initialize_synthesis();
     // set carrier reference
     t_CKBOOL setCarrier( Chuck_Carrier * c ) { m_carrier = c; return TRUE; }
     // shutdown VM
@@ -449,13 +488,13 @@ public: // run state; 1.3.5.3
     // run start
     t_CKBOOL start();
     // get run state
-    t_CKBOOL running();
+    t_CKBOOL running() const;
     // run stop
     t_CKBOOL stop();
-    // backdoor to access state directly (should be called from inside VM only)
-    t_CKBOOL & runningState() { return m_is_running; }
+    // const access state directly (should be called from inside VM only)
+    const t_CKBOOL & runningState() const { return m_is_running; }
 
-public: // shreds
+public: // shredsuck
     // spork code as shred; if not immediate, enqueue for next sample
     // REFACTOR-2017: added immediate flag
     Chuck_VM_Shred * spork( Chuck_VM_Code * code, Chuck_VM_Shred * parent,
@@ -463,9 +502,13 @@ public: // shreds
     // get reference to shreduler
     Chuck_VM_Shreduler * shreduler() const;
     // the next spork ID
-    t_CKUINT next_id( );
+    t_CKUINT next_id();
     // the last used spork ID
-    t_CKUINT last_id( );
+    t_CKUINT last_id() const;
+    // reset ID to lowest current ID + 1; returns what next ID would be
+    t_CKUINT reset_id();
+    // the current chuck time | 1.5.0.8
+    t_CKTIME now() const;
 
 public: // audio
     t_CKUINT srate() const;
@@ -474,9 +517,9 @@ public: // running the machine
     // compute next N frames
     t_CKBOOL run( t_CKINT numFrames, const SAMPLE * input, SAMPLE * output );
     // compute all shreds for current time
-    t_CKBOOL compute( );
+    t_CKBOOL compute();
     // abort current running shred
-    t_CKBOOL abort_current_shred( );
+    t_CKBOOL abort_current_shred();
 
 public: // invoke functions
     t_CKBOOL invoke_static( Chuck_VM_Shred * shred );
@@ -486,14 +529,19 @@ public: // garbage collection
     void gc( t_CKUINT amount );
 
 public: // VM message queue
-    t_CKBOOL queue_msg( Chuck_Msg * msg, int num_msg );
-    // CBufferSimple added 1.3.0.0 to fix uber-crash
-    t_CKBOOL queue_event( Chuck_Event * event, int num_msg, CBufferSimple * buffer = NULL );
-    // process a VM message
+    // queue message to process at next VM compute block (thread-safe but not synchronous)
+    // NOTE assumes msg is dynamically allocated using `new`; will be deleted by VM
+    // NOTE this defers the processing of the msg to the VM compute thread
+    t_CKBOOL queue_msg( Chuck_Msg * msg, t_CKINT num_msg = 1 );
+    // process a VM message immediately (synchronous but not thread-safe)
+    // NOTE assumes msg is dynamically allocated using `new`; will be deleted by VM
+    // NOTE this processes the msg immediately on calling thread
     t_CKUINT process_msg( Chuck_Msg * msg );
     // get reply from reply buffer
     Chuck_Msg * get_reply();
 
+    // CBufferSimple added 1.3.0.0 to fix uber-crash
+    t_CKBOOL queue_event( Chuck_Event * event, t_CKINT num_msg = 1, CBufferSimple * buffer = NULL );
     // added 1.3.0.0 to fix uber-crash
     CBufferSimple * create_event_buffer();
     void destroy_event_buffer( CBufferSimple * buffer );
@@ -590,20 +638,20 @@ protected:
 //-----------------------------------------------------------------------------
 enum Chuck_Msg_Type
 {
-    MSG_ADD = 1,
-    MSG_REMOVE,
-    MSG_REMOVEALL,
-    MSG_REPLACE,
-    MSG_STATUS,
-    MSG_PAUSE,
-    MSG_EXIT,
-    MSG_TIME,
-    MSG_RESET_ID,
-    MSG_DONE,
-    MSG_ABORT,
-    MSG_ERROR, // added 1.3.0.0
-    MSG_CLEARVM,
-    MSG_CLEARGLOBALS,
+    CK_MSG_ADD = 1,
+    CK_MSG_REMOVE,
+    CK_MSG_REMOVEALL,
+    CK_MSG_REPLACE,
+    CK_MSG_STATUS,
+    CK_MSG_PAUSE,
+    CK_MSG_EXIT,
+    CK_MSG_TIME,
+    CK_MSG_RESET_ID,
+    CK_MSG_DONE,
+    CK_MSG_ABORT,
+    CK_MSG_ERROR, // added 1.3.0.0
+    CK_MSG_CLEARVM,
+    CK_MSG_CLEARGLOBALS,
 };
 
 
@@ -617,31 +665,61 @@ typedef void (* ck_msg_func)( const Chuck_Msg * msg );
 //-----------------------------------------------------------------------------
 struct Chuck_Msg
 {
+    // type of message
     t_CKUINT type;
-    t_CKUINT param;
-    Chuck_VM_Code * code;
-    Chuck_VM_Shred * shred;
-    t_CKTIME when;
 
-    void * user;
-    ck_msg_func reply;
+    // messsage parameter, as applicable
+    t_CKUINT param;
+    // VM code pointer, as applicable
+    Chuck_VM_Code * code;
+    // VM shred pointer, as applicable
+    Chuck_VM_Shred * shred;
+    // time, as applicable
+    t_CKTIME when;
+    // pointer to status struct, as applicable
+    Chuck_VM_Status * status;
+
+    // reply callback
+    ck_msg_func reply_cb;
+    // if true, reply on queue
+    t_CKBOOL reply_queue;
+    // NOTE if both reply_cb and reply_queue is non-zero, reply_cb will take precedence
+
+    // reply arguments
     t_CKUINT replyA;
     t_CKUINT replyB;
     void * replyC;
 
+    // argument array pointer
     std::vector<std::string> * args;
 
+    // constructor
     Chuck_Msg() : args(NULL) { clear(); }
-    ~Chuck_Msg() { CK_SAFE_DELETE( args ); }
+    // destructor
+    ~Chuck_Msg() { clear(); }
 
     // added 1.3.0.0
-    void clear() { CK_SAFE_DELETE( args ); memset( this, 0, sizeof(*this) ); }
-
-    void set( const std::vector<std::string> & vargs )
+    void clear()
     {
+        // clean up existing args
         CK_SAFE_DELETE(args);
-        args = new std::vector<std::string>;
-        (*args) = vargs;
+        // clear
+        memset( this, 0, sizeof(Chuck_Msg) );
+    }
+
+    // copy in args
+    void set( const std::vector<std::string> * vargs )
+    {
+        // clean up existing args
+        CK_SAFE_DELETE(args);
+        // check
+        if( vargs )
+        {
+            // instantiate new
+            args = new std::vector<std::string>;
+            // copy
+            (*args) = *vargs;
+        }
     }
 };
 
