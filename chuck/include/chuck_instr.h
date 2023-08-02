@@ -58,7 +58,7 @@ struct Chuck_Instr
 {
 public:
     Chuck_Instr();
-    virtual ~Chuck_Instr() { CK_SAFE_DELETE(m_codestr); }
+    virtual ~Chuck_Instr();
 
 public:
     virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred ) = 0;
@@ -73,10 +73,16 @@ public:
     void set_linepos( t_CKUINT linepos );
     t_CKUINT m_linepos;
 
-    // set codestr associated with this instruction
-    void set_codestr( const std::string & str );
+    // prepend codestr associated with this instruction
+    void prepend_codestr( const std::string & str );
+    // append codestr associated with this instruction
+    void append_codestr( const std::string & str );
     // (used in instruction dump) | 1.5.0.0 (ge) added
-    std::string * m_codestr;
+    // (1.5.0.8) made this vector to support cases where there
+    // may be multiple code str, e.g., top of for-loops
+    std::vector<std::string> * m_codestr_pre;
+    // pre prints before the instruction; post prints after
+    std::vector<std::string> * m_codestr_post;
 };
 
 
@@ -3976,6 +3982,33 @@ struct Chuck_Instr_Pop_Loop_Counter : public Chuck_Instr
 {
 public:
     virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+};
+
+
+
+
+//-----------------------------------------------------------------------------
+// name: struct Chuck_Instr_ForEach_Inc_And_Branch
+// desc: for( VAR: ARRAY ) increment VAR, test against ARRAY size; branch
+//-----------------------------------------------------------------------------
+struct Chuck_Instr_ForEach_Inc_And_Branch : public Chuck_Instr_Branch_Op
+{
+public:
+    // constructor
+    Chuck_Instr_ForEach_Inc_And_Branch( t_CKUINT kind, t_CKUINT size )
+    { m_dataKind = kind; m_dataSize = size; this->set( 0 ); }
+    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+
+protected:
+    // type of VAR (will determine which array to operate on):
+    // kindof_INT
+    // kindof_FLOAT
+    // kindof_COMPLEX
+    // kindof_VEC3
+    // kindof_VEC4
+    t_CKUINT m_dataKind;
+    // size of VAR
+    t_CKUINT m_dataSize;
 };
 
 

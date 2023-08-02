@@ -52,7 +52,7 @@ typedef enum {
     te_function, te_object, te_user, te_array, te_null, te_ugen, te_uana,
     te_event, te_void, te_stdout, te_stderr, te_adc, te_dac, te_bunghole,
     te_uanablob, te_io, te_fileio, te_chout, te_cherr, te_multi,
-    te_vec3, te_vec4, te_vector // ge: added 1.3.5.3
+    te_vec3, te_vec4, te_vector, te_auto
 } te_Type;
 
 
@@ -487,6 +487,8 @@ public:
     Chuck_Func * func;
     // how far nested in a class definition
     t_CKUINT class_scope;
+    // are we in a spork operation
+    t_CKBOOL sporking;
 
     // current contexts in memory
     std::vector<Chuck_Context *> contexts;
@@ -509,33 +511,35 @@ public:
 
 public:
     // REFACTOR-2017: public types
-    Chuck_Type * t_void;
-    Chuck_Type * t_int;
-    Chuck_Type * t_float;
-    Chuck_Type * t_time;
-    Chuck_Type * t_dur;
-    Chuck_Type * t_complex;
-    Chuck_Type * t_polar;
-    Chuck_Type * t_vec3;
-    Chuck_Type * t_vec4;
-    Chuck_Type * t_null;
-    Chuck_Type * t_function;
-    Chuck_Type * t_object;
-    Chuck_Type * t_array;
-    Chuck_Type * t_string;
-    Chuck_Type * t_event;
-    Chuck_Type * t_ugen;
-    Chuck_Type * t_uana;
-    Chuck_Type * t_uanablob;
-    Chuck_Type * t_shred;
-    Chuck_Type * t_io;
-    Chuck_Type * t_fileio;
-    Chuck_Type * t_chout;
-    Chuck_Type * t_cherr;
-    // Chuck_Type * t_thread;
-    Chuck_Type * t_class;
-    Chuck_Type * t_dac;
-    Chuck_Type * t_adc;
+    Chuck_Type * ckt_void;
+    Chuck_Type * ckt_auto; // 1.5.0.8
+    Chuck_Type * ckt_int;
+    Chuck_Type * ckt_float;
+    Chuck_Type * ckt_time;
+    Chuck_Type * ckt_dur;
+    Chuck_Type * ckt_complex;
+    Chuck_Type * ckt_polar;
+    Chuck_Type * ckt_vec3;
+    Chuck_Type * ckt_vec4;
+    Chuck_Type * ckt_null;
+    Chuck_Type * ckt_function;
+    Chuck_Type * ckt_object;
+    Chuck_Type * ckt_array;
+    Chuck_Type * ckt_string;
+    Chuck_Type * ckt_event;
+    Chuck_Type * ckt_ugen;
+    Chuck_Type * ckt_uana;
+    Chuck_Type * ckt_uanablob;
+    Chuck_Type * ckt_shred;
+    Chuck_Type * ckt_io;
+    Chuck_Type * ckt_fileio;
+    Chuck_Type * ckt_chout;
+    Chuck_Type * ckt_cherr;
+    Chuck_Type * ckt_class;
+    Chuck_Type * ckt_dac;
+    Chuck_Type * ckt_adc;
+
+    // Chuck_Type * ckt_thread;
 };
 
 
@@ -575,6 +579,85 @@ struct Chuck_UGen_Info : public Chuck_VM_Object
 
 
 //-----------------------------------------------------------------------------
+// name: struct Chuck_Value_Dependency
+// desc: a value dependency records when accessing a value; this is used to
+//       for dependency tracking of file-top-level and class-top-level variables
+//       accessed from within functions or class pre-constructor code;
+//
+// example:
+// ```
+// 5 => int foo;
+// fun void bar()
+// {
+//     // below is a dependency to foo
+//     <<< foo >>>;
+// }
+// ```
+//-----------------------------------------------------------------------------
+struct Chuck_Value_Dependency
+{
+    // value we are tracking
+    Chuck_Value * value;
+    // code position of dependency
+    t_CKUINT where;
+    // position where the use occurs (from within func or class)
+    t_CKUINT use_where;
+
+public:
+    // default
+    Chuck_Value_Dependency() : value(NULL), where(0), use_where(0) { }
+    // constructor
+    Chuck_Value_Dependency( Chuck_Value * argValue, t_CKUINT argUseWhere = 0 );
+    // copy constructor | NOTE: needed to properly ref-count
+    Chuck_Value_Dependency( const Chuck_Value_Dependency & rhs );
+    // destructor
+    virtual ~Chuck_Value_Dependency();
+};
+
+
+
+
+//-----------------------------------------------------------------------------
+// name: struct Chuck_Value_Dependency_Graph
+// desc: data structure of value dependencies, direct and remote
+//-----------------------------------------------------------------------------
+struct Chuck_Value_Dependency_Graph
+{
+public:
+    // add a direct dependency
+    void add( const Chuck_Value_Dependency & dep );
+    // add a remote (recursive) dependency
+    void add( Chuck_Value_Dependency_Graph * graph );
+    // look for a dependency that occurs AFTER a particular code position
+    // this function crawls the graph, taking care in the event of cycles
+    const Chuck_Value_Dependency * locate( t_CKUINT pos, t_CKBOOL isClassDef = FALSE );
+
+public:
+    // constructor
+    Chuck_Value_Dependency_Graph() : token(0) { }
+
+protected:
+    // search token, for cycle detection (not reentrant, thread-wise)
+    t_CKUINT token;
+    // vector of dependencies
+    std::vector<Chuck_Value_Dependency> directs;
+    // vector of recursive dependency graphs
+    // take care regarding circular dependency
+    std::vector<Chuck_Value_Dependency_Graph *> remotes;
+
+protected:
+    // locate non-recursive
+    const Chuck_Value_Dependency * locateLocal( t_CKUINT pos, t_CKBOOL isClassDef );
+    // reset search tokens
+    void resetRecursive( t_CKUINT value = 0 );
+    // locate recursive
+    const Chuck_Value_Dependency * locateRecursive( t_CKUINT pos, t_CKBOOL isClassDef, t_CKUINT searchToken = 1 );
+};
+
+
+
+
+//-----------------------------------------------------------------------------
 // name: struct Chuck_Type
 // desc: class containing information about a type
 // note: 1.5.0.0 (ge) Chuck_VM_Object -> Chuck_Object
@@ -583,8 +666,8 @@ struct Chuck_Type : public Chuck_Object
 {
     // type id
     te_Type xid;
-    // type name
-    std::string name;
+    // type name (FYI use this->str() for full name including []s for array)
+    std::string base_name;
     // type parent (could be NULL)
     Chuck_Type * parent;
     // size (in bytes)
@@ -616,13 +699,16 @@ struct Chuck_Type : public Chuck_Object
     // origin hint
     te_Origin originHint;
 
+    // reference to environment RE-FACTOR 2017
+    Chuck_Env * env_ref;
+
+    // dependency tracking | 1.5.0.8
+    Chuck_Value_Dependency_Graph depends;
+
     // documentation
     std::string doc;
     // example files
     std::vector<std::string> examples;
-
-    // reference to environment RE-FACTOR 2017
-    Chuck_Env * m_env;
 
 public:
     // constructor
@@ -641,8 +727,8 @@ public:
     Chuck_Type * copy( Chuck_Env * env ) const;
 
 public:
-    // to string
-    const std::string & str();
+    // to string: the full name of this type, e.g., "UGen" or "int[][]"
+    const std::string & name();
     // to c string
     const char * c_name();
 
@@ -713,33 +799,21 @@ struct Chuck_Value : public Chuck_VM_Object
     // overloads
     t_CKINT func_num_overloads;
 
+    // dependency tracking | 1.5.0.8 (ge) added
+    // code position of where this value is considered initialized
+    // NOTE sed to determine dependencies within a file context
+    t_CKUINT depend_init_where; // 1.5.0.8
+
     // documentation
     std::string doc;
 
+public:
     // constructor
     Chuck_Value( Chuck_Type * t, const std::string & n, void * a = NULL,
                  t_CKBOOL c = FALSE, t_CKBOOL acc = 0, Chuck_Namespace * o = NULL,
-                 Chuck_Type * oc = NULL, t_CKUINT s = 0 )
-    { type = t; CK_SAFE_ADD_REF(type); // add reference
-      name = n; offset = s;
-      is_const = c; access = acc;
-      owner = o; CK_SAFE_ADD_REF(o); // add reference
-      owner_class = oc; CK_SAFE_ADD_REF(oc); // add reference
-      addr = a; is_member = FALSE;
-      is_static = FALSE; is_context_global = FALSE;
-      is_decl_checked = TRUE; // only set to false in certain cases
-      is_global = FALSE;
-      func_ref = NULL; func_num_overloads = 0; }
-
+                 Chuck_Type * oc = NULL, t_CKUINT s = 0 );
     // destructor
-    virtual ~Chuck_Value()
-    {
-        // release
-        // CK_SAFE_RELEASE( type );
-        // CK_SAFE_RELEASE( owner ):
-        // CK_SAFE_RELEASE( owner_class );
-        // CK_SAFE_RELEASE( func_ref );
-    }
+    virtual ~Chuck_Value();
 };
 
 
@@ -755,6 +829,8 @@ struct Chuck_Func : public Chuck_VM_Object
     std::string name;
     // base name (without the designation, e.g., "dump"); 1.4.1.0
     std::string base_name;
+    // human readable function signature: e.g., void Object.func( int foo, float bar[] );
+    std::string signature() const;
     // code (included imported)
     Chuck_VM_Code * code;
     // imported code
@@ -765,12 +841,15 @@ struct Chuck_Func : public Chuck_VM_Object
     t_CKBOOL is_static;
     // virtual table index
     t_CKUINT vt_index;
-    // rember value
+    // remember value
     Chuck_Value * value_ref;
     // for overloading
     Chuck_Func * next;
     // for overriding
     Chuck_Value * up;
+
+    // dependency tracking | 1.5.0.8
+    Chuck_Value_Dependency_Graph depends;
 
     // documentation
     std::string doc;
@@ -796,9 +875,18 @@ public:
 
 public:
     // constructor
-    Chuck_Func() { m_def = NULL; code = NULL; is_member = FALSE; is_static = FALSE,
-        vt_index = CK_NO_VALUE; value_ref = NULL; /*dl_code = NULL;*/ next = NULL;
-        up = NULL; }
+    Chuck_Func()
+    {
+        m_def = NULL;
+        code = NULL;
+        is_member = FALSE;
+        is_static = FALSE,
+        vt_index = CK_NO_VALUE;
+        value_ref = NULL;
+        /*dl_code = NULL;*/
+        next = NULL;
+        up = NULL;
+    }
 
     // destructor
     virtual ~Chuck_Func();
@@ -922,6 +1010,8 @@ Chuck_Value * type_engine_find_value( Chuck_Env * env, const std::string & xid, 
 Chuck_Namespace * type_engine_find_nspc( Chuck_Env * env, a_Id_List path );
 // convert a vector of type names to a vector of Types | 1.5.0.0 (ge) added
 void type_engine_names2types( Chuck_Env * env, const std::vector<std::string> & typeNames, std::vector<Chuck_Type *> & types );
+// check and process auto types
+t_CKBOOL type_engine_infer_auto( Chuck_Env * env, a_Exp_Decl decl, Chuck_Type * type );
 
 
 //-----------------------------------------------------------------------------
@@ -959,39 +1049,6 @@ t_CKINT str2char( const char * char_lit, int linepos );
 t_CKBOOL same_arg_lists( a_Arg_List lhs, a_Arg_List rhs );
 // generate a string from an argument list (types only)
 std::string arglist2string( a_Arg_List list );
-
-
-
-
-//-----------------------------------------------------------------------------
-// REFACTOR-2017: exile! these default types now stored in env
-//-----------------------------------------------------------------------------
-//extern Chuck_Type t_void;
-//extern Chuck_Type t_int;
-//extern Chuck_Type t_float;
-//extern Chuck_Type t_time;
-//extern Chuck_Type t_dur;
-//extern Chuck_Type t_complex;
-//extern Chuck_Type t_polar;
-//extern Chuck_Type t_vec3; // ge: added 1.3.5.3
-//extern Chuck_Type t_vec4; // ge: added 1.3.5.3
-//extern Chuck_Type t_vector;
-//extern Chuck_Type t_object;
-//extern Chuck_Type t_null;
-//extern Chuck_Type t_string;
-//extern Chuck_Type t_array;
-//extern Chuck_Type t_shred;
-//extern Chuck_Type t_thread;
-//extern Chuck_Type t_function;
-//extern Chuck_Type t_class;
-//extern Chuck_Type t_event;
-//extern Chuck_Type t_io;
-//extern Chuck_Type t_fileio;
-//extern Chuck_Type t_chout;
-//extern Chuck_Type t_cherr;
-//extern Chuck_Type t_ugen;
-//extern Chuck_Type t_uana;
-//extern Chuck_Type t_uanablob;
 
 
 
