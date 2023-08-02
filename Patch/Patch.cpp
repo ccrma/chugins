@@ -126,7 +126,7 @@ private:
                 // we only want funcs with one arg
                 func->def()->arg_list->next == NULL &&
                 // ensure arg is float
-                func->def()->arg_list->type == m_shred->vm_ref->env()->t_float)
+                func->def()->arg_list->type == m_shred->vm_ref->env()->ckt_float)
             {
                 found = func;
                 break;
@@ -145,7 +145,7 @@ private:
                 // we only want funcs with one arg
                 curr->def()->arg_list->next == NULL &&
                 // ensure arg is float
-                curr->def()->arg_list->type == m_shred->vm_ref->env()->t_float)
+                curr->def()->arg_list->type == m_shred->vm_ref->env()->ckt_float)
             {
                 found = curr;
             }
