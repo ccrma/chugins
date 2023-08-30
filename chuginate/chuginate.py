@@ -46,7 +46,7 @@ newlines = dict()
 
 code['cpp'] = u'''%(CPP_CODE)%'''
 code['makefile'] = u'''%(MAKEFILE_CODE)%'''
-code['makefile.osx'] = u'''%(MAKEFILEOSX_CODE)%'''
+code['makefile.mac'] = u'''%(MAKEFILEOSX_CODE)%'''
 code['makefile.linux'] = u'''%(MAKEFILELINUX_CODE)%'''
 code['makefile.win32'] = u'''%(MAKEFILEWIN32_CODE)%'''
 code['.dsw'] = u'''%(DSW_CODE)%'''
@@ -58,7 +58,7 @@ if not USE_EXISTING_CHUCK_HEADERS:
 
 filepath['cpp'] = "%s/%s.cpp" % (dest_dir, chugin_name)
 filepath['makefile'] = "%s/makefile" % (dest_dir)
-filepath['makefile.osx'] = "%s/makefile.osx" % (dest_dir)
+filepath['makefile.mac'] = "%s/makefile.mac" % (dest_dir)
 filepath['makefile.linux'] = "%s/makefile.linux" % (dest_dir)
 filepath['makefile.win32'] = "%s/makefile.win32" % (dest_dir)
 filepath['.dsw'] = "%s/%s.dsw" % (dest_dir, chugin_name)
