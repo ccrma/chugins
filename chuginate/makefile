@@ -1,17 +1,20 @@
 
-chuginate: chuginate.py bootstrap.py template/ChuGin.cpp template/makefile \
-template/makefile.osx template/makefile.linux template/makefile.win32 \
-template/ChuGin.dsw template/ChuGin.dsp template/ChuGin.vcxproj \
-template/chuck.tgz
-	python bootstrap.py < chuginate.py > chuginate
+CHUCK_INCLUDE_ROOT=../
+CHUCK_HEADERS=$(wildcard ${CHUCK_INCLUDE_ROOT}/chuck/include/*.h)
+
+TEMPLATE_FILES=template/ChuGin.cpp template/makefile template/makefile.osx \
+    template/makefile.linux template/makefile.win32 template/ChuGin.dsw \
+    template/ChuGin.dsp template/ChuGin.vcxproj template/chuck.tgz
+
+chuginate: chuginate.py bootstrap.py ${TEMPLATE_FILES}
+	python3 bootstrap.py < chuginate.py > chuginate
 	chmod u+x chuginate
 
-template/chuck.tgz: $(wildcard template/chuck/*.h)
-	tar czf $@ -C template chuck
+template/chuck.tgz: ${CHUCK_HEADERS}
+	tar czf $@ -C ${CHUCK_INCLUDE_ROOT} chuck
 
 clean:
 	rm -rf chuginate template/chuck.tgz
 
 install: chuginate
-	cp chuginate /usr/bin/
-
+	cp chuginate /usr/local/bin/
