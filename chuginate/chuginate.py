@@ -49,8 +49,6 @@ code['makefile'] = u'''%(MAKEFILE_CODE)%'''
 code['makefile.mac'] = u'''%(MAKEFILEOSX_CODE)%'''
 code['makefile.linux'] = u'''%(MAKEFILELINUX_CODE)%'''
 code['makefile.win32'] = u'''%(MAKEFILEWIN32_CODE)%'''
-code['.dsw'] = u'''%(DSW_CODE)%'''
-code['.dsp'] = u'''%(DSP_CODE)%'''
 code['.vcxproj'] = u'''%(VCXPROJ_CODE)%'''
 
 if not USE_EXISTING_CHUCK_HEADERS:
@@ -61,20 +59,14 @@ filepath['makefile'] = "%s/makefile" % (dest_dir)
 filepath['makefile.mac'] = "%s/makefile.mac" % (dest_dir)
 filepath['makefile.linux'] = "%s/makefile.linux" % (dest_dir)
 filepath['makefile.win32'] = "%s/makefile.win32" % (dest_dir)
-filepath['.dsw'] = "%s/%s.dsw" % (dest_dir, chugin_name)
-filepath['.dsp'] = "%s/%s.dsp" % (dest_dir, chugin_name)
 filepath['.vcxproj'] = "%s/%s.vcxproj" % (dest_dir, chugin_name)
 filepath['chuck'] = "%s/chuck.tgz" % (dest_dir)
 
-newlines['.dsw'] = '\r\n'
-newlines['.dsp'] = '\r\n'
 newlines['.vcxproj'] = '\r\n'
 
 code['cpp'] = substitute(code['cpp'])
 code['makefile'] = substitute(code['makefile'])
 code['makefile.win32'] = substitute(code['makefile.win32'])
-code['.dsw'] = substitute(code['.dsw'])
-code['.dsp'] = substitute(code['.dsp'])
 code['.vcxproj'] = substitute(code['.vcxproj'])
 
 
