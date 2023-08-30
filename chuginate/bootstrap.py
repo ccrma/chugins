@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import re, sys, base64
 
@@ -6,16 +6,16 @@ marker = dict()
 bin_marker = dict()
 template = dict()
 
-marker['cpp'] = "\%\(CPP_CODE\)\%"
-marker['makefile'] = "\%\(MAKEFILE_CODE\)\%"
-marker['makefile.osx'] = "\%\(MAKEFILEOSX_CODE\)\%"
-marker['makefile.linux'] = "\%\(MAKEFILELINUX_CODE\)\%"
-marker['makefile.win32'] = "\%\(MAKEFILEWIN32_CODE\)\%"
-marker['.dsw'] = "\%\(DSW_CODE\)\%"
-marker['.dsp'] = "\%\(DSP_CODE\)\%"
-marker['.vcxproj'] = "\%\(VCXPROJ_CODE\)\%"
+marker['cpp'] = r"%\(CPP_CODE\)%"
+marker['makefile'] = r"%\(MAKEFILE_CODE\)%"
+marker['makefile.osx'] = r"%\(MAKEFILEOSX_CODE\)%"
+marker['makefile.linux'] = r"%\(MAKEFILELINUX_CODE\)%"
+marker['makefile.win32'] = r"%\(MAKEFILEWIN32_CODE\)%"
+marker['.dsw'] = r"%\(DSW_CODE\)%"
+marker['.dsp'] = r"%\(DSP_CODE\)%"
+marker['.vcxproj'] = r"%\(VCXPROJ_CODE\)%"
 
-bin_marker['chuck'] = "\%\(CHUCK_B64\)\%"
+bin_marker['chuck'] = r"%\(CHUCK_B64\)%"
 
 template['cpp'] = "template/ChuGin.cpp"
 template['makefile'] = "template/makefile"
@@ -30,12 +30,12 @@ template['chuck'] = "template/chuck.tgz"
 code = sys.stdin.read()
 
 for key in marker:
-    f = open(template[key], 'r')
-    code = re.sub(marker[key], f.read(), code)
+    with open(template[key], 'r') as f:
+        code = re.sub(marker[key], lambda match: f.read(), code)
 
 for key in bin_marker:
-    f = open(template[key], 'r')
-    b64 = base64.b64encode(f.read())
-    code = re.sub(bin_marker[key], b64, code)
+    with open(template[key], 'rb') as f:
+        b64 = base64.b64encode(f.read()).decode()
+    code = re.sub(bin_marker[key], lambda match: b64, code)
 
 sys.stdout.write(code)

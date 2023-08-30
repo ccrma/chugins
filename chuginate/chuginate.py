@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 """
 Generate a skeleton for a new ChuGin.
 """
@@ -6,7 +6,7 @@ Generate a skeleton for a new ChuGin.
 import sys, re, os, io, tarfile, base64
 
 if len(sys.argv) != 2 and len(sys.argv) != 3:
-    print "usage: chuginate chugin_name [destination_directory]"
+    print("usage: chuginate chugin_name [destination_directory]")
     sys.exit(-1)
 
 chugin_name = sys.argv[1]
@@ -19,7 +19,7 @@ else:
 chugin_lcname = chugin_name.lower()
 chugin_ucname = chugin_name.upper()
 chugin_initials = re.sub('[a-z]', '', chugin_name).lower()
-if len(chugin_initials) == 0: chugin_initials = chugin_name[0];
+if len(chugin_initials) == 0: chugin_initials = chugin_name[0]
 chugin_header_path = 'chuck/include'
 
 USE_EXISTING_CHUCK_HEADERS = False
