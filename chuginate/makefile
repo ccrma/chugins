@@ -4,7 +4,7 @@ CHUCK_HEADERS=$(wildcard ${CHUCK_INCLUDE_ROOT}/chuck/include/*.h)
 
 TEMPLATE_FILES=template/ChuGin.cpp template/makefile template/makefile.osx \
     template/makefile.linux template/makefile.win32 template/ChuGin.dsw \
-	template/ChuGin.dsp template/ChuGin.vcxproj template/chuck.tgz
+    template/ChuGin.dsp template/ChuGin.vcxproj template/chuck.tgz
 
 chuginate: chuginate.py bootstrap.py ${TEMPLATE_FILES}
 	python3 bootstrap.py < chuginate.py > chuginate
