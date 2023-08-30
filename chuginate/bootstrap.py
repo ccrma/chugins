@@ -8,7 +8,7 @@ template = dict()
 
 marker['cpp'] = r"%\(CPP_CODE\)%"
 marker['makefile'] = r"%\(MAKEFILE_CODE\)%"
-marker['makefile.osx'] = r"%\(MAKEFILEOSX_CODE\)%"
+marker['makefile.mac'] = r"%\(MAKEFILEOSX_CODE\)%"
 marker['makefile.linux'] = r"%\(MAKEFILELINUX_CODE\)%"
 marker['makefile.win32'] = r"%\(MAKEFILEWIN32_CODE\)%"
 marker['.dsw'] = r"%\(DSW_CODE\)%"
@@ -19,7 +19,7 @@ bin_marker['chuck'] = r"%\(CHUCK_B64\)%"
 
 template['cpp'] = "template/ChuGin.cpp"
 template['makefile'] = "template/makefile"
-template['makefile.osx'] = "template/makefile.osx"
+template['makefile.mac'] = "template/makefile.mac"
 template['makefile.linux'] = "template/makefile.linux"
 template['makefile.win32'] = "template/makefile.win32"
 template['.dsw'] = "template/ChuGin.dsw"
