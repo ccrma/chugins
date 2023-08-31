@@ -39,8 +39,8 @@ void Odelay::clear()
 void Odelay::fill(double val)
 {
 	for (long i = 0; i < _len; i++)
-		_dline[i] = val;
-	_lastout = val;
+		_dline[i] = (float)val;
+	_lastout = (float)val;
 }
 
 void Odelay::putsamp(float samp)
@@ -142,5 +142,5 @@ int Odelay::resize(long thisLength)
 
 float Odelay::delay() const
 {
-	return (float) (_len > 0) ? std::abs((_outpoint - _inpoint) % _len) : 0;
+	return (float)((_len > 0) ? std::abs((_outpoint - _inpoint) % _len) : 0);
 }

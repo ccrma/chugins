@@ -53,7 +53,7 @@ public:
     _y = 4;
     _xpos = 0;
     _ypos = 0;
-    _decay = 0.999;
+    _decay = 0.999f;
 	m_mesh->setInputPosition(_xpos,_ypos);
 	m_mesh->setDecay(_decay);
   }
@@ -161,6 +161,7 @@ private:
         "This is a digital waveguide model, making its "
         "use possibly subject to patents held by Stanford "
         "University, Yamaha, and others. ");
+    QUERY->add_ex(QUERY, "special/Mesh2D.ck");
     
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, mesh2d_ctor);

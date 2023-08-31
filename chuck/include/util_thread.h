@@ -43,7 +43,7 @@ class FastCircularBuffer;
 template<typename T> class CircularBuffer;
 
 
-#if ( defined(__PLATFORM_MACOSX__) || defined(__PLATFORM_LINUX__) || defined(__WINDOWS_PTHREAD__) )
+#if ( defined(__PLATFORM_APPLE__) || defined(__PLATFORM_LINUX__) || defined(__WINDOWS_PTHREAD__) )
   #include <pthread.h>
   #define THREAD_TYPE
   typedef pthread_t THREAD_HANDLE;
@@ -51,7 +51,7 @@ template<typename T> class CircularBuffer;
   typedef void * (*THREAD_FUNCTION)(void *);
   typedef pthread_mutex_t MUTEX;
   #define CHUCK_THREAD pthread_t
-#elif defined(__PLATFORM_WIN32__)
+#elif defined(__PLATFORM_WINDOWS__)
   #include <windows.h>
   #include <process.h>
   #define THREAD_TYPE __stdcall
@@ -85,10 +85,16 @@ public:
 
 public:
     // test for a thread cancellation request.
-    static void test( );
+    static void test();
 
+    // get thread ID from a handle
+    static t_CKUINT getID( THREAD_HANDLE t );
+
+public:
     // get internal thread reference
     THREAD_HANDLE getThread() { return thread; }
+    // get thread ID
+    t_CKUINT getID() { return getID( thread ); }
 
     // clear
     void clear() { thread = 0; }
@@ -181,9 +187,9 @@ private:
     void flush_data_buffer();
 
     // callback
-#if ( defined(__PLATFORM_MACOSX__) || defined(__PLATFORM_LINUX__) || defined(__WINDOWS_PTHREAD__) )
+#if ( defined(__PLATFORM_APPLE__) || defined(__PLATFORM_LINUX__) || defined(__WINDOWS_PTHREAD__) )
     static void * write_cb( void * _thiss );
-#elif defined(__PLATFORM_WIN32__)
+#elif defined(__PLATFORM_WINDOWS__)
     static unsigned THREAD_TYPE write_cb( void * _thiss );
 #endif
 
@@ -204,6 +210,7 @@ private:
         // operation type
         enum
         {
+            NONE,
             WRITE,
             SEEK,
             FLUSH,
@@ -230,7 +237,7 @@ private:
         };
 
         // 1.4.1.0 (ge) added
-        Message() : file(NULL) { }
+        Message() : file(NULL) { seek.offset = 0; operation = NONE; }
     };
 
     // circular buffer

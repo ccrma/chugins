@@ -93,7 +93,7 @@ void Offt::r2c()
 	//    re(0), re(len/2), re(1), im(1), re(2), im(2)...re(len/2-1), im(len/2-1)
 	// and normalizing by 1 / fftlen.
 
-	float scale = 1.0 / _len;
+	float scale = 1.0f / _len;
 	int j = _len / 2;
 	_buf[0] = _tmp[0] * scale;
 	_buf[1] = _tmp[j] * scale;

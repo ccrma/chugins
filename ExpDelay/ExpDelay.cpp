@@ -205,6 +205,9 @@ CK_DLL_QUERY( ExpDelay )
   QUERY->add_ctor(QUERY, expdelay_ctor);
   // register the destructor (probably no need to change)
   QUERY->add_dtor(QUERY, expdelay_dtor);
+
+  QUERY->doc_class(QUERY, "Feedback delay at exponentially changing delay times.");
+  QUERY->add_ex(QUERY, "effects/ExpDelay.ck");
   
   // for UGen's only: add tick function
   QUERY->add_ugen_func(QUERY, expdelay_tick, NULL, 1, 1);
@@ -215,28 +218,44 @@ CK_DLL_QUERY( ExpDelay )
 
   QUERY->add_mfun(QUERY, expdelay_setMix, "float", "mix");
   QUERY->add_arg(QUERY, "float", "mix");
+  QUERY->doc_func(QUERY, "Set dry/wet mix [0-1].");
 
   QUERY->add_mfun(QUERY, expdelay_setReps, "int", "reps");
   QUERY->add_arg(QUERY, "int", "reps");
+  QUERY->doc_func(QUERY, "Set number of repetitions.");
   
   QUERY->add_mfun(QUERY, expdelay_setDurCurve, "float", "durcurve");
   QUERY->add_arg(QUERY, "float", "durcurve");
+  QUERY->doc_func(QUERY, "Set steepness of delay curve [0.0001-inf]:\n"
+                  "       1 = steady\n"
+                  "      <1 = starts fast and slows down\n"
+                  "      >1 = starts slow and speeds up"
+                  );
 
   QUERY->add_mfun(QUERY, expdelay_setAmpCurve, "float", "ampcurve");
   QUERY->add_arg(QUERY, "float", "ampcurve");
+  QUERY->doc_func(QUERY, "Set steepness of amplitude decay [0.0001-inf].");
   
   QUERY->add_mfun(QUERY, expdelay_setDelay, "dur", "delay");
   QUERY->add_arg(QUERY, "dur", "delay");
+  QUERY->doc_func(QUERY, "Set duration of delay.");
 
   QUERY->add_mfun(QUERY, expdelay_setMaxDelay, "dur", "max");
   QUERY->add_arg(QUERY, "dur", "max");
+  QUERY->doc_func(QUERY, "Set maximum possible delay duration.");
 
   QUERY->add_mfun(QUERY, expdelay_getMix, "float", "mix");
+  QUERY->doc_func(QUERY, "Get dry/wet mix [0-1].");
   QUERY->add_mfun(QUERY, expdelay_getReps, "int", "reps");
+  QUERY->doc_func(QUERY, "Get number of repetitions.");
   QUERY->add_mfun(QUERY, expdelay_getDurCurve, "float", "durcurve");
+  QUERY->doc_func(QUERY, "Get steepness of delay curve [0.0001-inf].");
   QUERY->add_mfun(QUERY, expdelay_getAmpCurve, "float", "ampcurve");
+  QUERY->doc_func(QUERY, "Get steepness of amplitude decay [0.0001-inf].");
   QUERY->add_mfun(QUERY, expdelay_getDelay, "dur", "delay");
+  QUERY->doc_func(QUERY, "Get duration of delay.");
   QUERY->add_mfun(QUERY, expdelay_getMaxDelay, "dur", "max");
+  QUERY->doc_func(QUERY, "Get maximum possible delay duration.");
 
   // this reserves a variable in the ChucK internal class to store 
   // referene to the c++ class we defined above

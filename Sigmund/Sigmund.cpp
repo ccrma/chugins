@@ -115,7 +115,7 @@ public:
   {
     if (x >= npeak)
       {
-	printf("Sigmund error: peak number must be between 0 and %ld.\n", npeak-1);
+	printf("Sigmund error: peak number must be between 0 and %ld.\n", (long)npeak-1); // 1.5.0.7 (ge) cast to long
 	return 0;
       }
     if (x < nfound)
@@ -132,7 +132,7 @@ public:
   {
     if (x >= npeak)
       {
-	printf("Sigmund error: amp number must be between 0 and %ld.\n", npeak-1);
+	printf("Sigmund error: amp number must be between 0 and %ld.\n", (long)npeak-1); // 1.5.0.7 (ge) cast to long
 	return 0;
       }
     if (x < nfound)
@@ -184,8 +184,8 @@ public:
 	npts = x;
 	if (npts < NPOINTS_MIN)
 	  npts = NPOINTS_MIN;
-	if (npts != (1 << sigmund_ilog2((int)npts)))
-	  printf("Sigmund: adjusting analysis size to %ld points\n", (npts = (1 << sigmund_ilog2((int)npts))));
+	if (npts != (1LL << sigmund_ilog2((int)npts)))
+	  printf("Sigmund: adjusting analysis size to %ld points\n", (long)((npts = (1LL << sigmund_ilog2((int)npts)))));
 	if (npts != nwas)
 	  inbufIndex = 0;
 	if (mode==MODE_STREAM)
@@ -308,6 +308,8 @@ CK_DLL_QUERY( Sigmund )
   // begin the class definition
   // can change the second argument to extend a different ChucK class
   QUERY->begin_class(QUERY, "Sigmund", "UGen");
+  QUERY->doc_class(QUERY, "Sinusoidal analysis & pitch tracking. Adapted from Miller Puckette’s sigmund~ Max object.");
+  QUERY->add_ex(QUERY, "analysis/Sigmund.ck");
   
   // register the constructor (probably no need to change)
   QUERY->add_ctor(QUERY, sigmund_ctor);
@@ -323,48 +325,62 @@ CK_DLL_QUERY( Sigmund )
     
   // example of adding getter method
   QUERY->add_mfun(QUERY, sigmund_clear, "void", "clear");
+  QUERY->doc_func(QUERY, "Clear buffers and reset.");
 
   // example of adding getter method
   QUERY->add_mfun(QUERY, sigmund_getFreq, "float", "freq");
+  QUERY->doc_func(QUERY, "Get reported frequency of input signal.");
 
   // example of adding getter method
   QUERY->add_mfun(QUERY, sigmund_getPower, "float", "env");
+  QUERY->doc_func(QUERY, "Get reported RMS value (in dB) of input signal.");
 
   // example of adding getter method
   QUERY->add_mfun(QUERY, sigmund_getPeak, "float", "peak");
   QUERY->add_arg(QUERY, "int", "peak");
+  QUERY->doc_func(QUERY, "Report freq of nth sinusoundal peak sorting. Depends on parameter \"tracks.\"");
 
   // example of adding getter method
   QUERY->add_mfun(QUERY, sigmund_getAmp, "float", "amp");
   QUERY->add_arg(QUERY, "int", "amp");
+  QUERY->doc_func(QUERY, "Report amplitude of nth sinusoundal peak sorting depends on parameter \"tracks.\"");
 
   // example of adding getter method
   QUERY->add_mfun(QUERY, sigmund_setTracks, "int", "tracks");
   QUERY->add_arg(QUERY, "int", "tracks");
+  QUERY->doc_func(QUERY, "Toggle whether peak and amp are sorted in order of amplitude or organized into tracks. Default false.");
 
   QUERY->add_mfun(QUERY, sigmund_setNpts, "int", "npts");
   QUERY->add_arg(QUERY, "int", "npts");
+  QUERY->doc_func(QUERY, "Set the number of points used in analysis. Must be a power of 2, at least 128. The minimum frequency that can be tracked is about 2 * samplerate / npts. Default: 1024.");
 
   QUERY->add_mfun(QUERY, sigmund_setNpeak, "int", "npeak");
   QUERY->add_arg(QUERY, "int", "npeak");
+  QUERY->doc_func(QUERY, "Set the maximum number of sinusoidal peaks to look for. The computation time is quadratic in the number of peaks actually found (this number only sets an upper limit). Use it to balance CPU time with quality of results.");
 
   QUERY->add_mfun(QUERY, sigmund_setStabletime, "dur", "stabletime");
   QUERY->add_arg(QUERY, "dur", "stabletime");
+  QUERY->doc_func(QUERY, "Set period of stability needed for note. Not implemented.");
 
   QUERY->add_mfun(QUERY, sigmund_setMaxfreq, "float", "maxfreq");
   QUERY->add_arg(QUERY, "float", "arg");
+  QUERY->doc_func(QUERY, "Set maximum frequency of sinusoidal peaks to look for. This can be useful in situations where background noise creates high-frequency, spurious peaks...");
 
   QUERY->add_mfun(QUERY, sigmund_setMinpower, "float", "minpower");
   QUERY->add_arg(QUERY, "float", "arg");
+  QUERY->doc_func(QUERY, "Set the minimum dB level to report a pitch. Signals quieter than this will be assumed to be crosstalk and ignored. default: 50");
 
   QUERY->add_mfun(QUERY, sigmund_setParam1, "float", "param1");
   QUERY->add_arg(QUERY, "float", "arg");
+  QUERY->doc_func(QUERY, "Mysterious setting...");
 
   QUERY->add_mfun(QUERY, sigmund_setParam2, "float", "param2");
   QUERY->add_arg(QUERY, "float", "arg");
+  QUERY->doc_func(QUERY, "Mysterious setting...");
 
   QUERY->add_mfun(QUERY, sigmund_setParam3, "float", "param3");
   QUERY->add_arg(QUERY, "float", "arg");
+  QUERY->doc_func(QUERY, "Mysterious setting...");
   
   // this reserves a variable in the ChucK internal class to store 
   // referene to the c++ class we defined above

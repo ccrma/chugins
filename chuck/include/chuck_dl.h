@@ -48,7 +48,7 @@
 // major version must be the same between chuck:chugin
 #define CK_DLL_VERSION_MAJOR (0x0008)
 // minor version of chugin must be less than or equal to chuck's
-#define CK_DLL_VERSION_MINOR (0x0000)
+#define CK_DLL_VERSION_MINOR (0x0001)
 #define CK_DLL_VERSION_MAKE(maj,min) ((t_CKUINT)(((maj) << 16) | (min)))
 #define CK_DLL_VERSION_GETMAJOR(v) (((v) >> 16) & 0xFFFF)
 #define CK_DLL_VERSION_GETMINOR(v) ((v) & 0xFFFF)
@@ -62,19 +62,21 @@ extern char g_chugin_path_envvar[];
 
 
 
-// forward references
+// DL forward references
 struct Chuck_DL_Query;
 struct Chuck_DL_Class;
 struct Chuck_DL_Func;
 struct Chuck_DL_Value;
 struct Chuck_DL_Ctrl;
 union  Chuck_DL_Return;
+struct Chuck_DL_MainThreadHook;
 struct Chuck_DLL;
+namespace Chuck_DL_Api { struct Api; }
+
+// object forward references
 struct Chuck_UGen;
 struct Chuck_UAna;
 struct Chuck_UAnaBlobProxy;
-struct Chuck_DL_MainThreadHook;
-namespace Chuck_DL_Api { struct Api; }
 
 
 // param conversion - to extract values from ARGS to functions
@@ -154,14 +156,14 @@ namespace Chuck_DL_Api { struct Api; }
 
 
 // chuck dll export linkage and calling convention
-#if defined (__PLATFORM_WIN32__)
-#define CK_DLL_LINKAGE extern "C" __declspec( dllexport )
+#if defined (__PLATFORM_WINDOWS__)
+  #define CK_DLL_LINKAGE extern "C" __declspec( dllexport )
 #else
 #define CK_DLL_LINKAGE extern "C"
 #endif
 
 // calling convention of functions provided by chuck to the dll
-#if defined(__PLATFORM_WIN32__)
+#if defined(__PLATFORM_WINDOWS__)
   #define CK_DLL_CALL    _cdecl
 #else
 #define CK_DLL_CALL
@@ -411,6 +413,9 @@ public:
     // stack
     std::vector<Chuck_DL_Class* >stack;
 
+    // flag any error encountered during the query | 1.5.0.5 (ge) added
+    t_CKBOOL errorEncountered;
+
     // constructor
     Chuck_DL_Query(Chuck_Carrier* carrier);
     // desctructor
@@ -612,18 +617,30 @@ public:
     // unload the ckx
     t_CKBOOL unload();
     // query the content of the dll
-    const Chuck_DL_Query* query();
+    const Chuck_DL_Query * query();
+    // probe information about dll without fully loading it
+    t_CKBOOL probe();
     // is good
     t_CKBOOL good() const;
     // name
-    const char* name() const;
+    const char * name() const;
+    // full path
+    const char * filepath() const;
+    // get version major
+    t_CKUINT versionMajor();
+    // get version minor
+    t_CKUINT versionMinor();
+    // is version compatible between dll and host
+    // major version must be same between chugin and host
+    // chugin minor version must less than or equal host minor version
+    t_CKBOOL compatible();
 
 public:
     // constructor
     Chuck_DLL(Chuck_Carrier* carrier, const char* xid = NULL)
         : m_handle(NULL), m_id(xid ? xid : ""),
-        m_query(carrier),
-        m_done_query(FALSE), m_query_func(NULL), m_version_func(NULL)
+        m_done_query(FALSE), m_version_func(NULL), m_query_func(NULL),
+        m_query( carrier ), m_versionMajor(0), m_versionMinor(0)
     { }
     // destructor
     ~Chuck_DLL() { this->unload(); }
@@ -640,6 +657,10 @@ protected:
     f_ck_declversion m_version_func;
     f_ck_query m_query_func;
     Chuck_DL_Query m_query;
+
+protected: // addition info 1.5.0.4 (ge) added
+    t_CKUINT m_versionMajor;
+    t_CKUINT m_versionMinor;
 };
 
 
@@ -662,9 +683,10 @@ public:
 /* API to ChucK's innards */
 namespace Chuck_DL_Api
 {
-    typedef void* Object;
-    typedef void* Type;
-    typedef void* String;
+typedef void * Object;
+typedef void * Type;
+typedef void * String;
+typedef void * Array4; // 1.5.0.1 (ge) added
 
     struct Api
     {
@@ -701,6 +723,8 @@ namespace Chuck_DL_Api
         t_CKBOOL (* const get_mvar_object)( CK_DL_API, Object object, const char * name, Object & value );
         // function pointer for set_string()
         t_CKBOOL (* const set_string)( CK_DL_API, String string, const char * value );
+        // array4 operations
+        t_CKBOOL (* const array4_push_back)( CK_DL_API, Array4 array, t_CKUINT value );
     } * const object;
 
         Api() :
@@ -723,16 +747,16 @@ namespace Chuck_DL_Api
 
 
 // dlfcn interface
-#if defined(__MACOSX_CORE__)
+#if defined(__PLATFORM_APPLE__)
 #include <AvailabilityMacros.h>
 #endif
 
 // dlfcn interface, panther or below
-#if defined(__MACOSX_CORE__) && MAC_OS_X_VERSION_MAX_ALLOWED <= 1030
+#if defined(__PLATFORM_APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED <= 1030
 
 #error ChucK not support on Mac OS X 10.3 or lower
 
-#elif defined(__PLATFORM_WIN32__)
+#elif defined(__PLATFORM_WINDOWS__)
 
 #ifdef __cplusplus
 extern "C" {

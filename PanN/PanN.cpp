@@ -32,8 +32,8 @@ public:
         if(c_l == c_r) c_r = (c_l+1)%m_chans;
         float mod = m_pan - floorf(m_pan);
         
-        float g_l = cosf(ONE_PI/2.0*mod);
-        float g_r = sinf(ONE_PI/2.0*mod);
+        float g_l = cosf(CK_ONE_PI/2.0*mod);
+        float g_r = sinf(CK_ONE_PI/2.0*mod);
         
         memset(out, 0, sizeof(SAMPLE)*m_chans*nframes);
         
@@ -53,8 +53,8 @@ public:
         // int c_r = ((int)ceilf(m_pan))%m_chans;
         // float mod = m_pan - floorf(m_pan);
         // 
-        // float g_l = cosf(ONE_PI/2.0*mod);
-        // float g_r = sinf(ONE_PI/2.0*mod);
+        // float g_l = cosf(CK_ONE_PI/2.0*mod);
+        // float g_r = sinf(CK_ONE_PI/2.0*mod);
         // 
         // fprintf(stderr, "**** c_l, c_r: %i, %i; mod, g_l, g_r: %f, %f, %f ****\n", c_l, c_r, mod, g_l, g_r);
         
@@ -186,6 +186,7 @@ CK_DLL_QUERY( PanN )
     // begin the class definition
     QUERY->begin_class(QUERY, "Pan4", "UGen");
     QUERY->doc_class(QUERY, "Four-channel equal-power panner. ");
+    QUERY->add_ex(QUERY, "spatial/Pan4.ck");
     
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, pan4_ctor);
@@ -199,11 +200,11 @@ CK_DLL_QUERY( PanN )
     QUERY->add_mfun(QUERY, pan4_setPan, "float", "pan");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
-    QUERY->doc_class(QUERY, "Pan position [0-4]. ");
+    QUERY->doc_func(QUERY, "Set pan position [0-4].");
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, pan4_getPan, "float", "pan");
-    QUERY->doc_class(QUERY, "Pan position [0-4]. ");
+    QUERY->doc_func(QUERY, "Get pan position [0-4].");
     
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
@@ -222,6 +223,9 @@ CK_DLL_QUERY( PanN )
     QUERY->add_ctor(QUERY, pan8_ctor);
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, pan8_dtor);
+
+    QUERY->doc_class(QUERY, "Eight-channel equal-power panner.");
+    QUERY->add_ex(QUERY, "spatial/Pan8.ck");
     
     // for UGen's only: add tick function
     QUERY->add_ugen_funcf(QUERY, pan8_tickf, NULL, 8, 8);
@@ -230,9 +234,11 @@ CK_DLL_QUERY( PanN )
     QUERY->add_mfun(QUERY, pan8_setPan, "float", "pan");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Set pan position [0-8].");
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, pan8_getPan, "float", "pan");
+    QUERY->doc_func(QUERY, "Get pan position [0-8].");
     
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
@@ -251,6 +257,8 @@ CK_DLL_QUERY( PanN )
     QUERY->add_ctor(QUERY, pan16_ctor);
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, pan16_dtor);
+
+    QUERY->doc_class(QUERY, "Sixteen-channel equal-power panner.");
     
     // for UGen's only: add tick function
     QUERY->add_ugen_funcf(QUERY, pan16_tickf, NULL, 16, 16);
@@ -259,9 +267,11 @@ CK_DLL_QUERY( PanN )
     QUERY->add_mfun(QUERY, pan16_setPan, "float", "pan");
     // example of adding argument to the above method
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, "Set pan position [0-16].");    
     
     // example of adding getter method
     QUERY->add_mfun(QUERY, pan16_getPan, "float", "pan");
+    QUERY->doc_func(QUERY, "Get pan position [0-16].");        
     
     // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above

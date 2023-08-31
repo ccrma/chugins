@@ -61,7 +61,7 @@ void Filters::designParametric(double* dcoefs, double center, double gain, doubl
  	///////////////START//////////////////
 	
     double Q = qval;
-    double wc = center*2*ONE_PI;
+    double wc = center*2*CK_ONE_PI;
     
 	// 2nd order butterworth RLP
 	b2 = 0.0;

@@ -36,6 +36,7 @@ CK_DLL_QUERY(Bitcrusher)
     
     QUERY->begin_class(QUERY, "Bitcrusher", "UGen");
     QUERY->doc_class(QUERY, "Applies aliased downsampling and sample-width reduction to create a variety of distortion effects. ");
+    QUERY->add_ex(QUERY, "effects/Bitcrusher.ck");
     
     QUERY->add_ctor(QUERY, bitcrusher_ctor);
     QUERY->add_dtor(QUERY, bitcrusher_dtor);

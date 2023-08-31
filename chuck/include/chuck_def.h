@@ -37,13 +37,17 @@
 #include <memory.h>
 #include <assert.h>
 
-// types
+// chuck types
+//-------------------------------------------
 #ifndef __EMSCRIPTEN__
+//-------------------------------------------
 #define t_CKTIME                    double
 #define t_CKDUR                     double
-#define t_CKFLOAT                   double
-#define t_CKDOUBLE                  double
 #define t_CKSINGLE                  float
+#define t_CKDOUBLE                  double
+#define t_CKFLOAT                   double
+#define CK_FLT_MAX                  DBL_MAX
+#define CK_FLT_MIN                  DBL_MIN
 #ifdef _WIN64                       // REFACTOR-2017
 #define t_CKINT                     long long // REFACTOR-2017
 #define CK_INT_MAX                  LLONG_MAX
@@ -51,10 +55,9 @@
 #define t_CKINT                     long
 #define CK_INT_MAX                  LONG_MAX
 #endif
-#define CK_FLT_MAX                  DBL_MAX
-#define CK_FLT_MIN                  DBL_MIN
-
-#else
+//-------------------------------------------
+#else // below is for __EMSCRIPTEN__
+//-------------------------------------------
 #define t_CKTIME                    double
 #define t_CKDUR                     double
 #define t_CKFLOAT                   double
@@ -64,8 +67,11 @@
 #define CK_FLT_MAX                  DBL_MAX
 #define CK_FLT_MIN                  DBL_MIN
 #define CK_INT_MAX                  INT_MAX
+//-------------------------------------------
 #endif
+//-------------------------------------------
 
+// additional types
 #define t_CKUINT                    unsigned t_CKINT
 #define t_CKBOOL                    unsigned t_CKINT
 #define t_CKBYTE                    unsigned char
@@ -82,7 +88,7 @@ typedef struct { t_CKFLOAT x ; t_CKFLOAT y ; t_CKFLOAT z ; } t_CKVEC3;
 typedef struct { t_CKFLOAT x ; t_CKFLOAT y ; t_CKFLOAT z ; t_CKFLOAT w ; } t_CKVEC4;
 typedef struct { t_CKUINT N ; t_CKFLOAT * values ; } t_CKVECTOR;
 
-// size
+// size of types
 #define sz_TIME                     sizeof(t_CKTIME)
 #define sz_DUR                      sizeof(t_CKDUR)
 #define sz_FLOAT                    sizeof(t_CKFLOAT)
@@ -116,18 +122,22 @@ typedef const char *                c_constr;
 // use 64-bit samples in the audio engine
 // #define __CHUCK_USE_64_BIT_SAMPLE__
 
-// sample
+// type for audio sample
+//-------------------------------------------
 #ifdef __CHUCK_USE_64_BIT_SAMPLE__
+//-------------------------------------------
 #define SAMPLE                      double
-#define SILENCE                     0.0
+#define CK_SILENCE                  0.0
 #define CK_DDN                      CK_DDN_DOUBLE
+//-------------------------------------------
 #else
+//-------------------------------------------
 #define SAMPLE                      float
-#define SILENCE                     0.0f
+#define CK_SILENCE                  0.0f
 #define CK_DDN                      CK_DDN_SINGLE
+//-------------------------------------------
 #endif
-
-// for external use
+//-------------------------------------------
 #define t_CKSAMPLE                  SAMPLE
 
 // sample complex
@@ -143,19 +153,19 @@ typedef struct { SAMPLE re ; SAMPLE im ; } t_CKCOMPLEX_SAMPLE;
 #define CK_NO_VALUE                 0xffffffff
 
 // 3.1415926535897932384626433832795028841971693993751058209749445...
-#define ONE_PI (3.14159265358979323846)
-#define TWO_PI (2.0 * ONE_PI)
-#define SQRT2  (1.41421356237309504880)
+#define CK_ONE_PI                   (3.14159265358979323846)
+#define CK_TWO_PI                   (2.0 * CK_ONE_PI)
+#define CK_SQRT2                    (1.41421356237309504880)
 
-#ifndef SAFE_DELETE
-#define SAFE_DELETE(x)              do { if(x){ delete x; x = NULL; } } while(0)
-#define SAFE_DELETE_ARRAY(x)        do { if(x){ delete [] x; x = NULL; } } while(0)
-#define SAFE_RELEASE(x)             do { if(x){ x->release(); x = NULL; } } while(0)
-#define SAFE_ADD_REF(x)             do { if(x){ x->add_ref(); } } while(0)
-#define SAFE_REF_ASSIGN(lhs,rhs)    do { SAFE_RELEASE(lhs); (lhs) = (rhs); SAFE_ADD_REF(lhs); } while(0)
-#define SAFE_FREE(x)                do { if(x){ free(x); x = NULL; } } while(0)
-#define SAFE_UNLOCK_DELETE(x)       do { if(x){ x->unlock(); delete x; x = NULL; } } while(0)
-#endif
+// macro for cleaning up: tests for NULL before and sets to NULL after
+#define CK_SAFE_DELETE(x)           do { if(x){ delete x; x = NULL; } } while(0)
+#define CK_SAFE_DELETE_ARRAY(x)     do { if(x){ delete [] x; x = NULL; } } while(0)
+#define CK_SAFE_RELEASE(x)          do { if(x){ x->release(); x = NULL; } } while(0)
+#define CK_SAFE_ADD_REF(x)          do { if(x){ x->add_ref(); } } while(0)
+// NOTE the ref assign accounts for the case that lhs == rhs and the reference==1: add BEFORE release
+#define CK_SAFE_REF_ASSIGN(lhs,rhs) do { Chuck_VM_Object * temp = lhs; (lhs) = (rhs); CK_SAFE_ADD_REF(lhs); CK_SAFE_RELEASE(temp); } while(0)
+#define CK_SAFE_FREE(x)             do { if(x){ free(x); x = NULL; } } while(0)
+#define CK_SAFE_UNLOCK_DELETE(x)    do { if(x){ x->unlock(); delete x; x = NULL; } } while(0)
 
 // max + min
 #define ck_max(x,y)                 ( (x) >= (y) ? (x) : (y) )
@@ -174,32 +184,133 @@ typedef struct { SAMPLE re ; SAMPLE im ; } t_CKCOMPLEX_SAMPLE;
 #define CK_DDN_DOUBLE(f) (f)
 #endif // __arm__
 
-// tracking
+// stats tracking
 #if defined(__CHUCK_STAT_TRACK__)
 #define CK_TRACK( stmt ) stmt
 #else
 #define CK_TRACK( stmt )
 #endif
 
-#ifdef __MACOSX_CORE__
-#define __PLATFORM_MACOSX__
-#endif
 
-#if defined(__LINUX_ALSA__) || defined(__LINUX_JACK__) || defined(__LINUX_OSS__) || defined(__LINUX_PULSE__) || defined(__UNIX_JACK__)
-// defined by default in Linux makefiles
-//#define __PLATFORM_LINUX__
-#endif
+//-------------------------------------------
+// operating system identification
+// https://sourceforge.net/p/predef/wiki/OperatingSystems/
+// http://web.archive.org/web/20191012035921/http://nadeausoftware.com/articles/2012/01/c_c_tip_how_use_compiler_predefined_macros_detect_operating_system
+//-------------------------------------------
 
-#ifdef __PLATFORM_WIN32__
-#ifndef usleep
-  #ifndef __CHUNREAL_ENGINE__
-    #define usleep(x) Sleep((x / 1000 <= 0 ? 1 : x / 1000) )
-  #else
-    // 1.5.0.0 (ge) | #chunreal
-    #define usleep(x) FPlatformProcess::Sleep( x/1000000.0f <= 0 ? .001 : x/1000000.0f );
-  #endif // #ifndef __UNREAL_ENGINE__
-#endif // #ifndef usleep
-// 1.4.2.0 (ge and spencer) | added for legacy windows, as part of switch to snprintf
+//-------------------------------------------
+// platform: Apple
+// related macros: __MACOSX_CORE__ __CHIP_MODE__
+// NOTE: __CHIP_MODE__ is ChucK for iPhone; implies iOS
+//-------------------------------------------
+#if defined(__APPLE__) // && defined(__MACH__)
+//-------------------------------------------
+  #ifndef __PLATFORM_APPLE__
+  #define __PLATFORM_APPLE__
+  #endif
+
+  // get information about the target sub-platform
+  #include <TargetConditionals.h>
+  #if TARGET_OS_MAC == 1
+    #if TARGET_OS_IPHONE != 1
+      #define __PLATFORM_MACOS__ // macOS
+    #else // TARGET_OS_IPHONE not 0
+      #define __PLATFORM_IOS__ // iOS, tvOS, or watchOS device
+      // even more information within iOS
+      #if TARGET_OS_EMBEDDED == 1
+        #define __PLATFORM_IOS_DEVICE__ // device actual
+      #else // TARGET_OS_EMBEDDED not 1
+        #define __PLATFORM_IOS_SIMULATOR__ // simulator
+      #endif
+    #endif
+  #else // TARGET_OS_MAC not 1
+    // apparently on Apple; but cannot determine platform target
+    // #error "[chuck build]: unknown Apple platform target"
+  #endif
+//-------------------------------------------
+#endif // defined(__APPLE__) && defined(__MACH__)
+//-------------------------------------------
+
+
+//-------------------------------------------
+// platform: linux
+// related macros: __LINUX_ALSA__ __LINUX_PULSE__ __LINUX_OSS__ __LINUX_JACK__ __UNIX_JACK__
+//-------------------------------------------
+#if defined(__linux__)
+//-------------------------------------------
+  #ifndef __PLATFORM_LINUX__
+  #define __PLATFORM_LINUX__
+  #endif
+//-------------------------------------------
+#endif // defined(__linux__)
+//-------------------------------------------
+
+
+//-------------------------------------------
+// platform: windows
+// related macros: __WINDOWS_DS__ __WINDOWS_WASAPI__ __WINDOWS_ASIO__
+// NOTE: Windows defines _WIN32 for both 32-bit and 64-bit
+//-------------------------------------------
+#if defined(_WIN32) || defined(_WIN64)
+//-------------------------------------------
+  #ifndef __PLATFORM_WINDOWS__
+  #define __PLATFORM_WINDOWS__
+  #endif
+
+  // legacy; new code should use __PLATFORM_WINDOWS__
+  #ifndef __PLATFORM_WIN32__
+  #define __PLATFORM_WIN32__
+  #endif
+//-------------------------------------------
+#endif // defined(_WIN32) || defined(_WIN64)
+//-------------------------------------------
+
+
+//-------------------------------------------
+// platform: Cygwin (on Windows)
+//-------------------------------------------
+#if defined(__CYGWIN__)
+//-------------------------------------------
+  #ifndef __PLATFORM_CYGWIN__
+  #define __PLATFORM_CYGWIN__
+  #endif
+  #ifndef __WINDOWS_PTHREAD__
+  #define __WINDOWS_PTHREAD__
+  #endif
+//-------------------------------------------
+#endif // defined(__CYGWIN__)
+//-------------------------------------------
+
+
+//-------------------------------------------
+// platform: web assembly
+//-------------------------------------------
+#if defined(__EMSCRIPTEN__)
+//-------------------------------------------
+  #ifndef __PLATFORM_EMSCRIPTEN__
+  #define __PLATFORM_EMSCRIPTEN__
+  #endif
+//-------------------------------------------
+#endif // defined(__EMSCRIPTEN__)
+//-------------------------------------------
+
+
+//-------------------------------------------
+// platform: android
+// NOTE: android is based on linux; linux macros are also defined
+//-------------------------------------------
+#if defined(__ANDROID__)
+//-------------------------------------------
+  #ifndef __PLATFORM_ANDROID__
+  #define __PLATFORM_ANDROID__
+  #endif
+//-------------------------------------------
+#endif // defined(__ANDROID__)
+//-------------------------------------------
+
+
+#ifdef __PLATFORM_WINDOWS__
+// 1.4.2.0 (ge and spencer) added for legacy windows, as part of switch to snprintf
 // https://stackoverflow.com/questions/2915672/snprintf-and-visual-studio-2010
 #if defined(_MSC_VER) && _MSC_VER < 1900
   #define snprintf(buf,len, format,...) _snprintf_s(buf, len,len, format, __VA_ARGS__)
@@ -211,7 +322,7 @@ typedef struct { SAMPLE re ; SAMPLE im ; } t_CKCOMPLEX_SAMPLE;
 #pragma warning (disable : 4244)  // truncation
 #pragma warning (disable : 4068)  // unknown pragma
 #pragma warning (disable : 4018)  // signed/unsigned mismatch
-#endif // #ifdef __PLATFORM_WIN32__
+#endif // #ifdef __PLATFORM_WINDOWS__
 
 #ifdef __CHIP_MODE__
 #define __DISABLE_MIDI__

@@ -178,7 +178,7 @@ void make_default_table()
 {
         for (int i=0; i<table_size; i++)
         {
-                internal_table[i] = sin( TWO_PI * i / table_size );
+                internal_table[i] = sin( CK_TWO_PI * i / table_size );
         }
 }
 

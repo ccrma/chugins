@@ -84,7 +84,7 @@ static inline float damper_do(ty_damper *p, float x)
 { 
 	float y;
 
-	y = x*(1.0-p->damping) + p->delay*p->damping;
+	y = x*(1.0f-p->damping) + p->delay*p->damping;
 	p->delay = y;
 	return(y);
 }
