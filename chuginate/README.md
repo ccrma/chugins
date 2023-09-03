@@ -26,7 +26,7 @@ mkdir FooBar.chug
 ```
 (NOTE if this doesn't work, try running the local `chuginate` script: `python ./chuginate [chugin_name] [destination_directory]`.)
 
-4) this should generate a number of boilerplate files in the `[destination_directory` (FooBar.chug in our example)
+4) this should generate a number of boilerplate files in the `[destination_directory`; For example, if "FooBar" is the name of the chugin (and `FooBar.chug` our directory), then in `FooBar.chug/`, we should see the following generated files:
 * **FooBar.cpp** the boilerplate C++ source for the chugin (should be buildable without modification; we recommend trying to build and run this before starting to modify)
 * **FooBar-test.ck** a boilerplate test ChucK program (try running this after building your chugin; instructions inside)
 * **FooBar.vcxproj** Visual Studio project file
