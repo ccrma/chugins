@@ -7,6 +7,7 @@ bin_marker = dict()
 template = dict()
 
 marker['cpp'] = r"%\(CPP_CODE\)%"
+marker['test'] = r"%\(TEST_CK_CODE\)%"
 marker['makefile'] = r"%\(MAKEFILE_CODE\)%"
 marker['makefile.mac'] = r"%\(MAKEFILEOSX_CODE\)%"
 marker['makefile.linux'] = r"%\(MAKEFILELINUX_CODE\)%"
@@ -16,6 +17,7 @@ marker['.vcxproj'] = r"%\(VCXPROJ_CODE\)%"
 bin_marker['chuck'] = r"%\(CHUCK_B64\)%"
 
 template['cpp'] = "template/ChuGin.cpp"
+template['test'] = "template/ChuGin-test.ck"
 template['makefile'] = "template/makefile"
 template['makefile.mac'] = "template/makefile.mac"
 template['makefile.linux'] = "template/makefile.linux"

@@ -45,6 +45,7 @@ filepath = dict()
 newlines = dict()
 
 code['cpp'] = u'''%(CPP_CODE)%'''
+code['test'] = u'''%(TEST_CK_CODE)%'''
 code['makefile'] = u'''%(MAKEFILE_CODE)%'''
 code['makefile.mac'] = u'''%(MAKEFILEOSX_CODE)%'''
 code['makefile.linux'] = u'''%(MAKEFILELINUX_CODE)%'''
@@ -55,6 +56,7 @@ if not USE_EXISTING_CHUCK_HEADERS:
     tgz['chuck'] = u'''%(CHUCK_B64)%'''
 
 filepath['cpp'] = "%s/%s.cpp" % (dest_dir, chugin_name)
+filepath['test'] = "%s/%s-test.ck" % (dest_dir, chugin_name)
 filepath['makefile'] = "%s/makefile" % (dest_dir)
 filepath['makefile.mac'] = "%s/makefile.mac" % (dest_dir)
 filepath['makefile.linux'] = "%s/makefile.linux" % (dest_dir)
@@ -65,6 +67,7 @@ filepath['chuck'] = "%s/chuck.tgz" % (dest_dir)
 newlines['.vcxproj'] = '\r\n'
 
 code['cpp'] = substitute(code['cpp'])
+code['test'] = substitute(code['test'])
 code['makefile'] = substitute(code['makefile'])
 code['makefile.win32'] = substitute(code['makefile.win32'])
 code['.vcxproj'] = substitute(code['.vcxproj'])
