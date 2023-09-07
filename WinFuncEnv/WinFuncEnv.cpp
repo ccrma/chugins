@@ -389,6 +389,7 @@ public:
         pi = M_PI;
     }
 
+    // Reference: https://www.mathworks.com/help/signal/ref/tukeywin.html
     float attackWindow (int n, int attack) {
         if( n == 0 )
         {
@@ -405,11 +406,11 @@ public:
         {
         }
 
-        if ( n < a * release ) {
+        if ( n < release - a * release ) {
             return 1.0;
         }
         else {
-            return 0.5 * (1.0 + cos(pi * ((2 * n)/(a * release * 2.0) - 2.0/a + 1.0)));
+            return 0.5 * (1.0 + cos(pi * (n / (a * release) + (1 / a) - (2.0 / a) + 1.0)));
         }
     }
 private:
