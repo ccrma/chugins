@@ -113,11 +113,11 @@ endif()
 
 # Platform-specific libraries and definitions
 if(APPLE)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE "__MACOSX_CORE__;__APPLE__")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE "__MACOSX_CORE__;__APPLE__;__PLATFORM_APPLE__")
     target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio")
 elseif(MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 winmm wsock32 dsound dinput8 dxguid)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE "WIN32;_WIN32;_WINDOWS;NOMINMAX;_USRDLL;__WINDOWS_DS__;__WINDOWS_MODERN__;__PLATFORM_WIN32__")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE "WIN32;_WIN32;_WINDOWS;NOMINMAX;_USRDLL;__WINDOWS_DS__;__PLATFORM_WINDOWS__")
 else()
     target_compile_definitions(${PROJECT_NAME} PRIVATE "__PLATFORM_LINUX__")
     # target_compile_options(${PROJECT_NAME} PUBLIC "-std=c++17")

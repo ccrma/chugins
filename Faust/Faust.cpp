@@ -12,12 +12,12 @@
 //       compiled for 10.5 chuck may not work well with 10.10 chugin!
 //-----------------------------------------------------------------------------
 
-// note that 4096 would cause weird audio artifacts
+// note that too large of a number can cause weird audio artifacts
 #ifndef MAX_INPUTS
-  #define MAX_INPUTS 2048
+  #define MAX_INPUTS 256
 #endif
 #ifndef MAX_OUTPUTS
-  #define MAX_OUTPUTS 2048
+  #define MAX_OUTPUTS 256
 #endif
 
 // this should align with the correct versions of these ChucK files
