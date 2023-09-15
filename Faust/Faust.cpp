@@ -469,14 +469,14 @@ public:
             m_midi_ui->stop();
         }
 
-        SAFE_DELETE(m_dsp);
-        SAFE_DELETE(m_ui);
-        SAFE_DELETE(m_dsp_poly);
-        SAFE_DELETE(m_midi_ui);
-        SAFE_DELETE(m_soundUI);
+        CK_SAFE_DELETE(m_dsp);
+        CK_SAFE_DELETE(m_ui);
+        CK_SAFE_DELETE(m_dsp_poly);
+        CK_SAFE_DELETE(m_midi_ui);
+        CK_SAFE_DELETE(m_soundUI);
         
         deleteDSPFactory(m_factory); m_factory = NULL;
-        SAFE_DELETE(m_poly_factory);
+        CK_SAFE_DELETE(m_poly_factory);
         
         clearMIDI();
     }
@@ -493,15 +493,15 @@ public:
         if( m_input != NULL )
         {
             for( int i = 0; i < m_numInputChannels; i++ )
-                SAFE_DELETE_ARRAY(m_input[i]);
+                CK_SAFE_DELETE_ARRAY(m_input[i]);
         }
         if( m_output != NULL )
         {
             for( int i = 0; i < m_numOutputChannels; i++ )
-                SAFE_DELETE_ARRAY(m_output[i]);
+                CK_SAFE_DELETE_ARRAY(m_output[i]);
         }
-        SAFE_DELETE_ARRAY(m_input);
-        SAFE_DELETE_ARRAY(m_output);
+        CK_SAFE_DELETE_ARRAY(m_input);
+        CK_SAFE_DELETE_ARRAY(m_output);
     }
     
     // allocate
