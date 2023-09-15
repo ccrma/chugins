@@ -196,8 +196,11 @@ CK_DLL_QUERY( PitchTrack )
     QUERY->add_dtor(QUERY, pitchtrack_dtor);
 
     QUERY->doc_class(QUERY, "PitchTrack is a monophonic autocorrelation pitch tracker with a fast response and extremely high accuracy, even at low frequencies. It is adapted from [helmholtz~] for Pd by Katja, documented at http://www.katjaas.nl/helmholtz/helmholtz.html");
+
+    // add examples
+    QUERY->add_ex(QUERY, "effects/autotune.ck");
     QUERY->add_ex(QUERY, "analysis/PitchTrack.ck");
-    
+
     // for UGen's only: add tick function
     QUERY->add_ugen_func(QUERY, pitchtrack_tick, NULL, 1, 1);
     

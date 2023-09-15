@@ -14,11 +14,11 @@
 
 #include "perlin-noise.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <time.h>
 static long random() { return rand(); }
 static void srandom( unsigned s ) { srand( s ); }
-#endif // WIN32
+#endif // _WIN32
 
 
 // declaration of chugin constructor

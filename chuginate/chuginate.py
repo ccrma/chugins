@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 """
 Generate a skeleton for a new ChuGin.
 """
@@ -6,7 +6,7 @@ Generate a skeleton for a new ChuGin.
 import sys, re, os, io, tarfile, base64
 
 if len(sys.argv) != 2 and len(sys.argv) != 3:
-    print "usage: chuginate chugin_name [destination_directory]"
+    print("usage: chuginate chugin_name [destination_directory]")
     sys.exit(-1)
 
 chugin_name = sys.argv[1]
@@ -19,7 +19,7 @@ else:
 chugin_lcname = chugin_name.lower()
 chugin_ucname = chugin_name.upper()
 chugin_initials = re.sub('[a-z]', '', chugin_name).lower()
-if len(chugin_initials) == 0: chugin_initials = chugin_name[0];
+if len(chugin_initials) == 0: chugin_initials = chugin_name[0]
 chugin_header_path = 'chuck/include'
 
 USE_EXISTING_CHUCK_HEADERS = False
@@ -45,36 +45,31 @@ filepath = dict()
 newlines = dict()
 
 code['cpp'] = u'''%(CPP_CODE)%'''
+code['test'] = u'''%(TEST_CK_CODE)%'''
 code['makefile'] = u'''%(MAKEFILE_CODE)%'''
-code['makefile.osx'] = u'''%(MAKEFILEOSX_CODE)%'''
+code['makefile.mac'] = u'''%(MAKEFILEOSX_CODE)%'''
 code['makefile.linux'] = u'''%(MAKEFILELINUX_CODE)%'''
 code['makefile.win32'] = u'''%(MAKEFILEWIN32_CODE)%'''
-code['.dsw'] = u'''%(DSW_CODE)%'''
-code['.dsp'] = u'''%(DSP_CODE)%'''
 code['.vcxproj'] = u'''%(VCXPROJ_CODE)%'''
 
 if not USE_EXISTING_CHUCK_HEADERS:
     tgz['chuck'] = u'''%(CHUCK_B64)%'''
 
 filepath['cpp'] = "%s/%s.cpp" % (dest_dir, chugin_name)
+filepath['test'] = "%s/%s-test.ck" % (dest_dir, chugin_name)
 filepath['makefile'] = "%s/makefile" % (dest_dir)
-filepath['makefile.osx'] = "%s/makefile.osx" % (dest_dir)
+filepath['makefile.mac'] = "%s/makefile.mac" % (dest_dir)
 filepath['makefile.linux'] = "%s/makefile.linux" % (dest_dir)
 filepath['makefile.win32'] = "%s/makefile.win32" % (dest_dir)
-filepath['.dsw'] = "%s/%s.dsw" % (dest_dir, chugin_name)
-filepath['.dsp'] = "%s/%s.dsp" % (dest_dir, chugin_name)
 filepath['.vcxproj'] = "%s/%s.vcxproj" % (dest_dir, chugin_name)
 filepath['chuck'] = "%s/chuck.tgz" % (dest_dir)
 
-newlines['.dsw'] = '\r\n'
-newlines['.dsp'] = '\r\n'
 newlines['.vcxproj'] = '\r\n'
 
 code['cpp'] = substitute(code['cpp'])
+code['test'] = substitute(code['test'])
 code['makefile'] = substitute(code['makefile'])
 code['makefile.win32'] = substitute(code['makefile.win32'])
-code['.dsw'] = substitute(code['.dsw'])
-code['.dsp'] = substitute(code['.dsp'])
 code['.vcxproj'] = substitute(code['.vcxproj'])
 
 

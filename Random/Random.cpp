@@ -14,12 +14,12 @@
 #include <math.h>
 
 
-#ifdef WIN32
+#ifdef _WIN32
 static long random() { return rand(); }
 static void srandom( unsigned s ) { srand( s ); }
-#endif // WIN32
+#endif // _WIN32
 
-#ifdef WIN32
+#ifdef _WIN32
 #define CK_RANDOM_MAX RAND_MAX
 #else
 #define CK_RANDOM_MAX 0x7fffffff
@@ -70,7 +70,7 @@ CK_DLL_SFUN(Random_gaussian)
     // see http://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
     t_CKFLOAT U0 = random()/((float) CK_RANDOM_MAX);
     t_CKFLOAT U1 = random()/((float) CK_RANDOM_MAX);
-    t_CKFLOAT Z0 = sqrt(-2*log(U0))*cos(2*ONE_PI*U1);
+    t_CKFLOAT Z0 = sqrt(-2*log(U0))*cos(2*CK_ONE_PI*U1);
     
     // set the return value
     RETURN->v_float = mean+Z0*stdv;

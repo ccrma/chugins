@@ -346,7 +346,7 @@ void sigmund_getpitch(int npeak, t_peak *peakv, t_float *freqp,
   for (nsalient = 0; nsalient < PITCHNPEAK; nsalient++)
     {
       t_peak *bestpeak = 0;
-      t_float bestsalience = -1e20;
+      t_float bestsalience = -1e20f;
       for (j = 0; j < npeak; j++)
 	if (peakv[j].p_tmp == 0 && peakv[j].p_salience > bestsalience)
 	  {
@@ -385,7 +385,7 @@ void sigmund_getpitch(int npeak, t_peak *peakv, t_float *freqp,
       sumweight += loudness;
     }
   bestbin = -1;
-  bestweight = -1e20;
+  bestweight = -1e20f;
   for (i = 0; i < npit; i++)
     if (weights[i] > bestweight)
       bestweight = weights[i], bestbin = i;
@@ -452,7 +452,7 @@ void sigmund_peaktrack(int ninpeak, t_peak *inpeakv,
      "out" peak, but no two to the same one. */
   for (incnt = 0; incnt < ninpeak; incnt++)
     {
-      t_float besterror = 1e20;
+      t_float besterror = 1e20f;
       int bestcnt = -1;
       inpeakv[incnt].p_tmp = -1;
       for (outcnt = 0; outcnt < noutpeak; outcnt++)
@@ -553,7 +553,7 @@ void notefinder_doit(t_notefinder *x, t_float freq, t_float power,
   if (x->n_hifreq <= 0 && x->n_age > stableperiod)
     {
       t_float maxpow = 0, freqatmaxpow = 0,
-	localhifreq = -1e20, locallofreq = 1e20;
+	localhifreq = -1e20f, locallofreq = 1e20f;
       int startphase = x->n_histphase - stableperiod + 1;
       if (startphase < 0)
 	startphase += NHISTPOINT;

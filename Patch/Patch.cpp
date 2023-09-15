@@ -122,11 +122,11 @@ private:
 
             // funcs can be overwritten or have multiple defn, look for the right one
             if (func->base_name == method &&
-                func->def->arg_list != NULL &&
+                func->def()->arg_list != NULL &&
                 // we only want funcs with one arg
-                func->def->arg_list->next == NULL &&
+                func->def()->arg_list->next == NULL &&
                 // ensure arg is float
-                func->def->arg_list->type == m_shred->vm_ref->env()->t_float)
+                func->def()->arg_list->type == m_shred->vm_ref->env()->ckt_float)
             {
                 found = func;
                 break;
@@ -141,11 +141,11 @@ private:
         Chuck_Func* curr = found;
         // traverse overloads to find top of stack
         while (curr->next != NULL) {
-            if (curr->def->arg_list != NULL &&
+            if (curr->def()->arg_list != NULL &&
                 // we only want funcs with one arg
-                curr->def->arg_list->next == NULL &&
+                curr->def()->arg_list->next == NULL &&
                 // ensure arg is float
-                curr->def->arg_list->type == m_shred->vm_ref->env()->t_float)
+                curr->def()->arg_list->type == m_shred->vm_ref->env()->ckt_float)
             {
                 found = curr;
             }

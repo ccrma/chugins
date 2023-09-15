@@ -11,7 +11,7 @@
 #include "chuck_type.h"
 #include "chuck_vm.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include "regex/regex.h"
 #else
 #include <regex.h>
@@ -188,7 +188,7 @@ CK_DLL_SFUN( regex_match2 )
         }
     }
 
-    SAFE_DELETE_ARRAY(matcharray);
+    CK_SAFE_DELETE_ARRAY(matcharray);
 
     return;
 
@@ -207,7 +207,7 @@ error:
         r_free = FALSE;
     }
 
-    SAFE_DELETE(matcharray);
+    CK_SAFE_DELETE_ARRAY(matcharray);
 
     RETURN->v_int = 0;
 }
@@ -273,7 +273,7 @@ CK_DLL_SFUN( regex_replace )
         ret->set( s );
     }
 
-    SAFE_DELETE_ARRAY(matcharray);
+    CK_SAFE_DELETE_ARRAY(matcharray);
 
     RETURN->v_string = ret;
 
@@ -365,7 +365,7 @@ CK_DLL_SFUN( regex_replaceAll )
         }
     }
 
-    SAFE_DELETE_ARRAY(matcharray);
+    CK_SAFE_DELETE_ARRAY(matcharray);
 
     regfree(&regex);
     r_free = FALSE;

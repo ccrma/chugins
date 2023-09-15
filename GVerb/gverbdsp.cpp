@@ -110,7 +110,7 @@ int nearest_prime(int n, float rerror)
 
   if (isprime(n)) return(n);
   /* assume n is large enough and n*rerror enough smaller than n */
-  bound = n*rerror;
+  bound = (int)(n*rerror);
   for(k = 1; k <= bound; k++) {
     if (isprime(n+k)) return(n+k);
     if (isprime(n-k)) return(n-k);

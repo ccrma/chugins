@@ -51,7 +51,7 @@ void Ocomb::clear()
 void Ocomb::setReverbTime(float reverbTime)
 {
 	assert(reverbTime > 0.0);
-	_gain = pow(0.001f, (float)((_delsamps / _sr) / reverbTime));
+	_gain = powf(0.001f, (float)((_delsamps / _sr) / reverbTime));
 }
 
 float Ocomb::next(float input)

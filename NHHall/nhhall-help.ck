@@ -24,6 +24,10 @@
 
 adc => NHHall verb => dac;
 
+// leave some headroom
+.5 => verb.gain;
+
+// reverb time
 30.0 => verb.rt60;
 
 while (true) {

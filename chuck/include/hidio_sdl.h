@@ -126,7 +126,7 @@ class HidInManager
 public:
     static void init();
     static void init_default_drivers();
-    static void cleanup();
+    static void cleanup( t_CKUINT msWait = 0 );
     static t_CKBOOL open( HidIn * hin, Chuck_VM * vm, t_CKINT device_type, t_CKINT device_num );
     static t_CKBOOL open( HidIn * hin, Chuck_VM * vm, t_CKINT device_type, std::string & device_name );
     static t_CKBOOL close( HidIn * hin );
@@ -135,7 +135,7 @@ public:
     static void probeHidIn();
     static void probeHidOut();
 
-#ifndef __PLATFORM_WIN32__
+#ifndef __PLATFORM_WINDOWS__
     static void * cb_hid_input( void * );
 #else
     static unsigned __stdcall cb_hid_input( void * );

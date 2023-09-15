@@ -74,7 +74,7 @@ private:
 							~TrigoLUT ();
 		const flt_t	*	get_ptr (const int level) const
 		{
-			return (_ptr + (1L << (level - 1)) - 4);
+			return (_ptr + (1LL << (level - 1)) - 4); // 1.5.0.7 (ge) 1L -> 1LL?
 		};
 	private:
 		flt_t	*			_ptr;

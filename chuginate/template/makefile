@@ -9,6 +9,9 @@ CXX_MODULES=%(CHUGIN_NAME)%.cpp
 # where the chuck headers are
 CK_SRC_PATH?=%(CHUGIN_HEADER_PATH)%
 
+# where to install chugin
+CHUGIN_PATH?=/usr/local/lib/chuck
+
 
 # ---------------------------------------------------------------------------- #
 # you won't generally need to change anything below this line for a new chugin #
@@ -17,7 +20,7 @@ CK_SRC_PATH?=%(CHUGIN_HEADER_PATH)%
 # default target: print usage message and quit
 current: 
 	@echo "[chuck build]: please use one of the following configurations:"
-	@echo "   make linux, make osx, or make win32"
+	@echo "   make linux, make mac, or make win32"
 
 ifneq ($(CK_TARGET),)
 .DEFAULT_GOAL:=$(CK_TARGET)
@@ -26,8 +29,8 @@ MAKECMDGOALS:=$(.DEFAULT_GOAL)
 endif
 endif
 
-.PHONY: osx linux linux-oss linux-jack linux-alsa win32
-osx linux linux-oss linux-jack linux-alsa: all
+.PHONY: mac osx linux linux-pulse linux-oss linux-jack linux-alsa win32
+mac osx linux linux-pulse linux-oss linux-jack linux-alsa: all
 
 win32:
 	make -f makefile.win32
@@ -36,10 +39,8 @@ CC=gcc
 CXX=gcc
 LD=g++
 
-CHUGIN_PATH=/usr/local/lib/chuck
-
-ifneq (,$(strip $(filter osx bin-dist-osx,$(MAKECMDGOALS))))
-include makefile.osx
+ifneq (,$(strip $(filter osx mac,$(MAKECMDGOALS))))
+include makefile.mac
 endif
 
 ifneq (,$(strip $(filter linux,$(MAKECMDGOALS))))
@@ -67,7 +68,6 @@ endif
 ifneq ($(CHUCK_STRICT),)
 FLAGS+= -Werror
 endif
-
 
 
 # default: build a dynamic chugin

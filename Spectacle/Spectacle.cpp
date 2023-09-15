@@ -29,8 +29,11 @@
 #include <limits.h>
 
 // TODO: due to how chuck random #defines are done, this may need to be __WINDOWS_DS__
-#ifdef WIN32
+#ifdef _WIN32
 #define random rand
+#define SPECTACLE_RAND_MAX RAND_MAX
+#else
+#define SPECTACLE_RAND_MAX 0x7fffffff
 #endif
 
 // declaration of chugin constructor
@@ -356,25 +359,31 @@ public:
 	return x;
   }
 
-    int setTable ( const char* p, const char* q )
+  int setTable ( const char* p, const char* q )
   {
-	const char p0 = p[0];
-	const char q0 = q[0];
-	int table, type;
+	  if( !p || !q )
+	  {
+		  printf( "Spectacle: error: neither argument can be null" );
+		  return 0;
+	  }
+
+	char p0 = p[0];
+	char q0 = q[0];
+	int table = 0, type = 0;
 
 	switch (p0)
 	  {
 	  case 'a':
-		type = 0;
+		table = 0; // 1.5.0.7 (ge) these used to be type; looks like table is intended
 		break;
 	  case 'd':
-		type = 1;
+		table = 1;
 		break;
 	  case 'e':
-		type = 2;
+		table = 2;
 		break;
 	  case 'f':
-		type = 3;
+		table = 3;
 		break;
 	  default:
 		printf ("Spectacle: error: first argument \"%s\" not valid.\n",p);
@@ -469,14 +478,14 @@ private:
 			fbtable[i] = lerp((float)i, (float)fbtablen, 0, -1.0, 1.0);
 			break;
 		  default:
-			fbtable[i] = rand2f( -0.1, 0.1 );
+			fbtable[i] = rand2f( -0.1f, 0.1f );
 		  }
 	  }
   }
 
   float rand2f (float min, float max)
   {
-    return min + (max-min)*(::random()/(t_CKFLOAT)CK_RANDOM_MAX);
+    return min + (max-min)*(::random()/(t_CKFLOAT)SPECTACLE_RAND_MAX);
   }
 
   float lerp (float val, float inlow, float inhigh, float outlow, float outhigh)

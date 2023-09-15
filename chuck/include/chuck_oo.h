@@ -36,23 +36,17 @@
 
 #include "chuck_def.h"
 #include "chuck_carrier.h"
-#include <string>
-#include <vector>
-#include <map>
-#include <queue>
-#include <fstream>
-#include <sstream> // REFACTOR-2017: for custom output
 #ifndef __DISABLE_THREADS__
 #include "util_thread.h" // added 1.3.0.0
 #endif
 
+#include <string>
+#include <vector>
+#include <map>
+#include <queue>
 
 
-#ifndef __PLATFORM_WIN32__
-  #include <dirent.h>
-#else
-  struct DIR;
-#endif
+
 
 // forward reference
 struct Chuck_Type;
@@ -65,18 +59,7 @@ struct Chuck_VM_Code;
 struct Chuck_VM_Shred;
 struct Chuck_VM;
 struct Chuck_IO_File;
-class  CBufferSimple; // added 1.3.0.0
-
-
-
-
-// enum
-enum Chuck_Global_Get_Callback_Type
-{
-    ck_get_plain,
-    ck_get_name,
-    ck_get_id
-};
+class  CBufferSimple;
 
 
 
@@ -88,8 +71,8 @@ enum Chuck_Global_Get_Callback_Type
 struct Chuck_VM_Object
 {
 public:
-    Chuck_VM_Object() { this->init_ref(); }
-    virtual ~Chuck_VM_Object() { }
+    Chuck_VM_Object();
+    virtual ~Chuck_VM_Object();
 
 public:
     // add reference (ge: april 2013: made these virtual)
@@ -105,6 +88,10 @@ public:
     // explicitly call up to ChucK_VM_Object (ge: 2013)
 
 public:
+    // get reference count
+    t_CKUINT refcount() const;
+
+public:
     // unlock_all: dis/allow deletion of locked objects
     static void lock_all();
     static void unlock_all();
@@ -115,40 +102,9 @@ public:
     t_CKBOOL m_pooled; // if true, this allocates from a pool
     t_CKBOOL m_locked; // if true, this should never be deleted
 
-public:
-    // where
-    std::vector<Chuck_VM_Object *> * m_v_ref;
-
 private:
     void init_ref();
 };
-
-
-
-
-//-----------------------------------------------------------------------------
-// name: struct Chuck_VM_Alloc
-// desc: vm object manager
-//-----------------------------------------------------------------------------
-//struct Chuck_VM_Alloc
-//{
-//public:
-//    static Chuck_VM_Alloc * instance();
-//
-//public:
-//    void add_object( Chuck_VM_Object * obj );
-//    void free_object( Chuck_VM_Object * obj );
-//
-//protected:
-//    static Chuck_VM_Alloc * our_instance;
-//
-//protected:
-//    Chuck_VM_Alloc();
-//    ~Chuck_VM_Alloc();
-//
-//protected: // data
-//    std::map<Chuck_VM_Object *, void *> m_objects;
-//};
 
 
 
@@ -170,7 +126,7 @@ public:
 // name: struct Chuck_Object
 // dsec: base object
 //-----------------------------------------------------------------------------
-struct Chuck_Object : Chuck_VM_Object
+struct Chuck_Object : public Chuck_VM_Object
 {
 public:
     Chuck_Object();
@@ -211,35 +167,71 @@ public:
 #define CHUCK_ARRAY32_DATAKIND kindof_VEC4 // 1.3.5.3
 //-----------------------------------------------------------------------------
 // name: struct Chuck_Array
-// desc: native ChucK arrays ( virtual base class )
+// desc: native ChucK array (virtual base class)
+//       NOTE due to certain specialized operations, e.g., Array4 is also
+//       used to hold and manage Object references, this class is currently
+//       not templated (and probably cannot be fully templated). For this
+//       reason, some functionalities that requires type-specific arguments
+//       (like get/set and insert) are not in the base class and are
+//       implemented in array subclasses
 //-----------------------------------------------------------------------------
-struct Chuck_Array : Chuck_Object
+struct Chuck_Array : public Chuck_Object
 {
-    // functionality that we can keep in common...
-
 public:
-    Chuck_Array() : m_array_type(NULL) { }
+    // constructor
+    Chuck_Array();
+    // destructor
     virtual ~Chuck_Array();
 
-    virtual t_CKINT size( ) = 0; // const { return m_size; } // array size
-    virtual t_CKINT capacity( ) = 0; // const { return m_capacity; } // array capacity
-    virtual t_CKINT set_size( t_CKINT size ) = 0; // array size
-    virtual t_CKINT set_capacity( t_CKINT capacity ) = 0; // set
-    virtual t_CKINT data_type_size( ) = 0; // size of stored type (from type_ref)
-    virtual t_CKINT data_type_kind( ) = 0; // kind of stored type (from kindof)
-    virtual t_CKINT find( const std::string & key ) = 0; // find
-    virtual t_CKINT erase( const std::string & key ) = 0; // erase
-    virtual void clear( ) = 0; // clear
-    virtual void zero( t_CKUINT start, t_CKUINT end ) = 0; // zero
-    virtual void zero() = 0; // zero (all)
-    // get map keys | added (1.4.2.0) nshaheed
-    virtual void get_keys( std::vector<std::string> & keys ) = 0;
+public: // interface common to all Chuck_Arary*
+    // get array size
+    virtual t_CKINT size() = 0;
+    // get array capacity
+    virtual t_CKINT capacity() = 0;
+    // set array size
+    virtual t_CKINT set_size( t_CKINT size ) = 0;
+    // set array capacity
+    virtual t_CKINT set_capacity( t_CKINT capacity ) = 0;
+    // size of stored type (from type_ref)
+    virtual t_CKINT data_type_size() = 0;
+    // kind of stored type (from kindof)
+    virtual t_CKINT data_type_kind() = 0;
+    // clear
+    virtual void clear() = 0;
+    // zero out the array by region [start,end)
+    virtual void zero( t_CKUINT start, t_CKUINT end ) = 0;
+    // zero out all elements
+    virtual void zero() = 0;
+
+    // pop the back of the array | 1.5.0.8 (ge) moved into common
+    virtual t_CKINT pop_back() = 0;
+    // pop the front of array | 1.5.0.8 (ge) added
+    virtual t_CKINT pop_front() = 0;
+    // erase | 1.5.0.8 (ge) was pop_out()
+    virtual t_CKINT erase( t_CKINT pos ) = 0;
+    // erase by range [begin,end) | 1.5.0.8 (ge) added
+    virtual t_CKINT erase( t_CKINT begin, t_CKINT end ) = 0;
+
     // reverse array order | added (1.5.0.0) azaday
     virtual void reverse() = 0;
     // reverse array order | added (1.5.0.0) kunwoo, nshaheed, azaday, ge
     virtual void shuffle() = 0;
+    // sort contents of array in ascending order | added (1.5.1.0) ge
+    virtual void sort() = 0;
 
-    Chuck_Type * m_array_type;
+    // typed as Object array? | 1.5.0.8 (ge) moved to common
+    virtual t_CKBOOL contains_objects() { return FALSE; }
+
+public: // map-only operations
+    // get all keys in map | added (1.4.2.0) nshaheed
+    virtual void get_keys( std::vector<std::string> & keys ) = 0;
+    // (map only) test is key is in map | 1.5.0.8 (ge) was find()
+    virtual t_CKINT map_find( const std::string & key ) = 0;
+    // (map only) erase entry by key | 1.5.0.8 (ge) was erase()
+    virtual t_CKINT map_erase( const std::string & key ) = 0;
+
+public:
+    // Chuck_Type * m_array_type;
 };
 
 
@@ -247,43 +239,84 @@ public:
 
 //-----------------------------------------------------------------------------
 // name: struct Chuck_Array4
-// desc: native ChucK arrays (for 4-byte)
+// desc: native ChucK arrays (for 4-byte/8-byte int, and Object references)
 //-----------------------------------------------------------------------------
-struct Chuck_Array4 : Chuck_Array
+struct Chuck_Array4 : public Chuck_Array
 {
 public:
     Chuck_Array4( t_CKBOOL is_obj, t_CKINT capacity = 8 );
     virtual ~Chuck_Array4();
 
-public:
+public: // specific to this class
+    // get address
     t_CKUINT addr( t_CKINT i );
     t_CKUINT addr( const std::string & key );
+    // get value
     t_CKINT get( t_CKINT i, t_CKUINT * val );
     t_CKINT get( const std::string & key, t_CKUINT * val );
+    // set value
     t_CKINT set( t_CKINT i, t_CKUINT val );
     t_CKINT set( const std::string & key, t_CKUINT val );
-    t_CKINT push_back( t_CKUINT val );
-    t_CKINT pop_back( );
-    t_CKINT pop_out( t_CKINT pos );
-    t_CKINT back( t_CKUINT * val ) const;
-    void    zero( t_CKUINT start, t_CKUINT end );
-    void    zero() { this->zero(0, m_vector.size()); }
 
-    virtual void    clear( );
-    virtual t_CKINT size( ) { return m_vector.size(); }
-    virtual t_CKINT capacity( ) { return m_vector.capacity(); }
+    // append value
+    t_CKINT push_back( t_CKUINT val );
+    // get value of last element
+    t_CKINT back( t_CKUINT * val ) const;
+    // prepend value | 1.5.0.8 (ge) added
+    // NOTE linear time O(n) operation
+    t_CKINT push_front( t_CKUINT val );
+    // get value of last element
+    t_CKINT front( t_CKUINT * val ) const;
+    // insert before position | 1.5.0.8 (ge)
+    // NOTE linear time O(n) operation
+    t_CKINT insert( t_CKINT pos, t_CKUINT val );
+
+public: // array interface implementation
+    // get array size
+    virtual t_CKINT size() { return m_vector.size(); }
+    // get array capacity
+    virtual t_CKINT capacity() { return m_vector.capacity(); }
+    // set array size
     virtual t_CKINT set_size( t_CKINT size );
+    // set array capacity
     virtual t_CKINT set_capacity( t_CKINT capacity );
-    virtual t_CKINT find( const std::string & key );
-    virtual t_CKINT erase( const std::string & key );
-    virtual t_CKINT data_type_size( ) { return CHUCK_ARRAY4_DATASIZE; }
-    virtual t_CKINT data_type_kind( ) { return CHUCK_ARRAY4_DATAKIND; }
-    // get map keys | added (1.4.2.0) nshaheed
-    virtual void get_keys( std::vector<std::string> & keys );
-    // reverse array order | added (1.5.0.0) azaday
+    // size of stored type (from type_ref)
+    virtual t_CKINT data_type_size() { return CHUCK_ARRAY4_DATASIZE; }
+    // kind of stored type (from kindof)
+    virtual t_CKINT data_type_kind() { return CHUCK_ARRAY4_DATAKIND; }
+    // clear
+    virtual void clear();
+    // zero out the array by range [start,end)
+    virtual void zero( t_CKUINT start, t_CKUINT end );
+    // zero out all elements
+    virtual void zero() { this->zero(0, m_vector.size()); }
+
+    // pop the back of the array
+    virtual t_CKINT pop_back();
+    // pop the front of array
+    virtual t_CKINT pop_front();
+    // pop out an element
+    virtual t_CKINT erase( t_CKINT pos );
+    // erase a range of elements [begin,end)
+    virtual t_CKINT erase( t_CKINT begin, t_CKINT end );
+
+    // reverse array order
     virtual void reverse();
-    // reverse array order | added (1.5.0.0) kunwoo, nshaheed, azaday, ge
+    // reverse array order
     virtual void shuffle();
+    // sort contents of array in ascending order
+    virtual void sort();
+
+    // typed as Object array?
+    virtual t_CKBOOL contains_objects() { return m_is_obj; }
+
+public: // map only
+    // get all keys in map
+    virtual void get_keys( std::vector<std::string> & keys );
+    // (map only) test is key is in map
+    virtual t_CKINT map_find( const std::string & key );
+    // (map only) erase entry by key
+    virtual t_CKINT map_erase( const std::string & key );
 
 public:
     std::vector<t_CKUINT> m_vector;
@@ -301,43 +334,81 @@ public:
 
 //-----------------------------------------------------------------------------
 // name: struct Chuck_Array8
-// desc: native ChucK arrays (for 8-byte)
+// desc: native ChucK arrays (for 8-byte float)
 //-----------------------------------------------------------------------------
-struct Chuck_Array8 : Chuck_Array
+struct Chuck_Array8 : public Chuck_Array
 {
 public:
     Chuck_Array8( t_CKINT capacity = 8 );
     virtual ~Chuck_Array8();
 
-public:
+public: // specific to this class
+    // get address
     t_CKUINT addr( t_CKINT i );
     t_CKUINT addr( const std::string & key );
+    // get value
     t_CKINT get( t_CKINT i, t_CKFLOAT * val );
     t_CKINT get( const std::string & key, t_CKFLOAT * val );
+    // set value
     t_CKINT set( t_CKINT i, t_CKFLOAT val );
     t_CKINT set( const std::string & key, t_CKFLOAT val );
-    t_CKINT push_back( t_CKFLOAT val );
-    t_CKINT pop_back( );
-    t_CKINT pop_out( t_CKINT pos );
-    t_CKINT back( t_CKFLOAT * val ) const;
-    void    zero( t_CKUINT start, t_CKUINT end );
-    void    zero() { this->zero(0, m_vector.size()); }
 
-    virtual void    clear( );
-    virtual t_CKINT size( ) { return m_vector.size(); }
-    virtual t_CKINT capacity( ) { return m_vector.capacity(); }
+    // append value
+    t_CKINT push_back( t_CKFLOAT val );
+    // get value of last element
+    t_CKINT back( t_CKFLOAT * val ) const;
+    // prepend value | 1.5.0.8 (ge) added
+    // NOTE linear time O(n) operation
+    t_CKINT push_front( t_CKFLOAT val );
+    // get value of last element
+    t_CKINT front( t_CKFLOAT * val ) const;
+    // insert before position | 1.5.0.8 (ge)
+    // NOTE linear time O(n) operation
+    t_CKINT insert( t_CKINT pos, t_CKFLOAT val );
+
+public: // array interface implementation
+    // get array size
+    virtual t_CKINT size() { return m_vector.size(); }
+    // get array capacity
+    virtual t_CKINT capacity() { return m_vector.capacity(); }
+    // set array size
     virtual t_CKINT set_size( t_CKINT size );
+    // set array capacity
     virtual t_CKINT set_capacity( t_CKINT capacity );
-    virtual t_CKINT find( const std::string & key );
-    virtual t_CKINT erase( const std::string & key );
-    virtual t_CKINT data_type_size( ) { return CHUCK_ARRAY8_DATASIZE; }
-    virtual t_CKINT data_type_kind( ) { return CHUCK_ARRAY8_DATAKIND; }
-    // get map keys | added (1.4.2.0) nshaheed
-    virtual void get_keys( std::vector<std::string> & keys );
-    // reverse array order | added (1.5.0.0) azaday
+    // size of stored type (from type_ref)
+    virtual t_CKINT data_type_size() { return CHUCK_ARRAY8_DATASIZE; }
+    // kind of stored type (from kindof)
+    virtual t_CKINT data_type_kind() { return CHUCK_ARRAY8_DATAKIND; }
+    // clear
+    virtual void clear();
+    // zero out the array by range [start,end)
+    virtual void zero( t_CKUINT start, t_CKUINT end );
+    // zero out all elements
+    virtual void zero() { this->zero(0, m_vector.size()); }
+
+    // pop the back of the array
+    virtual t_CKINT pop_back();
+    // pop the front of array
+    virtual t_CKINT pop_front();
+    // pop out an element
+    virtual t_CKINT erase( t_CKINT pos );
+    // erase a range of elements [begin,end)
+    virtual t_CKINT erase( t_CKINT begin, t_CKINT end );
+
+    // reverse array order
     virtual void reverse();
-    // reverse array order | added (1.5.0.0) kunwoo, nshaheed, azaday, ge
+    // reverse array order
     virtual void shuffle();
+    // sort contents of array in ascending order
+    virtual void sort();
+
+public: // map only
+    // get all keys in map
+    virtual void get_keys( std::vector<std::string> & keys );
+    // (map only) test is key is in map
+    virtual t_CKINT map_find( const std::string & key );
+    // (map only) erase entry by key
+    virtual t_CKINT map_erase( const std::string & key );
 
 public:
     std::vector<t_CKFLOAT> m_vector;
@@ -353,47 +424,86 @@ public:
 // name: struct Chuck_Array16
 // desc: native ChucK arrays (for 16-byte)
 //-----------------------------------------------------------------------------
-struct Chuck_Array16 : Chuck_Array
+struct Chuck_Array16 : public Chuck_Array
 {
 public:
     Chuck_Array16( t_CKINT capacity = 8 );
     virtual ~Chuck_Array16();
 
-public:
+public: // specific to this class
+    // get address
     t_CKUINT addr( t_CKINT i );
     t_CKUINT addr( const std::string & key );
+    // get value
     t_CKINT get( t_CKINT i, t_CKCOMPLEX * val );
     t_CKINT get( const std::string & key, t_CKCOMPLEX * val );
+    // set value
     t_CKINT set( t_CKINT i, const t_CKCOMPLEX & val );
     t_CKINT set( const std::string & key, const t_CKCOMPLEX & val );
-    t_CKINT push_back( const t_CKCOMPLEX & val );
-    t_CKINT pop_back( );
-    t_CKINT pop_out( t_CKINT pos );
-    t_CKINT back( t_CKCOMPLEX * val ) const;
-    void    zero( t_CKUINT start, t_CKUINT end );
-    void    zero() { this->zero(0, m_vector.size()); }
 
-    virtual void    clear( );
-    virtual t_CKINT size( ) { return m_vector.size(); }
-    virtual t_CKINT capacity( ) { return m_vector.capacity(); }
+    // append value
+    t_CKINT push_back( const t_CKCOMPLEX & val );
+    // get value of last element
+    t_CKINT back( t_CKCOMPLEX * val ) const;
+    // prepend value | 1.5.0.8 (ge) added
+    // NOTE linear time O(n) operation
+    t_CKINT push_front( const t_CKCOMPLEX & val );
+    // get value of last element
+    t_CKINT front( t_CKCOMPLEX * val ) const;
+    // insert before position | 1.5.0.8 (ge)
+    // NOTE linear time O(n) operation
+    t_CKINT insert( t_CKINT pos, const t_CKCOMPLEX & val );
+
+public: // array interface implementation
+    // get array size
+    virtual t_CKINT size() { return m_vector.size(); }
+    // get array capacity
+    virtual t_CKINT capacity() { return m_vector.capacity(); }
+    // set array size
     virtual t_CKINT set_size( t_CKINT size );
+    // set array capacity
     virtual t_CKINT set_capacity( t_CKINT capacity );
-    virtual t_CKINT find( const std::string & key );
-    virtual t_CKINT erase( const std::string & key );
-    virtual t_CKINT data_type_size( ) { return CHUCK_ARRAY16_DATASIZE; }
-    virtual t_CKINT data_type_kind( ) { return CHUCK_ARRAY16_DATAKIND; }
-    // get map keys | added (1.4.2.0) nshaheed
-    virtual void get_keys( std::vector<std::string> & keys );
-    // reverse array order | added (1.5.0.0) azaday
+    // size of stored type (from type_ref)
+    virtual t_CKINT data_type_size() { return CHUCK_ARRAY16_DATASIZE; }
+    // kind of stored type (from kindof)
+    virtual t_CKINT data_type_kind() { return CHUCK_ARRAY16_DATAKIND; }
+    // clear
+    virtual void clear();
+    // zero out the array by range [start,end)
+    virtual void zero( t_CKUINT start, t_CKUINT end );
+    // zero out all elements
+    virtual void zero() { this->zero(0, m_vector.size()); }
+
+    // pop the back of the array
+    virtual t_CKINT pop_back();
+    // pop the front of array
+    virtual t_CKINT pop_front();
+    // pop out an element
+    virtual t_CKINT erase( t_CKINT pos );
+    // erase a range of elements [begin,end)
+    virtual t_CKINT erase( t_CKINT begin, t_CKINT end );
+
+    // reverse array order
     virtual void reverse();
-    // reverse array order | added (1.5.0.0) kunwoo, nshaheed, azaday, ge
+    // reverse array order
     virtual void shuffle();
+    // sort contents of array in ascending order
+    virtual void sort();
+
+public: // map only
+    // get all keys in map
+    virtual void get_keys( std::vector<std::string> & keys );
+    // (map only) test is key is in map
+    virtual t_CKINT map_find( const std::string & key );
+    // (map only) erase entry by key
+    virtual t_CKINT map_erase( const std::string & key );
 
 public:
     std::vector<t_CKCOMPLEX> m_vector;
     std::map<std::string, t_CKCOMPLEX> m_map;
-    // t_CKINT m_size;
-    // t_CKINT m_capacity;
+    // semantic hint; in certain situations (like sorting)
+    // need to distinguish between complex and polar | 1.5.1.0
+    t_CKBOOL m_isPolarType;
 };
 
 
@@ -403,41 +513,79 @@ public:
 // name: struct Chuck_Array24
 // desc: native ChucK arrays (for vec3)
 //-----------------------------------------------------------------------------
-struct Chuck_Array24 : Chuck_Array
+struct Chuck_Array24 : public Chuck_Array
 {
 public:
     Chuck_Array24( t_CKINT capacity = 8 );
     virtual ~Chuck_Array24();
 
-public:
+public: // specific to this class
+    // get address
     t_CKUINT addr( t_CKINT i );
     t_CKUINT addr( const std::string & key );
+    // get value
     t_CKINT get( t_CKINT i, t_CKVEC3 * val );
     t_CKINT get( const std::string & key, t_CKVEC3 * val );
+    // set value
     t_CKINT set( t_CKINT i, const t_CKVEC3 & val );
     t_CKINT set( const std::string & key, const t_CKVEC3 & val );
-    t_CKINT push_back( const t_CKVEC3 & val );
-    t_CKINT pop_back( );
-    t_CKINT pop_out( t_CKUINT pos );
-    t_CKINT back( t_CKVEC3 * val ) const;
-    void    zero( t_CKUINT start, t_CKUINT end );
-    void    zero() { this->zero(0, m_vector.size()); }
 
-    virtual void    clear( );
-    virtual t_CKINT size( ) { return m_vector.size(); }
-    virtual t_CKINT capacity( ) { return m_vector.capacity(); }
+    // append value
+    t_CKINT push_back( const t_CKVEC3 & val );
+    // get value of last element
+    t_CKINT back( t_CKVEC3 * val ) const;
+    // prepend value | 1.5.0.8 (ge) added
+    // NOTE linear time O(n) operation
+    t_CKINT push_front( const t_CKVEC3 & val );
+    // get value of last element
+    t_CKINT front( t_CKVEC3 * val ) const;
+    // insert before position | 1.5.0.8 (ge)
+    // NOTE linear time O(n) operation
+    t_CKINT insert( t_CKINT pos, const t_CKVEC3 & val );
+
+public: // array interface implementation
+    // get array size
+    virtual t_CKINT size() { return m_vector.size(); }
+    // get array capacity
+    virtual t_CKINT capacity() { return m_vector.capacity(); }
+    // set array size
     virtual t_CKINT set_size( t_CKINT size );
+    // set array capacity
     virtual t_CKINT set_capacity( t_CKINT capacity );
-    virtual t_CKINT find( const std::string & key );
-    virtual t_CKINT erase( const std::string & key );
-    virtual t_CKINT data_type_size( ) { return CHUCK_ARRAY24_DATASIZE; }
-    virtual t_CKINT data_type_kind( ) { return CHUCK_ARRAY24_DATAKIND; }
-    // get map keys | added (1.4.2.0) nshaheed
-    virtual void get_keys( std::vector<std::string> & keys );
-    // reverse array order | added (1.5.0.0) azaday
+    // size of stored type (from type_ref)
+    virtual t_CKINT data_type_size() { return CHUCK_ARRAY24_DATASIZE; }
+    // kind of stored type (from kindof)
+    virtual t_CKINT data_type_kind() { return CHUCK_ARRAY24_DATAKIND; }
+    // clear
+    virtual void clear();
+    // zero out the array by range [start,end)
+    virtual void zero( t_CKUINT start, t_CKUINT end );
+    // zero out all elements
+    virtual void zero() { this->zero(0, m_vector.size()); }
+
+    // pop the back of the array
+    virtual t_CKINT pop_back();
+    // pop the front of array
+    virtual t_CKINT pop_front();
+    // pop out an element
+    virtual t_CKINT erase( t_CKINT pos );
+    // erase a range of elements [begin,end)
+    virtual t_CKINT erase( t_CKINT begin, t_CKINT end );
+
+    // reverse array order
     virtual void reverse();
-    // reverse array order | added (1.5.0.0) kunwoo, nshaheed, azaday, ge
+    // reverse array order
     virtual void shuffle();
+    // sort contents of array in ascending order
+    virtual void sort();
+
+public: // map only
+    // get all keys in map
+    virtual void get_keys( std::vector<std::string> & keys );
+    // (map only) test is key is in map
+    virtual t_CKINT map_find( const std::string & key );
+    // (map only) erase entry by key
+    virtual t_CKINT map_erase( const std::string & key );
 
 public:
     std::vector<t_CKVEC3> m_vector;
@@ -451,45 +599,97 @@ public:
 // name: struct Chuck_Array32
 // desc: native ChucK arrays (for vec4)
 //-----------------------------------------------------------------------------
-struct Chuck_Array32 : Chuck_Array
+struct Chuck_Array32 : public Chuck_Array
 {
 public:
     Chuck_Array32( t_CKINT capacity = 8 );
     virtual ~Chuck_Array32();
 
-public:
+public: // specific to this class
+    // get address
     t_CKUINT addr( t_CKINT i );
     t_CKUINT addr( const std::string & key );
+    // get value
     t_CKINT get( t_CKINT i, t_CKVEC4 * val );
     t_CKINT get( const std::string & key, t_CKVEC4 * val );
+    // set value
     t_CKINT set( t_CKINT i, const t_CKVEC4 & val );
     t_CKINT set( const std::string & key, const t_CKVEC4 & val );
-    t_CKINT push_back( const t_CKVEC4 & val );
-    t_CKINT pop_back( );
-    t_CKINT pop_out( t_CKUINT pos );
-    t_CKINT back( t_CKVEC4 * val ) const;
-    void    zero( t_CKUINT start, t_CKUINT end );
-    void    zero() { this->zero(0, m_vector.size()); }
 
-    virtual void    clear( );
-    virtual t_CKINT size( ) { return m_vector.size(); }
-    virtual t_CKINT capacity( ) { return m_vector.capacity(); }
+    // append value
+    t_CKINT push_back( const t_CKVEC4 & val );
+    // get value of last element
+    t_CKINT back( t_CKVEC4 * val ) const;
+    // prepend value | 1.5.0.8 (ge) added
+    // NOTE linear time O(n) operation
+    t_CKINT push_front( const t_CKVEC4 & val );
+    // get value of last element
+    t_CKINT front( t_CKVEC4 * val ) const;
+    // insert before position | 1.5.0.8 (ge)
+    // NOTE linear time O(n) operation
+    t_CKINT insert( t_CKINT pos, const t_CKVEC4 & val );
+
+public: // array interface implementation
+    // get array size
+    virtual t_CKINT size() { return m_vector.size(); }
+    // get array capacity
+    virtual t_CKINT capacity() { return m_vector.capacity(); }
+    // set array size
     virtual t_CKINT set_size( t_CKINT size );
+    // set array capacity
     virtual t_CKINT set_capacity( t_CKINT capacity );
-    virtual t_CKINT find( const std::string & key );
-    virtual t_CKINT erase( const std::string & key );
-    virtual t_CKINT data_type_size( ) { return CHUCK_ARRAY32_DATASIZE; }
-    virtual t_CKINT data_type_kind( ) { return CHUCK_ARRAY32_DATAKIND; }
-    // get map keys | added (1.4.1.2) nshaheed
-    virtual void get_keys( std::vector<std::string> & keys );
-    // reverse array order | added (1.5.0.0) azaday
+    // size of stored type (from type_ref)
+    virtual t_CKINT data_type_size() { return CHUCK_ARRAY32_DATASIZE; }
+    // kind of stored type (from kindof)
+    virtual t_CKINT data_type_kind() { return CHUCK_ARRAY32_DATAKIND; }
+    // clear
+    virtual void clear();
+    // zero out the array by range [start,end)
+    virtual void zero( t_CKUINT start, t_CKUINT end );
+    // zero out all elements
+    virtual void zero() { this->zero(0, m_vector.size()); }
+
+    // pop the back of the array
+    virtual t_CKINT pop_back();
+    // pop the front of array
+    virtual t_CKINT pop_front();
+    // pop out an element
+    virtual t_CKINT erase( t_CKINT pos );
+    // erase a range of elements [begin,end)
+    virtual t_CKINT erase( t_CKINT begin, t_CKINT end );
+
+    // reverse array order
     virtual void reverse();
-    // reverse array order | added (1.5.0.0) kunwoo, nshaheed, azaday, ge
+    // reverse array order
     virtual void shuffle();
+    // sort contents of array in ascending order
+    virtual void sort();
+
+public: // map only
+    // get all keys in map
+    virtual void get_keys( std::vector<std::string> & keys );
+    // (map only) test is key is in map
+    virtual t_CKINT map_find( const std::string & key );
+    // (map only) erase entry by key
+    virtual t_CKINT map_erase( const std::string & key );
 
 public:
     std::vector<t_CKVEC4> m_vector;
     std::map<std::string, t_CKVEC4> m_map;
+};
+
+
+
+
+//-----------------------------------------------------------------------------
+// name: enum Chuck_Global_Get_Callback_Type
+// desc: enumeration for type of callback, used in globals
+//-----------------------------------------------------------------------------
+enum Chuck_Global_Get_Callback_Type
+{
+    ck_get_plain,
+    ck_get_name,
+    ck_get_id
 };
 
 
@@ -521,7 +721,7 @@ struct Chuck_Global_Event_Listener
 // name: Chuck_Event
 // desc: base Chuck Event class
 //-----------------------------------------------------------------------------
-struct Chuck_Event : Chuck_Object
+struct Chuck_Event : public Chuck_Object
 {
 public:
     // signal/broadcast "local" -- signal ChucK Events
@@ -554,12 +754,13 @@ public:
 
 protected:
     std::queue<Chuck_VM_Shred *> m_queue;
+    std::queue<Chuck_Global_Event_Listener> m_global_queue;
+
     #ifndef __DISABLE_THREADS__
     // 1.4.1.0 (ge/jack) TODO: rewrite queue_broadcast to use a lock-free queue
     // and avoid the use of a lock in events
     XMutex m_queue_lock;
     #endif
-    std::queue<Chuck_Global_Event_Listener> m_global_queue;
 };
 
 
@@ -569,13 +770,13 @@ protected:
 // name: Chuck_String
 // desc: base Chuck string class
 //-----------------------------------------------------------------------------
-struct Chuck_String : Chuck_Object
+struct Chuck_String : public Chuck_Object
 {
 public:
     // constructor
     Chuck_String( const std::string & s = "" ) { set( s ); }
-    // destructor
-    ~Chuck_String() { }
+    // destructor | 1.5.0.1 (ge) made destructor virtual
+    virtual ~Chuck_String() { }
 
     // set string (makes copy)
     void set( const std::string & s ) { m_str = s; m_charptr = m_str.c_str(); }
@@ -589,240 +790,6 @@ private:
     const char * m_charptr; // REFACTOR-2017
     // c++ string
     std::string m_str;
-};
-
-
-
-
-//-----------------------------------------------------------------------------
-// name: Chuck_IO
-// desc: base Chuck IO class
-//-----------------------------------------------------------------------------
-struct Chuck_IO : Chuck_Event
-{
-public:
-    Chuck_IO();
-    virtual ~Chuck_IO();
-
-public:
-    // meta
-    virtual t_CKBOOL good() = 0;
-    virtual void close() = 0;
-    virtual void flush() = 0;
-    virtual t_CKINT mode() = 0;
-    virtual void mode( t_CKINT flag ) = 0;
-
-    // reading
-    virtual Chuck_String * readLine() = 0;
-    virtual t_CKINT readInt( t_CKINT flags ) = 0;
-    virtual t_CKFLOAT readFloat() = 0;
-    virtual t_CKBOOL readString( std::string & str ) = 0;
-    virtual t_CKBOOL eof() = 0;
-
-    // writing
-    virtual void write( const std::string & val ) = 0;
-    virtual void write( t_CKINT val ) = 0;
-    virtual void write( t_CKINT val, t_CKINT flags ) = 0;
-    virtual void write( t_CKFLOAT val ) = 0;
-
-public:
-    // type | moved to IO in 1.5.0.0 (ge)
-    static const t_CKINT TYPE_ASCII;
-    static const t_CKINT TYPE_BINARY;
-    // datatype
-    static const t_CKINT INT32;
-    static const t_CKINT INT16;
-    static const t_CKINT INT8;
-    // flags | moved to IO in 1.5.0.0 (ge)
-    static const t_CKINT FLAG_READ_WRITE;
-    static const t_CKINT FLAG_READONLY;
-    static const t_CKINT FLAG_WRITEONLY;
-    static const t_CKINT FLAG_APPEND;
-    // asynchronous I/O members
-    static const t_CKINT MODE_SYNC;
-    static const t_CKINT MODE_ASYNC;
-
-    Chuck_Event * m_asyncEvent;
-    #ifndef __DISABLE_THREADS__
-    XThread * m_thread;
-    #endif
-    struct async_args
-    {
-        Chuck_IO_File * fileio_obj;
-        void *RETURN; // actually a Chuck_DL_Return
-        t_CKINT intArg;
-        t_CKFLOAT floatArg;
-        std::string stringArg;
-    };
-};
-
-
-
-// #ifndef __DISABLE_FILEIO__
-//-----------------------------------------------------------------------------
-// name: Chuck_IO_File
-// desc: Chuck File IO class
-//-----------------------------------------------------------------------------
-struct Chuck_IO_File : Chuck_IO
-{
-public:
-    // REFACTOR-2017
-    Chuck_IO_File( Chuck_VM * vm );
-    virtual ~Chuck_IO_File();
-
-public:
-    // meta
-    virtual t_CKBOOL open( const std::string & path, t_CKINT flags );
-    virtual t_CKBOOL good();
-    virtual void close();
-    virtual void flush();
-    virtual t_CKINT mode();
-    virtual void mode( t_CKINT flag );
-    virtual t_CKINT size();
-
-    // seeking
-    virtual void seek( t_CKINT pos );
-    virtual t_CKINT tell();
-
-    // directories
-    virtual t_CKINT isDir();
-    virtual Chuck_Array4 * dirList();
-
-    // reading
-    // virtual Chuck_String * read( t_CKINT length );
-    virtual Chuck_String * readLine();
-    virtual t_CKINT readInt( t_CKINT flags );
-    virtual t_CKFLOAT readFloat();
-    virtual t_CKBOOL readString( std::string & str );
-    virtual t_CKBOOL eof();
-
-    // reading -- async
-    /* TODO: doesn't look like asynchronous reads will work
-     static THREAD_RETURN ( THREAD_TYPE read_thread ) ( void *data );
-     static THREAD_RETURN ( THREAD_TYPE readLine_thread ) ( void *data );
-     static THREAD_RETURN ( THREAD_TYPE readInt_thread ) ( void *data );
-     static THREAD_RETURN ( THREAD_TYPE readFloat_thread ) ( void *data );
-     */
-
-    // writing
-    virtual void write( const std::string & val );
-    virtual void write( t_CKINT val );
-    virtual void write( t_CKINT val, t_CKINT flags );
-    virtual void write( t_CKFLOAT val );
-
-    #ifndef __DISABLE_THREADS__
-    // writing -- async
-    static THREAD_RETURN ( THREAD_TYPE writeStr_thread ) ( void *data );
-    static THREAD_RETURN ( THREAD_TYPE writeInt_thread ) ( void *data );
-    static THREAD_RETURN ( THREAD_TYPE writeFloat_thread ) ( void *data );
-    #endif
-
-protected:
-    // open flags
-    t_CKINT m_flags;
-    // I/O mode
-    t_CKINT m_iomode;
-    // file stream
-    std::fstream m_io;
-    // directory pointer
-    DIR * m_dir;
-    // directory location
-    long m_dir_start;
-    // path
-    std::string m_path;
-    // vm and shred
-    Chuck_VM * m_vmRef;
-};
-// #endif // __DISABLE_FILEIO__
-
-
-
-
-//-----------------------------------------------------------------------------
-// name: Chuck_IO_Chout
-// desc: Chuck console IO out
-//-----------------------------------------------------------------------------
-struct Chuck_IO_Chout : Chuck_IO
-{
-public:
-    Chuck_IO_Chout( Chuck_Carrier * carrier );
-    virtual ~Chuck_IO_Chout();
-
-public:
-    // meta
-    virtual t_CKBOOL good();
-    virtual void close();
-    virtual void flush();
-    virtual t_CKINT mode();
-    virtual void mode( t_CKINT flag );
-
-    // reading
-    virtual Chuck_String * readLine();
-    virtual t_CKINT readInt( t_CKINT flags );
-    virtual t_CKFLOAT readFloat();
-    virtual t_CKBOOL readString( std::string & str );
-    virtual t_CKBOOL eof();
-
-    // writing
-    virtual void write( const std::string & val );
-    virtual void write( t_CKINT val );
-    virtual void write( t_CKINT val, t_CKINT flags );
-    virtual void write( t_CKFLOAT val );
-
-public: // REFACTOR-2017
-    // set callback
-    void set_output_callback( void (* fp)(const char *) );
-
-private:
-    // callback
-    void (* m_callback)(const char *);
-    // intermediate line storage
-    std::stringstream m_buffer;
-};
-
-
-
-
-//-----------------------------------------------------------------------------
-// name: Chuck_IO_Cherr
-// desc: Chuck console IO err
-//-----------------------------------------------------------------------------
-struct Chuck_IO_Cherr : Chuck_IO
-{
-public:
-    Chuck_IO_Cherr( Chuck_Carrier * carrier );
-    virtual ~Chuck_IO_Cherr();
-
-public:
-    // meta
-    virtual t_CKBOOL good();
-    virtual void close();
-    virtual void flush();
-    virtual t_CKINT mode();
-    virtual void mode( t_CKINT flag );
-
-    // reading
-    virtual Chuck_String * readLine();
-    virtual t_CKINT readInt( t_CKINT flags );
-    virtual t_CKFLOAT readFloat();
-    virtual t_CKBOOL readString( std::string & str );
-    virtual t_CKBOOL eof();
-
-    // writing
-    virtual void write( const std::string & val );
-    virtual void write( t_CKINT val );
-    virtual void write( t_CKINT val, t_CKINT flags );
-    virtual void write( t_CKFLOAT val );
-
-public:
-    // set callback | REFACTOR-2017
-    void set_output_callback( void (* fp)(const char *) );
-
-private:
-    // callback
-    void (* m_callback)(const char *);
-    // intermediate line storage
-    std::stringstream m_buffer;
 };
 
 

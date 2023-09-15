@@ -62,19 +62,21 @@ extern char g_chugin_path_envvar[];
 
 
 
-// forward references
+// DL forward references
 struct Chuck_DL_Query;
 struct Chuck_DL_Class;
 struct Chuck_DL_Func;
 struct Chuck_DL_Value;
 struct Chuck_DL_Ctrl;
 union  Chuck_DL_Return;
+struct Chuck_DL_MainThreadHook;
 struct Chuck_DLL;
+namespace Chuck_DL_Api { struct Api; }
+
+// object forward references
 struct Chuck_UGen;
 struct Chuck_UAna;
 struct Chuck_UAnaBlobProxy;
-struct Chuck_DL_MainThreadHook;
-namespace Chuck_DL_Api { struct Api; }
 
 
 // param conversion - to extract values from ARGS to functions
@@ -154,14 +156,14 @@ namespace Chuck_DL_Api { struct Api; }
 
 
 // chuck dll export linkage and calling convention
-#if defined (__PLATFORM_WIN32__)
+#if defined (__PLATFORM_WINDOWS__)
   #define CK_DLL_LINKAGE extern "C" __declspec( dllexport )
 #else
   #define CK_DLL_LINKAGE extern "C"
 #endif
 
 // calling convention of functions provided by chuck to the dll
-#if defined(__PLATFORM_WIN32__)
+#if defined(__PLATFORM_WINDOWS__)
   #define CK_DLL_CALL    _cdecl
 #else
   #define CK_DLL_CALL
@@ -411,8 +413,11 @@ public:
     // stack
     std::vector<Chuck_DL_Class * >stack;
 
+    // flag any error encountered during the query | 1.5.0.5 (ge) added
+    t_CKBOOL errorEncountered;
+
     // constructor
-    Chuck_DL_Query( Chuck_Carrier * carrier );
+    Chuck_DL_Query( Chuck_Carrier * carrier, Chuck_DLL * dll = NULL );
     // desctructor
     ~Chuck_DL_Query() { this->clear(); }
     // clear
@@ -458,11 +463,14 @@ struct Chuck_DL_Class
     std::vector<Chuck_DL_Class *> classes;
     // current mvar offset
     t_CKUINT current_mvar_offset;
-
+    // # of ugen input and output channels
     t_CKUINT ugen_num_in, ugen_num_out;
-
+    // ckdoc: class description
     std::string doc;
+    // ckdoc: examples
     std::vector<std::string> examples;
+    // origin string (e.g., filepath if coming from chugin DLL)
+    std::string hint_dll_filepath;
 
     // constructor
     Chuck_DL_Class() { dtor = NULL; ugen_tick = NULL; ugen_tickf = NULL; ugen_pmsg = NULL; uana_tock = NULL; ugen_pmsg = NULL; current_mvar_offset = 0; ugen_num_in = ugen_num_out = 0; }
@@ -604,20 +612,32 @@ public:
     // get last error
     const char * last_error() const;
     // unload the ckx
-    t_CKBOOL unload( );
+    t_CKBOOL unload();
     // query the content of the dll
-    const Chuck_DL_Query * query( );
+    const Chuck_DL_Query * query();
+    // probe information about dll without fully loading it
+    t_CKBOOL probe();
     // is good
     t_CKBOOL good() const;
     // name
     const char * name() const;
+    // full path
+    const char * filepath() const;
+    // get version major
+    t_CKUINT versionMajor();
+    // get version minor
+    t_CKUINT versionMinor();
+    // is version compatible between dll and host
+    // major version must be same between chugin and host
+    // chugin minor version must less than or equal host minor version
+    t_CKBOOL compatible();
 
 public:
     // constructor
     Chuck_DLL( Chuck_Carrier * carrier, const char * xid = NULL )
         : m_handle(NULL), m_id(xid ? xid : ""),
-        m_query( carrier ),
-        m_done_query(FALSE), m_query_func(NULL), m_version_func(NULL)
+        m_done_query(FALSE), m_version_func(NULL), m_query_func(NULL),
+        m_query( carrier, this ), m_versionMajor(0), m_versionMinor(0)
     { }
     // destructor
     ~Chuck_DLL() { this->unload(); }
@@ -634,6 +654,10 @@ protected:
     f_ck_declversion m_version_func;
     f_ck_query m_query_func;
     Chuck_DL_Query m_query;
+
+protected: // addition info 1.5.0.4 (ge) added
+    t_CKUINT m_versionMajor;
+    t_CKUINT m_versionMinor;
 };
 
 
@@ -697,7 +721,10 @@ public:
         // function pointer for set_string()
         t_CKBOOL (* const set_string)( CK_DL_API, String string, const char * value );
         // array4 operations
+        t_CKBOOL (* const array4_size)( CK_DL_API, Array4 array, t_CKINT & value );
         t_CKBOOL (* const array4_push_back)( CK_DL_API, Array4 array, t_CKUINT value );
+        t_CKBOOL (* const array4_get_idx)( CK_DL_API, Array4 array, t_CKINT idx, t_CKUINT & value );
+        t_CKBOOL (* const array4_get_key)( CK_DL_API, Array4 array, const std::string & key, t_CKUINT & value );
     } * const object;
 
     Api() :
@@ -718,16 +745,16 @@ private:
 
 
 // dlfcn interface
-#if defined(__MACOSX_CORE__)
+#if defined(__PLATFORM_APPLE__)
 #include <AvailabilityMacros.h>
 #endif
 
 // dlfcn interface, panther or below
-#if defined(__MACOSX_CORE__) && MAC_OS_X_VERSION_MAX_ALLOWED <= 1030
+#if defined(__PLATFORM_APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED <= 1030
 
 #error ChucK not support on Mac OS X 10.3 or lower
 
-#elif defined(__PLATFORM_WIN32__)
+#elif defined(__PLATFORM_WINDOWS__)
 
           #ifdef __cplusplus
           extern "C" {

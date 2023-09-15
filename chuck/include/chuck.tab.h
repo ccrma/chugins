@@ -42,8 +42,8 @@
      ID = 258,
      STRING_LIT = 259,
      CHAR_LIT = 260,
-     NUM = 261,
-     FLOAT = 262,
+     INT_VAL = 261,
+     FLOAT_VAL = 262,
      POUND = 263,
      COMMA = 264,
      COLON = 265,
@@ -154,8 +154,8 @@
 #define ID 258
 #define STRING_LIT 259
 #define CHAR_LIT 260
-#define NUM 261
-#define FLOAT 262
+#define INT_VAL 261
+#define FLOAT_VAL 262
 #define POUND 263
 #define COMMA 264
 #define COLON 265
@@ -266,13 +266,13 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 65 "chuck.y"
+#line 77 "chuck.y"
 {
     int pos;
     int ival;
     double fval;
     c_str sval;
-    
+
     a_Program program;
     a_Section program_section;
     a_Stmt_List stmt_list;
@@ -302,3 +302,17 @@ typedef union YYSTYPE
 
 extern YYSTYPE yylval;
 
+#if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED
+typedef struct YYLTYPE
+{
+  int first_line;
+  int first_column;
+  int last_line;
+  int last_column;
+} YYLTYPE;
+# define yyltype YYLTYPE /* obsolescent; will be withdrawn */
+# define YYLTYPE_IS_DECLARED 1
+# define YYLTYPE_IS_TRIVIAL 1
+#endif
+
+extern YYLTYPE yylloc;

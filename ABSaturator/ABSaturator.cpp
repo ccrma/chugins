@@ -75,7 +75,7 @@ public:
             AAFilter[j].setCoefs((double *) AACoefs[j]);
         }
         
-        double wc_dc = 5*2*ONE_PI;
+        double wc_dc = 5*2*CK_ONE_PI;
         //                           b0 b1 b2     a0 a1 a2
         double dcblockScoeffs[6] = {  0, 1, 0, wc_dc, 1, 0 };
         double dcblockZcoeffs[5];
@@ -86,7 +86,7 @@ public:
     
     SAMPLE tick(SAMPLE in)
     {
-        double isignal, fsignal, osignal, usignal, dsignal;
+        double fsignal, usignal, dsignal; // osignal isignal
         
         fsignal = m_drive*in;
         
