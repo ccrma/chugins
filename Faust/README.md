@@ -25,6 +25,10 @@ libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev \
 libmpg123-dev pkg-config python
 ```
 
+### Faust
+
+If you need to update the version of Faust, you should update the Faust checkout version in `build_unix.sh`/`build_windows.bat` as well as the version number in the download scripts (`thirdparty/libfaust/download*`).
+
 ### Building FaucK
 
 #### macOS/Linux

@@ -15,7 +15,7 @@ if not exist "thirdparty/faust/" (
 	cd thirdparty
 	git clone https://github.com/grame-cncm/faust.git
 	cd faust
-	git checkout 28a5eacb0acbb80203b93ee71663d9a097536641
+	git checkout e50b60d5620bd2bc1966ef1ab3cf04ebc59bc371
 	echo "Downloaded faust." 
 	cd ../..
 )

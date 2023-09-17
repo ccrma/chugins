@@ -32,7 +32,7 @@ then
     cd thirdparty
     git clone https://github.com/grame-cncm/faust.git
     cd faust
-    git checkout a1c3a515abbcafea0a6e4e2ec7ecb0f092de5349
+    git checkout e50b60d5620bd2bc1966ef1ab3cf04ebc59bc371
     echo "Downloaded faust."
     cd ../..
 fi
