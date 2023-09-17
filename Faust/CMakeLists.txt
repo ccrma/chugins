@@ -90,8 +90,13 @@ else()
     pkg_check_modules(OGG REQUIRED IMPORTED_TARGET ogg)
     pkg_check_modules(OPUS REQUIRED IMPORTED_TARGET opus)
     pkg_check_modules(MPG123 REQUIRED IMPORTED_TARGET libmpg123)
+    if(APPLE)
+    execute_process(COMMAND find /usr/local/Cellar/lame -name libmp3lame.a OUTPUT_VARIABLE SNDFILE_STATIC_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    else()
+    execute_process(COMMAND find /usr/local -name libmp3lame.a OUTPUT_VARIABLE SNDFILE_STATIC_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    endif()
     list(POP_BACK PKG_CONFIG_EXECUTABLE)  # undo the append above
-    target_link_libraries (${PROJECT_NAME} PRIVATE PkgConfig::SNDFILE PkgConfig::FLAC PkgConfig::VORBIS PkgConfig::OGG PkgConfig::OPUS PkgConfig::MPG123)
+    target_link_libraries (${PROJECT_NAME} PRIVATE PkgConfig::SNDFILE PkgConfig::FLAC PkgConfig::VORBIS PkgConfig::OGG PkgConfig::OPUS PkgConfig::MPG123 ${SNDFILE_STATIC_LIBS})
 endif()
 
 # Include directories for libfaust

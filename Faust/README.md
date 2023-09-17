@@ -16,7 +16,7 @@ On Windows, the later scripts will automatically download `libsndfile`, so no ac
 
 On macOS, install the dependencies for libsndfile with `brew`:
 
-```brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config```
+```brew install autoconf autogen automake flac lame libogg libtool libvorbis opus mpg123 pkg-config```
 
 On Linux:
 ```
