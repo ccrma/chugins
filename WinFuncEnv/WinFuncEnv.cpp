@@ -65,6 +65,8 @@ CK_DLL_MFUN(winfuncenv_setPoisson);
 CK_DLL_MFUN(winfuncenv_setPoissonArg);
 CK_DLL_MFUN(winfuncenv_setTukey);
 CK_DLL_MFUN(winfuncenv_setTukeyArg);
+CK_DLL_MFUN(winfuncenv_setSigmoid);
+CK_DLL_MFUN(winfuncenv_setSigmoidArg);
 CK_DLL_MFUN(winfuncenv_setWelch);
 
 CK_DLL_TICK(winfuncenv_tick);
@@ -389,6 +391,7 @@ public:
         pi = M_PI;
     }
 
+    // Reference: https://www.mathworks.com/help/signal/ref/tukeywin.html
     float attackWindow (int n, int attack) {
         if( n == 0 )
         {
@@ -405,16 +408,65 @@ public:
         {
         }
 
-        if ( n < a * release ) {
+        if ( n < release - a * release ) {
             return 1.0;
         }
         else {
-            return 0.5 * (1.0 + cos(pi * ((2 * n)/(a * release * 2.0) - 2.0/a + 1.0)));
+            return 0.5 * (1.0 + cos(pi * (n / (a * release) + (1 / a) - (2.0 / a) + 1.0)));
         }
     }
 private:
     float a;
     float pi;
+};
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Normalized sigmoid envelope function with variable steepness:
+// https://math.stackexchange.com/questions/1832177/sigmoid-function-with-fixed-bounds-and-variable-steepness-partially-solved#comment8160336_3253471
+// Important properties:
+// - f(0) = 0 and f(1) = 1 when steepness value > 0
+// - f(0) = 1 and f(1) = 0 when steepness value < 0
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class SigmoidFunc : public WindowFunc
+{
+public:
+    SigmoidFunc(float _k) {
+        k = _k; // k is the sigmoid steepness
+    }
+
+    float attackWindow(int n, int attack) {
+        if (n == 0)
+        {
+        }
+
+        if (n > attack && k > 0) {
+            return 1.0;
+        } 
+        if (n > attack && k < 0) {
+            return 0.0;
+        }
+
+        float x = (float) n / attack;
+
+        return 1.0 / (1.0 + pow((1 / x - 1), k));
+    }
+    float releaseWindow(int n, int release) {
+        if (n == 0)
+        {
+        }
+
+        if (n > release && k > 0) {
+            return 0.0;
+        }
+        if (n > release && k < 0) {
+            return 1.0;
+        }
+
+        float x = (float)n / release;
+        return 1.0 / (1.0 + pow((1 / x - 1), -1 * k));
+    }
+private:
+    float k; // k is the sigmoid steepness
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -612,6 +664,14 @@ public:
         m_func = new TukeyFunc(a);
     }
 
+    void setSigmoid() {
+        m_func = new SigmoidFunc(2.0);
+    }
+
+    void setSigmoid(t_CKFLOAT k) {
+        m_func = new SigmoidFunc(k);
+    }
+
     void setWelch() {
         m_func = new WelchFunc();
     }
@@ -775,6 +835,13 @@ CK_DLL_QUERY( WinFuncEnv )
     QUERY->add_mfun(QUERY, winfuncenv_setTukeyArg, "void", "setTukey");
     QUERY->add_arg(QUERY, "float", "a");
     QUERY->doc_func(QUERY, "Set Tukey Window Envelope with a custom value. ");
+
+    QUERY->add_mfun(QUERY, winfuncenv_setSigmoid, "void", "setSigmoid");
+    QUERY->doc_func(QUERY, "Set Sigmoid Window Envelope with default value (2.0). ");
+
+    QUERY->add_mfun(QUERY, winfuncenv_setSigmoidArg, "void", "setSigmoid");
+    QUERY->add_arg(QUERY, "float", "k");
+    QUERY->doc_func(QUERY, "Set Sigmoid Window Envelope with a custom value. ");
 
     QUERY->add_mfun(QUERY, winfuncenv_setWelch, "void", "setWelch");
     QUERY->doc_func(QUERY, "Set Welch Window Window. ");
@@ -979,6 +1046,18 @@ CK_DLL_MFUN(winfuncenv_setTukeyArg)
     bcdata->setTukey(a);
 }
 
+CK_DLL_MFUN(winfuncenv_setSigmoid)
+{
+    WinFuncEnv* bcdata = (WinFuncEnv*)OBJ_MEMBER_INT(SELF, winfuncenv_data_offset);
+    bcdata->setSigmoid();
+}
+
+CK_DLL_MFUN(winfuncenv_setSigmoidArg)
+{
+    WinFuncEnv* bcdata = (WinFuncEnv*)OBJ_MEMBER_INT(SELF, winfuncenv_data_offset);
+    t_CKFLOAT k = GET_NEXT_FLOAT(ARGS);
+    bcdata->setSigmoid(k);
+}
 
 CK_DLL_MFUN(winfuncenv_setWelch)
 {
