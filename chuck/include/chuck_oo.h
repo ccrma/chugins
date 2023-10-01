@@ -149,6 +149,10 @@ public:
     t_CKBYTE * data;
     // the size of the data region
     t_CKUINT data_size;
+
+public: // static
+    // vtable offset for toString()
+    static t_CKUINT our_vt_toString;
 };
 
 
@@ -750,7 +754,10 @@ public: // internal
     void queue_broadcast( CBufferSimple * event_buffer = NULL );
 
 public:
+    // virtual table offset for can_wait()
     static t_CKUINT our_can_wait;
+    // virtual table offset for waiting_on() | 1.5.1.4 (ge/andrew) added
+    static t_CKUINT our_waiting_on;
 
 protected:
     std::queue<Chuck_VM_Shred *> m_queue;
