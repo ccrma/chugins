@@ -4,3 +4,6 @@
 [submodule "WarpBuf/thirdparty/libsamplerate"]
 	path = WarpBuf/thirdparty/libsamplerate
 	url = https://github.com/libsndfile/libsamplerate
+[submodule "chuck-api"]
+	path = chuck-api
+	url = git@github.com:ccrma/cheaders.git
