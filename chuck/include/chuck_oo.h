@@ -149,19 +149,19 @@ public:
     t_CKUINT data_size;
 
 public:
-    // set VM on which this object was instantiated | 1.5.1.4
+    // set VM on which this object was instantiated | 1.5.1.5
     void setOriginVM( Chuck_VM * vm );
-    // set shred on which this object was instantiated | 1.5.1.4
+    // set shred on which this object was instantiated | 1.5.1.5
     void setOriginShred( Chuck_VM_Shred * shred );
-    // get VM on which this object was instantiated | 1.5.1.4
+    // get VM on which this object was instantiated | 1.5.1.5
     Chuck_VM * originVM() const { return origin_vm; }
-    // get shred on which this object was instantiated | 1.5.1.4
+    // get shred on which this object was instantiated | 1.5.1.5
     Chuck_VM_Shred * originShred() const { return origin_shred; }
 
 protected:
-    // the shred on which this object was instantiated | 1.5.1.4
+    // the shred on which this object was instantiated | 1.5.1.5
     Chuck_VM_Shred * origin_shred;
-    // the VM on which this object was instantiated | 1.5.1.4
+    // the VM on which this object was instantiated | 1.5.1.5
     Chuck_VM * origin_vm;
 
 public: // static
@@ -173,13 +173,13 @@ public: // static
 
 
 // ISSUE: 64-bit (fixed 1.3.1.0)
-#define CHUCK_ARRAY4_DATASIZE sz_INT
-#define CHUCK_ARRAY8_DATASIZE sz_FLOAT
+#define CHUCK_ARRAYINT_DATASIZE sz_INT
+#define CHUCK_ARRAYFLOAT_DATASIZE sz_FLOAT
 #define CHUCK_ARRAY16_DATASIZE sz_COMPLEX
 #define CHUCK_ARRAY24_DATASIZE sz_VEC3 // 1.3.5.3
 #define CHUCK_ARRAY32_DATASIZE sz_VEC4 // 1.3.5.3
-#define CHUCK_ARRAY4_DATAKIND kindof_INT
-#define CHUCK_ARRAY8_DATAKIND kindof_FLOAT
+#define CHUCK_ARRAYINT_DATAKIND kindof_INT
+#define CHUCK_ARRAYFLOAT_DATAKIND kindof_FLOAT
 #define CHUCK_ARRAY16_DATAKIND kindof_COMPLEX
 #define CHUCK_ARRAY24_DATAKIND kindof_VEC3 // 1.3.5.3
 #define CHUCK_ARRAY32_DATAKIND kindof_VEC4 // 1.3.5.3
@@ -257,7 +257,9 @@ public:
 
 //-----------------------------------------------------------------------------
 // name: struct Chuck_ArrayInt
-// desc: native ChucK arrays (for 4-byte/8-byte int, and Object references)
+// desc: native ChucK arrays
+//       (for 4-byte/8-byte int, depending on 32-bit vs 64-bit & Object refs)
+//       1.5.1.5 (ge) renamed from Chuck_Array4 to Chuck_ArrayInt
 //-----------------------------------------------------------------------------
 struct Chuck_ArrayInt : public Chuck_Array
 {
@@ -299,9 +301,9 @@ public: // array interface implementation
     // set array capacity
     virtual t_CKINT set_capacity( t_CKINT capacity );
     // size of stored type (from type_ref)
-    virtual t_CKINT data_type_size() { return CHUCK_ARRAY4_DATASIZE; }
+    virtual t_CKINT data_type_size() { return CHUCK_ARRAYINT_DATASIZE; }
     // kind of stored type (from kindof)
-    virtual t_CKINT data_type_kind() { return CHUCK_ARRAY4_DATAKIND; }
+    virtual t_CKINT data_type_kind() { return CHUCK_ARRAYINT_DATAKIND; }
     // clear
     virtual void clear();
     // zero out the array by range [start,end)
@@ -353,6 +355,7 @@ public:
 //-----------------------------------------------------------------------------
 // name: struct Chuck_ArrayFloat
 // desc: native ChucK arrays (for 8-byte float)
+//       1.5.1.5 (ge) renamed from Chuck_Array8 to Chuck_ArrayFloat
 //-----------------------------------------------------------------------------
 struct Chuck_ArrayFloat : public Chuck_Array
 {
@@ -394,9 +397,9 @@ public: // array interface implementation
     // set array capacity
     virtual t_CKINT set_capacity( t_CKINT capacity );
     // size of stored type (from type_ref)
-    virtual t_CKINT data_type_size() { return CHUCK_ARRAY8_DATASIZE; }
+    virtual t_CKINT data_type_size() { return CHUCK_ARRAYFLOAT_DATASIZE; }
     // kind of stored type (from kindof)
-    virtual t_CKINT data_type_kind() { return CHUCK_ARRAY8_DATAKIND; }
+    virtual t_CKINT data_type_kind() { return CHUCK_ARRAYFLOAT_DATAKIND; }
     // clear
     virtual void clear();
     // zero out the array by range [start,end)
@@ -770,7 +773,7 @@ public: // internal
 public:
     // virtual table offset for can_wait()
     static t_CKUINT our_can_wait;
-    // virtual table offset for waiting_on() | 1.5.1.4 (ge/andrew) added
+    // virtual table offset for waiting_on() | 1.5.1.5 (ge/andrew) added
     static t_CKUINT our_waiting_on;
 
 protected:
