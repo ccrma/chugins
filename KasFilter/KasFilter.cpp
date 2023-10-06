@@ -154,7 +154,7 @@ CK_DLL_CTOR(kasfilter_ctor)
     OBJ_MEMBER_INT(SELF, kasfilter_data_offset) = 0;
     
     KasFilterData * kfdata = new KasFilterData;
-    kfdata->PhasePerSample	= CK_ONE_PI / (t_CKUINT)API->vm->get_srate(API, SHRED);
+    kfdata->PhasePerSample	= CK_ONE_PI / (t_CKUINT)API->vm->srate(VM);
     kfdata->freq			= 440;
     kfdata->resonance			= 0;
     kfdata->accent			= 0;

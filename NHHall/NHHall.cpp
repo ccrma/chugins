@@ -120,7 +120,7 @@ CK_DLL_QUERY(NHHall) {
 CK_DLL_CTOR(nhhall_ctor) {
     OBJ_MEMBER_INT(SELF, nhhall_unit_offset) = 0;
 
-    NHHall* unit = new NHHall(API->vm->get_srate(API, SHRED));
+    NHHall* unit = new NHHall(API->vm->srate(VM));
 
     OBJ_MEMBER_INT(SELF, nhhall_unit_offset) = (t_CKINT)unit;
 }

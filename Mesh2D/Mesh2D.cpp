@@ -252,7 +252,7 @@ private:
     OBJ_MEMBER_INT(SELF, mesh2d_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    Mesh2D * bcdata = new Mesh2D(API->vm->get_srate(API, SHRED));
+    Mesh2D * bcdata = new Mesh2D(API->vm->srate(VM));
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, mesh2d_data_offset) = (t_CKINT) bcdata;

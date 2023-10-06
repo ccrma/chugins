@@ -410,7 +410,7 @@ CK_DLL_CTOR(gverb_ctor)
     OBJ_MEMBER_INT(SELF, gverb_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    GVerb * bcdata = new GVerb(API->vm->get_srate(API, SHRED));
+    GVerb * bcdata = new GVerb(API->vm->srate(VM));
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, gverb_data_offset) = (t_CKINT) bcdata;

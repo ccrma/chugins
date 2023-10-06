@@ -678,7 +678,7 @@ CK_DLL_CTOR(spectacle_ctor)
   OBJ_MEMBER_INT(SELF, spectacle_data_offset) = 0;
   
   // instantiate our internal c++ class representation
-  Spectacle * bcdata = new Spectacle(API->vm->get_srate(API, SHRED));
+  Spectacle * bcdata = new Spectacle(API->vm->srate(VM));
   
   // store the pointer in the ChucK object member
   OBJ_MEMBER_INT(SELF, spectacle_data_offset) = (t_CKINT) bcdata;

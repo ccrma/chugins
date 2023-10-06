@@ -204,7 +204,7 @@ CK_DLL_CTOR(wpdiodeladder_ctor)
     OBJ_MEMBER_INT(SELF, wpdiodeladder_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    WPDiodeLadder * bcdata = new WPDiodeLadder(API->vm->get_srate(API, SHRED));
+    WPDiodeLadder * bcdata = new WPDiodeLadder(API->vm->srate(VM));
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, wpdiodeladder_data_offset) = (t_CKINT) bcdata;
