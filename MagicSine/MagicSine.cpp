@@ -118,7 +118,7 @@ CK_DLL_CTOR(magicsine_ctor)
 {
     OBJ_MEMBER_INT(SELF, magicsine_data_offset) = 0;
     
-    MagicSine * bcdata = new MagicSine(API->vm->get_srate(API, SHRED));
+    MagicSine * bcdata = new MagicSine(API->vm->srate(VM));
     
     OBJ_MEMBER_INT(SELF, magicsine_data_offset) = (t_CKINT) bcdata;
 }

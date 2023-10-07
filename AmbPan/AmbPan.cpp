@@ -66,7 +66,7 @@ public:
     // get parameter example
     float getElevation() { return m_elevation; }
     
-    void setChannelMap(Chuck_Array4 * map)
+    void setChannelMap(Chuck_ArrayInt * map)
     {
         t_CKINT len = ck_min(map->m_vector.size(), 16);
         for(t_CKINT i = 0; i < len; i++)
@@ -247,7 +247,7 @@ CK_DLL_CTOR(ambpan3_ctor)
     OBJ_MEMBER_INT(SELF, ambpan3_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    AmbPan3 * bcdata = new AmbPan3(API->vm->get_srate(API, SHRED));
+    AmbPan3 * bcdata = new AmbPan3(API->vm->srate(VM));
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, ambpan3_data_offset) = (t_CKINT) bcdata;
@@ -328,7 +328,7 @@ CK_DLL_MFUN(ambpan3_setChannelMap)
 {
     // get our c++ class pointer
     AmbPan3 * bcdata = (AmbPan3 *) OBJ_MEMBER_INT(SELF, ambpan3_data_offset);
-    Chuck_Array4 * map = (Chuck_Array4 *) GET_NEXT_OBJECT(ARGS);
+    Chuck_ArrayInt * map = (Chuck_ArrayInt *) GET_NEXT_OBJECT(ARGS);
     bcdata->setChannelMap(map);
 }
 

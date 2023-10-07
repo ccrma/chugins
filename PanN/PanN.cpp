@@ -296,7 +296,7 @@ CK_DLL_CTOR(pan4_ctor)
     OBJ_MEMBER_INT(SELF, pan4_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    Pan4 * bcdata = new Pan4(API->vm->get_srate(API, SHRED));
+    Pan4 * bcdata = new Pan4(API->vm->srate(VM));
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, pan4_data_offset) = (t_CKINT) bcdata;
@@ -363,7 +363,7 @@ CK_DLL_CTOR(pan8_ctor)
     OBJ_MEMBER_INT(SELF, pan8_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    Pan8 * bcdata = new Pan8(API->vm->get_srate(API, SHRED));
+    Pan8 * bcdata = new Pan8(API->vm->srate(VM));
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, pan8_data_offset) = (t_CKINT) bcdata;
@@ -430,7 +430,7 @@ CK_DLL_CTOR(pan16_ctor)
     OBJ_MEMBER_INT(SELF, pan16_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    Pan16 * bcdata = new Pan16(API->vm->get_srate(API, SHRED));
+    Pan16 * bcdata = new Pan16(API->vm->srate(VM));
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, pan16_data_offset) = (t_CKINT) bcdata;

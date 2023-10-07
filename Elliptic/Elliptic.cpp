@@ -304,7 +304,7 @@ CK_DLL_CTOR(elliptic_ctor)
   OBJ_MEMBER_INT(SELF, elliptic_data_offset) = 0;
   
   // instantiate our internal c++ class representation
-  Elliptic * bcdata = new Elliptic(API->vm->get_srate(API, SHRED));
+  Elliptic * bcdata = new Elliptic(API->vm->srate(VM));
   
   // store the pointer in the ChucK object member
   OBJ_MEMBER_INT(SELF, elliptic_data_offset) = (t_CKINT) bcdata;

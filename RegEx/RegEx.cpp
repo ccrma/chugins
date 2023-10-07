@@ -126,7 +126,7 @@ CK_DLL_SFUN( regex_match2 )
 {
     Chuck_String * pattern = GET_NEXT_STRING(ARGS);
     Chuck_String * str = GET_NEXT_STRING(ARGS);
-    Chuck_Array4 * matches = (Chuck_Array4 *) GET_NEXT_OBJECT(ARGS);
+    Chuck_ArrayInt * matches = (Chuck_ArrayInt *) GET_NEXT_OBJECT(ARGS);
 
     regex_t regex;
     t_CKBOOL r_free = FALSE;
@@ -177,14 +177,14 @@ CK_DLL_SFUN( regex_match2 )
     {
         for(i = 0; i < regex.re_nsub+1; i++)
         {
-            // Chuck_String * match = (Chuck_String *) instantiate_and_initialize_object(SHRED->vm_ref->env()->t_string, SHRED);
-            Chuck_String * match = (Chuck_String *)API->object->create_string(API, SHRED, "" );
+            // create string, no add ref since we are return this without keeping a ref to it
+            Chuck_String * match = (Chuck_String *)API->object->create_string( VM, "", FALSE );
             if(matcharray[i].rm_so >= 0 && matcharray[i].rm_eo > 0)
                 match->set( std::string(str->str(), matcharray[i].rm_so,
                                          matcharray[i].rm_eo-matcharray[i].rm_so) );
             // append to matches
             // matches->push_back((t_CKUINT)match);
-            API->object->array4_push_back(API, matches, (t_CKUINT)match);
+            API->object->array_int_push_back(matches, (t_CKUINT)match);
         }
     }
 
@@ -219,9 +219,8 @@ CK_DLL_SFUN( regex_replace )
     Chuck_String * replace = GET_NEXT_STRING(ARGS);
     Chuck_String * str = GET_NEXT_STRING(ARGS);
 
-    // Chuck_String * ret = (Chuck_String *) instantiate_and_initialize_object(SHRED->vm_ref->env()->t_string, SHRED);
-    // ret->set( str->str() );
-    Chuck_String * ret = (Chuck_String *)API->object->create_string(API, SHRED, str->str().c_str() );
+    // create string, no add ref since we are return this without keeping a ref to it
+    Chuck_String * ret = (Chuck_String *)API->object->create_string(VM, str->str().c_str(), FALSE );
 
     regex_t regex;
     t_CKBOOL r_free = FALSE;
@@ -304,9 +303,8 @@ CK_DLL_SFUN( regex_replaceAll )
     Chuck_String * replace = GET_NEXT_STRING(ARGS);
     Chuck_String * str = GET_NEXT_STRING(ARGS);
 
-    // Chuck_String * ret = (Chuck_String *) instantiate_and_initialize_object(SHRED->vm_ref->env()->t_string, SHRED);
-    //ret->set( str->str() );
-    Chuck_String * ret = (Chuck_String *)API->object->create_string(API, SHRED, str->str().c_str() );
+    // create string, no add ref since we are return this without keeping a ref to it
+    Chuck_String * ret = (Chuck_String *)API->object->create_string(VM, str->str().c_str(), FALSE );
 
     regex_t regex;
     t_CKBOOL r_free = FALSE;

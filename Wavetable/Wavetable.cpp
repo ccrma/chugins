@@ -150,7 +150,7 @@ int getSync ()
 
 void setTable(Chuck_Object *p)
 {
-  Chuck_Array8 *userArray = (Chuck_Array8*)p;
+  Chuck_ArrayFloat *userArray = (Chuck_ArrayFloat *)p;
   
   current_table = &userArray->m_vector[0];
   table_size = (int)userArray->size();
@@ -271,7 +271,7 @@ CK_DLL_QUERY( Wavetable )
 CK_DLL_CTOR(wavetable_ctor)
 {
         OBJ_MEMBER_INT(SELF, wavetable_data_offset) = 0;
-        Wavetable * w_obj = new Wavetable(API->vm->get_srate(API, SHRED));
+        Wavetable * w_obj = new Wavetable(API->vm->srate(VM));
         OBJ_MEMBER_INT(SELF, wavetable_data_offset) = (t_CKINT) w_obj;
 }
 CK_DLL_DTOR(wavetable_dtor)
