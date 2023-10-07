@@ -793,6 +793,8 @@ public:
 
 
 
+// instantiating a chuck string
+Chuck_String * ck_create_string( Chuck_VM * vm, const char * cstr, t_CKBOOL addRef );
 //-----------------------------------------------------------------------------
 // invoking chuck functions from c++
 //-----------------------------------------------------------------------------
@@ -846,6 +848,8 @@ public:
         void (CK_DLL_CALL * const throw_exception)( const char * exception, const char * desc, Chuck_VM_Shred * shred );
         // log a message in the chuck logging system
         void (CK_DLL_CALL * const em_log)( t_CKINT level, const char * text );
+        // system function: remove all shreds in VM; use with care
+        void (CK_DLL_CALL * const remove_all_shreds)( Chuck_VM * vm );
     } * const vm;
 
     // api to access host-side ChucK objects
