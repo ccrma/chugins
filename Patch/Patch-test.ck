@@ -12,8 +12,6 @@ if (p.method() != "gain") {
 }
 
 repeat (10) {
-    <<< "gain:", sin.gain() >>>;
-
     if (step.next() != sin.gain()) {
        <<< "FAILURE, input" , step.next(), "!=", sin.gain() >>>;
     }
