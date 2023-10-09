@@ -6,7 +6,6 @@ spork~ updateStep();
 
 p.connect(sin, "gain");
 
-
 if (p.method() != "gain") {
    <<< "FAILURE,", p.method(), "!=", "gain" >>>;
 }

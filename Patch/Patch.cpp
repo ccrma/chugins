@@ -22,6 +22,8 @@
 //-----------------------------------------------------------------------------
 
 // TODO: add disconnect method
+// TODO: type check arguments of provided functions (prob requires more api updates)
+// TODO: use operator overloading to do SinOsc s => Patch p => r.freq ?
 
 #include "chuck_dl.h"
 #include "chuck_vm.h"
@@ -52,116 +54,107 @@ t_CKINT patch_data_offset = 0;
 class Patch
 {
 public:
-    // constructor
-    Patch()
-    {
-        m_func = nullptr;
-    }
+  // constructor
+  Patch()
+  {
+    m_dest = nullptr;
+  }
+
+  // destructor
+  ~Patch()
+  {
+    disconnect();
+  }
 
     // for Chugins extending UGen
     SAMPLE tick( SAMPLE in )
     {
-        // if the method is set, patch through the value
-        if (m_func) {
-            // default: this passes whatever input is patched into Chugin
-            t_CKFLOAT val = (t_CKFLOAT)in;
-            Chuck_DL_Return ret;
+      // Patch hasn't been connected yet
+      if (m_method == "") return in;
 
-            // these three lines took a very long time to figure out...
-            Chuck_VM_Code* func = m_func->code;
-            // cast the function as a dynamically-linked member func
-            f_mfun f = (f_mfun)func->native_func;
-            // call said function
-            f((Chuck_Object*)(m_dest), &val, &ret, m_vm, m_shred, m_api); // api?
-        }
-        return in;
+      // Connect failed to find a valid member function
+      if (m_vt_offset < 0) return in;
+
+      // construct arg from input sample
+      Chuck_DL_Arg* arg = new Chuck_DL_Arg();
+      arg->kind = kindof_FLOAT;
+      arg->value.v_float = in;
+
+      // call the destination object's member function with "in" as the input argument
+      Chuck_DL_Return ret = m_api->vm->invoke_mfun_immediate_mode(m_dest, m_vt_offset, m_vm, m_shred, arg, 1);
+
+      return in;
     }
 
     // set parameter example
-    void connect( Chuck_UGen* dest, std::string method, Chuck_VM* vm, Chuck_VM_Shred* shred, CK_DL_API api)
+    void connect( Chuck_Object* dest, std::string method, Chuck_VM* vm, Chuck_VM_Shred* shred, CK_DL_API api)
     {
-        m_dest = dest;
-        m_vm = vm;
-        m_api = api;
-        m_shred = shred;
+      // cleanup if patch was previously connected
+      disconnect();
 
-        findMethod(method);
+      m_dest = dest;
+      m_vm = vm;
+      m_api = api;
+      m_shred = shred;
+
+      m_method = method;
+      m_vt_offset = findMethodOffset(method);
+
+      // add reference to dest object for VM memory management
+      m_api->object->add_ref(m_dest);
     }
 
     void disconnect() {
-        m_dest = NULL;
-        m_vm = NULL;
-        m_api = NULL;
-        m_shred = NULL;
-        m_func = NULL;
+      // release object from reference
+      if (m_dest)
+        m_api->object->release(m_dest);
+
+      m_dest = nullptr;
+      m_vm = nullptr;
+      m_api = nullptr;
+      m_shred = nullptr;
     };
 
-    std::string getMethod() { return m_func->base_name; }
+    std::string getMethod() { return m_method; }
 
 
     void setMethod(std::string method) {
-        findMethod(method);
+      m_vt_offset = findMethodOffset(method);
+      m_method = method;
     }
     
 private:
-    // instance data
-    Chuck_UGen* m_dest;
-    Chuck_VM_Shred* m_shred;
-    Chuck_VM* m_vm;
-    Chuck_Func* m_func;
-    CK_DL_API m_api;
+  // instance data
 
-    // Given a UGen, try to the find the methods among its
-    // associated functions.
-    void findMethod(std::string method) {
-        Chuck_Func* found = NULL;
+  // TODO: can this just be an object?
+  Chuck_Object* m_dest;
+  Chuck_VM_Shred* m_shred;
+  Chuck_VM* m_vm;
+  CK_DL_API m_api;
+  t_CKUINT m_vt_offset;
+  std::string m_method;
 
-        for (int i = 0; i < m_dest->vtable->funcs.size(); i++)
-        {
-            Chuck_Func* func = m_dest->vtable->funcs[i];
+  // find class method vtable offset
+  t_CKINT findMethodOffset(std::string method) {
+    // first hard code ugen, then figure out general version
+    Chuck_DL_Api::Type obj_type = m_dest->type_ref;
 
-            // funcs can be overwritten or have multiple defn, look for the right one
-            if (func->base_name == method &&
-                func->def()->arg_list != NULL &&
-                // we only want funcs with one arg
-                func->def()->arg_list->next == NULL &&
-                // ensure arg is float
-                func->def()->arg_list->type == m_shred->vm_ref->env()->ckt_float)
-            {
-                found = func;
-                break;
-            }
-        }
+    // just gain for now
+    t_CKINT offset = m_api->type->get_vtable_offset(m_vm, obj_type, method.c_str());
 
-        if (!found) {
-            std::cerr << "Patch.connect(): unable to find method " << method << std::endl;
-            return;
-        }
-
-        Chuck_Func* curr = found;
-        // traverse overloads to find top of stack
-        while (curr->next != NULL) {
-            if (curr->def()->arg_list != NULL &&
-                // we only want funcs with one arg
-                curr->def()->arg_list->next == NULL &&
-                // ensure arg is float
-                curr->def()->arg_list->type == m_shred->vm_ref->env()->ckt_float)
-            {
-                found = curr;
-            }
-            curr = curr->next;
-        }
-
-        m_func = found;
-
-        return;
+    // TODO check for error, and make non-crashing exception
+    if (offset < 0) {
+      // TODO: type->name() doesn't work, figure out why
+      std::string message = "Member function " + method + "() not found in object " + obj_type->base_name;
+      m_api->vm->throw_exception("MemberFunctionNotFound", message.c_str(), m_shred);
     }
+
+    return offset;
+  }
 };
 
 
 // query function: chuck calls this when loading the Chugin
-// NOTE: developer will need to modify this function to
-// add additional functions to this Chugin
 CK_DLL_QUERY( Patch )
 {
     // hmm, don't change this...
@@ -186,7 +179,7 @@ CK_DLL_QUERY( Patch )
 
     // connect method
     QUERY->add_mfun(QUERY, patch_connect, "void", "connect");
-    QUERY->add_arg(QUERY, "UGen", "dest" );
+    QUERY->add_arg(QUERY, "Object", "dest" );
     QUERY->add_arg(QUERY, "string", "method");
     QUERY->doc_func(QUERY, "Call the method in dest with Patch's input. "
         "Method must be a method that takes a single float as an input, "
@@ -287,7 +280,7 @@ CK_DLL_MFUN(patch_connect)
 {
     // get our c++ class pointer
     Patch * p_obj = (Patch *) OBJ_MEMBER_INT(SELF, patch_data_offset);
-    Chuck_UGen * dest = (Chuck_UGen *)GET_NEXT_OBJECT(ARGS);
+    Chuck_Object * dest = (Chuck_Object *)GET_NEXT_OBJECT(ARGS);
     Chuck_String* method = (Chuck_String*)GET_NEXT_STRING(ARGS);
 
     p_obj->connect(dest, method->str(), VM, SHRED, API);
