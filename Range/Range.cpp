@@ -68,7 +68,7 @@ class Range
 {
 public:
     // constructor
-    Range( t_CKFLOAT fs)
+    Range()
     {
         m_param = 0;
         m_in_min = -1;
@@ -269,7 +269,7 @@ CK_DLL_CTOR(range_ctor)
     OBJ_MEMBER_INT(SELF, range_data_offset) = 0;
     
     // instantiate our internal c++ class representation
-    Range * s_obj = new Range(API->vm->get_srate(API, SHRED));
+    Range * s_obj = new Range();
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, range_data_offset) = (t_CKINT) s_obj;
