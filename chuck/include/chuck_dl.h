@@ -43,7 +43,8 @@
 #include "chuck_oo.h"
 #include <string>
 #include <vector>
-#include <map>
+
+
 
 
 // major version must be the same between chuck:chugin
@@ -72,7 +73,9 @@ struct Chuck_DL_Ctrl;
 union  Chuck_DL_Return;
 struct Chuck_DL_MainThreadHook;
 struct Chuck_DLL;
-namespace Chuck_DL_Api { struct Api; }
+struct Chuck_DL_Api;
+// un-namespaced Chuck_DL_Api | 1.5.1.5 (ge)
+// namespace Chuck_DL_Api { struct Api; }
 
 // object forward references
 struct Chuck_UGen;
@@ -170,7 +173,7 @@ struct Chuck_UAnaBlobProxy;
   #define CK_DLL_CALL
 #endif
 
-typedef const Chuck_DL_Api::Api *CK_DL_API;
+typedef const Chuck_DL_Api * CK_DL_API;
 
 
 
@@ -288,6 +291,9 @@ struct Chuck_DL_Arg
 // macro for defining Chuck DLL export shreds watcher functions
 // example: CK_DLL_SHREDS_WATCHER(foo)
 #define CK_DLL_SHREDS_WATCHER(name) CK_DLL_EXPORT(void) name( Chuck_VM_Shred * SHRED, t_CKINT CODE, t_CKINT PARAM, Chuck_VM * VM, void * BINDLE )
+// macro for defining Chuck DLL export type on instantiate functions
+// example: CK_DLL_TYPE_ON_INSTANTIATE(foo)
+#define CK_DLL_TYPE_ON_INSTANTIATE(name) CK_DLL_EXPORT(void) name( Chuck_Object * OBJECT, Chuck_Type * TYPE, Chuck_VM_Shred * SHRED, Chuck_VM * VM )
 
 // macros for DLL exports
 // example: DLL_QUERY  query( Chuck_DL_Query * QUERY )
@@ -335,7 +341,7 @@ typedef t_CKBOOL (CK_DLL_CALL * f_mainthreadquit)( void * bindle );
 // shreds watcher callback
 typedef void (CK_DLL_CALL * f_shreds_watcher)( Chuck_VM_Shred * SHRED, t_CKINT CODE, t_CKINT PARAM, Chuck_VM * VM, void * BINDLE );
 // type instantiation callback
-typedef void (CK_DLL_CALL * f_callback_on_instantiate)( Chuck_Type * typeInstantiated, Chuck_VM_Shred * originShred, Chuck_VM * VM );
+typedef void (CK_DLL_CALL * f_callback_on_instantiate)( Chuck_Object * OBJECT, Chuck_Type * TYPE, Chuck_VM_Shred * originShred, Chuck_VM * VM );
 }
 
 
@@ -796,7 +802,7 @@ public:
 
 
 // instantiating a chuck string
-Chuck_String * ck_create_string( Chuck_VM * vm, const char * cstr, t_CKBOOL addRef );
+Chuck_String * CK_DLL_CALL ck_create_string( Chuck_VM * vm, const char * cstr, t_CKBOOL addRef );
 //-----------------------------------------------------------------------------
 // invoking chuck functions from c++
 //-----------------------------------------------------------------------------
@@ -805,7 +811,7 @@ Chuck_String * ck_create_string( Chuck_VM * vm, const char * cstr, t_CKBOOL addR
 // NOTE this will call the member function in IMMEDIATE MODE,
 // marking it as a time-critical function when called in this manner;
 // any time/event operations therein will throw an exception
-Chuck_DL_Return ck_invoke_mfun_immediate_mode( Chuck_Object * obj, t_CKUINT func_vt_offset,
+Chuck_DL_Return CK_DLL_CALL ck_invoke_mfun_immediate_mode( Chuck_Object * obj, t_CKUINT func_vt_offset,
                                                Chuck_VM * vm, Chuck_VM_Shred * shred,
                                                Chuck_DL_Arg * ARGS, t_CKUINT numArgs );
 
@@ -815,18 +821,16 @@ Chuck_DL_Return ck_invoke_mfun_immediate_mode( Chuck_Object * obj, t_CKUINT func
 //-----------------------------------------------------------------------------
 // dynamic linking callable API to ChucK's innards
 //-----------------------------------------------------------------------------
-namespace Chuck_DL_Api
+struct Chuck_DL_Api
 {
-typedef Chuck_Object * Object;
-typedef Chuck_Type * Type;
-typedef Chuck_String * String;
-typedef Chuck_ArrayInt * ArrayInt; // 1.5.0.1 (ge) added
+    typedef Chuck_Object * Object;
+    typedef Chuck_Type * Type;
+    typedef Chuck_String * String;
+    typedef Chuck_ArrayInt * ArrayInt; // 1.5.0.1 (ge) added
 
-struct Api
-{
 public:
-    static Api g_api;
-    static inline const Api * instance() { return &g_api; }
+    static Chuck_DL_Api g_api;
+    static inline const Chuck_DL_Api * instance() { return &g_api; }
 
     // api to access host-side ChucK virtual machine
     struct VMApi
@@ -882,6 +886,10 @@ public:
         // instantiate and initialize a ChucK string by type
         // if addRef == TRUE the newly created object will have a reference count of 1; otherwise 0
         String (CK_DLL_CALL * const create_string)( Chuck_VM *, const char * value, t_CKBOOL addRef );
+        // get the origin shred
+        Chuck_VM_Shred * (CK_DLL_CALL * const get_origin_shred)( Object object );
+        // set the origin shred; this should only be invoked by system-level chugins; use with care
+        void (CK_DLL_CALL * const set_origin_shred)( Object object, Chuck_VM_Shred * shred );
         // function pointers for get_mvar_*()
         t_CKBOOL (CK_DLL_CALL * const get_mvar_int)( Object object, const char * name, t_CKINT & value );
         t_CKBOOL (CK_DLL_CALL * const get_mvar_float)( Object object, const char * name, t_CKFLOAT & value );
@@ -915,7 +923,7 @@ public:
     } * const type;
 
     // constructor
-    Api() :
+    Chuck_DL_Api() :
         vm(new VMApi),
         object(new ObjectApi),
         type(new TypeApi)
@@ -923,15 +931,15 @@ public:
 
 private:
     // make this object un-copy-able
-    Api( Api & a ) :
+    Chuck_DL_Api( Chuck_DL_Api & a ) :
         vm(a.vm),
         object(a.object),
         type(a.type)
     { assert(0); };
     // make this object un-copy-able, part 2
-    Api & operator=( Api & a ) { assert(0); return a; }
+    Chuck_DL_Api & operator=( Chuck_DL_Api & a ) { assert(0); return a; }
 };
-}
+
 
 
 
@@ -954,7 +962,7 @@ private:
           #define RTLD_LAZY         0x1
           #define RTLD_NOW          0x2
           #define RTLD_LOCAL        0x4
-      #define RTLD_GLOBAL       0x8
+          #define RTLD_GLOBAL       0x8
           #define RTLD_NOLOAD       0x10
           #define RTLD_SHARED       0x20    /* not used, the default */
           #define RTLD_UNSHARED     0x40
