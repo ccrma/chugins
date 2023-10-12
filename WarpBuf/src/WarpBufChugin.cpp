@@ -48,20 +48,20 @@ WarpBufChugin::clearBufs()
     if (m_retrieveBuffer != NULL)
     {
         for (int i = 0; i < m_channels; i++) {
-            SAFE_DELETE_ARRAY(m_retrieveBuffer[i]);
+            CK_SAFE_DELETE_ARRAY(m_retrieveBuffer[i]);
         }
     }
-    SAFE_DELETE_ARRAY(m_retrieveBuffer);
+    CK_SAFE_DELETE_ARRAY(m_retrieveBuffer);
 
-    SAFE_DELETE_ARRAY(m_interleavedBuffer);
+    CK_SAFE_DELETE_ARRAY(m_interleavedBuffer);
 
     if (m_nonInterleavedBuffer != NULL)
     {
         for (int i = 0; i < m_channels; i++) {
-            SAFE_DELETE_ARRAY(m_nonInterleavedBuffer[i]);
+            CK_SAFE_DELETE_ARRAY(m_nonInterleavedBuffer[i]);
         }
     }
-    SAFE_DELETE_ARRAY(m_nonInterleavedBuffer);
+    CK_SAFE_DELETE_ARRAY(m_nonInterleavedBuffer);
 }
 
 // Allocate the buffers if the number of channels or number of samples changed.
