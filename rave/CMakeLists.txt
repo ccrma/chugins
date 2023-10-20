@@ -8,6 +8,28 @@ project(rave VERSION 0.0.1)
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT rave)
 
+
+#######################
+# Download pytorch libs
+#######################
+
+include(FetchContent)
+Set(FETCHCONTENT_QUIET FALSE)
+
+# set(url https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-2.1.0%2Bcpu.zip)
+set(url https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.1.0%2Bcpu.zip)
+
+FetchContent_Declare(Torch
+  URL ${url}
+  # URL_HASH SHA256=${hash}
+  )
+
+FetchContent_MakeAvailable(Torch)
+list(APPEND CMAKE_PREFIX_PATH "${torch_SOURCE_DIR}")
+
+set(Torch_DIR "${torch_SOURCE_DIR}/share/cmake/Torch/")
+# set(TORCH_INSTALL_PREFIX "${torch_SOURCE_DIR}/")
+
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 
 if(MSVC)
@@ -103,7 +125,7 @@ if(MSVC)
 endif()
 
 
-target_link_libraries(rave PRIVATE backend)
+target_link_libraries(rave PRIVATE backend "${TORCH_LIBRARIES}")
 
 # Include header directories
 target_include_directories(rave PUBLIC
