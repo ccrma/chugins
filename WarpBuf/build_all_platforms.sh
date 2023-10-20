@@ -32,11 +32,11 @@ cmake --build build --config Release
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # we are on macOS
-    mkdir "/usr/local/lib/chuck"
+    mkdir -p "/usr/local/lib/chuck"
     cp "build/libWarpBufChugin.dylib" "/usr/local/lib/chuck/WarpBuf.chug"
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     # we are on Linux
-    mkdir "/usr/local/lib/chuck"
+    mkdir -p "/usr/local/lib/chuck"
     cp "build/libWarpBufChugin.dylib" "/usr/local/lib/chuck/WarpBuf.chug"
 elif [ "$(expr substr $(uname -s) 1 10)" = "MINGW32_NT" ] || [ "$(expr substr $(uname -s) 1 10)" = "MINGW64_NT" ] || [ "$(expr substr $(uname -s) 1 9)" = "CYGWIN_NT" ]; then
     echo
