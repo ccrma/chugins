@@ -52,7 +52,7 @@ typedef enum {
     te_function, te_object, te_user, te_array, te_null, te_ugen, te_uana,
     te_event, te_void, te_stdout, te_stderr, te_adc, te_dac, te_bunghole,
     te_uanablob, te_io, te_fileio, te_chout, te_cherr, te_multi,
-    te_vec3, te_vec4, te_vector, te_auto
+    te_vec2, te_vec3, te_vec4, te_vector, te_auto
 } te_Type;
 
 
@@ -742,6 +742,9 @@ public:
     // control scope (for break, continue)
     std::vector<a_Stmt> breaks;
 
+    // stmt stack (for tracking object references)
+    std::vector<a_Stmt> stmt_stack;
+
     // reserved words
     std::map<std::string, t_CKBOOL> key_words;
     std::map<std::string, t_CKBOOL> key_types;
@@ -765,6 +768,7 @@ public:
     Chuck_Type * ckt_dur;
     Chuck_Type * ckt_complex;
     Chuck_Type * ckt_polar;
+    Chuck_Type * ckt_vec2;
     Chuck_Type * ckt_vec3;
     Chuck_Type * ckt_vec4;
     Chuck_Type * ckt_null;
@@ -1230,6 +1234,7 @@ t_CKBOOL isprim( Chuck_Env * env, Chuck_Type * type );
 t_CKBOOL isobj( Chuck_Env * env, Chuck_Type * type );
 t_CKBOOL isfunc( Chuck_Env * env, Chuck_Type * type );
 t_CKBOOL isvoid( Chuck_Env * env, Chuck_Type * type );
+t_CKBOOL isnull( Chuck_Env * env, Chuck_Type * type );
 t_CKBOOL iskindofint( Chuck_Env * env, Chuck_Type * type ); // added 1.3.1.0: this includes int + pointers
 te_KindOf getkindof( Chuck_Env * env, Chuck_Type * type ); // added 1.3.1.0: to get the kindof a type
 
