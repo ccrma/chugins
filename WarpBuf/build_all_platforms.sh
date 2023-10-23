@@ -4,7 +4,9 @@
 # in the CMakeLists.txt. On Windows, we can just download libsndfile
 # from its GitHub releases.
 
-if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
+echo operating system type: ${OSTYPE}
+
+if [[ "$OSTYPE" == "linux"* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
     if [ ! -d thirdparty/libsndfile ]; then
         git clone https://github.com/libsndfile/libsndfile thirdparty/libsndfile
     else
@@ -13,7 +15,7 @@ if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
     cd thirdparty/libsndfile
     LIBSNDFILE_INSTALL_PREFIX="$PWD/install"
     mkdir -p CMakeBuild && cd CMakeBuild
-    cmake .. -DCMAKE_INSTALL_PREFIX="$LIBSNDFILE_INSTALL_PREFIX" -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF
+    cmake .. -DCMAKE_INSTALL_PREFIX="$LIBSNDFILE_INSTALL_PREFIX" -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF -DENABLE_MPEG=OFF
     make && make install
     export PKG_CONFIG_PATH="$LIBSNDFILE_INSTALL_PREFIX/lib/pkgconfig"
     cd ../../..
@@ -34,7 +36,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     # we are on macOS
     mkdir -p "/usr/local/lib/chuck"
     cp "build/libWarpBufChugin.dylib" "/usr/local/lib/chuck/WarpBuf.chug"
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+elif [[ "$OSTYPE" == "linux"* ]]; then
     # we are on Linux
     mkdir -p "/usr/local/lib/chuck"
     cp "build/libWarpBufChugin.dylib" "/usr/local/lib/chuck/WarpBuf.chug"
