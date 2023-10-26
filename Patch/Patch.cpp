@@ -14,7 +14,7 @@
 // // ... where it then updates the pan position at every tick
 // p.connect(pan, "pan");
 // 
-// 1::hour = > now;
+// eon = > now;
 //
 // authors: Nick Shaheed (nshaheed@ccrma.stanford.edu)
 // date: Winter 2022
@@ -47,6 +47,9 @@ CK_DLL_MFUN(patch_setMethod);
 // for Chugins extending UGen, this is mono synthesis function for 1 sample
 CK_DLL_TICK(patch_tick);
 
+// The jank begins...
+CK_DLL_GFUN(patch_chuck);
+
 // this is a special offset reserved for Chugin internal data
 t_CKINT patch_data_offset = 0;
 
@@ -58,6 +61,10 @@ public:
   Patch()
   {
     m_dest = nullptr;
+    m_vm = nullptr;
+    m_api = nullptr;
+    m_shred = nullptr;
+    m_vt_offset = -1;
   }
 
   // destructor
@@ -106,7 +113,7 @@ public:
 
     void disconnect() {
       // release object from reference
-      if (m_dest)
+      if (m_dest && m_api)
         m_api->object->release(m_dest);
 
       m_dest = nullptr;
@@ -131,12 +138,12 @@ private:
   Chuck_VM_Shred* m_shred;
   Chuck_VM* m_vm;
   CK_DL_API m_api;
-  t_CKUINT m_vt_offset;
+  t_CKINT m_vt_offset;
   std::string m_method;
 
   // find class method vtable offset
   t_CKINT findMethodOffset(std::string method) {
-    // first hard code ugen, then figure out general version
+    // Get object to find offset from
     Chuck_DL_Api::Type obj_type = m_dest->type_ref;
 
     // just gain for now
@@ -197,6 +204,10 @@ CK_DLL_QUERY( Patch )
     QUERY->add_arg(QUERY, "string", "method");
     QUERY->doc_func(QUERY, "Set method name");
 
+    // QUERY->add_op_overload_binary(QUERY, patch_chuck, "Patch", "=>", "Patch", "patch", "@function", "func");
+    // QUERY->add_op_overload_binary(QUERY, patch_chuck, "Patch", "=>", "Patch", "lhs", "Type", "rhs");
+    // QUERY->add_op_overload_binary(QUERY, patch_chuck, "Patch", "=>", "Patch", "lhs", "int", "rhs");
+
     
     // this reserves a variable in the ChucK internal class to store 
     // referene to the c++ class we defined above
@@ -220,6 +231,9 @@ CK_DLL_CTOR(patch_ctor)
     
     // instantiate our internal c++ class representation
     Patch * p_obj = new Patch();
+
+    std::cout << "SELF:  " << SELF << std::endl;
+    std::cout << "ctor:  " << p_obj << std::endl;
     
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, patch_data_offset) = (t_CKINT) p_obj;
@@ -291,5 +305,88 @@ CK_DLL_MFUN(patch_disconnect)
     // get our c++ class pointer
     Patch* p_obj = (Patch*)OBJ_MEMBER_INT(SELF, patch_data_offset);
 
+    std::cout << "SELF:  " << SELF << std::endl;
+
     p_obj->disconnect();
+}
+
+CK_DLL_GFUN(patch_chuck)
+{
+  // SinOsc lfo => Patch p => f.freq
+
+  // holy fuck this works
+  // ~~~~~~~~~~~~~~~~~~~~
+  // The argument stack normall looks like this:
+  // arg2
+  // arg1
+  // ~~ the void ~~
+  //
+  // But for member fuctions, the VM actually pushes two values
+  // onto the register: the function and it's associated object:
+  // arg2.func
+  // arg2 (object)
+  // arg1
+  //
+  // This was screwing with ARGS because it expects only one value per
+  // argument. So, the RHS argument was valid (the m_fun pointer), but
+  // the LHS argument was actually the member function's object. You
+  // need to go one back to get the actually first argument.
+  (*((Chuck_Object **&)ARGS)--);
+
+  // get the arguments
+  Chuck_Object *ptch = GET_NEXT_OBJECT(ARGS);
+  Patch* patch = (Patch*)OBJ_MEMBER_INT(ptch, patch_data_offset);  
+  
+  // the member_function's associated object
+  Chuck_Object *rhs_object = GET_NEXT_OBJECT(ARGS);
+
+  Chuck_Func *rhs_func = (Chuck_Func*)GET_NEXT_OBJECT(ARGS); // THIS IS SINOSC.FREQ
+  // get internal representation
+  // Chuck_Func* rhs_func = (Chuck_Func*)rhs;
+
+  // std::cout << "patch: " << lhs << std::endl;
+  // so this seems to work... I'm getting the function pointer
+  // std::cout << "func: " << rhs << std::endl;
+  // std::cout << rhs_func << std::endl;
+  // std::cout << rhs_func->base_name << std::endl;
+  // std::cout << "DONE\n";
+
+  // maybe I don't need any of this and the function is the context all on its own
+  // default: this passes whatever input is patched into Chugin
+  // t_CKFLOAT val = 1.5;
+  // Chuck_DL_Return ret;
+
+  // // these three lines took a very long time to figure out...
+  // Chuck_VM_Code* func = rhs_func->code;
+  // // cast the function as a dynamically-linked member func
+  // f_mfun f = (f_mfun)func->native_func;
+  // // call said function
+  // f((Chuck_Object*)(m_dest), &val, &ret, m_vm, m_shred, m_api); // api?
+
+  
+
+  // the random crap I need to do to get mem_sp
+  // t_CKUINT *& mem_sp = (t_CKUINT *&)SHRED->mem->sp;
+
+  // std::cout << "mem_sp: " << mem_sp - 2048 << std::endl;
+
+  // this worked...
+  // from Chuck_Instr_Add_Ref_Object2
+  // Chuck_Object* obj = *( (Chuck_Object **)(mem_sp) );
+
+  patch->connect(rhs_object, rhs_func->base_name, VM, SHRED, API);
+
+  std::cout << "connected!\n";
+
+  
+  // // default: this passes whatever input is patched into Chugin
+  // t_CKFLOAT val = 1.5
+  // Chuck_DL_Return ret;
+
+  // // these three lines took a very long time to figure out...
+  // Chuck_VM_Code* func = rhs_func->code;
+  // // cast the function as a dynamically-linked member func
+  // f_mfun f = (f_mfun)func->native_func;
+  // // call said function
+  // f((Chuck_Object*)(m_dest), &val, &ret, m_vm, m_shred, m_api); // api?
 }
