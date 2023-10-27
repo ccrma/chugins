@@ -105,7 +105,7 @@ public:
         fluid_synth_bank_select(m_synth, chan, bankNum);
     }
 
-    void setTuning(int chan, Chuck_Array8 * tuning)
+    void setTuning(int chan, Chuck_ArrayFloat * tuning)
     {
         bool allChans = false;
         if (chan < 0) {
@@ -122,7 +122,7 @@ public:
         }
     }
 
-    void setOctaveTuning(int chan, Chuck_Array8 * tuning)
+    void setOctaveTuning(int chan, Chuck_ArrayFloat * tuning)
     {
         bool allChans = false;
         if (chan < 0) {
@@ -155,10 +155,10 @@ public:
         fluid_synth_tune_notes(m_synth, 0, chan, 1, &noteNum , &pitch, false);
     }
 
-    void tuneNotes(Chuck_Array4 * noteNums, Chuck_Array8 * pitches, int chan)
+    void tuneNotes(Chuck_ArrayInt * noteNums, Chuck_ArrayFloat * pitches, int chan)
     {
         /* 
-        This ugly hack is required because Chuck_Array4 doesn't actually
+        This ugly hack is required because Chuck_ArrayInt doesn't actually
         contain 4-byte ints (at least on my 64-bit linux system). So we 
         need to copy the elements into an int array.
         */
@@ -448,7 +448,7 @@ CK_DLL_MFUN(fluidsynth_setTuning)
 {
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
 
-    Chuck_Array8 * tuning = (Chuck_Array8 *) GET_NEXT_OBJECT(ARGS);
+    Chuck_ArrayFloat * tuning = (Chuck_ArrayFloat *) GET_NEXT_OBJECT(ARGS);
 
     if (tuning->size() != 128 ) {
         printf("FluidSynth ERROR: setTuning() requires a tuning array of exactly 128 values\n");
@@ -462,7 +462,7 @@ CK_DLL_MFUN(fluidsynth_setTuningChan)
 {
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
 
-    Chuck_Array8 * tuning = (Chuck_Array8 *) GET_NEXT_OBJECT(ARGS);
+    Chuck_ArrayFloat * tuning = (Chuck_ArrayFloat *) GET_NEXT_OBJECT(ARGS);
     t_CKINT chan = GET_NEXT_INT(ARGS);
 
     if (tuning->size() != 128 ) {
@@ -477,7 +477,7 @@ CK_DLL_MFUN(fluidsynth_setOctaveTuning)
 {
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
 
-    Chuck_Array8 * tuning = (Chuck_Array8 *) GET_NEXT_OBJECT(ARGS);
+    Chuck_ArrayFloat * tuning = (Chuck_ArrayFloat *) GET_NEXT_OBJECT(ARGS);
 
     if (tuning->size() != 12 ) {
         printf("FluidSynth ERROR: setOctaveTuning() requires a tuning array of exactly 12 values\n");
@@ -491,7 +491,7 @@ CK_DLL_MFUN(fluidsynth_setOctaveTuningChan)
 {
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
 
-    Chuck_Array8 * tuning = (Chuck_Array8 *) GET_NEXT_OBJECT(ARGS);
+    Chuck_ArrayFloat * tuning = (Chuck_ArrayFloat *) GET_NEXT_OBJECT(ARGS);
     t_CKINT chan = GET_NEXT_INT(ARGS);
 
     if (tuning->size() != 12 ) {
@@ -541,8 +541,8 @@ CK_DLL_MFUN(fluidsynth_tuneNotes)
 {
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
 
-    Chuck_Array4 * noteNums = (Chuck_Array4 *) GET_NEXT_OBJECT(ARGS);
-    Chuck_Array8 * pitches = (Chuck_Array8 *) GET_NEXT_OBJECT(ARGS);
+    Chuck_ArrayInt * noteNums = (Chuck_ArrayInt *) GET_NEXT_OBJECT(ARGS);
+    Chuck_ArrayFloat * pitches = (Chuck_ArrayFloat *) GET_NEXT_OBJECT(ARGS);
 
     if (pitches->size() != noteNums->size()) {
         printf("FluidSynth ERROR: tuneNotes requires pitches and noteNums arrays to be the same length\n");
@@ -556,8 +556,8 @@ CK_DLL_MFUN(fluidsynth_tuneNotesChan)
 {
     FluidSynth * f_data = (FluidSynth *) OBJ_MEMBER_INT(SELF, fluidsynth_data_offset);
 
-    Chuck_Array4 * noteNums = (Chuck_Array4 *) GET_NEXT_OBJECT(ARGS);
-    Chuck_Array8 * pitches = (Chuck_Array8 *) GET_NEXT_OBJECT(ARGS);
+    Chuck_ArrayInt * noteNums = (Chuck_ArrayInt *) GET_NEXT_OBJECT(ARGS);
+    Chuck_ArrayFloat * pitches = (Chuck_ArrayFloat *) GET_NEXT_OBJECT(ARGS);
     t_CKINT chan = GET_NEXT_INT(ARGS);
 
     if (pitches->size() != noteNums->size()) {
