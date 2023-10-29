@@ -123,6 +123,15 @@ public class Assert
         }
     }
 
+    fun void assertEquals(dur expected, dur actual)
+    {
+        if (expected != actual)
+        {
+            "expected: " + (expected / samp) + " actual: " + (actual / samp) => string errorMessage;
+            fail(errorMessage);
+        }
+    }
+
     fun void assertEquals(string message, float expected, float actual, float delta)
     {
         if (Std.fabs(expected - actual) > delta)

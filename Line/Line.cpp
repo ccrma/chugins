@@ -48,6 +48,14 @@ CK_DLL_MFUN( line_setArrayStart );
 
 // keyOn function
 CK_DLL_MFUN( line_keyOn );
+// keyOff function
+CK_DLL_MFUN( line_keyOff );
+// keyOff function (set dur)
+CK_DLL_MFUN( line_keyOffDur );
+// keyOff function (set target)
+CK_DLL_MFUN( line_keyOffTarget );
+// keyOff function (set dur and target)
+CK_DLL_MFUN( line_keyOffDurTarget );
 
 // overwriting last function
 CK_DLL_MFUN( line_last );
@@ -65,11 +73,17 @@ class Line
 {
 public:
   // constructor
-  Line( t_CKFLOAT fs )
+  Line( t_CKFLOAT fs, Chuck_Object* keyOn, Chuck_Object* keyOff, CK_DL_API API, Chuck_VM* VM, Chuck_VM_Shred* shred )
   {
+    m_keyOn = keyOn;
+    m_keyOff = keyOff;
     m_fs = fs;
     m_elapsed = 0;
     m_state = -1;
+
+    m_API = API;
+    m_VM = VM;
+    m_shred = shred;
 
     // setup defaults
     m_initial = 0;
@@ -80,8 +94,7 @@ public:
 
     std::vector<t_CKDUR> durs{1000};
     m_durs = durs;
-
-    m_keyOff_dur = 1000;
+    m_keyOffDur = 1000;
 
     setRates();
     setCumulative();
@@ -91,6 +104,8 @@ public:
   SAMPLE tick( SAMPLE in ) {
     // envelope isn't on, do nothing.
     if (m_state == -1) return m_initial;
+    // key off is enabled
+    if (m_state == -2) return keyOffTick(in);
 
     t_CKFLOAT target = m_targets[m_state];
     t_CKFLOAT rate = m_rates[m_state];
@@ -110,6 +125,11 @@ public:
 
     // increment time
     m_elapsed++;
+
+    // broadcast the keyOn event once envelope is finished
+    if (m_elapsed >= m_durs_cumulative.back() && m_elapsed < m_durs_cumulative.back()+1) {
+      broadcast(m_keyOn);
+    }
 
     // advance envelope state...
     if (m_state == m_durs_cumulative.size() - 1) {
@@ -182,9 +202,63 @@ public:
     setCumulative();
   }
 
-  void keyOn() {
+  Chuck_Object* keyOn() {
     m_elapsed = 0;
     m_state = 0;
+
+    return m_keyOn;
+  }
+
+  t_CKDUR keyOffDur(t_CKDUR d) {
+    m_keyOffDur = d;
+    return d;
+  }
+
+  Chuck_Object* keyOff() {
+    m_elapsed = 0;
+    m_state = -2;
+
+    m_keyOffRate = (m_initial - m_value) / m_keyOffDur;
+    return m_keyOff;
+  }
+
+  Chuck_Object* keyOff(t_CKDUR d) {
+    m_elapsed = 0;
+    m_state = -2;
+
+    m_keyOffDur = d;
+    m_keyOffRate = (m_initial - m_value) / m_keyOffDur;
+
+    return m_keyOff;
+  }
+
+  Chuck_Object* keyOffTarget(t_CKFLOAT target) {
+    m_elapsed = 0;
+    m_state = -2;
+
+    m_initial = target;
+    m_keyOffRate = (m_initial - m_value) / m_keyOffDur;
+
+    return m_keyOff;
+  }
+
+  Chuck_Object* keyOff(t_CKFLOAT target, t_CKDUR d) {
+    m_elapsed = 0;
+    m_state = -2;
+    m_initial = target;
+
+    m_keyOffDur = d;
+    m_keyOffRate = (m_initial - m_value) / m_keyOffDur;
+
+    return m_keyOff;
+  }
+
+  Chuck_Object* getKeyOn() {
+    return m_keyOn;
+  }
+
+  Chuck_Object* getKeyOff() {
+    return m_keyOff;
   }
 
   t_CKFLOAT last() {
@@ -192,6 +266,11 @@ public:
   }
 
 private:
+  // API-related stuff
+  CK_DL_API m_API;
+  Chuck_VM* m_VM;
+  Chuck_VM_Shred* m_shred;
+
   // the envelope params
   t_CKFLOAT m_initial;
   t_CKFLOAT m_value;
@@ -201,7 +280,8 @@ private:
   std::vector<t_CKDUR> m_durs, m_durs_cumulative;
   std::vector<t_CKFLOAT> m_rates;
 
-  t_CKDUR m_keyOff_dur;
+  t_CKDUR m_keyOffDur;
+  t_CKFLOAT m_keyOffRate;
 
   // the current state of the envelope
   // -1: not on
@@ -211,6 +291,9 @@ private:
 
   // TODO: I don't need this, I just need an envelope of size 1...
   bool m_singular;
+
+  Chuck_Object* m_keyOn;
+  Chuck_Object* m_keyOff;
 
   // calculate the rates of every interval
   void setRates() {
@@ -242,6 +325,29 @@ private:
       m_durs_cumulative.push_back(dur);
     }
   }
+
+  void broadcast(Chuck_Object* key) {
+    Chuck_DL_Api::Type event_type = m_API->type->lookup(m_VM, "Event");
+    t_CKINT broadcast = m_API->type->get_vtable_offset(m_VM, event_type, "broadcast");
+    m_API->vm->invoke_mfun_immediate_mode(key, broadcast, m_VM, m_shred, nullptr, 0);
+  }
+
+  SAMPLE keyOffTick(SAMPLE in) {
+    m_value += m_keyOffRate;
+    if (m_keyOffRate > 0 && m_value > m_initial) m_value = m_initial;
+    if (m_keyOffRate < 0 && m_value < m_initial) m_value = m_initial;
+
+    m_elapsed++;
+
+    // broadcast the keyOn event once envelope is finished
+    if (m_elapsed >= m_keyOffDur && m_elapsed < m_keyOffDur+1) {
+      broadcast(m_keyOff);
+    }
+
+    // scale the input by the current value of the envelope;
+    return in * m_value;
+  }
+
 };
 
 
@@ -298,6 +404,19 @@ CK_DLL_QUERY( Line )
   // keyOn function
   QUERY->add_mfun( QUERY, line_keyOn, "Event", "keyOn" );
 
+  // keyOff functions
+  QUERY->add_mfun( QUERY, line_keyOff, "Event", "keyOff" );
+
+  QUERY->add_mfun( QUERY, line_keyOffDur, "Event", "keyOff" );
+  QUERY->add_arg( QUERY, "dur", "duration" );
+
+  QUERY->add_mfun( QUERY, line_keyOffDurTarget, "Event", "keyOff" );
+  QUERY->add_arg( QUERY, "float", "target" );
+  QUERY->add_arg( QUERY, "dur", "duration" );
+
+  QUERY->add_mfun( QUERY, line_keyOffTarget, "Event", "keyOff" );
+  QUERY->add_arg( QUERY, "float", "target" );
+
   QUERY->add_mfun( QUERY, line_last, "float", "last" );
   QUERY->doc_func( QUERY, "get the last sample value of the unit generator.");
 
@@ -324,8 +443,21 @@ CK_DLL_CTOR( line_ctor )
   // get the offset where we'll store our internal c++ class pointer
   OBJ_MEMBER_INT( SELF, line_data_offset ) = 0;
 
+
+  // keyOn and keyOff events
+  Chuck_DL_Api::Object keyOn = API->object->create(SHRED,
+                                                   API->type->lookup(VM, "Event"),
+                                                   true);
+  Chuck_DL_Api::Object keyOff = API->object->create(SHRED,
+                                                    API->type->lookup(VM, "Event"),
+                                                    true);
+
+  // need to manage references since these are persistent objects
+  API->object->add_ref(keyOn);
+  API->object->add_ref(keyOff);
+
   // instantiate our internal c++ class representation
-  Line * l_obj = new Line( API->vm->srate(VM) );
+  Line * l_obj = new Line( API->vm->srate(VM), keyOn, keyOff, API, VM, SHRED );
 
   // store the pointer in the ChucK object member
   OBJ_MEMBER_INT( SELF, line_data_offset ) = (t_CKINT)l_obj;
@@ -337,6 +469,11 @@ CK_DLL_DTOR( line_dtor )
 {
   // get our c++ class pointer
   Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  // remove_references
+  API->object->release(l_obj->getKeyOn());
+  API->object->release(l_obj->getKeyOff());
+
   // clean up (this macro tests for NULL, deletes, and zeros out the variable)
   CK_SAFE_DELETE( l_obj );
   // set the data field to 0
@@ -478,7 +615,45 @@ CK_DLL_MFUN( line_keyOn )
   // get our c++ class pointer
   Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
 
-  l_obj->keyOn();
+  RETURN->v_object = l_obj->keyOn();
+}
+
+CK_DLL_MFUN( line_keyOff )
+{
+  // get our c++ class pointer
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+  RETURN->v_object = l_obj->keyOff();
+}
+
+CK_DLL_MFUN( line_keyOffDur )
+{
+  // get our c++ class pointer
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  t_CKDUR duration = GET_NEXT_DUR( ARGS );
+
+  RETURN->v_object = l_obj->keyOff(duration);
+}
+
+CK_DLL_MFUN( line_keyOffTarget )
+{
+  // get our c++ class pointer
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  t_CKFLOAT target = GET_NEXT_FLOAT( ARGS );
+
+  RETURN->v_object = l_obj->keyOffTarget(target);
+}
+
+CK_DLL_MFUN( line_keyOffDurTarget )
+{
+  // get our c++ class pointer
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  t_CKFLOAT target = GET_NEXT_FLOAT( ARGS );
+  t_CKDUR duration = GET_NEXT_DUR( ARGS );
+
+  RETURN->v_object = l_obj->keyOff(target, duration);
 }
 
 CK_DLL_MFUN( line_last ) {
