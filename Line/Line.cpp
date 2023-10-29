@@ -46,8 +46,20 @@ CK_DLL_MFUN( line_setArray );
 // multi-ramp with user-defined start
 CK_DLL_MFUN( line_setArrayStart );
 
-// keyOn function
+// keyOn functions
 CK_DLL_MFUN( line_keyOn );
+// single-ramp with 0 start and 1 target
+CK_DLL_MFUN( line_keyOnSingle );
+// single-ramp with 0 start and user-defined target
+CK_DLL_MFUN( line_keyOnSingleTarget );
+// single-ramp with user-defined start and user-defined target
+CK_DLL_MFUN( line_keyOnSingleTargetStart );
+// multi-ramp with 0 start
+CK_DLL_MFUN( line_keyOnArray );
+// multi-ramp with user-defined start
+CK_DLL_MFUN( line_keyOnArrayStart );
+
+
 // keyOff function
 CK_DLL_MFUN( line_keyOff );
 // keyOff function (set dur)
@@ -378,44 +390,84 @@ CK_DLL_QUERY( Line )
   // singular set with all defaults
   QUERY->add_mfun( QUERY, line_setSingle, "void", "set" );
   QUERY->add_arg( QUERY, "dur", "duration" );
+  QUERY->doc_func( QUERY, "Set ramp, going [0,1] over duration (default 1000::samp).");
 
   // singular set with default start
   QUERY->add_mfun( QUERY, line_setSingleTarget, "void", "set" );
   QUERY->add_arg( QUERY, "float", "target" );
   QUERY->add_arg( QUERY, "dur", "duration" );
+  QUERY->doc_func( QUERY, "Set ramp, going [0,target] over duration.");
 
   // singular set with no defaults
   QUERY->add_mfun( QUERY, line_setSingleTargetStart, "void", "set" );
   QUERY->add_arg( QUERY, "float", "initial" );
   QUERY->add_arg( QUERY, "float", "target" );
   QUERY->add_arg( QUERY, "dur", "duration" );
+  QUERY->doc_func( QUERY, "Set ramp, going [initial,target] over duration.");
 
   // array set with default start
   QUERY->add_mfun( QUERY, line_setArray, "void", "set" );
   QUERY->add_arg( QUERY, "float[]", "targets" );
   QUERY->add_arg( QUERY, "dur[]", "durations" );
+  QUERY->doc_func( QUERY, "Set ramp, starting at 0 and going through all (target, duration) pairs.");
 
   // array set with no defaults
   QUERY->add_mfun( QUERY, line_setArrayStart, "void", "set" );
   QUERY->add_arg( QUERY, "float", "initial" );
   QUERY->add_arg( QUERY, "float[]", "targets" );
   QUERY->add_arg( QUERY, "dur[]", "durations" );
+  QUERY->doc_func( QUERY, "Set ramp, starting at initial and going through all (target, duration) pairs.");
 
   // keyOn function
   QUERY->add_mfun( QUERY, line_keyOn, "Event", "keyOn" );
+  QUERY->doc_func( QUERY, "Trigger ramp");
+
+  QUERY->add_mfun( QUERY, line_keyOnSingle, "Event", "keyOn" );
+  QUERY->add_arg( QUERY, "dur", "duration" );
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+
+  // singular keyOn with default start
+  QUERY->add_mfun( QUERY, line_keyOnSingleTarget, "Event", "keyOn" );
+  QUERY->add_arg( QUERY, "float", "target" );
+  QUERY->add_arg( QUERY, "dur", "duration" );
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+
+  // singular keyOn with no defaults
+  QUERY->add_mfun( QUERY, line_keyOnSingleTargetStart, "Event", "keyOn" );
+  QUERY->add_arg( QUERY, "float", "initial" );
+  QUERY->add_arg( QUERY, "float", "target" );
+  QUERY->add_arg( QUERY, "dur", "duration" );
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+
+  // array keyOn with default start
+  QUERY->add_mfun( QUERY, line_keyOnArray, "Event", "keyOn" );
+  QUERY->add_arg( QUERY, "float[]", "targets" );
+  QUERY->add_arg( QUERY, "dur[]", "durations" );
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+
+  // array keyOn with no defaults
+  QUERY->add_mfun( QUERY, line_keyOnArrayStart, "Event", "keyOn" );
+  QUERY->add_arg( QUERY, "float", "initial" );
+  QUERY->add_arg( QUERY, "float[]", "targets" );
+  QUERY->add_arg( QUERY, "dur[]", "durations" );
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
 
   // keyOff functions
   QUERY->add_mfun( QUERY, line_keyOff, "Event", "keyOff" );
+  QUERY->doc_func( QUERY, "Ramp down from current value to initial (default duration is 1000:samp)");
 
   QUERY->add_mfun( QUERY, line_keyOffDur, "Event", "keyOff" );
   QUERY->add_arg( QUERY, "dur", "duration" );
+  QUERY->doc_func( QUERY, "Ramp down from current value to initial over duration");
+
+  QUERY->add_mfun( QUERY, line_keyOffTarget, "Event", "keyOff" );
+  QUERY->add_arg( QUERY, "float", "target" );
+  QUERY->doc_func( QUERY, "Ramp down from current value to target. Sets initial value to target");
 
   QUERY->add_mfun( QUERY, line_keyOffDurTarget, "Event", "keyOff" );
   QUERY->add_arg( QUERY, "float", "target" );
   QUERY->add_arg( QUERY, "dur", "duration" );
-
-  QUERY->add_mfun( QUERY, line_keyOffTarget, "Event", "keyOff" );
-  QUERY->add_arg( QUERY, "float", "target" );
+  QUERY->doc_func( QUERY, "Ramp down from current value to target over duration. Sets initial value to target");
 
   QUERY->add_mfun( QUERY, line_last, "float", "last" );
   QUERY->doc_func( QUERY, "get the last sample value of the unit generator.");
@@ -617,6 +669,124 @@ CK_DLL_MFUN( line_keyOn )
 
   RETURN->v_object = l_obj->keyOn();
 }
+
+// single-ramp with 0 start and 1 target
+CK_DLL_MFUN( line_keyOnSingle )
+{
+  // get our c++ class pointer
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  t_CKDUR duration = GET_NEXT_DUR( ARGS );
+
+  l_obj->set(duration);
+  RETURN->v_object = l_obj->keyOn();
+}
+
+// single-ramp with 0 start and user-defined target
+CK_DLL_MFUN( line_keyOnSingleTarget )
+{
+  // get our c++ class pointer
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  t_CKFLOAT target = GET_NEXT_FLOAT( ARGS );
+  t_CKDUR duration = GET_NEXT_DUR( ARGS );
+
+  l_obj->set(duration, target);
+  RETURN->v_object = l_obj->keyOn();
+}
+
+// single-ramp with user-defined start and user-defined target
+CK_DLL_MFUN( line_keyOnSingleTargetStart )
+{
+  // get our c++ class pointer
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  t_CKFLOAT initial = GET_NEXT_FLOAT( ARGS );
+  t_CKFLOAT target = GET_NEXT_FLOAT( ARGS );
+  t_CKDUR duration = GET_NEXT_DUR( ARGS );
+
+  l_obj->set(duration, target, initial);
+  RETURN->v_object = l_obj->keyOn();
+}
+
+// multi-ramp with 0 start
+CK_DLL_MFUN( line_keyOnArray )
+{
+  // get our c++ class pointer
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  // get arguments
+  Chuck_ArrayFloat* targets = (Chuck_ArrayFloat *)GET_NEXT_OBJECT( ARGS );
+  Chuck_ArrayFloat* durations = (Chuck_ArrayFloat *)GET_NEXT_OBJECT( ARGS );
+
+  // bounds checking
+  t_CKINT durations_size, targets_size;
+  API->object->array_float_size(durations, durations_size);
+  API->object->array_float_size(targets, targets_size);
+
+  if (durations_size != targets_size) {
+    API->vm->em_log(3, "Duration and target arrays must be same size");
+    return;
+  }
+
+  // copy over array contents
+  std::vector<t_CKDUR> durations_vec;
+  std::vector<t_CKFLOAT> targets_vec;
+
+  for (int i = 0; i < durations_size; i++) {
+    t_CKDUR dur;
+    t_CKFLOAT target;
+
+    API->object->array_float_get_idx(durations, i, dur);
+    API->object->array_float_get_idx(targets, i, target);
+
+    durations_vec.push_back(dur);
+    targets_vec.push_back(target);
+  }
+
+  l_obj->set(durations_vec, targets_vec);
+  RETURN->v_object = l_obj->keyOn();
+}
+// multi-ramp with user-defined start
+CK_DLL_MFUN( line_keyOnArrayStart )
+{
+  // get our c++ class pointer
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  // get arguments
+  t_CKFLOAT initial = GET_NEXT_FLOAT( ARGS );
+  Chuck_ArrayFloat* targets = (Chuck_ArrayFloat *)GET_NEXT_OBJECT( ARGS );
+  Chuck_ArrayFloat* durations = (Chuck_ArrayFloat *)GET_NEXT_OBJECT( ARGS );
+
+  // bounds checking
+  t_CKINT durations_size, targets_size;
+  API->object->array_float_size(durations, durations_size);
+  API->object->array_float_size(targets, targets_size);
+
+  if (durations_size != targets_size) {
+    API->vm->em_log(3, "Duration and target arrays must be same size");
+    return;
+  }
+
+  // copy over array contents
+  std::vector<t_CKDUR> durations_vec;
+  std::vector<t_CKFLOAT> targets_vec;
+
+  for (int i = 0; i < durations_size; i++) {
+    t_CKDUR dur;
+    t_CKFLOAT target;
+
+    API->object->array_float_get_idx(durations, i, dur);
+    API->object->array_float_get_idx(targets, i, target);
+
+    durations_vec.push_back(dur);
+    targets_vec.push_back(target);
+  }
+
+  l_obj->set(durations_vec, targets_vec, initial);
+  RETURN->v_object = l_obj->keyOn();
+}
+
 
 CK_DLL_MFUN( line_keyOff )
 {
