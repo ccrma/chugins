@@ -34,9 +34,18 @@
 //       |- see src/host-examples/ for sample integration code for ChucK core
 //       |- see chuck, miniAudicle, WebChucK, Chunity etc. for their
 //          respective integration of ChucK core
+//       ------
+//       |- [chugins] "chuck.h" is also a single-header include for
+//          chugins, including ChuGL (ChucK Graphics Library), standard
+//          chugins library, and 3rd-party chugins
+//       |- [chugins] are dynamically loaded and thus should never directly
+//          instantiate objects in chuck core; instead chugins must access
+//          chuck core function through the DL runtime API
+//          (defined in "chuck_dl.h", which is included from this header)
+//       ----------------------------------------------------------------------
 //
 // author: Ge Wang (https://ccrma.stanford.edu/~ge/)
-//   date: fall 2017
+//   date: Fall 2017
 //
 // additional authors:
 //       Jack Atherton (lja@ccrma.stanford.edu)
@@ -47,10 +56,10 @@
 #ifndef __CHUCK_H__
 #define __CHUCK_H__
 
+#include "chuck_carrier.h"
 #include "chuck_compile.h"
 #include "chuck_dl.h"
 #include "chuck_vm.h"
-#include "chuck_carrier.h"
 #include "util_math.h"
 #include "util_string.h"
 #include <string>
@@ -74,7 +83,7 @@
 
 // ChucK version string -- retrieve using ChucK::version()
 // 1.5.0.0 (ge) | moved here for at-a-glance visibility (e.g., for chugins)
-#define CHUCK_VERSION_STRING                    "1.5.1.7 (chai)"
+#define CHUCK_VERSION_STRING                    "1.5.1.8 (chai)"
 
 // ChucK param names -- used in setParam(...) and getParam*(...)
 #define CHUCK_PARAM_VERSION                     "VERSION"

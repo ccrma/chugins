@@ -45,23 +45,20 @@
 #include <vector>
 
 
-
-
 // major version must be the same between chuck:chugin
-#define CK_DLL_VERSION_MAJOR (0x0009)
+#define CK_DLL_VERSION_MAJOR (9)
 // minor version of chugin must be less than or equal to chuck's
-#define CK_DLL_VERSION_MINOR (0x0000)
+#define CK_DLL_VERSION_MINOR (0)
 #define CK_DLL_VERSION_MAKE(maj,min) ((t_CKUINT)(((maj) << 16) | (min)))
 #define CK_DLL_VERSION_GETMAJOR(v) (((v) >> 16) & 0xFFFF)
 #define CK_DLL_VERSION_GETMINOR(v) ((v) & 0xFFFF)
 #define CK_DLL_VERSION (CK_DLL_VERSION_MAKE(CK_DLL_VERSION_MAJOR, CK_DLL_VERSION_MINOR))
 
 
-
-
+// string literal containing default chugin path (platform-specific)
 extern char g_default_chugin_path[];
+// string literal containing environment variable for chugin search path
 extern char g_chugin_path_envvar[];
-
 
 
 // DL forward references
@@ -322,6 +319,7 @@ struct Chuck_DL_Arg
 extern "C" {
 // query
 typedef t_CKUINT (CK_DLL_CALL * f_ck_declversion)();
+typedef const char * (CK_DLL_CALL * f_ck_info)( const char * key );
 typedef t_CKBOOL (CK_DLL_CALL * f_ck_query)( Chuck_DL_Query * QUERY );
 // object
 typedef Chuck_Object * (CK_DLL_CALL * f_alloc)( Chuck_VM * VM, Chuck_VM_Shred * SHRED, CK_DL_API API );
@@ -764,8 +762,8 @@ public:
     // constructor
     Chuck_DLL( Chuck_Carrier * carrier, const char * xid = NULL )
         : m_handle(NULL), m_id(xid ? xid : ""),
-        m_done_query(FALSE), m_version_func(NULL), m_query_func(NULL),
-        m_query( carrier, this ), m_versionMajor(0), m_versionMinor(0)
+        m_done_query(FALSE), m_api_version_func(NULL), m_info_func(NULL), m_query_func(NULL),
+        m_query( carrier, this ), m_apiVersionMajor(0), m_apiVersionMinor(0)
     { }
     // destructor
     ~Chuck_DLL() { this->unload(); }
@@ -779,13 +777,18 @@ protected:
     std::string m_func;
     t_CKBOOL m_done_query;
 
-    f_ck_declversion m_version_func;
+    // host/client api version
+    f_ck_declversion m_api_version_func;
+    // chugin info func
+    f_ck_info m_info_func;
+    // the query func
     f_ck_query m_query_func;
+    // the query shuttle object
     Chuck_DL_Query m_query;
 
 protected: // addition info 1.5.0.4 (ge) added
-    t_CKUINT m_versionMajor;
-    t_CKUINT m_versionMinor;
+    t_CKUINT m_apiVersionMajor;
+    t_CKUINT m_apiVersionMinor;
 };
 
 
@@ -833,6 +836,7 @@ struct Chuck_DL_Api
     typedef Chuck_Type * Type;
     typedef Chuck_String * String;
     typedef Chuck_ArrayInt * ArrayInt; // 1.5.0.1 (ge) added
+    typedef Chuck_ArrayFloat * ArrayFloat; // 1.5.1.8 (nshaheed) added
 
 public:
     static Chuck_DL_Api g_api;
@@ -881,16 +885,14 @@ public:
         void (CK_DLL_CALL * const release)( Object object );
         // get reference count
         t_CKUINT (CK_DLL_CALL * const refcount)( Object object );
-        // instantiating and initializing a ChucK object by type, with reference to a parent shred
+        // instantiating and initializing a ChucK object by type
         // if addRef == TRUE the newly created object will have a reference count of 1; otherwise 0
         // NOTE set addRef to TRUE if you intend to keep a reference of the newly created object around (e.g., in the chugin)
         // NOTE set addRef to FALSE if the created object is to be returned without keeping a reference around
         Object (CK_DLL_CALL * const create)( Chuck_VM_Shred *, Type type, t_CKBOOL addRef );
-        // instantiating and initializing a ChucK object by type, with no reference to a parent shred
-        // if addRef == TRUE the newly created object will have a reference count of 1; otherwise 0
+        // instantiating and initializing a ChucK object by type, using a VM instead of a shred
         Object (CK_DLL_CALL * const create_without_shred)( Chuck_VM *, Type type, t_CKBOOL addRef );
-        // instantiate and initialize a ChucK string by type
-        // if addRef == TRUE the newly created object will have a reference count of 1; otherwise 0
+        // instantiate and initialize a ChucK string by type (without ref to a parent shred)
         String (CK_DLL_CALL * const create_string)( Chuck_VM *, const char * value, t_CKBOOL addRef );
         // get the origin shred
         Chuck_VM_Shred * (CK_DLL_CALL * const get_origin_shred)( Object object );
@@ -910,6 +912,11 @@ public:
         t_CKBOOL (CK_DLL_CALL * const array_int_push_back)( ArrayInt array, t_CKUINT value );
         t_CKBOOL (CK_DLL_CALL * const array_int_get_idx)( ArrayInt array, t_CKINT idx, t_CKUINT & value );
         t_CKBOOL (CK_DLL_CALL * const array_int_get_key)( ArrayInt array, const std::string & key, t_CKUINT & value );
+        // array_float operations
+        t_CKBOOL (CK_DLL_CALL * const array_float_size)( ArrayFloat array, t_CKINT & value );
+        t_CKBOOL (CK_DLL_CALL * const array_float_push_back)( ArrayFloat array, t_CKFLOAT value );
+        t_CKBOOL (CK_DLL_CALL * const array_float_get_idx)( ArrayFloat array, t_CKINT idx, t_CKFLOAT & value );
+        t_CKBOOL (CK_DLL_CALL * const array_float_get_key)( ArrayFloat array, const std::string & key, t_CKFLOAT & value );
     } * const object;
 
     // access to host-side chuck types
