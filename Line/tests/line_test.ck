@@ -9,6 +9,8 @@ class LineTest extends Assert {
         testSingleWithInitial();
         testMulti();
         testMultiInit();
+        testFailDifferentSizesSet();
+        testFailDifferentSizesKeyOn();
 
         testKeyOnSingleDuration();
         testKeyOnSingleDurationAndTarget();
@@ -121,7 +123,7 @@ class LineTest extends Assert {
         Step s => Line l => blackhole;
 
         l.keyOn(-1000, 1000, 1::second);
-        
+
         assertRamp(l, second, -1000.0, 1000.0);
     }
 
@@ -232,6 +234,24 @@ class LineTest extends Assert {
 
            l.keyOff(15, 1::second);
            assertRamp(l, 1::second, -0.5, 15);
+    }
+
+    public void testFailDifferentSizesSet() {
+           <<< "testFailDifferentSizesSet" >>>;
+           Step s => Line l => blackhole;
+
+           l.set([0.0, 1, 2], [1::second]) => int got;
+
+           assertFalse(got);
+    }
+
+    public void testFailDifferentSizesKeyOn() {
+           <<< "testFailDifferentSizesKeyOn" >>>;
+           Step s => Line l => blackhole;
+
+           l.keyOn([0.0, 1, 2], [1::second]) @=> Event got;
+
+           assertNull(got);
     }
 
     fun void assertRamp(Line @ l, dur d, float target) {

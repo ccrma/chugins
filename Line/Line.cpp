@@ -388,31 +388,31 @@ CK_DLL_QUERY( Line )
   // and declare a tickf function using CK_DLL_TICKF
 
   // singular set with all defaults
-  QUERY->add_mfun( QUERY, line_setSingle, "void", "set" );
+  QUERY->add_mfun( QUERY, line_setSingle, "int", "set" );
   QUERY->add_arg( QUERY, "dur", "duration" );
   QUERY->doc_func( QUERY, "Set ramp, going [0,1] over duration (default 1000::samp).");
 
   // singular set with default start
-  QUERY->add_mfun( QUERY, line_setSingleTarget, "void", "set" );
+  QUERY->add_mfun( QUERY, line_setSingleTarget, "int", "set" );
   QUERY->add_arg( QUERY, "float", "target" );
   QUERY->add_arg( QUERY, "dur", "duration" );
   QUERY->doc_func( QUERY, "Set ramp, going [0,target] over duration.");
 
   // singular set with no defaults
-  QUERY->add_mfun( QUERY, line_setSingleTargetStart, "void", "set" );
+  QUERY->add_mfun( QUERY, line_setSingleTargetStart, "int", "set" );
   QUERY->add_arg( QUERY, "float", "initial" );
   QUERY->add_arg( QUERY, "float", "target" );
   QUERY->add_arg( QUERY, "dur", "duration" );
   QUERY->doc_func( QUERY, "Set ramp, going [initial,target] over duration.");
 
   // array set with default start
-  QUERY->add_mfun( QUERY, line_setArray, "void", "set" );
+  QUERY->add_mfun( QUERY, line_setArray, "int", "set" );
   QUERY->add_arg( QUERY, "float[]", "targets" );
   QUERY->add_arg( QUERY, "dur[]", "durations" );
   QUERY->doc_func( QUERY, "Set ramp, starting at 0 and going through all (target, duration) pairs.");
 
   // array set with no defaults
-  QUERY->add_mfun( QUERY, line_setArrayStart, "void", "set" );
+  QUERY->add_mfun( QUERY, line_setArrayStart, "int", "set" );
   QUERY->add_arg( QUERY, "float", "initial" );
   QUERY->add_arg( QUERY, "float[]", "targets" );
   QUERY->add_arg( QUERY, "dur[]", "durations" );
@@ -556,6 +556,8 @@ CK_DLL_MFUN( line_setSingle )
   t_CKDUR duration = GET_NEXT_DUR( ARGS );
 
   l_obj->set(duration);
+
+  RETURN->v_int = true;
 }
 
 
@@ -569,6 +571,7 @@ CK_DLL_MFUN( line_setSingleTarget )
   t_CKDUR duration = GET_NEXT_DUR( ARGS );
 
   l_obj->set(duration, target);
+  RETURN->v_int = true;
 }
 
 // single-ramp with user-defined start and user-defined target
@@ -582,6 +585,7 @@ CK_DLL_MFUN( line_setSingleTargetStart )
   t_CKDUR duration = GET_NEXT_DUR( ARGS );
 
   l_obj->set(duration, target, initial);
+  RETURN->v_int = true;
 }
 
 // multi-ramp with 0 start
@@ -600,7 +604,8 @@ CK_DLL_MFUN( line_setArray )
   API->object->array_float_size(targets, targets_size);
 
   if (durations_size != targets_size) {
-    API->vm->em_log(3, "Duration and target arrays must be same size");
+    API->vm->throw_exception("LineMismatchedArrays", "Duration and target arrays must be same size in a Line.set(...)", nullptr);
+    RETURN->v_int = false;
     return;
   }
 
@@ -620,6 +625,7 @@ CK_DLL_MFUN( line_setArray )
   }
 
   l_obj->set(durations_vec, targets_vec);
+  RETURN->v_int = true;
 }
 
 // multi-ramp with user-defined start
@@ -639,7 +645,8 @@ CK_DLL_MFUN( line_setArrayStart )
   API->object->array_float_size(targets, targets_size);
 
   if (durations_size != targets_size) {
-    API->vm->em_log(3, "Duration and target arrays must be same size");
+    API->vm->throw_exception("LineMismatchedArrays", "Duration and target arrays must be same size in a Line.set(...)", nullptr);
+    RETURN->v_int = false;
     return;
   }
 
@@ -659,6 +666,7 @@ CK_DLL_MFUN( line_setArrayStart )
   }
 
   l_obj->set(durations_vec, targets_vec, initial);
+  RETURN->v_int = true;
 }
 
 // https://github.com/ccrma/chuck/blob/b47a2c1e4cc2d234d76b6b7733de839df75477ed/src/core/ugen_stk.cpp#L3698
@@ -725,7 +733,7 @@ CK_DLL_MFUN( line_keyOnArray )
   API->object->array_float_size(targets, targets_size);
 
   if (durations_size != targets_size) {
-    API->vm->em_log(3, "Duration and target arrays must be same size");
+    API->vm->throw_exception("LineMismatchedArrays", "Duration and target arrays must be same size in a Line.keyOn(...)", nullptr);
     return;
   }
 
@@ -764,7 +772,7 @@ CK_DLL_MFUN( line_keyOnArrayStart )
   API->object->array_float_size(targets, targets_size);
 
   if (durations_size != targets_size) {
-    API->vm->em_log(3, "Duration and target arrays must be same size");
+    API->vm->throw_exception("LineMismatchedArrays", "Duration and target arrays must be same size in a Line.keyOn(...)", nullptr);
     return;
   }
 
