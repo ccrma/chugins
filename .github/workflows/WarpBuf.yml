@@ -1,12 +1,12 @@
 name: WarpBuf
-# on:
-  # pull_request: {}
-  # push:
-  #   branches:
-  #     - main
 
-# Allows you to run this workflow manually from the Actions tab
-on: workflow_dispatch
+on:
+  # pull_request: {}
+  push:
+    # branches:
+      # - main
+    paths:
+      - 'WarpBuf/**'
 
 jobs:
 
@@ -29,15 +29,15 @@ jobs:
       with:
         submodules: true
 
-    - name: Install dependencies ubuntu
-      if: matrix.os == 'ubuntu-20.04'
+    - name: Install dependencies Ubuntu
+      if: startsWith(matrix.os, 'ubuntu')
       run: |
         sudo apt install autoconf autogen automake build-essential libasound2-dev \
         libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev \
         libmpg123-dev pkg-config python
 
     - name: Install dependencies macOS
-      if: matrix.os == 'macos-11'
+      if: startsWith(matrix.os, 'macos')
       run: |
         brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
 
@@ -47,15 +47,20 @@ jobs:
         cd WarpBuf
         sh build_all_platforms.sh
 
-    - name: Package release
+    - name: Package release (macOS)
+      if: startsWith(matrix.os, 'macos')
       run: |
-        if [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
-          mv WarpBuf/build/libWarpBuf.so WarpBuf/build/WarpBuf.chug
-        elif [[ "${{ matrix.os }}" == "macos-11" ]]; then
-          mv WarpBuf/build/libWarpBuf.dylib WarpBuf/build/WarpBuf.chug 
-        else
-          mv WarpBuf/build/x64/Release/WarpBuf.dll WarpBuf/build/WarpBuf.chug 
-        fi
+        mv WarpBuf/build/libWarpBuf.dylib WarpBuf/build/WarpBuf.chug 
+
+    - name: Package release (Windows)
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        mv WarpBuf/build/x64/Release/WarpBuf.dll WarpBuf/build/WarpBuf.chug 
+
+    - name: Package release (Ubuntu)
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+        mv WarpBuf/build/libWarpBuf.so WarpBuf/build/WarpBuf.chug
 
     - uses: actions/upload-artifact@v3
       with:
