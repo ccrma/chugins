@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 
-project(WarpBufChugin VERSION 0.0.1)
+project(WarpBuf VERSION 0.0.1)
 
 # Set startup project for Visual Studio
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WarpBufChugin)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WarpBuf)
 
 # Collect ChucK sources
 FILE(GLOB CK_SOURCES ${PROJECT_SOURCE_DIR}/../../chuck/include/*.h)
 source_group("ChucK" FILES ${CK_SOURCES})
 
-# Collect WarpBufChugin sources
+# Collect WarpBuf sources
 set(Sources
     "src/AbletonClipInfo.h"
     "src/WarpBufChugin.h"
@@ -53,32 +53,51 @@ set(RUBBERBAND_HEADERS
 )
 
 # Create shared library
-add_library(WarpBufChugin SHARED ${CK_SOURCES} ${Sources} ${RUBBERBAND_SOURCES} ${RUBBERBAND_HEADERS}
+add_library(WarpBuf SHARED ${CK_SOURCES} ${Sources} ${RUBBERBAND_SOURCES} ${RUBBERBAND_HEADERS}
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/include/samplerate.h
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/portable_endian/include/portable_endian.h
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+add_compile_options(-fPIC)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_LIBSAMPLERATE)
 
 # Platform-specific libraries and definitions
 if(APPLE)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE "HAVE_VDSP;USE_PTHREADS;__MACOSX_CORE__;__APPLE__")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        HAVE_VDSP
+        USE_PTHREADS
+        __MACOSX_CORE__
+        __APPLE__
+    )
     target_link_libraries(${PROJECT_NAME} PRIVATE "-framework CoreFoundation" "-framework CoreMIDI" "-framework CoreAudio" "-framework Accelerate")
 elseif(MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE ws2_32 winmm wsock32 dsound dinput8 dxguid)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE "USE_BUILTIN_FFT;WIN32;_WIN32;_WINDOWS;NOMINMAX;__WINDOWS_DS__;__WINDOWS_MODERN__;__PLATFORM_WIN32__")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        USE_BUILTIN_FFT
+        WIN32
+        _WIN32
+        _WINDOWS
+        NOMINMAX
+        __WINDOWS_DS__
+        __PLATFORM_WIN32__
+    )
 else()
-    target_compile_definitions(${PROJECT_NAME} PRIVATE "USE_BUILTIN_FFT;USE_PTHREADS;__PLATFORM_LINUX__")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        _GLIBCXX_USE_CXX11_ABI=0
+        USE_BUILTIN_FFT
+        USE_PTHREADS
+        __PLATFORM_LINUX__
+    )
 endif()
 
-target_link_libraries(WarpBufChugin PRIVATE samplerate)
+target_link_libraries(WarpBuf PRIVATE samplerate)
 
 # link libsndfile statically
 if (MSVC)
-    set (SNDFILE_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/lib/sndfile.lib)
-    set (SNDFILE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/include)
+    set (SNDFILE_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile-win64/lib/sndfile.lib)
+    set (SNDFILE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile-win64/include)
 else()
     # We expect the user to have built libsndfile as a static lib
     # and for it to be accessible via `pkg-config --static libsndfile`
@@ -92,29 +111,34 @@ else()
     pkg_check_modules(OGG REQUIRED IMPORTED_TARGET ogg)
     pkg_check_modules(OPUS REQUIRED IMPORTED_TARGET opus)
     pkg_check_modules(MPG123 REQUIRED IMPORTED_TARGET libmpg123)
+    if(APPLE)
+    execute_process(COMMAND find /usr/local/Cellar/lame -name libmp3lame.a OUTPUT_VARIABLE SNDFILE_STATIC_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    else()
+    execute_process(COMMAND find /usr/local -name libmp3lame.a OUTPUT_VARIABLE SNDFILE_STATIC_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    endif()
     list(POP_BACK PKG_CONFIG_EXECUTABLE)  # undo the append above
 
 endif()
-target_include_directories(WarpBufChugin PRIVATE ${SNDFILE_INCLUDE_DIRS})
+target_include_directories(WarpBuf PRIVATE ${SNDFILE_INCLUDE_DIRS})
 if (DEFINED SNDFILE_IS_STATIC)
-target_link_libraries (WarpBufChugin PRIVATE PkgConfig::SNDFILE PkgConfig::FLAC PkgConfig::VORBIS PkgConfig::OGG PkgConfig::OPUS PkgConfig::MPG123)
+target_link_libraries (WarpBuf PRIVATE PkgConfig::SNDFILE PkgConfig::FLAC PkgConfig::VORBIS PkgConfig::OGG PkgConfig::OPUS PkgConfig::MPG123 ${SNDFILE_STATIC_LIBS})
 else()
-target_link_libraries (WarpBufChugin PRIVATE ${SNDFILE_LIBRARIES})
+target_link_libraries (WarpBuf PRIVATE ${SNDFILE_LIBRARIES})
 endif()
 
 # Include header directories
-target_include_directories(WarpBufChugin PRIVATE
+target_include_directories(WarpBuf PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../chuck/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Rubberband>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Rubberband/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/portable_endian/include>
-    $<INSTALL_INTERFACE:WarpBufChugin>
+    $<INSTALL_INTERFACE:WarpBuf>
 )
 
 # Install library
-INSTALL(TARGETS WarpBufChugin
+INSTALL(TARGETS WarpBuf
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -128,6 +152,6 @@ if (MSVC)
   add_custom_command(TARGET ${PROJECT_NAME}
                      POST_BUILD
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                     "$<TARGET_FILE:WarpBufChugin>"
+                     "$<TARGET_FILE:WarpBuf>"
                      "%USERPROFILE%/Documents/ChucK/chugins/WarpBuf.chug")
 endif()

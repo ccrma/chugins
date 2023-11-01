@@ -1,6 +1,5 @@
 build/*
 Debug/
-thirdparty/libsndfile
 *.zip
 
 # Prerequisites
