@@ -97,14 +97,15 @@ target_link_libraries(WarpBuf PRIVATE samplerate)
 # link libsndfile statically
 if (MSVC)
     set (SNDFILE_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile-win64/lib/sndfile.lib)
-    set (SNDFILE_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile-win64/include)
+    target_link_libraries (WarpBuf PRIVATE ${SNDFILE_LIBRARIES})
 else()
     # We expect the user to have built libsndfile as a static lib
     # and for it to be accessible via `pkg-config --static libsndfile`
-    set(SNDFILE_IS_STATIC 1)
     find_package(PkgConfig REQUIRED)
+    if(APPLE)
     set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
     list(APPEND PKG_CONFIG_EXECUTABLE "--static")  # append temporarily
+    endif()
     pkg_check_modules(SNDFILE REQUIRED IMPORTED_TARGET sndfile)
     pkg_check_modules(FLAC REQUIRED IMPORTED_TARGET flac)
     pkg_check_modules(VORBIS REQUIRED IMPORTED_TARGET vorbis)
@@ -113,17 +114,9 @@ else()
     pkg_check_modules(MPG123 REQUIRED IMPORTED_TARGET libmpg123)
     if(APPLE)
     execute_process(COMMAND find /usr/local/Cellar/lame -name libmp3lame.a OUTPUT_VARIABLE SNDFILE_STATIC_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
-    else()
-    execute_process(COMMAND find /usr/local -name libmp3lame.a OUTPUT_VARIABLE SNDFILE_STATIC_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
-    endif()
     list(POP_BACK PKG_CONFIG_EXECUTABLE)  # undo the append above
-
-endif()
-target_include_directories(WarpBuf PRIVATE ${SNDFILE_INCLUDE_DIRS})
-if (DEFINED SNDFILE_IS_STATIC)
-target_link_libraries (WarpBuf PRIVATE PkgConfig::SNDFILE PkgConfig::FLAC PkgConfig::VORBIS PkgConfig::OGG PkgConfig::OPUS PkgConfig::MPG123 ${SNDFILE_STATIC_LIBS})
-else()
-target_link_libraries (WarpBuf PRIVATE ${SNDFILE_LIBRARIES})
+    endif()
+    target_link_libraries (WarpBuf PRIVATE PkgConfig::SNDFILE PkgConfig::FLAC PkgConfig::VORBIS PkgConfig::OGG PkgConfig::OPUS PkgConfig::MPG123 ${SNDFILE_STATIC_LIBS})
 endif()
 
 # Include header directories

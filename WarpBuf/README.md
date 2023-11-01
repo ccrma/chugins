@@ -2,6 +2,8 @@
 
 With WarpBuf you can time-stretch and independently transpose the pitch of an audio file. The supported formats include wav, flac, mp3, ogg, opus, and vorbis. If you don't have an Ableton `.asd` file to go with the audio file, then the BPM will be assumed to be 120. Therefore, to play the file twice as fast, do `240. => myWarpBuf.bpm;` Any mono channel UGen can be chucked to `.bpm` too.
 
+Because the audio is being read from the file system one sample at a time, you can avoid artifacts by using a larger buffer size: `chuck --bufsize2048 foo.ck`
+
 Control parameters:
 * .read - ( string , WRITE only ) - loads file for reading
 * .playhead - ( float , READ/WRITE ) - set/get playhead position in quarter notes relative to 1.1.1
