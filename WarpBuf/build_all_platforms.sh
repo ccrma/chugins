@@ -10,7 +10,7 @@ if [[ "$OSTYPE" == "linux"* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
     cd thirdparty/libsndfile
     LIBSNDFILE_INSTALL_PREFIX="$PWD/install"
     mkdir -p CMakeBuild && cd CMakeBuild
-    cmake .. -DCMAKE_INSTALL_PREFIX="$LIBSNDFILE_INSTALL_PREFIX" -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF -DENABLE_MPEG=OFF
+    cmake .. -DCMAKE_INSTALL_PREFIX="$LIBSNDFILE_INSTALL_PREFIX" -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF -DCMAKE_C_FLAGS="-fPIC" -DCMAKE_CXX_FLAGS="-fPIC"
     make && make install
     export PKG_CONFIG_PATH="$LIBSNDFILE_INSTALL_PREFIX/lib/pkgconfig"
     cd ../../..

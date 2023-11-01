@@ -12,6 +12,7 @@ jobs:
 
   build-all-platforms:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - name: ubuntu-x86_64
@@ -28,15 +29,17 @@ jobs:
       with:
         submodules: true
 
-    - name: Install dependencies
+    - name: Install dependencies ubuntu
+      if: matrix.os == 'ubuntu-20.04'
       run: |
-        if [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
-          sudo apt install autoconf autogen automake build-essential libasound2-dev \
-          libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev \
-          libmpg123-dev pkg-config python
-        elif [[ "${{ matrix.os }}" == "macos-11" ]]; then
-          brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
-        fi
+        sudo apt install autoconf autogen automake build-essential libasound2-dev \
+        libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev \
+        libmpg123-dev pkg-config python
+
+    - name: Install dependencies macOS
+      if: matrix.os == 'macos-11'
+      run: |
+        brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
 
     - name: Build release
       shell: bash
