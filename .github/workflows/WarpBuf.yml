@@ -16,13 +16,10 @@ jobs:
         include:
           - name: ubuntu-x86_64
             os: ubuntu-20.04
-            build-path: "WarpBuf/build/libWarpBuf.so"
           - name: macos-x86_64
             os: macos-11
-            build-path: "WarpBuf/build/libWarpBuf.dylib"
           - name: win64
             os: windows-2022
-            build-path: "WarpBuf/build/x64/Release/WarpBuf.dll"
 
     runs-on: ${{ matrix.os }}
 
@@ -47,8 +44,18 @@ jobs:
         cd WarpBuf
         sh build_all_platforms.sh
 
+    - name: Package release
+      run: |
+        if [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
+          mv WarpBuf/build/libWarpBuf.so WarpBuf/build/WarpBuf.chug
+        elif [[ "${{ matrix.os }}" == "macos-11" ]]; then
+          mv WarpBuf/build/libWarpBuf.dylib WarpBuf/build/WarpBuf.chug 
+        else
+          mv WarpBuf/build/x64/Release/WarpBuf.dll WarpBuf/build/WarpBuf.chug 
+        fi
+
     - uses: actions/upload-artifact@v3
       with:
         name: warpbuf-${{ matrix.name }}.zip
-        path: ${{ matrix.build-path }}
+        path: "WarpBuf/build/WarpBuf.chug"
         if-no-files-found: error
