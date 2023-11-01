@@ -1,0 +1,54 @@
+name: WarpBuf
+# on:
+  # pull_request: {}
+  # push:
+  #   branches:
+  #     - main
+
+# Allows you to run this workflow manually from the Actions tab
+on: workflow_dispatch
+
+jobs:
+
+  build-all-platforms:
+    strategy:
+      matrix:
+        include:
+          - name: ubuntu-x86_64
+            os: ubuntu-20.04
+            build-path: "WarpBuf/build/libWarpBuf.so"
+          - name: macos-x86_64
+            os: macos-11
+            build-path: "WarpBuf/build/libWarpBuf.dylib"
+          - name: win64
+            os: windows-2022
+            build-path: "WarpBuf/build/x64/Release/WarpBuf.dll"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+
+    - name: Install dependencies
+      run: |
+        if [[ "${{ matrix.os }}" == "ubuntu-20.04" ]]; then
+          sudo apt install autoconf autogen automake build-essential libasound2-dev \
+          libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev \
+          libmpg123-dev pkg-config python
+        elif [[ "${{ matrix.os }}" == "macos-11" ]]; then
+          brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
+        fi
+
+    - name: Build release
+      shell: bash
+      run: |
+        cd WarpBuf
+        sh build_all_platforms.sh
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: warpbuf-${{ matrix.name }}.zip
+        path: ${{ matrix.build-path }}
+        if-no-files-found: error

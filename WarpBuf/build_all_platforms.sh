@@ -7,11 +7,6 @@
 echo operating system type: ${OSTYPE}
 
 if [[ "$OSTYPE" == "linux"* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
-    if [ ! -d thirdparty/libsndfile ]; then
-        git clone https://github.com/libsndfile/libsndfile thirdparty/libsndfile
-    else
-        git -C thirdparty/libsndfile pull
-    fi
     cd thirdparty/libsndfile
     LIBSNDFILE_INSTALL_PREFIX="$PWD/install"
     mkdir -p CMakeBuild && cd CMakeBuild
@@ -20,29 +15,28 @@ if [[ "$OSTYPE" == "linux"* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
     export PKG_CONFIG_PATH="$LIBSNDFILE_INSTALL_PREFIX/lib/pkgconfig"
     cd ../../..
 else
-    if [ ! -d thirdparty/libsndfile ]; then
+    if [ ! -d thirdparty/libsndfile-win64 ]; then
         curl -L https://github.com/libsndfile/libsndfile/releases/download/1.2.0/libsndfile-1.2.0-win64.zip -o libsndfile.zip
         7z x libsndfile.zip -y
-        mv libsndfile-1.2.0-win64 thirdparty/libsndfile
+        mv libsndfile-1.2.0-win64 thirdparty/libsndfile-win64
     fi
 fi
 
-cmake -Bbuild .
+cmake -Bbuild . -DCMAKE_VERBOSE_MAKEFILE=ON
 cmake --build build --config Release
 
 # Copy the chugin to where it can be used by chuck:
-
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # we are on macOS
-    mkdir -p "/usr/local/lib/chuck"
-    cp "build/libWarpBufChugin.dylib" "/usr/local/lib/chuck/WarpBuf.chug"
-elif [[ "$OSTYPE" == "linux"* ]]; then
-    # we are on Linux
-    mkdir -p "/usr/local/lib/chuck"
-    cp "build/libWarpBufChugin.dylib" "/usr/local/lib/chuck/WarpBuf.chug"
-elif [ "$(expr substr $(uname -s) 1 10)" = "MINGW32_NT" ] || [ "$(expr substr $(uname -s) 1 10)" = "MINGW64_NT" ] || [ "$(expr substr $(uname -s) 1 9)" = "CYGWIN_NT" ]; then
-    echo
-else
-    echo "Unknown operating system" $(uname -s)
-    exit
-fi
+# if [[ "$OSTYPE" == "darwin"* ]]; then
+#     # we are on macOS
+#     mkdir -p "/usr/local/lib/chuck"
+#     cp "build/libWarpBuf.dylib" "/usr/local/lib/chuck/WarpBuf.chug"
+# elif [[ "$OSTYPE" == "linux"* ]]; then
+#     # we are on Linux
+#     mkdir -p "/usr/local/lib/chuck"
+#     cp "build/libWarpBuf.dylib" "/usr/local/lib/chuck/WarpBuf.chug"
+# elif [ "$(expr substr $(uname -s) 1 10)" = "MINGW32_NT" ] || [ "$(expr substr $(uname -s) 1 10)" = "MINGW64_NT" ] || [ "$(expr substr $(uname -s) 1 9)" = "CYGWIN_NT" ]; then
+#     echo
+# else
+#     echo "Unknown operating system" $(uname -s)
+#     exit
+# fi
