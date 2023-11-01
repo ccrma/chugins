@@ -38,9 +38,31 @@ Make sure you have `cmake`, `git`, and `sh` available from the command line/Term
 Update submodules:
 `git submodule update --init --recursive`
 
-If on Windows, create an extra folder for your chugins, `%USERPROFILE%/Documents/ChucK/chugins/`. Create a system environment variable `CHUCK_CHUGIN_PATH` equal to this path.
+### Windows
 
-In `chugins/WarpBuf`, open a command window on Windows or Terminal window on macOS and run `sh build_all_platforms.sh`. On Windows, the `WarpBuf.chug` should appear inside `%USERPROFILE%/Documents/ChucK/chugins/`, and on macOS/Linux it should appear in `/usr/local/lib/chuck`.
+Create an extra folder for your chugins, `%USERPROFILE%/Documents/ChucK/chugins/`. Create a system environment variable `CHUCK_CHUGIN_PATH` equal to this path. In `chugins/WarpBuf`, open a command window and run `call build_windows.bat`. The `WarpBuf.chug` should appear inside `%USERPROFILE%/Documents/ChucK/chugins/` and `chugins/WarpBuf/package`.
+
+### Ubuntu
+
+Install dependencies:
+
+```bash
+sudo apt install autoconf autogen automake build-essential libasound2-dev libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev libmpg123-dev pkg-config python
+```
+
+In `chugins/WarpBuf`, open a Terminal window and run `sh build_unix.sh`. The `WarpBuf.chug` should appear inside `chugins/WarpBuf/package`.
+
+### macOS
+
+Install dependencies with brew:
+
+```zsh
+brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
+```
+
+In `chugins/WarpBuf`, open a Terminal window and run `sh build_unix.sh`. The `WarpBuf.chug` should appear inside `chugins/WarpBuf/package`.
+
+## Testing
 
 Run any of the test scripts: `chuck.exe --verbose:10 level:10 "tests/warpbuf_basic.ck"`.
 

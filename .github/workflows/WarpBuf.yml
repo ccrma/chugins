@@ -1,10 +1,14 @@
 name: WarpBuf
 
+env:
+  WARPBUF_VERSION: 0.0.1
+
 on:
-  # pull_request: {}
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+  pull_request: {}
   push:
-    # branches:
-      # - main
     paths:
       - 'WarpBuf/**'
 
@@ -41,29 +45,31 @@ jobs:
       run: |
         brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
 
-    - name: Build release
-      shell: bash
-      run: |
-        cd WarpBuf
-        sh build_all_platforms.sh
-
-    - name: Package release (macOS)
-      if: startsWith(matrix.os, 'macos')
-      run: |
-        mv WarpBuf/build/libWarpBuf.dylib WarpBuf/build/WarpBuf.chug 
-
-    - name: Package release (Windows)
+    - name: Install dependencies Windows
       if: startsWith(matrix.os, 'windows')
       run: |
-        mv WarpBuf/build/x64/Release/WarpBuf.dll WarpBuf/build/WarpBuf.chug 
+        cd WarpBuf/thirdparty
+        curl -OL https://github.com/libsndfile/libsndfile/releases/download/1.2.0/libsndfile-1.2.0-win64.zip
+        7z x libsndfile-1.2.0-win64.zip -y
+        rm libsndfile-1.2.0-win64.zip
 
-    - name: Package release (Ubuntu)
-      if: startsWith(matrix.os, 'ubuntu')
+    - name: Build Libsndfile
+      if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
       run: |
-        mv WarpBuf/build/libWarpBuf.so WarpBuf/build/WarpBuf.chug
+        cd WarpBuf/thirdparty/libsndfile
+        cmake -Bbuild -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_C_FLAGS="-fPIC" -DCMAKE_CXX_FLAGS="-fPIC" -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="./install"
+        cmake --build build --config Release
+        cmake --build build --target install
+
+    - name: Build WarpBuf Release
+      run: |
+        cd WarpBuf
+        cmake -Bbuild -DCMAKE_VERBOSE_MAKEFILE=ON
+        cmake --build build --config Release
+        cmake --build build --config Release --target install
 
     - uses: actions/upload-artifact@v3
       with:
         name: warpbuf-${{ matrix.name }}.zip
-        path: "WarpBuf/build/WarpBuf.chug"
+        path: "WarpBuf/package/warpbuf-${{ env.WARPBUF_VERSION }}"
         if-no-files-found: error
