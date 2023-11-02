@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
 
-project(WarpBuf VERSION 0.0.1)
+set(ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+
+if (DEFINED ENV{WARPBUF_VERSION})
+set (VERSION $ENV{WARPBUF_VERSION})
+else()
+set (VERSION "0.0.1")
+endif()
+
+project(WarpBuf VERSION ${VERSION})
 
 # Set startup project for Visual Studio
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WarpBuf)
@@ -17,9 +25,6 @@ set(Sources
     "src/WarpBufChuginDLL.cpp"
 )
 source_group("Sources" FILES ${Sources})
-
-# Add libsamplerate project
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate)
 
 # Add Rubber Band sources
 set(RUBBERBAND_SRC_CPP
@@ -53,13 +58,43 @@ set(RUBBERBAND_HEADERS
 )
 
 # Create shared library
-add_library(WarpBuf SHARED ${CK_SOURCES} ${Sources} ${RUBBERBAND_SOURCES} ${RUBBERBAND_HEADERS}
+add_library(WarpBuf MODULE ${CK_SOURCES} ${Sources} ${RUBBERBAND_SOURCES} ${RUBBERBAND_HEADERS}
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/include/samplerate.h
     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/portable_endian/include/portable_endian.h
 )
+
+####################################
+# Install - used for packaging
+####################################
+set (PACKDIR ${ROOT}/package)
+set (DST warpbuf-${VERSION})
+install ( TARGETS WarpBuf
+    RUNTIME DESTINATION ${PACKDIR}/${DST}
+    LIBRARY DESTINATION ${PACKDIR}/${DST}
+    ARCHIVE DESTINATION ${PACKDIR}/${DST}
+)
+
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_compile_options(-fPIC)
+
+if(APPLE)
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    LINK_FLAGS "-Wl,-U,_object_new_imp -Wl,-U,_object_method_imp"
+    BUNDLE TRUE
+    BUNDLE_EXTENSION chug
+    OUTPUT_NAME WarpBuf
+    MACOSX_BUNDLE_GUI_IDENTIFIER edu.stanford.chuck.${PROJECT_NAME}
+    MACOSX_BUNDLE_BUNDLE_NAME ${PROJECT_NAME}
+    MACOSX_BUNDLE_BUNDLE_VERSION ${VERSION}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${VERSION}
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/Info.plist
+)
+else()
+set_target_properties (${PROJECT_NAME} PROPERTIES 
+    SUFFIX ".chug"
+    OUTPUT_NAME WarpBuf)
+endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_LIBSAMPLERATE)
 
@@ -92,16 +127,17 @@ else()
     )
 endif()
 
-target_link_libraries(WarpBuf PRIVATE samplerate)
-
-# link libsndfile statically
+# Find sndfile and link it
 if (MSVC)
-    set (SNDFILE_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile-win64/lib/sndfile.lib)
-    target_link_libraries (WarpBuf PRIVATE ${SNDFILE_LIBRARIES})
+    set(SndFile_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile-1.2.0-win64/cmake")
+    find_package(SndFile REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PRIVATE SndFile::sndfile)
 else()
-    # We expect the user to have built libsndfile as a static lib
-    # and for it to be accessible via `pkg-config --static libsndfile`
+    list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/install")
     find_package(PkgConfig REQUIRED)
+    # We expect the user to have used brew to install the dependencies
+    # for libsndfile, to have built libsndfile as a static lib,
+    # and for it to be accessible via `pkg-config --static libsndfile`.
     if(APPLE)
     set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
     list(APPEND PKG_CONFIG_EXECUTABLE "--static")  # append temporarily
@@ -116,25 +152,22 @@ else()
     execute_process(COMMAND find /usr/local/Cellar/lame -name libmp3lame.a OUTPUT_VARIABLE SNDFILE_STATIC_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
     list(POP_BACK PKG_CONFIG_EXECUTABLE)  # undo the append above
     endif()
-    target_link_libraries (WarpBuf PRIVATE PkgConfig::SNDFILE PkgConfig::FLAC PkgConfig::VORBIS PkgConfig::OGG PkgConfig::OPUS PkgConfig::MPG123 ${SNDFILE_STATIC_LIBS})
+    target_link_libraries (${PROJECT_NAME} PRIVATE PkgConfig::SNDFILE PkgConfig::FLAC PkgConfig::VORBIS PkgConfig::OGG PkgConfig::OPUS PkgConfig::MPG123 ${SNDFILE_STATIC_LIBS})
 endif()
 
+# Add libsamplerate project
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate)
+target_link_libraries(${PROJECT_NAME} PRIVATE samplerate)
+
 # Include header directories
-target_include_directories(WarpBuf PRIVATE
+target_include_directories(${PROJECT_NAME} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../chuck/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Rubberband>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/Rubberband/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rubberband>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rubberband/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsamplerate/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/portable_endian/include>
     $<INSTALL_INTERFACE:WarpBuf>
-)
-
-# Install library
-INSTALL(TARGETS WarpBuf
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 if (MSVC)
@@ -147,4 +180,18 @@ if (MSVC)
                      COMMAND ${CMAKE_COMMAND} -E copy_if_different
                      "$<TARGET_FILE:WarpBuf>"
                      "%USERPROFILE%/Documents/ChucK/chugins/WarpBuf.chug")
+endif()
+
+if (WIN32)
+####################################
+# install sndfile
+install (
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile-1.2.0-win64/bin/sndfile.dll DESTINATION ${PACKDIR}/${DST}
+)
+endif()
+
+if (APPLE)
+install (
+    CODE "execute_process (COMMAND codesign --sign - --deep --force ${PACKDIR}/${DST}/WarpBuf.chug)" 
+    )
 endif()
