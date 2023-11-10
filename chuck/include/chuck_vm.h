@@ -591,6 +591,9 @@ public: // running the machine
     t_CKBOOL compute();
     // abort current running shred
     t_CKBOOL abort_current_shred();
+    // get currently executing shred | 1.5.1.8 (ge) now in VM, in addition to shreduler
+    // NOTE this can only be non-NULL during a Chuck_VM::compute() cycle
+    Chuck_VM_Shred * get_current_shred() const;
 
 public: // invoke functions
     t_CKBOOL invoke_static( Chuck_VM_Shred * shred );
@@ -635,7 +638,7 @@ public:
 
 public:
     // subscribe shreds watcher callback | 1.5.1.5
-    void subscribe_watcher( f_shreds_watcher cb, t_CKUINT options, void * data = NULL );
+    void subscribe_watcher( f_shreds_watcher cb, t_CKUINT options, void * userdata = NULL );
     // notify watchers | 1.5.1.5
     void notify_watchers( ckvmShredsWatcherFlag which, Chuck_VM_Shred * shred,
                           std::list<Chuck_VM_Shreds_Watcher> & v );
@@ -840,13 +843,14 @@ public:
                     Chuck_VM * vm, Chuck_VM_Shred * caller );
     // invoke the member function
     Chuck_DL_Return invoke( Chuck_Object * obj,
-                            const std::vector<Chuck_DL_Arg> & args );
+                            const std::vector<Chuck_DL_Arg> & args,
+                            Chuck_VM_Shred * parent_shred );
     // clean up
     void cleanup();
 
 public:
     // dedicated shred to call the mfun on
-    Chuck_VM_Shred * shred;
+    Chuck_VM_Shred * invoker_shred;
     // instructions for args (to be filled on invoke)
     std::vector<Chuck_Instr *> instr_args;
     // instruction to update on invoke: pushing this pointer
