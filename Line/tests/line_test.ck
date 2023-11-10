@@ -26,7 +26,7 @@ class LineTest extends Assert {
         testKeyOffTarget();
         testKeyOffDurTarget();
 
-        testKeyOffEvent();
+        testKeyOffDurLen();
 
         chout <= "success!" <= IO.newline();
     }
@@ -165,15 +165,15 @@ class LineTest extends Assert {
            assertEquals(1::second, now - prev);
     }
 
-    public void testKeyOffEvent() {
-           <<< "testKeyOffEvent" >>>;
+    public void testKeyOffDurLen() {
+           <<< "testKeyOffDur" >>>;
            Step s => Line l => blackhole;
 
-           now => time prev;
+           1::second => dur want;
 
-           l.keyOff(1::second) => now;
+           l.keyOff(want) => dur got;
 
-           assertEquals(1::second, now - prev);
+           assertEquals(want, got);
     }
 
     public void testKeyOff() {
@@ -249,9 +249,10 @@ class LineTest extends Assert {
            <<< "testFailDifferentSizesKeyOn" >>>;
            Step s => Line l => blackhole;
 
-           l.keyOn([0.0, 1, 2], [1::second]) @=> Event got;
+           l.keyOn([0.0, 1, 2], [1::second]) @=> dur got;
+           0::samp => dur want;
 
-           assertNull(got);
+           assertEquals(want, got);
     }
 
     fun void assertRamp(Line @ l, dur d, float target) {
