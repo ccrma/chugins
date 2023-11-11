@@ -398,50 +398,50 @@ CK_DLL_QUERY( Line )
 
   QUERY->add_mfun( QUERY, line_keyOnSingle, "dur", "keyOn" );
   QUERY->add_arg( QUERY, "dur", "duration" );
-  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...)). Returns total duration of envelope.");
 
   // singular keyOn with default start
   QUERY->add_mfun( QUERY, line_keyOnSingleTarget, "dur", "keyOn" );
   QUERY->add_arg( QUERY, "float", "target" );
   QUERY->add_arg( QUERY, "dur", "duration" );
-  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...)). Returns total duration of envelope.");
 
   // singular keyOn with no defaults
   QUERY->add_mfun( QUERY, line_keyOnSingleTargetStart, "dur", "keyOn" );
   QUERY->add_arg( QUERY, "float", "initial" );
   QUERY->add_arg( QUERY, "float", "target" );
   QUERY->add_arg( QUERY, "dur", "duration" );
-  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...)). Returns total duration of envelope.");
 
   // array keyOn with default start
   QUERY->add_mfun( QUERY, line_keyOnArray, "dur", "keyOn" );
   QUERY->add_arg( QUERY, "float[]", "targets" );
   QUERY->add_arg( QUERY, "dur[]", "durations" );
-  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...)). Returns total duration of envelope.");
 
   // array keyOn with no defaults
   QUERY->add_mfun( QUERY, line_keyOnArrayStart, "dur", "keyOn" );
   QUERY->add_arg( QUERY, "float", "initial" );
   QUERY->add_arg( QUERY, "float[]", "targets" );
   QUERY->add_arg( QUERY, "dur[]", "durations" );
-  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...)). Returns total duration of envelope.");
 
   // keyOff functions
   QUERY->add_mfun( QUERY, line_keyOff, "dur", "keyOff" );
-  QUERY->doc_func( QUERY, "Ramp down from current value to initial (default duration is 1000:samp)");
+  QUERY->doc_func( QUERY, "Ramp down from current value to initial (default duration is 1000:samp). Returns total duration of envelope.");
 
   QUERY->add_mfun( QUERY, line_keyOffDur, "dur", "keyOff" );
   QUERY->add_arg( QUERY, "dur", "duration" );
-  QUERY->doc_func( QUERY, "Ramp down from current value to initial over duration");
+  QUERY->doc_func( QUERY, "Ramp down from current value to initial over duration. Returns total duration of envelope.");
 
   QUERY->add_mfun( QUERY, line_keyOffTarget, "dur", "keyOff" );
   QUERY->add_arg( QUERY, "float", "target" );
-  QUERY->doc_func( QUERY, "Ramp down from current value to target. Sets initial value to target");
+  QUERY->doc_func( QUERY, "Ramp down from current value to target. Sets initial value to target. Returns total duration of envelope.");
 
   QUERY->add_mfun( QUERY, line_keyOffDurTarget, "dur", "keyOff" );
   QUERY->add_arg( QUERY, "float", "target" );
   QUERY->add_arg( QUERY, "dur", "duration" );
-  QUERY->doc_func( QUERY, "Ramp down from current value to target over duration. Sets initial value to target");
+  QUERY->doc_func( QUERY, "Ramp down from current value to target over duration. Sets initial value to target. Returns total duration of envelope.");
 
   QUERY->add_mfun( QUERY, line_last, "float", "last" );
   QUERY->doc_func( QUERY, "get the last sample value of the unit generator.");
