@@ -1,4 +1,4 @@
-Xml xml;
+XML xml;
 
 me.dir() + "values.xml" => xml.open;
 
