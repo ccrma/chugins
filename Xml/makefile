@@ -1,10 +1,10 @@
-CHUGIN_NAME=Xml
+CHUGIN_NAME=XML
 
 C_MODULES=
 CXX_MODULES=tinyxml.cpp tinyxmlerror.cpp tinyxmlparser.cpp util_xml.cpp Xml.cpp
 
 # where the chuck headers are
-CK_SRC_PATH?=/home/celeste/Builds/chugins/chuginate/template/chuck/include
+CK_SRC_PATH?=../chuck/include
 
 
 # ---------------------------------------------------------------------------- #

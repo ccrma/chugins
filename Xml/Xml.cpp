@@ -26,11 +26,11 @@ CK_DLL_MFUN( XmlSettings_getIntAttribute );
 CK_DLL_MFUN( XmlSettings_getFloatAttribute );
 CK_DLL_MFUN( XmlSettings_getStringAttribute );
 
-CK_DLL_QUERY( Xml )
+CK_DLL_QUERY( XML )
 {
-    QUERY->setname(QUERY, "Xml");
+    QUERY->setname(QUERY, "XML");
     
-    QUERY->begin_class(QUERY, "Xml", "Object");
+    QUERY->begin_class(QUERY, "XML", "Object");
 
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, XmlSettings_ctor);

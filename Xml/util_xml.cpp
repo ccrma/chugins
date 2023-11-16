@@ -81,7 +81,7 @@ t_CKINT XmlSettings::getIntValue(std::string tag, t_CKINT defaultValue, t_CKINT 
 	if (readTag(tag, tempStr, which)){
 		returnValue = strtol(tempStr, NULL, 0);
 	}
-	delete tempStr;
+	delete [] tempStr;
 	return returnValue;
 }
 
@@ -94,7 +94,7 @@ t_CKFLOAT XmlSettings::getFloatValue(std::string tag, t_CKDOUBLE defaultValue, t
 	if (readTag(tag, tempStr, which)){
 		returnValue = strtof(tempStr,  NULL);
 	}
-	delete tempStr;
+	delete [] tempStr;
 	return returnValue;
 }
 
@@ -107,7 +107,7 @@ std::string XmlSettings::getStringValue(std::string tag, std::string defaultValu
 		returnPtr = tempStr;
 	}
 	std::string returnString(returnPtr);
-	delete tempStr;
+	delete [] tempStr;
 	return returnString;
 }
 
