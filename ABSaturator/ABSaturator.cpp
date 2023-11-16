@@ -186,6 +186,40 @@ CK_DLL_QUERY(ABSaturator)
     QUERY->add_mfun(QUERY, absaturator_setDCOffset, "float", "dcOffset");
     QUERY->add_arg(QUERY, "float", "arg");
     QUERY->doc_func(QUERY, "Constant linear offset applied to the signal. A small offset will introduce odd harmonics into the distoration spectrum, whereas a zero offset will have only even harmonics. ");
+fun void grain1( LiSa @ lisa, float pan, float durScale) {
+    lisa.getVoice() => int voice;
+
+    if (voice > -1) {
+        // lisa.playPos(voice, Math.randomf() * lisa.duration());
+        lisa.playPos(voice, randDur(0::second, 5::second));
+        // lisa.playPos(voice, randDur(22::second, 24::second));
+        // lisa.playPos(voice, randDur(35::second, 40::second));
+        lisa.rate(voice, randList([1.0, 1.2]) * Math.random2f(0.99, 1.01));
+        // lisa.rate(voice, randList([1.0, 1.2, 0.75]) * Math.random2f(0.99, 1.01));
+
+        if (Math.randomf() < 0.5) {
+            lisa.rate() * -1 => lisa.rate;
+        }
+
+        lisa.pan(voice, pan);
+        //lisa.voiceGain(voice, 0.8);
+
+        10::ms => dur d;
+
+        // <<< "ramp up", voice >>>;
+        lisa.rampUp(voice, 1::d);
+        // <<< "ramp up inpr", voice, 4::d / 1::second >>>;
+        // 32::d => now;
+        durScale*Math.random2(128, 256)::d => now;
+        // <<< "rampdown", voice >>>;
+        lisa.rampDown(voice, 1::d);
+        d => now;
+
+    } else {
+        <<< "too many voices!!" >>>;
+    }
+
+}
     
     QUERY->add_mfun(QUERY, absaturator_getDCOffset, "float", "dcOffset");
     QUERY->doc_func(QUERY, "Constant linear offset applied to the signal. A small offset will introduce odd harmonics into the distoration spectrum, whereas a zero offset will have only even harmonics. ");

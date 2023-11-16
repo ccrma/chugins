@@ -38,20 +38,6 @@ LD=g++
 
 CHUGIN_PATH=/usr/local/lib/chuck
 
-## I got it to compile...
-/home/nshaheed/programming/emsdk/upstream/emscripten/emcc -O3 -s DISABLE_EXCEPTION_CATCHING=0 \
--s SIDE_MODULE \
--Icore -D__DISABLE_MIDI__ -D__DISABLE_WATCHDOG__ \
--D__DISABLE_KBHIT__ -D__DISABLE_PROMPTER__ -D__DISABLE_RTAUDIO__ \
--D__DISABLE_OTF_SERVER__ -D__ALTER_HID__ -D__DISABLE_HID__ \
--D__DISABLE_SERIAL__ -D__DISABLE_FILEIO__ -D__DISABLE_THREADS__ \
--D__DISABLE_NETWORK__ -D__DISABLE_SHELL__ \
--D__CHUCK_USE_PLANAR_BUFFERS__ \
--Wformat=0 \
--I ../chuck/include/ \
-ABSaturator.cpp \
--o ABSaturator.chug.js
-
 ifneq (,$(strip $(filter osx bin-dist-osx,$(MAKECMDGOALS))))
 include makefile.osx
 endif
@@ -98,9 +84,6 @@ C_OBJECTS=$(addsuffix .o,$(basename $(C_MODULES)))
 CXX_OBJECTS=$(addsuffix .o,$(basename $(CXX_MODULES)))
 
 CHUG=$(addsuffix $(SUFFIX),$(CHUGIN_NAME))
-
-emcc:
-
 
 all: $(CHUG)
 
