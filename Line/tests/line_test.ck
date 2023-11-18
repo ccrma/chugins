@@ -12,11 +12,14 @@ class LineTest extends Assert {
         testFailDifferentSizesSet();
         testFailDifferentSizesKeyOn();
 
+        testKeyOnInit();
         testKeyOnSingleDuration();
         testKeyOnSingleDurationAndTarget();
         testKeyOnSingleWithInitial();
         testKeyOnMulti();
         testKeyOnMultiInit();
+
+        testMultipleKeyOn();
 
 
         testKeyOnEvent();
@@ -27,6 +30,12 @@ class LineTest extends Assert {
         testKeyOffDurTarget();
 
         testKeyOffDurLen();
+
+        // constructor tests
+        testConstructorSingleDuration();
+        testConstructorSingleDurationAndTarget();
+        testConstructorMulti();
+        testConstructorMultiInit();
 
         chout <= "success!" <= IO.newline();
     }
@@ -50,6 +59,16 @@ class LineTest extends Assert {
            assertRamp(l, samps::samp, 1);
     }
 
+    public void testConstructorSingleDuration() {
+           <<< "testConstructorSingleDuration" >>>;
+
+           11111::samp => dur samps;
+           Step s => Line l(samps) => blackhole;
+
+           l.keyOn();
+           assertRamp(l, samps, 1);
+    }
+
     public void testSingleDurationAndTarget() {
            <<< "testSingleDurationAndTarget" >>>;
            Step s => Line l => blackhole;
@@ -61,6 +80,17 @@ class LineTest extends Assert {
            assertRamp(l, samps::samp, samps);
     }
 
+    public void testConstructorSingleDurationAndTarget() {
+           <<< "testConstructorSingleDurationAndTarget" >>>;
+
+           11111::samp => dur samps;
+           11111 => float target;
+           Step s => Line l(target, samps) => blackhole;
+
+           l.keyOn();
+           assertRamp(l, samps, target);
+    }
+
     public void testSingleWithInitial() {
         <<< "testSingleWithInitial" >>>;
         Step s => Line l => blackhole;
@@ -68,7 +98,7 @@ class LineTest extends Assert {
         l.set(-1000, 1000, 1::second);
 
         l.keyOn();
-        assertRamp(l, 1::second, -1000.0, 1000.0);
+        assertRamp(l, 1::second, -1000.0, 1000.0, true);
     }
 
     public void testMulti() {
@@ -79,6 +109,19 @@ class LineTest extends Assert {
            [2::samp, 2::ms, 3::ms] @=> dur durs[];
 
            l.set(targets, durs);
+           l.keyOn();
+
+           assertRampMulti(l, 0, targets, durs);
+    }
+
+    public void testConstructorMulti() {
+           <<< "testConstructorMulti" >>>;
+
+           [1.0, -2, -3] @=> float targets[];
+           [2::samp, 2::ms, 3::ms] @=> dur durs[];
+
+           Step s => Line l(targets, durs) => blackhole;
+
            l.keyOn();
 
            assertRampMulti(l, 0, targets, durs);
@@ -96,6 +139,29 @@ class LineTest extends Assert {
            l.keyOn();
 
            assertRampMulti(l, init, targets, durs);
+    }
+
+    public void testConstructorMultiInit() {
+           <<< "testConstructorMultiInit" >>>;
+
+           -1.0 => float init;
+           [1.0, -2, 3] @=> float targets[];
+           [2::samp, 2::ms, 3::ms] @=> dur durs[];
+
+           Step s => Line l(init, targets, durs) => blackhole;
+
+           l.keyOn();
+
+           assertRampMulti(l, init, targets, durs);
+    }
+
+    public void testKeyOnInit() {
+           <<< "testKeyOnInit" >>>;
+           Step s => Line l(11111::samp) => blackhole;
+
+           l.keyOn(0.5);
+
+           assertRamp(l, 11111::samp, 0.5, 1, true);
     }
 
     public void testKeyOnSingleDuration() {
@@ -124,7 +190,7 @@ class LineTest extends Assert {
 
         l.keyOn(-1000, 1000, 1::second);
 
-        assertRamp(l, second, -1000.0, 1000.0);
+        assertRamp(l, second, -1000.0, 1000.0, true);
     }
 
     public void testKeyOnMulti() {
@@ -188,7 +254,7 @@ class LineTest extends Assert {
            0.5::second => now; // stop ramp early
 
            l.keyOff();
-           assertRamp(l, 1000::samp, 0.5, 0);
+           assertRamp(l, 1000::samp, 0.5, 0, 247);
     }
 
     public void testKeyOffDur() {
@@ -203,7 +269,7 @@ class LineTest extends Assert {
            0.5::second => now; // stop ramp early
 
            l.keyOff(1::second);
-           assertRamp(l, 1::second, -0.5, -1);
+           assertRamp(l, 1::second, -0.5, -1, true);
     }
 
     public void testKeyOffTarget() {
@@ -218,7 +284,7 @@ class LineTest extends Assert {
            0.5::second => now; // stop ramp early
 
            l.keyOff(15);
-           assertRamp(l, 1000::samp, -0.5, 15);
+           assertRamp(l, 1000::samp, -0.5, 15, true);
     }
 
     public void testKeyOffDurTarget() {
@@ -233,7 +299,20 @@ class LineTest extends Assert {
            0.5::second => now; // stop ramp early
 
            l.keyOff(15, 1::second);
-           assertRamp(l, 1::second, -0.5, 15);
+           assertRamp(l, 1::second, -0.5, 15, true);
+    }
+
+    public testMultipleKeyOn() {
+           <<< "testMultipleKeyOn" >>>;
+           11111::samp => dur samps;
+           Step s => Line l(samps) => blackhole;
+
+           l.keyOn();
+           assertRamp(l, samps, 0, 1, false);
+           l.keyOn(0, samps);
+           assertRamp(l, samps, 1, 0, false);
+           l.keyOn(1, samps);
+           assertRamp(l, samps, 0, 1, false);
     }
 
     public void testFailDifferentSizesSet() {
@@ -256,17 +335,20 @@ class LineTest extends Assert {
     }
 
     fun void assertRamp(Line @ l, dur d, float target) {
-        assertRamp(l, d, 0, target);
+        assertRamp(l, d, 0, target, true);
     }
 
-    fun void assertRamp(Line @ l, dur d, float init, float target) {
+    fun void assertRamp(Line @ l, dur d, float init, float target, int clipping) {
         (d / samp) $ int => int samps;
         // validate ramp
         for(int i: Std.range(samps)) {
                 (target - init) * ((i $ float) / samps) + init => float want;
+                // <<< want, l.last() >>>;
                 assertEquals(want, l.last(), FP_MARGIN);
                 samp => now;
         }
+
+        if (!clipping) return;
 
         // validate that clipping after ramp works
         for(int i: Std.range(1000)) {
