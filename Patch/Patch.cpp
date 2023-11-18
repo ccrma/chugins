@@ -184,6 +184,10 @@ CK_DLL_QUERY( Patch )
     QUERY->add_ctor(QUERY, patch_ctor_args);
     QUERY->add_arg(QUERY, "Object", "dest" );
     QUERY->add_arg(QUERY, "string", "method");
+    QUERY->doc_func(QUERY, "Constructor to call the method in dest"
+        " with Patch's input. Method must be a method that takes "
+        "a single float as an input, "
+        "i.e. setters such as SinOsc.freq and Pan2.pan.");
 
 
     // register the destructor (probably no need to change)
