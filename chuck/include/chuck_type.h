@@ -52,7 +52,7 @@ typedef enum {
     te_function, te_object, te_user, te_array, te_null, te_ugen, te_uana,
     te_event, te_void, te_stdout, te_stderr, te_adc, te_dac, te_bunghole,
     te_uanablob, te_io, te_fileio, te_chout, te_cherr, te_multi,
-    te_vec3, te_vec4, te_vector, te_auto
+    te_vec2, te_vec3, te_vec4, te_vector, te_auto
 } te_Type;
 
 
@@ -704,8 +704,9 @@ public:
 public:
     // REFACTOR-2017: carrier and accessors
     void set_carrier( Chuck_Carrier * carrier ) { m_carrier = carrier; }
-    Chuck_VM * vm() { return m_carrier ? m_carrier->vm : NULL; }
-    Chuck_Compiler * compiler() { return m_carrier ? m_carrier->compiler : NULL; }
+    Chuck_Carrier * carrier() const { return m_carrier; }
+    Chuck_VM * vm() const { return m_carrier ? m_carrier->vm : NULL; }
+    Chuck_Compiler * compiler() const { return m_carrier ? m_carrier->compiler : NULL; }
 
 protected:
     Chuck_Carrier * m_carrier;
@@ -742,6 +743,9 @@ public:
     // control scope (for break, continue)
     std::vector<a_Stmt> breaks;
 
+    // stmt stack (for tracking object references)
+    std::vector<a_Stmt> stmt_stack;
+
     // reserved words
     std::map<std::string, t_CKBOOL> key_words;
     std::map<std::string, t_CKBOOL> key_types;
@@ -765,6 +769,7 @@ public:
     Chuck_Type * ckt_dur;
     Chuck_Type * ckt_complex;
     Chuck_Type * ckt_polar;
+    Chuck_Type * ckt_vec2;
     Chuck_Type * ckt_vec3;
     Chuck_Type * ckt_vec4;
     Chuck_Type * ckt_null;
@@ -951,9 +956,6 @@ struct Chuck_Type : public Chuck_Object
     // origin hint
     te_Origin originHint;
 
-    // reference to environment RE-FACTOR 2017
-    Chuck_Env * env_ref;
-
     // (within-context, e.g., a ck file) dependency tracking | 1.5.0.8
     Chuck_Value_Dependency_Graph depends;
 
@@ -979,12 +981,20 @@ public:
     Chuck_Type * copy( Chuck_Env * env, Chuck_Context * context ) const;
 
 public:
+    // get env reference that contains this type | 1.5.1.8
+    Chuck_Env * env() const;
+    // get VM reference associated with this type (via the env) | 1.5.1.8
+    Chuck_VM * vm() const;
+
+public:
     // to string: the full name of this type, e.g., "UGen" or "int[][]"
     const std::string & name();
     // to c string
     const char * c_name();
 
 protected:
+    // reference to environment RE-FACTOR 2017 | get using env()
+    Chuck_Env * env_ref;
     // this for str() and c_name() use only
     std::string ret;
 
@@ -1014,11 +1024,11 @@ public:
     // struct to hold callback on instantiate
     struct CallbackOnInstantiate
     {
+        // the callback
+        f_callback_on_instantiate callback;
         // whether to auto-set shred origin at instantiation;
         // see t_CKBOOL initialize_object( ... )
         t_CKBOOL shouldSetShredOrigin;
-        // the callback
-        f_callback_on_instantiate callback;
         // constructor
         CallbackOnInstantiate( f_callback_on_instantiate cb = NULL, t_CKBOOL setShredOrigin = FALSE )
         : callback(cb), shouldSetShredOrigin(setShredOrigin) { }
@@ -1230,6 +1240,7 @@ t_CKBOOL isprim( Chuck_Env * env, Chuck_Type * type );
 t_CKBOOL isobj( Chuck_Env * env, Chuck_Type * type );
 t_CKBOOL isfunc( Chuck_Env * env, Chuck_Type * type );
 t_CKBOOL isvoid( Chuck_Env * env, Chuck_Type * type );
+t_CKBOOL isnull( Chuck_Env * env, Chuck_Type * type );
 t_CKBOOL iskindofint( Chuck_Env * env, Chuck_Type * type ); // added 1.3.1.0: this includes int + pointers
 te_KindOf getkindof( Chuck_Env * env, Chuck_Type * type ); // added 1.3.1.0: to get the kindof a type
 

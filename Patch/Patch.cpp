@@ -232,9 +232,6 @@ CK_DLL_CTOR(patch_ctor)
     // instantiate our internal c++ class representation
     Patch * p_obj = new Patch();
 
-    std::cout << "SELF:  " << SELF << std::endl;
-    std::cout << "ctor:  " << p_obj << std::endl;
-
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, patch_data_offset) = (t_CKINT) p_obj;
 }
@@ -275,7 +272,10 @@ CK_DLL_MFUN(patch_getMethod)
     Patch* p_obj = (Patch*)OBJ_MEMBER_INT(SELF, patch_data_offset);
 
     std::string method = p_obj->getMethod();
-    RETURN->v_string = (Chuck_String*)API->object->create_string(VM, method.c_str(), FALSE);
+
+    // create chuck string, addRef=false since we are returning the created string
+    // and do not keep a reference of it as part of this chugin
+    RETURN->v_string = (Chuck_String*)API->object->create_string(VM, method.c_str(), false);
 }
 
 // get the name of the current method being patched

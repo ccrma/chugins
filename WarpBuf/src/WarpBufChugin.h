@@ -1,8 +1,8 @@
 // this should align with the correct versions of these ChucK files
-#include "chuck_dl.h"
-#include "chuck_def.h"
-#include "chuck_instr.h"
-#include "chuck_vm.h"
+#include <chuck_dl.h>
+#include <chuck_def.h>
+#include <chuck_instr.h>
+#include <chuck_vm.h>
 
 // general includes
 #include <stdio.h>
@@ -16,7 +16,7 @@ using namespace std;
 
 #include <sndfile.h>
 
-#include "rubberband/RubberBandStretcher.h"
+#include <rubberband/RubberBandStretcher.h>
 #include "AbletonClipInfo.h"
 
 #define WARPBUF_MAX_OUTPUTS 16

@@ -7,3 +7,6 @@
 [submodule "chuck-api"]
 	path = chuck-api
 	url = git@github.com:ccrma/cheaders.git
+[submodule "WarpBuf/thirdparty/libsndfile"]
+	path = WarpBuf/thirdparty/libsndfile
+	url = https://github.com/libsndfile/libsndfile.git
