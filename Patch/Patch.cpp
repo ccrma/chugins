@@ -245,22 +245,19 @@ CK_DLL_CTOR(patch_ctor)
 }
 
 
+
 // implementation for the constructor
 CK_DLL_CTOR(patch_ctor_args)
 {
-    // get the offset where we'll store our internal c++ class pointer
-    OBJ_MEMBER_INT(SELF, patch_data_offset) = 0;
+  patch_ctor(SELF, ARGS, VM, SHRED, API);
 
-    // instantiate our internal c++ class representation
-    Patch * p_obj = new Patch();
+  Patch * p_obj = (Patch *) OBJ_MEMBER_INT(SELF, patch_data_offset);
 
-    // Chuck_Object * dest = (Chuck_Object *)GET_NEXT_OBJECT(ARGS);
-    // Chuck_String* method = (Chuck_String*)GET_NEXT_STRING(ARGS);
+  Chuck_Object * dest = (Chuck_Object *)GET_NEXT_OBJECT(ARGS);
+  Chuck_String* method = (Chuck_String*)GET_NEXT_STRING(ARGS);
 
-    // p_obj->connect(dest, method->str(), VM, SHRED, API);
+  p_obj->connect(dest, method->str(), VM, SHRED, API);
 
-    // store the pointer in the ChucK object member
-    OBJ_MEMBER_INT(SELF, patch_data_offset) = (t_CKINT) p_obj;
 }
 
 
