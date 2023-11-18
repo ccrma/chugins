@@ -35,6 +35,7 @@
 
 // declaration of chugin constructor
 CK_DLL_CTOR(patch_ctor);
+CK_DLL_CTOR(patch_ctor_args);
 // declaration of chugin desctructor
 CK_DLL_DTOR(patch_dtor);
 
@@ -178,6 +179,13 @@ CK_DLL_QUERY( Patch )
 
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, patch_ctor);
+
+    // overload constructor
+    QUERY->add_ctor(QUERY, patch_ctor_args);
+    QUERY->add_arg(QUERY, "Object", "dest" );
+    QUERY->add_arg(QUERY, "string", "method");
+
+
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, patch_dtor);
 
@@ -231,6 +239,25 @@ CK_DLL_CTOR(patch_ctor)
 
     // instantiate our internal c++ class representation
     Patch * p_obj = new Patch();
+
+    // store the pointer in the ChucK object member
+    OBJ_MEMBER_INT(SELF, patch_data_offset) = (t_CKINT) p_obj;
+}
+
+
+// implementation for the constructor
+CK_DLL_CTOR(patch_ctor_args)
+{
+    // get the offset where we'll store our internal c++ class pointer
+    OBJ_MEMBER_INT(SELF, patch_data_offset) = 0;
+
+    // instantiate our internal c++ class representation
+    Patch * p_obj = new Patch();
+
+    // Chuck_Object * dest = (Chuck_Object *)GET_NEXT_OBJECT(ARGS);
+    // Chuck_String* method = (Chuck_String*)GET_NEXT_STRING(ARGS);
+
+    // p_obj->connect(dest, method->str(), VM, SHRED, API);
 
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, patch_data_offset) = (t_CKINT) p_obj;
