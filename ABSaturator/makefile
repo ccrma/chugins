@@ -9,7 +9,6 @@ CXX_MODULES=ABSaturator.cpp Filters.cpp
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/
 
-
 # ---------------------------------------------------------------------------- #
 # you won't generally need to change anything below this line for a new chugin #
 # ---------------------------------------------------------------------------- #
@@ -69,7 +68,6 @@ ifneq ($(CHUCK_STRICT),)
 FLAGS+= -Werror
 endif
 
-
 # default: build a dynamic chugin
 CK_CHUGIN_STATIC?=0
 
@@ -98,7 +96,7 @@ endif
 $(C_OBJECTS): %.o: %.c
 	$(CC) $(FLAGS) -c -o $@ $<
 
-$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chuck_dl.h
+$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chugin.h
 	$(CXX) $(FLAGS) -c -o $@ $<
 
 install: $(CHUG)
