@@ -1,26 +1,46 @@
-/*
-Andrew Zhu Aday M220a Final Project
-Summer 2021
-ConvRev Chugin Example
-*/
+//-----------------------------------------------------------------------------
+// name: ConvRev-hagia-sophia-dope.ck
+// desc: Example convolving a 16s Hagia Sophia IR with special:dope
+//
+// author: Andrew Zhu Aday (https://ccrma.stanford.edu/~azaday/)
+// date: Fall 2023
+//-----------------------------------------------------------------------------
 
+// Set up signal processing chain =============================================
 
-SndBuf s => ConvRev cr => dac;
+SndBuf buf => ConvRev cr => dac;  // wet
+buf => Gain dryGain => dac;       // dry
 
-"special:dope" => s.read;
+SndBuf ir => blackhole;           // impulse response
 
-// SndBuf2 ir => blackhole;
-SndBuf ir => blackhole;
-me.dir() + "./IRs/hagia-sophia.wav" => ir.read;
-// me.dir() + "./small.wav" => ir.read; // 44100 sr, stereo */
+dryGain.gain(0.4);                // set dry gain to 40%
 
-ir.samples() => cr.order;
-for (0 => int i; i < cr.order(); i++) {
-    /* cr.coeff(i, ir.valueAt(i*2));  // do this if your IR file is stereo */
-    cr.coeff(i, ir.valueAt(i));  // do this if the IR is mono
-}
+me.dir() + "./IRs/hagia-sophia.wav" => ir.read;   // load IR file
+"special:dope" => buf.read;                       // load "dope" sample
 
-// initialize the conv rev engine, default FFT size is 128 samps
+// Initialize Convolution Engine ==============================================
+
+// Set the order of the convolution filter
+ir.samples() => cr.order;  
+
+// copy over the IR samples
+for (0 => int i; i < cr.order(); i++)
+    cr.coeff(i, ir.valueAt(i));  
+
+// initialize the conv rev engine with a default FFT size of 128 samples
 cr.init();
 
-1::eon => now;
+// Loop =======================================================================
+
+fun void debug(dur d) {
+    while (d => now) {
+        <<< cr.last() >>>;
+    }
+} 
+// spork ~ debug (100::ms);
+
+// repeat sample every block
+while (true) {
+    (cr.order() + buf.samples())::samp => now;  // wait for reverb to finish
+    0 => buf.pos;  // restart sample
+}

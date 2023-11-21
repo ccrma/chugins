@@ -40,7 +40,11 @@ namespace fftconvolver
 
 
 #if defined (FFTCONVOLVER_USE_SSE)
+#if defined(__x86_64__) || defined(_M_X64)
   #include <xmmintrin.h>
+#else
+  #include "sse2neon.h"
+#endif
 #endif
 
 

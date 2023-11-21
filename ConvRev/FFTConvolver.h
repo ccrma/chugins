@@ -72,6 +72,7 @@ public:
   * @param len Number of input/output samples
   */
   void process(const Sample* input, Sample* output, size_t len);
+  // void process(const Sample* input, std::vector<Sample>& output, size_t len);
 
   /**
   * @brief Resets the convolver and discards the set impulse response

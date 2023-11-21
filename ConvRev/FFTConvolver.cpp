@@ -24,11 +24,6 @@
 #include <cassert>
 #include <cmath>
 
-#if defined (FFTCONVOLVER_USE_SSE)
-  #include <xmmintrin.h>
-#endif
-
-
 namespace fftconvolver
 {
 
@@ -150,10 +145,12 @@ bool FFTConvolver::init(size_t blockSize, const Sample* ir, size_t irLen)
 
 
 void FFTConvolver::process(const Sample* input, Sample* output, size_t len)
+// void FFTConvolver::process(const Sample* input, std::vector<Sample>& output, size_t len)
 {
   if (_segCount == 0)
   {
     ::memset(output, 0, len * sizeof(Sample));
+    // output.resize(len, 0);
     return;
   }
 
@@ -188,6 +185,7 @@ void FFTConvolver::process(const Sample* input, Sample* output, size_t len)
 
     // Add overlap
     Sum(output+processed, _fftBuffer.data()+inputBufferPos, _overlap.data()+inputBufferPos, processing);
+    // Sum(&output[processed], _fftBuffer.data()+inputBufferPos, _overlap.data()+inputBufferPos, processing);
 
     // Input buffer full => Next block
     _inputBufferFill += processing;

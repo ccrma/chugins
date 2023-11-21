@@ -4,7 +4,7 @@ CHUGIN_NAME=ConvRev
 
 # all of the c/cpp files that compose this chugin
 C_MODULES=
-CXX_MODULES=ConvRev.cpp AudioFFT.cpp FFTConvolver.cpp Utilities.cpp
+CXX_MODULES=ConvRev.cpp AudioFFT.cpp FFTConvolver.cpp Utilities.cpp Timer.cpp
 
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/
@@ -73,7 +73,7 @@ endif
 FLAGS+= -std=c++11
 
 # define SSE (Disabling for now, requires platform-specific build flags)
-# FLAGS+= -DFFTCONVOLVER_USE_SSE
+FLAGS+= -DFFTCONVOLVER_USE_SSE
 
 # default: build a dynamic chugin
 CK_CHUGIN_STATIC?=0
