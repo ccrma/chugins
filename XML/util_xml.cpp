@@ -130,7 +130,7 @@ t_CKBOOL XmlSettings::readTag(std::string tag, char * valueString, t_CKINT which
 
     // if that value is really text, let's get the value out of it !
     if (valHandle.Text()){
-#if _WIN64
+#ifdef __PLATFORM_WINDOWS__
     	int maxLen = min(MAX_TAG_VALUE_LENGTH_IN_CHARS, (int)strlen(valHandle.Text()->Value())); // Windows-specific (removed std::)
 #else
 		int maxLen = std::min(MAX_TAG_VALUE_LENGTH_IN_CHARS, (int)strlen(valHandle.Text()->Value()));
