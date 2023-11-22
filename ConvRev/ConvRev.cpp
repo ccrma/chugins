@@ -13,7 +13,7 @@
 #include "FFTConvolver.h"
 
 // local includes
-#define CONV_REV_PROFILE  // TODO: remove when building
+#define CONV_REV_PROFILE // TODO: remove when building
 
 #ifdef CONV_REV_PROFILE
 #include "Timer.h"
