@@ -1,10 +1,10 @@
 //-----------------------------------------------------------------------------
 // name: Range.cpp
-// desc: Scale an input signal from one number range to another. 
+// desc: Scale an input signal from one number range to another.
 //       This is useful for things such as making LFOs that drive
-//       parameters that are do not fall under the output range of 
-//       most oscillators, like vibrato. 
-// 
+//       parameters that are do not fall under the output range of
+//       most oscillators, like vibrato.
+//
 // example:
 // // Use range to make an easy vibrato
 // SinOsc lfo = > Range r = > blackhole;
@@ -15,7 +15,7 @@
 //
 // 3 = > lfo.freq;
 // (0, 1, 440, 10) = > r.radius;
-// 
+//
 // while (10::ms = > now) {
 //    r.last() = > tone.freq;
 // }
@@ -35,6 +35,8 @@
 
 // declaration of chugin constructor
 CK_DLL_CTOR(range_ctor);
+CK_DLL_CTOR(range_ctor_out);
+CK_DLL_CTOR(range_ctor_all);
 // declaration of chugin desctructor
 CK_DLL_DTOR(range_dtor);
 
@@ -68,7 +70,7 @@ class Range
 {
 public:
     // constructor
-    Range( t_CKFLOAT fs)
+    Range()
     {
         m_param = 0;
         m_in_min = -1;
@@ -128,7 +130,7 @@ public:
         m_out_max = out_center + out_radius;
     }
 
-    t_CKINT setClip(t_CKINT val) 
+    t_CKINT setClip(t_CKINT val)
     {
         m_clip = val;
         return val;
@@ -166,20 +168,35 @@ CK_DLL_QUERY( Range )
 {
     // hmm, don't change this...
     QUERY->setname(QUERY, "Range");
-    
+
     // begin the class definition
     // can change the second argument to extend a different ChucK class
     QUERY->begin_class(QUERY, "Range", "UGen");
 
     // register the constructor (probably no need to change)
     QUERY->add_ctor(QUERY, range_ctor);
+
+    QUERY->add_ctor(QUERY, range_ctor_out);
+    QUERY->add_arg(QUERY, "float", "outMin" );
+    QUERY->add_arg(QUERY, "float", "outMax" );
+    QUERY->doc_func(QUERY, "Constructor that expects an input "
+                    "range of [-1, 1] and an output range of [outMin, outMax]");
+
+    QUERY->add_ctor(QUERY, range_ctor_all);
+    QUERY->add_arg(QUERY, "float", "inMin" );
+    QUERY->add_arg(QUERY, "float", "inMax" );
+    QUERY->add_arg(QUERY, "float", "outMin" );
+    QUERY->add_arg(QUERY, "float", "outMax" );
+    QUERY->doc_func(QUERY, "Constructor that expects an input "
+                    "range of [inMin, inMax] and an output range of [outMin, outMax]");
+
     // register the destructor (probably no need to change)
     QUERY->add_dtor(QUERY, range_dtor);
-    
+
     // for UGen's only: add tick function
     QUERY->add_ugen_func(QUERY, range_tick, NULL, 1, 1);
-    
-    // NOTE: if this is to be a UGen with more than 1 channel, 
+
+    // NOTE: if this is to be a UGen with more than 1 channel,
     // e.g., a multichannel UGen -- will need to use add_ugen_funcf()
     // and declare a tickf function using CK_DLL_TICKF
 
@@ -248,8 +265,8 @@ CK_DLL_QUERY( Range )
     QUERY->add_mfun(QUERY, range_getClip, "int", "clip");
     QUERY->doc_func(QUERY, "Get clip state.");
 
-    
-    // this reserves a variable in the ChucK internal class to store 
+
+    // this reserves a variable in the ChucK internal class to store
     // referene to the c++ class we defined above
     range_data_offset = QUERY->add_mvar(QUERY, "int", "@s_data", false);
 
@@ -267,12 +284,42 @@ CK_DLL_CTOR(range_ctor)
 {
     // get the offset where we'll store our internal c++ class pointer
     OBJ_MEMBER_INT(SELF, range_data_offset) = 0;
-    
+
     // instantiate our internal c++ class representation
-    Range * s_obj = new Range(API->vm->srate(VM));
-    
+    Range * s_obj = new Range();
+
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, range_data_offset) = (t_CKINT) s_obj;
+}
+
+
+// implementation for the constructor
+CK_DLL_CTOR(range_ctor_out)
+{
+    range_ctor(SELF, ARGS, VM, SHRED, API);
+
+    Range * r_obj = (Range *) OBJ_MEMBER_INT(SELF, range_data_offset);
+
+    t_CKFLOAT outMin = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT outMax = GET_NEXT_FLOAT(ARGS);
+
+    r_obj->setOutRange(outMin, outMax);
+}
+
+
+// implementation for the constructor
+CK_DLL_CTOR(range_ctor_all)
+{
+    range_ctor(SELF, ARGS, VM, SHRED, API);
+
+    Range * r_obj = (Range *) OBJ_MEMBER_INT(SELF, range_data_offset);
+
+    t_CKFLOAT inMin = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT inMax = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT outMin = GET_NEXT_FLOAT(ARGS);
+    t_CKFLOAT outMax = GET_NEXT_FLOAT(ARGS);
+
+    r_obj->setRange(inMin, inMax, outMin, outMax);
 }
 
 
@@ -280,14 +327,14 @@ CK_DLL_CTOR(range_ctor)
 CK_DLL_DTOR(range_dtor)
 {
     // get our c++ class pointer
-    Range * s_obj = (Range *) OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range * r_obj = (Range *) OBJ_MEMBER_INT(SELF, range_data_offset);
     // check it
-    if( s_obj )
+    if( r_obj )
     {
         // clean up
-        delete s_obj;
+        delete r_obj;
         OBJ_MEMBER_INT(SELF, range_data_offset) = 0;
-        s_obj = NULL;
+        r_obj = NULL;
     }
 }
 
@@ -296,10 +343,10 @@ CK_DLL_DTOR(range_dtor)
 CK_DLL_TICK(range_tick)
 {
     // get our c++ class pointer
-    Range * s_obj = (Range *) OBJ_MEMBER_INT(SELF, range_data_offset);
- 
+    Range * r_obj = (Range *) OBJ_MEMBER_INT(SELF, range_data_offset);
+
     // invoke our tick function; store in the magical out variable
-    if(s_obj) *out = s_obj->tick(in);
+    if(r_obj) *out = r_obj->tick(in);
 
     // yes
     return TRUE;
@@ -308,55 +355,55 @@ CK_DLL_TICK(range_tick)
 CK_DLL_MFUN(range_setInRange)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
 
     t_CKFLOAT inMin = GET_NEXT_FLOAT(ARGS);
     t_CKFLOAT inMax = GET_NEXT_FLOAT(ARGS);
 
     // set the return value
-    s_obj->setInRange(inMin, inMax);
+    r_obj->setInRange(inMin, inMax);
 }
 
 CK_DLL_MFUN(range_setInRadius)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
 
     t_CKFLOAT inCenter = GET_NEXT_FLOAT(ARGS);
     t_CKFLOAT inRadius = GET_NEXT_FLOAT(ARGS);
 
     // set the return value
-    s_obj->setInRadius(inCenter, inRadius);
+    r_obj->setInRadius(inCenter, inRadius);
 }
 
 CK_DLL_MFUN(range_setOutRange)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
 
     t_CKFLOAT outMin = GET_NEXT_FLOAT(ARGS);
     t_CKFLOAT outMax = GET_NEXT_FLOAT(ARGS);
 
     // set the return value
-    s_obj->setOutRange(outMin, outMax);
+    r_obj->setOutRange(outMin, outMax);
 }
 
 CK_DLL_MFUN(range_setOutRadius)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
 
     t_CKFLOAT outCenter = GET_NEXT_FLOAT(ARGS);
     t_CKFLOAT outRadius = GET_NEXT_FLOAT(ARGS);
 
     // set the return value
-    s_obj->setOutRadius(outCenter, outRadius);
+    r_obj->setOutRadius(outCenter, outRadius);
 }
 
 CK_DLL_MFUN(range_setRange)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
 
     t_CKFLOAT inMin = GET_NEXT_FLOAT(ARGS);
     t_CKFLOAT inMax = GET_NEXT_FLOAT(ARGS);
@@ -364,13 +411,13 @@ CK_DLL_MFUN(range_setRange)
     t_CKFLOAT outMax = GET_NEXT_FLOAT(ARGS);
 
     // set the return value
-    s_obj->setRange(inMin, inMax, outMin, outMax);
+    r_obj->setRange(inMin, inMax, outMin, outMax);
 }
 
 CK_DLL_MFUN(range_setRadius)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
 
     t_CKFLOAT inCenter = GET_NEXT_FLOAT(ARGS);
     t_CKFLOAT inRadius = GET_NEXT_FLOAT(ARGS);
@@ -378,85 +425,85 @@ CK_DLL_MFUN(range_setRadius)
     t_CKFLOAT outRadius = GET_NEXT_FLOAT(ARGS);
 
     // set the return value
-    s_obj->setRadius(inCenter, inRadius, outCenter, outRadius);
+    r_obj->setRadius(inCenter, inRadius, outCenter, outRadius);
 }
 
 CK_DLL_MFUN(range_getInMin)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
     // set the return value
-    RETURN->v_float = s_obj->getInMin();
+    RETURN->v_float = r_obj->getInMin();
 }
 
 CK_DLL_MFUN(range_getInMax)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
     // set the return value
-    RETURN->v_float = s_obj->getInMax();
+    RETURN->v_float = r_obj->getInMax();
 }
 
 CK_DLL_MFUN(range_getOutMin)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
     // set the return value
-    RETURN->v_float = s_obj->getOutMin();
+    RETURN->v_float = r_obj->getOutMin();
 }
 
 CK_DLL_MFUN(range_getOutMax)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
     // set the return value
-    RETURN->v_float = s_obj->getOutMax();
+    RETURN->v_float = r_obj->getOutMax();
 }
 
 CK_DLL_MFUN(range_getInCenter)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
     // set the return value
-    RETURN->v_float = s_obj->getInCenter();
+    RETURN->v_float = r_obj->getInCenter();
 }
 
 CK_DLL_MFUN(range_getInRadius)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
     // set the return value
-    RETURN->v_float = s_obj->getInRadius();
+    RETURN->v_float = r_obj->getInRadius();
 }
 
 CK_DLL_MFUN(range_getOutCenter)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
     // set the return value
-    RETURN->v_float = s_obj->getOutCenter();
+    RETURN->v_float = r_obj->getOutCenter();
 }
 
 CK_DLL_MFUN(range_getOutRadius)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
     // set the return value
-    RETURN->v_float = s_obj->getOutRadius();
+    RETURN->v_float = r_obj->getOutRadius();
 }
 
 CK_DLL_MFUN(range_setClip)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
     // set the return value
-    RETURN->v_int = s_obj->setClip(GET_NEXT_INT(ARGS));
+    RETURN->v_int = r_obj->setClip(GET_NEXT_INT(ARGS));
 }
 
 CK_DLL_MFUN(range_getClip)
 {
     // get our c++ class pointer
-    Range* s_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
+    Range* r_obj = (Range*)OBJ_MEMBER_INT(SELF, range_data_offset);
     // set the return value
-    RETURN->v_int = s_obj->getClip();
+    RETURN->v_int = r_obj->getClip();
 }

@@ -1,9 +1,9 @@
 // Line can be used as a replacement for Envelope.
 
-SinOsc s => Line l => dac;
+SinOsc s(880) => Line l(5::second) => dac;
 
-// Create a ramp that goes from 0 to 1 in 1::second
-l.set(1::second);
+// Equivalent to `Line l(5::second)`
+// l.set(5::second);
 
 // Activates the ramp, and advances time until the ramp is finished.
 l.keyOn() => now;
@@ -14,6 +14,6 @@ l.keyOff(1::second) => now;
 1::second => now;
 
 // alternatively you set the ramp duration and trigger the ramp at the same time
-l.keyOn(1::second) => now;
+l.keyOn(5::second) => now;
 
 l.keyOff(1::second) => now;

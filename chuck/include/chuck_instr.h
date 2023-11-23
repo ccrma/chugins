@@ -2214,6 +2214,29 @@ protected:
 
 
 //-----------------------------------------------------------------------------
+// name: struct Chuck_Instr_Reg_Push_Code | 1.5.2.0 (ge) added
+// desc: push Chuck_VM_Code * onto register stack
+//-----------------------------------------------------------------------------
+struct Chuck_Instr_Reg_Push_Code : public Chuck_Instr
+{
+public:
+    virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+
+public:
+    // constructor
+    Chuck_Instr_Reg_Push_Code( Chuck_VM_Code * code ) : m_code(code) { }
+    // for printing
+    const char * params() const;
+
+public:
+    // code to push
+    Chuck_VM_Code * m_code;
+};
+
+
+
+
+//-----------------------------------------------------------------------------
 // name: struct Chuck_Instr_Reg_Push_Zero
 // desc: push immediate value 0 to reg stack with specific width
 //-----------------------------------------------------------------------------
@@ -2949,7 +2972,7 @@ public:
     { pre_ctor = pre; this->stack_offset = offset; }
 
     virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
-    // virtual const char * params() const;
+    virtual const char * params() const;
 
 public:
     Chuck_VM_Code * pre_ctor;
@@ -3263,13 +3286,36 @@ public:
 
 
 //-----------------------------------------------------------------------------
+// name: enum ck_Func_Call_Arg_Convention | 1.5.2.0
+// desc: where to find this/type pointers in argument block
+//-----------------------------------------------------------------------------
+enum ck_Func_Call_Arg_Convention
+{
+    // 'this' (member) or 'type' (static) found in the back of arguments block
+    CK_FUNC_CALL_THIS_IN_BACK,
+    // 'this' (member) or 'type' (static) found in the back of arguments block
+    CK_FUNC_CALL_THIS_IN_FRONT
+};
+//-----------------------------------------------------------------------------
 // name: struct Chuck_Instr_Func_Call
 // desc: user-defined function call
 //-----------------------------------------------------------------------------
 struct Chuck_Instr_Func_Call : public Chuck_Instr
 {
 public:
+    // for carrying out instruction
     virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    // for printing
+    virtual const char * params() const;
+
+public:
+    // constructor
+    Chuck_Instr_Func_Call( ck_Func_Call_Arg_Convention arg_convention = CK_FUNC_CALL_THIS_IN_BACK )
+    : m_arg_convention(arg_convention) { }
+
+    // when applicable, this flag indicates whether this/type is at the
+    // beginning or at the end of the argument block on the reg stack
+    ck_Func_Call_Arg_Convention m_arg_convention;
 };
 
 
@@ -3282,14 +3328,22 @@ public:
 struct Chuck_Instr_Func_Call_Member : public Chuck_Instr_Unary_Op
 {
 public:
-    Chuck_Instr_Func_Call_Member( t_CKUINT ret_size, Chuck_Func * func_ref )
-    { this->set( ret_size ); m_func_ref = func_ref; }
+    Chuck_Instr_Func_Call_Member( t_CKUINT ret_size, Chuck_Func * func_ref,
+                                  ck_Func_Call_Arg_Convention arg_convention = CK_FUNC_CALL_THIS_IN_BACK )
+    { this->set( ret_size ); m_func_ref = func_ref; m_arg_convention = arg_convention; }
 
 public:
+    // for carrying out instruction
     virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    // for printing
+    virtual const char * params() const;
 
 public:
-    Chuck_Func * m_func_ref; // 1.5.0.0 (ge) | added for arg list cleanup
+    // 1.5.0.0 (ge) | added for arg list cleanup
+    Chuck_Func * m_func_ref;
+    // when applicable, this flag indicates whether this/type is at the
+    // beginning or at the end of the argument block on the reg stack
+    ck_Func_Call_Arg_Convention m_arg_convention;
 };
 
 
@@ -3302,14 +3356,22 @@ public:
 struct Chuck_Instr_Func_Call_Static : public Chuck_Instr_Unary_Op
 {
 public:
-    Chuck_Instr_Func_Call_Static( t_CKUINT ret_size, Chuck_Func * func_ref )
-    { this->set( ret_size ); m_func_ref = func_ref; }
+    Chuck_Instr_Func_Call_Static( t_CKUINT ret_size, Chuck_Func * func_ref,
+                                  ck_Func_Call_Arg_Convention arg_convention = CK_FUNC_CALL_THIS_IN_BACK )
+    { this->set( ret_size ); m_func_ref = func_ref; m_arg_convention = arg_convention; }
 
 public:
+    // for carrying out instruction
     virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    // for printing
+    virtual const char * params() const;
 
 public:
-    Chuck_Func * m_func_ref; // 1.5.0.0 (ge) | added for arg list cleanup
+    // 1.5.0.0 (ge) | added for arg list cleanup
+    Chuck_Func * m_func_ref;
+    // when applicable, this flag indicates whether this/type is at the
+    // beginning or at the end of the argument block on the reg stack
+    ck_Func_Call_Arg_Convention m_arg_convention;
 };
 
 
@@ -3326,9 +3388,13 @@ public:
     { this->set( ret_size ); m_func_ref = func_ref; }
 
 public:
+    // for carrying out instruction
     virtual void execute( Chuck_VM * vm, Chuck_VM_Shred * shred );
+    // for printing
+    virtual const char * params() const;
 
 public:
+    // 1.5.0.0 (ge) | added for arg list cleanup
     Chuck_Func * m_func_ref;
 };
 
@@ -3559,6 +3625,16 @@ protected:
     t_CKUINT m_stack_offset;
     t_CKBOOL m_is_ref;
 };
+
+
+
+
+//-----------------------------------------------------------------------------
+// do alloc array
+//-----------------------------------------------------------------------------
+Chuck_Object * do_alloc_array( Chuck_VM * vm, Chuck_VM_Shred * shred, t_CKINT * capacity,
+                               const t_CKINT * top, t_CKUINT kind, t_CKBOOL is_obj,
+                               t_CKUINT * objs, t_CKINT & index, Chuck_Type * type);
 
 
 

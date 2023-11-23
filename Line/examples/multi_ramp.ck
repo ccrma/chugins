@@ -1,9 +1,12 @@
 // Line can be used to generate a sequence of ramps
 
-SawOsc s => Line l => dac;
+SawOsc s => Line l(
+       [0.1, 0.0, 0.5, 0.1, 1.0], [
+       1::second, 1::second, 0.25::second, 0.25::second, 0.125::second]
+       ) => dac;
 
-// Create a ramp that goes from 0 to 1 in 1::second
-l.set([0.1, 0.0, 0.5, 0.1, 1.0], [1::second, 1::second, 0.25::second, 0.25::second, 0.125::second]);
+// Equivalent to the above constructor
+// l.set([0.1, 0.0, 0.5, 0.1, 1.0], [1::second, 1::second, 0.25::second, 0.25::second, 0.125::second]);
 
 // Activates the ramp, and advances time until the ramp is finished.
 l.keyOn() => now;
