@@ -28,6 +28,8 @@ class LineTest extends Assert {
 
         testKeyOffEvent();
 
+        testTargets();
+
         chout <= "success!" <= IO.newline();
     }
 
@@ -76,7 +78,7 @@ class LineTest extends Assert {
            Step s => Line l => blackhole;
 
            [1.0, -2, -3] @=> float targets[];
-           [2::samp, 2::ms, 3::ms] @=> dur durs[];
+           [20::ms, 2::samp, 3::second] @=> dur durs[];
 
            l.set(targets, durs);
            l.keyOn();
@@ -90,7 +92,7 @@ class LineTest extends Assert {
 
            -1.0 => float init;
            [1.0, -2, 3] @=> float targets[];
-           [2::samp, 2::ms, 3::ms] @=> dur durs[];
+           [2::samp, 20::ms, 3::second] @=> dur durs[];
 
            l.set(init, targets, durs);
            l.keyOn();
@@ -132,7 +134,7 @@ class LineTest extends Assert {
            Step s => Line l => blackhole;
 
            [1.0, -2, -3] @=> float targets[];
-           [2::samp, 2::ms, 3::ms] @=> dur durs[];
+           [2::samp, 20::ms, 3::second] @=> dur durs[];
 
            l.keyOn(targets, durs);
 
@@ -145,7 +147,7 @@ class LineTest extends Assert {
 
            -1.0 => float init;
            [1.0, -2, 3] @=> float targets[];
-           [2::samp, 2::ms, 3::ms] @=> dur durs[];
+           [2::samp, 20::ms, 3::second] @=> dur durs[];
 
            l.keyOn(init, targets, durs);
 
@@ -253,6 +255,42 @@ class LineTest extends Assert {
 
            assertNull(got);
     }
+    
+    public void testTargets() {
+       <<< "testTargets" >>>;
+       Step s => Line l => blackhole;
+
+       [1.0, -2, -3] @=> float targets[];
+       [2::samp, 2::ms, 3::ms] @=> dur durs[];
+
+       l.set(targets, durs);
+
+       l.targets() @=> float got[];
+
+       assertEquals(got.size(), targets.size());
+
+       for (int i: Std.range(got.size())) {
+              assertEquals(got[i], targets[i], FP_MARGIN);
+       }
+    }
+
+    public void testDurs() {
+       <<< "testDurs" >>>;
+       Step s => Line l => blackhole;
+
+       [1.0, -2, -3] @=> float targets[];
+       [2::samp, 2::ms, 3::ms] @=> dur durs[];
+
+       l.set(targets, durs);
+
+       l.durations() @=> dur got[];
+
+       assertEquals(got.size(), durs.size());
+
+       for (int i: Std.range(got.size())) {
+              assertEquals(got[i], durs[i]);
+       }
+    }
 
     fun void assertRamp(Line @ l, dur d, float target) {
         assertRamp(l, d, 0, target);
@@ -280,8 +318,8 @@ class LineTest extends Assert {
             (durs[i] / samp) $ int => int samps;
             targets[i] => float target;
             // validate ramp
-            for(int i: Std.range(samps)) {
-                (target - prev) * ((i $ float) / samps) + prev => float want;
+            for(int j: Std.range(samps)) {
+                (target - prev) * ((j $ float) / samps) + prev => float want;
                 assertEquals(want, l.last(), FP_MARGIN);
                 samp => now;
             }
