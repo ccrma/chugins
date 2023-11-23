@@ -35,8 +35,8 @@
 // happy chucking & chugging!
 //-----------------------------------------------------------------------------
 
-// include chuck dynamic linking header
-#include "chuck_dl.h"
+// include chugin dynamic linking header
+#include "chugin.h"
 
 // general includes
 #include <iostream>

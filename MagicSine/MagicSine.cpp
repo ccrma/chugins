@@ -26,10 +26,7 @@
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
  U.S.A.
  -----------------------------------------------------------------------------*/
-
-
-#include "chuck_dl.h"
-#include "chuck_def.h"
+#include "chugin.h"
 
 #include <stdio.h>
 #include <limits.h>

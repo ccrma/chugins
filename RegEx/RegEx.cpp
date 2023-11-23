@@ -4,12 +4,7 @@
 //-----------------------------------------------------------------------------
 
 // this should align with the correct versions of these ChucK files
-#include "chuck_dl.h"
-#include "chuck_def.h"
-#include "chuck_errmsg.h"
-#include "chuck_instr.h"
-#include "chuck_type.h"
-#include "chuck_vm.h"
+#include "chugin.h"
 
 #ifdef _WIN32
 #include "regex/regex.h"
@@ -89,13 +84,13 @@ CK_DLL_SFUN( regex_match )
         goto error;
     }
 
-    result = regcomp(&regex, pattern->str().c_str(), REG_EXTENDED | REG_NOSUB);
+    result = regcomp(&regex, API->object->str(pattern), REG_EXTENDED | REG_NOSUB);
     if(result != 0)
         goto error;
 
     r_free = TRUE;
 
-    result = regexec(&regex, str->str().c_str(), 0, NULL, 0);
+    result = regexec(&regex, API->object->str(str), 0, NULL, 0);
 
     RETURN->v_int = (result == 0 ? 1 : 0);
 
@@ -153,12 +148,11 @@ CK_DLL_SFUN( regex_match2 )
         goto error;
     }
 
-
     // matches->clear();
     // bugfix: array.clear() doesnt seem to work?
-    matches->set_size(0);
+    API->object->array_int_clear( matches );
 
-    result = regcomp(&regex, pattern->str().c_str(), REG_EXTENDED);
+    result = regcomp(&regex, API->object->str(pattern), REG_EXTENDED);
     if(result != 0)
         goto error;
 
@@ -166,7 +160,7 @@ CK_DLL_SFUN( regex_match2 )
 
     matcharray = new regmatch_t[regex.re_nsub+1];
 
-    result = regexec(&regex, str->str().c_str(), regex.re_nsub+1, matcharray, 0);
+    result = regexec(&regex, API->object->str(str), regex.re_nsub+1, matcharray, 0);
 
     RETURN->v_int = (result == 0 ? 1 : 0);
 
@@ -179,9 +173,12 @@ CK_DLL_SFUN( regex_match2 )
         {
             // create string, no add ref since we are return this without keeping a ref to it
             Chuck_String * match = (Chuck_String *)API->object->create_string( VM, "", FALSE );
-            if(matcharray[i].rm_so >= 0 && matcharray[i].rm_eo > 0)
-                match->set( std::string(str->str(), matcharray[i].rm_so,
-                                         matcharray[i].rm_eo-matcharray[i].rm_so) );
+            if( matcharray[i].rm_so >= 0 && matcharray[i].rm_eo > 0 )
+            {
+                std::string matchstr = std::string( API->object->str( str ), matcharray[i].rm_so,
+                    matcharray[i].rm_eo-matcharray[i].rm_so );
+                API->object->set_string(match, matchstr.c_str() );
+            }
             // append to matches
             // matches->push_back((t_CKUINT)match);
             API->object->array_int_push_back(matches, (t_CKUINT)match);
@@ -220,7 +217,7 @@ CK_DLL_SFUN( regex_replace )
     Chuck_String * str = GET_NEXT_STRING(ARGS);
 
     // create string, no add ref since we are return this without keeping a ref to it
-    Chuck_String * ret = (Chuck_String *)API->object->create_string(VM, str->str().c_str(), FALSE );
+    Chuck_String * ret = (Chuck_String *)API->object->create_string(VM, API->object->str(str), FALSE );
 
     regex_t regex;
     t_CKBOOL r_free = FALSE;
@@ -250,7 +247,7 @@ CK_DLL_SFUN( regex_replace )
     }
 
     // compile regex
-    result = regcomp(&regex, pattern->str().c_str(), REG_EXTENDED);
+    result = regcomp(&regex, API->object->str(pattern), REG_EXTENDED);
     if(result != 0)
         goto error;
 
@@ -258,7 +255,7 @@ CK_DLL_SFUN( regex_replace )
 
     // perform match
     matcharray = new regmatch_t[regex.re_nsub+1];
-    result = regexec(&regex, str->str().c_str(), regex.re_nsub+1, matcharray, 0);
+    result = regexec(&regex, API->object->str(str), regex.re_nsub+1, matcharray, 0);
 
     regfree(&regex);
     r_free = FALSE;
@@ -266,10 +263,10 @@ CK_DLL_SFUN( regex_replace )
     // perform substitution
     if(result == 0 && matcharray[0].rm_so >= 0 && matcharray[0].rm_eo >= 0)
     {
-        std::string s = ret->str();
+        std::string s = API->object->str(ret);
         s.replace(matcharray[0].rm_so,
-                  matcharray[0].rm_eo-matcharray[0].rm_so, replace->str());
-        ret->set( s );
+                  matcharray[0].rm_eo-matcharray[0].rm_so, API->object->str(replace));
+        API->object->set_string(ret, s.c_str());
     }
 
     CK_SAFE_DELETE_ARRAY(matcharray);
@@ -304,13 +301,14 @@ CK_DLL_SFUN( regex_replaceAll )
     Chuck_String * str = GET_NEXT_STRING(ARGS);
 
     // create string, no add ref since we are return this without keeping a ref to it
-    Chuck_String * ret = (Chuck_String *)API->object->create_string(VM, str->str().c_str(), FALSE );
+    Chuck_String * ret = (Chuck_String *)API->object->create_string(VM, API->object->str(str), FALSE );
 
     regex_t regex;
     t_CKBOOL r_free = FALSE;
     regmatch_t *matcharray = NULL;
     int result = 0;
     size_t pos = 0;
+    std::string tempstr;
 
     if(pattern == NULL)
     {
@@ -335,7 +333,7 @@ CK_DLL_SFUN( regex_replaceAll )
     }
 
     // compile regex
-    result = regcomp(&regex, pattern->str().c_str(), REG_EXTENDED);
+    result = regcomp(&regex, API->object->str(pattern), REG_EXTENDED);
     if(result != 0)
         goto error;
 
@@ -344,22 +342,24 @@ CK_DLL_SFUN( regex_replaceAll )
     // perform match
     matcharray = new regmatch_t[regex.re_nsub+1];
 
-    while(pos < str->str().size())
+    tempstr = API->object->str( str );
+    while(pos < tempstr.size())
     {
-        result = regexec(&regex, ret->str().c_str()+pos, regex.re_nsub+1, matcharray, 0);
+        result = regexec(&regex, API->object->str(ret)+pos, regex.re_nsub+1, matcharray, 0);
 
         // perform substitution
         if(result != 0)
             break;
         else if(matcharray[0].rm_so >= 0 && matcharray[0].rm_eo >= 0)
         {
-            std::string s = ret->str();
+            std::string s = API->object->str(ret);
             s.replace(pos+matcharray[0].rm_so,
                       matcharray[0].rm_eo-matcharray[0].rm_so,
-                      replace->str());
-            ret->set( s );
+                      API->object->str(replace));
+            API->object->set_string( ret, s.c_str() );
 
-            pos = pos + matcharray[0].rm_so + replace->str().size();
+            std::string r = API->object->str( replace );
+            pos = pos + matcharray[0].rm_so + r.size();
         }
     }
 

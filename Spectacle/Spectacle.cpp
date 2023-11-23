@@ -17,11 +17,7 @@
  */
 
 // this should align with the correct versions of these ChucK files
-#include "chuck_dl.h"
-#include "chuck_def.h"
-#include "util_math.h"
-#include "ulib_math.h"
-
+#include "chugin.h"
 #include "Spectacle-dsp.h"
 
 // general includes
@@ -905,9 +901,9 @@ CK_DLL_MFUN(spectacle_setTable)
   // get our c++ class pointer
   Spectacle * bcdata = (Spectacle *) OBJ_MEMBER_INT(SELF, spectacle_data_offset);
   // set the return value
-  const char* q = GET_NEXT_STRING(ARGS)->c_str();
-  const char* p = GET_NEXT_STRING(ARGS)->c_str();
-  RETURN->v_int = bcdata->setTable(q,p);
+  std::string q = GET_NEXT_STRING_SAFE(ARGS);
+  std::string p = GET_NEXT_STRING_SAFE(ARGS);
+  RETURN->v_int = bcdata->setTable(q.c_str(),p.c_str());
 }
 
 // example implementation for setter
