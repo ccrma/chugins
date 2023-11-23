@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "perlin-noise.h"
 
