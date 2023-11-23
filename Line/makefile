@@ -19,7 +19,7 @@ CHUGIN_PATH?=/usr/local/lib/chuck
 
 # default target: print usage message and quit
 current: 
-	@echo "[chuck build]: please use one of the following configurations:"
+	@echo "[chugin build]: please use one of the following configurations:"
 	@echo "   make linux, make mac, or make win32"
 
 ifneq ($(CK_TARGET),)
