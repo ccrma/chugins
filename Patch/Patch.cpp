@@ -25,8 +25,7 @@
 // TODO: type check arguments of provided functions (prob requires more api updates)
 // TODO: use operator overloading to do SinOsc s => Patch p => r.freq ?
 
-#include "chuck_dl.h"
-#include "chuck_vm.h"
+#include "chugin.h"
 
 // general includes
 #include <stdio.h>
@@ -145,7 +144,7 @@ private:
   // find class method vtable offset
   t_CKINT findMethodOffset(std::string method) {
     // Get object to find offset from
-    Chuck_DL_Api::Type obj_type = m_dest->type_ref;
+    Chuck_DL_Api::Type obj_type = m_api->object->get_type( m_dest );
 
     // just gain for now
     t_CKINT offset = m_api->type->get_vtable_offset(m_vm, obj_type, method.c_str());
@@ -153,7 +152,7 @@ private:
     // TODO check for error, and make non-crashing exception
     if (offset < 0) {
       // TODO: type->name() doesn't work, figure out why
-      std::string message = "Member function " + method + "() not found in object " + obj_type->base_name;
+      std::string message = "Member function " + method + "() not found in object " + std::string(m_api->type->base_name(obj_type));
       m_api->vm->throw_exception("MemberFunctionNotFound", message.c_str(), m_shred);
     }
 
@@ -260,7 +259,7 @@ CK_DLL_CTOR(patch_ctor_args)
   Chuck_Object * dest = (Chuck_Object *)GET_NEXT_OBJECT(ARGS);
   Chuck_String* method = (Chuck_String*)GET_NEXT_STRING(ARGS);
 
-  p_obj->connect(dest, method->str(), VM, SHRED, API);
+  p_obj->connect(dest, API->object->str(method), VM, SHRED, API);
 
 }
 
@@ -312,7 +311,7 @@ CK_DLL_MFUN(patch_setMethod)
     Patch* p_obj = (Patch*)OBJ_MEMBER_INT(SELF, patch_data_offset);
     Chuck_String* method = (Chuck_String*)GET_NEXT_STRING(ARGS);
 
-    p_obj->setMethod(method->str());
+    p_obj->setMethod(API->object->str(method));
     RETURN->v_string = method;
 }
 
@@ -325,7 +324,7 @@ CK_DLL_MFUN(patch_connect)
     Chuck_Object * dest = (Chuck_Object *)GET_NEXT_OBJECT(ARGS);
     Chuck_String* method = (Chuck_String*)GET_NEXT_STRING(ARGS);
 
-    p_obj->connect(dest, method->str(), VM, SHRED, API);
+    p_obj->connect(dest, API->object->str(method), VM, SHRED, API);
  }
 
 CK_DLL_MFUN(patch_disconnect)

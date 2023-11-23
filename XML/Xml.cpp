@@ -1,5 +1,4 @@
-#include "chuck_dl.h"
-#include "chuck_def.h"
+#include "chugin.h"
 #include "util_xml.h"
 
 // general includes
@@ -158,21 +157,21 @@ CK_DLL_DTOR( XmlSettings_dtor )
 CK_DLL_MFUN( XmlSettings_open )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    const char * filename = GET_CK_STRING(ARGS)->str().c_str();
+    const char * filename = GET_NEXT_STRING_SAFE(ARGS).c_str();
     RETURN->v_int = xml->open( filename );
 }
 
 CK_DLL_MFUN( XmlSettings_save )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    const char * filename = GET_CK_STRING(ARGS)->str().c_str();
+    const char * filename = GET_NEXT_STRING_SAFE( ARGS ).c_str();
     RETURN->v_int = xml->save( filename );
 }
 
 CK_DLL_MFUN( XmlSettings_getIntValue )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    std::string tag = GET_NEXT_STRING(ARGS)->str();
+    std::string tag = GET_NEXT_STRING_SAFE(ARGS);
     t_CKINT defaultValue = GET_NEXT_INT(ARGS);
     t_CKINT which = GET_NEXT_INT(ARGS);
     RETURN->v_int = xml->getIntValue( tag, defaultValue, which );
@@ -181,7 +180,7 @@ CK_DLL_MFUN( XmlSettings_getIntValue )
 CK_DLL_MFUN( XmlSettings_getFloatValue )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    std::string tag = GET_NEXT_STRING(ARGS)->str();
+    std::string tag = GET_NEXT_STRING_SAFE(ARGS);
     t_CKFLOAT defaultValue = GET_NEXT_FLOAT(ARGS);
     t_CKINT which = GET_NEXT_INT(ARGS);
     RETURN->v_float = xml->getFloatValue( tag, defaultValue, which );
@@ -190,8 +189,8 @@ CK_DLL_MFUN( XmlSettings_getFloatValue )
 CK_DLL_MFUN( XmlSettings_getStringValue )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    std::string tag = GET_NEXT_STRING(ARGS)->str();
-    std::string defaultValue = GET_NEXT_STRING(ARGS)->str();
+    std::string tag = GET_NEXT_STRING_SAFE(ARGS);
+    std::string defaultValue = GET_NEXT_STRING_SAFE(ARGS);
     t_CKINT which = GET_NEXT_INT(ARGS);
     std::string method = xml->getStringValue( tag, defaultValue, which );
     RETURN->v_string = (Chuck_String*)API->object->create_string(VM, method.c_str(), false);
@@ -200,14 +199,14 @@ CK_DLL_MFUN( XmlSettings_getStringValue )
 CK_DLL_MFUN( XmlSettings_getNumTags )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    std::string tag = GET_NEXT_STRING(ARGS)->str();
+    std::string tag = GET_NEXT_STRING_SAFE(ARGS);
     RETURN->v_int = xml->getNumTags( tag );
 }
 
 CK_DLL_MFUN( XmlSettings_pushTag )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    std::string tag = GET_NEXT_STRING(ARGS)->str();
+    std::string tag = GET_NEXT_STRING_SAFE(ARGS);
     t_CKINT which = GET_NEXT_INT(ARGS);
     RETURN->v_int = xml->pushTag( tag, which );
 }
@@ -227,7 +226,7 @@ CK_DLL_MFUN( XmlSettings_getPushLevel )
 CK_DLL_MFUN( XmlSettings_tagExists )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    std::string tag = GET_NEXT_STRING(ARGS)->str();
+    std::string tag = GET_NEXT_STRING_SAFE(ARGS);
     t_CKINT which = GET_NEXT_INT(ARGS);
     RETURN->v_int = xml->tagExists( tag, which );
 }
@@ -235,8 +234,8 @@ CK_DLL_MFUN( XmlSettings_tagExists )
 CK_DLL_MFUN( XmlSettings_attributeExists )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    std::string tag = GET_NEXT_STRING(ARGS)->str();
-    std::string attribute = GET_NEXT_STRING(ARGS)->str();
+    std::string tag = GET_NEXT_STRING_SAFE(ARGS);
+    std::string attribute = GET_NEXT_STRING_SAFE(ARGS);
     t_CKINT which = GET_NEXT_INT(ARGS);
     RETURN->v_int = xml->attributeExists( tag, attribute, which );
 }
@@ -244,7 +243,7 @@ CK_DLL_MFUN( XmlSettings_attributeExists )
 CK_DLL_MFUN( XmlSettings_getNumAttributes )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    std::string tag = GET_NEXT_STRING(ARGS)->str();
+    std::string tag = GET_NEXT_STRING_SAFE(ARGS);
     t_CKINT which = GET_NEXT_INT(ARGS);
     RETURN->v_int = xml->getNumAttributes( tag, which );
 }
@@ -252,8 +251,8 @@ CK_DLL_MFUN( XmlSettings_getNumAttributes )
 CK_DLL_MFUN( XmlSettings_getIntAttribute )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    std::string tag = GET_NEXT_STRING(ARGS)->str();
-    std::string attribute = GET_NEXT_STRING(ARGS)->str();
+    std::string tag = GET_NEXT_STRING_SAFE(ARGS);
+    std::string attribute = GET_NEXT_STRING_SAFE(ARGS);
     t_CKINT defaultValue = GET_NEXT_INT(ARGS);
     t_CKINT which = GET_NEXT_INT(ARGS);
     RETURN->v_int = xml->getIntAttribute( tag, attribute, defaultValue, which );
@@ -262,8 +261,8 @@ CK_DLL_MFUN( XmlSettings_getIntAttribute )
 CK_DLL_MFUN( XmlSettings_getFloatAttribute )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    std::string tag = GET_NEXT_STRING(ARGS)->str();
-    std::string attribute = GET_NEXT_STRING(ARGS)->str();
+    std::string tag = GET_NEXT_STRING_SAFE(ARGS);
+    std::string attribute = GET_NEXT_STRING_SAFE(ARGS);
     t_CKINT defaultValue = GET_NEXT_INT(ARGS);
     t_CKINT which = GET_NEXT_INT(ARGS);
     RETURN->v_float = xml->getFloatAttribute( tag, attribute, defaultValue, which );
@@ -272,9 +271,9 @@ CK_DLL_MFUN( XmlSettings_getFloatAttribute )
 CK_DLL_MFUN( XmlSettings_getStringAttribute )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    std::string tag = GET_NEXT_STRING(ARGS)->str();
-    std::string attribute = GET_NEXT_STRING(ARGS)->str();
-    std::string defaultValue = GET_NEXT_STRING(ARGS)->str();
+    std::string tag = GET_NEXT_STRING_SAFE(ARGS);
+    std::string attribute = GET_NEXT_STRING_SAFE(ARGS);
+    std::string defaultValue = GET_NEXT_STRING_SAFE(ARGS);
     t_CKINT which = GET_NEXT_INT(ARGS);
     std::string method = xml->getStringAttribute( tag, attribute, defaultValue, which );
     RETURN->v_string = (Chuck_String*)API->object->create_string(VM, method.c_str(), false);
