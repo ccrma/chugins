@@ -19,7 +19,7 @@ CHUGIN_PATH?=/usr/local/lib/chuck
 
 # default target: print usage message and quit
 current: 
-	@echo "[chuck build]: please use one of the following configurations:"
+	@echo "[chugin build]: please use one of the following configurations:"
 	@echo "   make linux, make mac, or make win32"
 
 ifneq ($(CK_TARGET),)
@@ -98,7 +98,7 @@ endif
 $(C_OBJECTS): %.o: %.c
 	$(CC) $(FLAGS) -c -o $@ $<
 
-$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chuck_dl.h
+$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chugin.h
 	$(CXX) $(FLAGS) -c -o $@ $<
 
 install: $(CHUG)

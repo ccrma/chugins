@@ -23,10 +23,11 @@
  */
 
 // include chuck dynamic linking header
-#include "chuck_dl.h"
+#include "chugin.h"
 
 // general includes
 #include <iostream>
+#include <vector>
 
 
 // declaration of chugin constructor
@@ -695,8 +696,8 @@ CK_DLL_MFUN( line_setArray )
 
   // bounds checking
   t_CKINT durations_size, targets_size;
-  API->object->array_float_size(durations, durations_size);
-  API->object->array_float_size(targets, targets_size);
+  durations_size = API->object->array_float_size(durations);
+  targets_size = API->object->array_float_size(targets);
 
   if (durations_size != targets_size) {
     API->vm->throw_exception("LineMismatchedArrays", "Duration and target arrays must be same size in a Line.set(...)", nullptr);
@@ -709,14 +710,8 @@ CK_DLL_MFUN( line_setArray )
   std::vector<t_CKFLOAT> targets_vec;
 
   for (int i = 0; i < durations_size; i++) {
-    t_CKDUR dur;
-    t_CKFLOAT target;
-
-    API->object->array_float_get_idx(durations, i, dur);
-    API->object->array_float_get_idx(targets, i, target);
-
-    durations_vec.push_back(dur);
-    targets_vec.push_back(target);
+    durations_vec.push_back( API->object->array_float_get_idx( durations, i ) );
+    targets_vec.push_back( API->object->array_float_get_idx( targets, i ) );
   }
 
   l_obj->set(durations_vec, targets_vec);
@@ -736,8 +731,8 @@ CK_DLL_MFUN( line_setArrayStart )
 
   // bounds checking
   t_CKINT durations_size, targets_size;
-  API->object->array_float_size(durations, durations_size);
-  API->object->array_float_size(targets, targets_size);
+  durations_size = API->object->array_float_size(durations);
+  targets_size = API->object->array_float_size(targets);
 
   if (durations_size != targets_size) {
     API->vm->throw_exception("LineMismatchedArrays", "Duration and target arrays must be same size in a Line.set(...)", nullptr);
@@ -750,14 +745,8 @@ CK_DLL_MFUN( line_setArrayStart )
   std::vector<t_CKFLOAT> targets_vec;
 
   for (int i = 0; i < durations_size; i++) {
-    t_CKDUR dur;
-    t_CKFLOAT target;
-
-    API->object->array_float_get_idx(durations, i, dur);
-    API->object->array_float_get_idx(targets, i, target);
-
-    durations_vec.push_back(dur);
-    targets_vec.push_back(target);
+    durations_vec.push_back( API->object->array_float_get_idx( durations, i ) );
+    targets_vec.push_back( API->object->array_float_get_idx( targets, i ) );
   }
 
   l_obj->set(durations_vec, targets_vec, initial);
@@ -834,10 +823,10 @@ CK_DLL_MFUN( line_keyOnArray )
   Chuck_ArrayFloat* targets = (Chuck_ArrayFloat *)GET_NEXT_OBJECT( ARGS );
   Chuck_ArrayFloat* durations = (Chuck_ArrayFloat *)GET_NEXT_OBJECT( ARGS );
 
-  // bounds checking
+  // bounds checking0
   t_CKINT durations_size, targets_size;
-  API->object->array_float_size(durations, durations_size);
-  API->object->array_float_size(targets, targets_size);
+  durations_size = API->object->array_float_size(durations);
+  targets_size = API->object->array_float_size(targets);
 
   if (durations_size != targets_size) {
     API->vm->throw_exception("LineMismatchedArrays", "Duration and target arrays must be same size in a Line.keyOn(...)", nullptr);
@@ -849,14 +838,8 @@ CK_DLL_MFUN( line_keyOnArray )
   std::vector<t_CKFLOAT> targets_vec;
 
   for (int i = 0; i < durations_size; i++) {
-    t_CKDUR dur;
-    t_CKFLOAT target;
-
-    API->object->array_float_get_idx(durations, i, dur);
-    API->object->array_float_get_idx(targets, i, target);
-
-    durations_vec.push_back(dur);
-    targets_vec.push_back(target);
+      durations_vec.push_back( API->object->array_float_get_idx( durations, i ) );
+      targets_vec.push_back( API->object->array_float_get_idx( targets, i ) );
   }
 
   l_obj->set(durations_vec, targets_vec);
@@ -875,8 +858,8 @@ CK_DLL_MFUN( line_keyOnArrayStart )
 
   // bounds checking
   t_CKINT durations_size, targets_size;
-  API->object->array_float_size(durations, durations_size);
-  API->object->array_float_size(targets, targets_size);
+  durations_size = API->object->array_float_size(durations);
+  targets_size = API->object->array_float_size(targets);
 
   if (durations_size != targets_size) {
     API->vm->throw_exception("LineMismatchedArrays", "Duration and target arrays must be same size in a Line.keyOn(...)", nullptr);
@@ -888,14 +871,8 @@ CK_DLL_MFUN( line_keyOnArrayStart )
   std::vector<t_CKFLOAT> targets_vec;
 
   for (int i = 0; i < durations_size; i++) {
-    t_CKDUR dur;
-    t_CKFLOAT target;
-
-    API->object->array_float_get_idx(durations, i, dur);
-    API->object->array_float_get_idx(targets, i, target);
-
-    durations_vec.push_back(dur);
-    targets_vec.push_back(target);
+      durations_vec.push_back( API->object->array_float_get_idx( durations, i ) );
+      targets_vec.push_back( API->object->array_float_get_idx( targets, i ) );
   }
 
   l_obj->set(durations_vec, targets_vec, initial);

@@ -1,7 +1,6 @@
 
 
-#include "chuck_dl.h"
-#include "chuck_def.h"
+#include "chugin.h"
 
 #include <stdio.h>
 #include <limits.h>

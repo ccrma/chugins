@@ -9,15 +9,14 @@ CXX_MODULES=ABSaturator.cpp Filters.cpp
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/
 
-
 # ---------------------------------------------------------------------------- #
 # you won't generally need to change anything below this line for a new chugin #
 # ---------------------------------------------------------------------------- #
 
 # default target: print usage message and quit
 current: 
-	@echo "[chuck build]: please use one of the following configurations:"
-	@echo "   make linux, make osx, or make win32"
+	@echo "[chugin build]: please use one of the following configurations:"
+	@echo "   make linux, make mac, or make win32"
 
 ifneq ($(CK_TARGET),)
 .DEFAULT_GOAL:=$(CK_TARGET)
@@ -26,8 +25,8 @@ MAKECMDGOALS:=$(.DEFAULT_GOAL)
 endif
 endif
 
-.PHONY: osx linux linux-oss linux-jack linux-alsa win32
-osx linux linux-oss linux-jack linux-alsa: all
+.PHONY: mac osx linux linux-oss linux-jack linux-alsa win32
+mac osx linux linux-oss linux-jack linux-alsa: all
 
 win32:
 	make -f makefile.win32
@@ -38,7 +37,7 @@ LD=g++
 
 CHUGIN_PATH=/usr/local/lib/chuck
 
-ifneq (,$(strip $(filter osx bin-dist-osx,$(MAKECMDGOALS))))
+ifneq (,$(strip $(filter mac osx bin-dist-osx,$(MAKECMDGOALS))))
 include makefile.osx
 endif
 
@@ -69,7 +68,6 @@ ifneq ($(CHUCK_STRICT),)
 FLAGS+= -Werror
 endif
 
-
 # default: build a dynamic chugin
 CK_CHUGIN_STATIC?=0
 
@@ -98,7 +96,7 @@ endif
 $(C_OBJECTS): %.o: %.c
 	$(CC) $(FLAGS) -c -o $@ $<
 
-$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chuck_dl.h
+$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chugin.h
 	$(CXX) $(FLAGS) -c -o $@ $<
 
 install: $(CHUG)

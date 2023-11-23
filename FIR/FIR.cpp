@@ -1,7 +1,6 @@
 // FIR Filter ChugIn, by Perry R. Cook, Version 1.0 October 2012
 
-#include "chuck_dl.h"
-#include "chuck_def.h"
+#include "chugin.h"
 
 #include <stdio.h>
 #include <limits.h>

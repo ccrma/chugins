@@ -4,10 +4,7 @@
 //-----------------------------------------------------------------------------
 
 // this should align with the correct versions of these ChucK files
-#include "chuck_dl.h"
-#include "chuck_def.h"
-#include "util_math.h"
-#include "ulib_math.h"
+#include "chugin.h"
 #include "Ocomb.h"
 
 #define NCOMBS      5
@@ -19,9 +16,13 @@
 #include <stdio.h>
 #include <limits.h>
 
-#ifdef _MSC_VER
+#ifdef __PLATFORM_WINDOWS__
 static long random() { return rand(); }
 static void srandom( unsigned s ) { srand( s ); }
+#define MULTICOMB_RANDOM_MAX RAND_MAX
+#else
+// on other platforms random()'s max is (2^31)-1
+#define MULTICOMB_RANDOM_MAX 0x7fffffff
 #endif // _MSC_VER
 
 CK_DLL_CTOR(multicomb_ctor);
@@ -178,7 +179,7 @@ private:
 
   float rand2f (float min, float max)
   {
-    return min + (max-min)*(::random()/(t_CKFLOAT)CK_RANDOM_MAX);
+    return min + (max-min)*(::random()/(t_CKFLOAT)MULTICOMB_RANDOM_MAX);
   }
   unsigned int _num;
   float _srate;

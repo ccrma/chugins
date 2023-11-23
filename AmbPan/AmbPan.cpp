@@ -4,9 +4,7 @@
 //-----------------------------------------------------------------------------
 
 // this should align with the correct versions of these ChucK files
-#include "chuck_dl.h"
-#include "chuck_def.h"
-#include "chuck_oo.h"
+#include "chugin.h"
 
 // general includes
 #include <stdio.h>
@@ -66,11 +64,11 @@ public:
     // get parameter example
     float getElevation() { return m_elevation; }
     
-    void setChannelMap(Chuck_ArrayInt * map)
+    void setChannelMap(Chuck_ArrayInt * map, CK_DL_API api)
     {
-        t_CKINT len = ck_min(map->m_vector.size(), 16);
+        t_CKINT len = ck_min(api->object->array_int_size(map), 16);
         for(t_CKINT i = 0; i < len; i++)
-            m_channel_map[i] = map->m_vector[i];
+            m_channel_map[i] = api->object->array_int_get_idx(map,i);
     }
     
 private:
@@ -329,6 +327,6 @@ CK_DLL_MFUN(ambpan3_setChannelMap)
     // get our c++ class pointer
     AmbPan3 * bcdata = (AmbPan3 *) OBJ_MEMBER_INT(SELF, ambpan3_data_offset);
     Chuck_ArrayInt * map = (Chuck_ArrayInt *) GET_NEXT_OBJECT(ARGS);
-    bcdata->setChannelMap(map);
+    bcdata->setChannelMap(map, API);
 }
 
