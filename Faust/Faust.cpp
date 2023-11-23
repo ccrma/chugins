@@ -18,8 +18,7 @@
 #endif
 
 // this should align with the correct versions of these ChucK files
-#include "chuck_dl.h"
-#include "chuck_def.h"
+#include "chugin.h"
 
 // general includes
 #include <stdio.h>
