@@ -16,7 +16,7 @@ CK_SRC_PATH?=../chuck/include/
 # default target: print usage message and quit
 current: 
 	@echo "[chuck build]: please use one of the following configurations:"
-	@echo "   make linux, make osx, or make win32"
+	@echo "   make linux, make mac, or make win32"
 
 ifneq ($(CK_TARGET),)
 .DEFAULT_GOAL:=$(CK_TARGET)
@@ -25,8 +25,8 @@ MAKECMDGOALS:=$(.DEFAULT_GOAL)
 endif
 endif
 
-.PHONY: osx linux linux-oss linux-jack linux-alsa win32
-osx linux linux-oss linux-jack linux-alsa: all
+.PHONY: mac osx linux linux-oss linux-jack linux-alsa win32
+mac osx linux linux-oss linux-jack linux-alsa: all
 
 win32:
 	make -f makefile.win32
@@ -37,7 +37,7 @@ LD=g++
 
 CHUGIN_PATH=/usr/local/lib/chuck
 
-ifneq (,$(strip $(filter osx bin-dist-osx,$(MAKECMDGOALS))))
+ifneq (,$(strip $(filter mac osx bin-dist-osx,$(MAKECMDGOALS))))
 include makefile.osx
 endif
 

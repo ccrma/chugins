@@ -157,15 +157,15 @@ CK_DLL_DTOR( XmlSettings_dtor )
 CK_DLL_MFUN( XmlSettings_open )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    const char * filename = GET_NEXT_STRING_SAFE(ARGS).c_str();
-    RETURN->v_int = xml->open( filename );
+    std::string filename = GET_NEXT_STRING_SAFE(ARGS);
+    RETURN->v_int = xml->open( filename.c_str() );
 }
 
 CK_DLL_MFUN( XmlSettings_save )
 {
     XmlSettings * xml = (XmlSettings *)OBJ_MEMBER_INT(SELF, XmlSettings_offset_data);
-    const char * filename = GET_NEXT_STRING_SAFE( ARGS ).c_str();
-    RETURN->v_int = xml->save( filename );
+    std::string filename = GET_NEXT_STRING_SAFE( ARGS );
+    RETURN->v_int = xml->save( filename.c_str() );
 }
 
 CK_DLL_MFUN( XmlSettings_getIntValue )

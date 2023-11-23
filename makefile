@@ -27,6 +27,7 @@ endif
 
 CHUCK_STRICT=1
 
+mac: $(CHUGS)
 osx: $(CHUGS)
 linux: $(CHUGS)
 linux-alsa: $(CHUGS)
