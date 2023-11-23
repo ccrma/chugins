@@ -52,9 +52,15 @@
 #ifndef __UTIL_SNDFILE_H__
 #define __UTIL_SNDFILE_H__
 
+#if defined(__CHUNREAL_ENGINE__)
+#pragma warning(disable : 4668)  // -Wundef
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wundef"
+#endif
+#endif // #if defined(__CHUNREAL_ENGINE__)
+
 #include <stdio.h>
 #include <stdlib.h>
-
 
 // XXX philipd this might break things?
 // these defines were placed after the machine-dependent

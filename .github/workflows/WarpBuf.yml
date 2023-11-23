@@ -1,0 +1,75 @@
+name: WarpBuf
+
+env:
+  WARPBUF_VERSION: 0.0.1
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+  pull_request: {}
+  push:
+    paths:
+      - 'WarpBuf/**'
+
+jobs:
+
+  build-all-platforms:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu-x86_64
+            os: ubuntu-20.04
+          - name: macos-x86_64
+            os: macos-11
+          - name: win64
+            os: windows-2022
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+
+    - name: Install dependencies Ubuntu
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+        sudo apt install autoconf autogen automake build-essential libasound2-dev \
+        libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev \
+        libmpg123-dev pkg-config python
+
+    - name: Install dependencies macOS
+      if: startsWith(matrix.os, 'macos')
+      run: |
+        brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
+
+    - name: Install dependencies Windows
+      if: startsWith(matrix.os, 'windows')
+      run: |
+        cd WarpBuf/thirdparty
+        curl -OL https://github.com/libsndfile/libsndfile/releases/download/1.2.0/libsndfile-1.2.0-win64.zip
+        7z x libsndfile-1.2.0-win64.zip -y
+        rm libsndfile-1.2.0-win64.zip
+
+    - name: Build Libsndfile
+      if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
+      run: |
+        cd WarpBuf/thirdparty/libsndfile
+        cmake -Bbuild -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_C_FLAGS="-fPIC" -DCMAKE_CXX_FLAGS="-fPIC" -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="./install"
+        cmake --build build --config Release
+        cmake --build build --target install
+
+    - name: Build WarpBuf Release
+      run: |
+        cd WarpBuf
+        cmake -Bbuild -DCMAKE_VERBOSE_MAKEFILE=ON
+        cmake --build build --config Release
+        cmake --build build --config Release --target install
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: warpbuf-${{ matrix.name }}.zip
+        path: "WarpBuf/package/warpbuf-${{ env.WARPBUF_VERSION }}"
+        if-no-files-found: error

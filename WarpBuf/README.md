@@ -2,6 +2,8 @@
 
 With WarpBuf you can time-stretch and independently transpose the pitch of an audio file. The supported formats include wav, flac, mp3, ogg, opus, and vorbis. If you don't have an Ableton `.asd` file to go with the audio file, then the BPM will be assumed to be 120. Therefore, to play the file twice as fast, do `240. => myWarpBuf.bpm;` Any mono channel UGen can be chucked to `.bpm` too.
 
+Because the audio is being read from the file system one sample at a time, you can avoid artifacts by using a larger buffer size: `chuck --bufsize2048 foo.ck`
+
 Control parameters:
 * .read - ( string , WRITE only ) - loads file for reading
 * .playhead - ( float , READ/WRITE ) - set/get playhead position in quarter notes relative to 1.1.1
@@ -36,9 +38,31 @@ Make sure you have `cmake`, `git`, and `sh` available from the command line/Term
 Update submodules:
 `git submodule update --init --recursive`
 
-If on Windows, create an extra folder for your chugins, `%USERPROFILE%/Documents/ChucK/chugins/`. Create a system environment variable `CHUCK_CHUGIN_PATH` equal to this path.
+### Windows
 
-In `chugins/WarpBuf`, open a command window on Windows or Terminal window on macOS and run `sh build_all_platforms.sh`. On Windows, the `WarpBuf.chug` should appear inside `%USERPROFILE%/Documents/ChucK/chugins/`, and on macOS/Linux it should appear in `/usr/local/lib/chuck`.
+Create an extra folder for your chugins, `%USERPROFILE%/Documents/ChucK/chugins/`. Create a system environment variable `CHUCK_CHUGIN_PATH` equal to this path. In `chugins/WarpBuf`, open a command window and run `call build_windows.bat`. The `WarpBuf.chug` should appear inside `%USERPROFILE%/Documents/ChucK/chugins/` and `chugins/WarpBuf/package`.
+
+### Ubuntu
+
+Install dependencies:
+
+```bash
+sudo apt install autoconf autogen automake build-essential libasound2-dev libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev libmpg123-dev pkg-config python
+```
+
+In `chugins/WarpBuf`, open a Terminal window and run `sh build_unix.sh`. The `WarpBuf.chug` should appear inside `chugins/WarpBuf/package`.
+
+### macOS
+
+Install dependencies with brew:
+
+```zsh
+brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
+```
+
+In `chugins/WarpBuf`, open a Terminal window and run `sh build_unix.sh`. The `WarpBuf.chug` should appear inside `chugins/WarpBuf/package`.
+
+## Testing
 
 Run any of the test scripts: `chuck.exe --verbose:10 level:10 "tests/warpbuf_basic.ck"`.
 

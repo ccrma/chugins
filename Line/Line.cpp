@@ -90,10 +90,8 @@ class Line
 {
 public:
   // constructor
-  Line( t_CKFLOAT fs, Chuck_Object* keyOn, Chuck_Object* keyOff, CK_DL_API API, Chuck_VM* VM, Chuck_VM_Shred* shred )
+  Line( t_CKFLOAT fs, CK_DL_API API, Chuck_VM* VM, Chuck_VM_Shred* shred )
   {
-    m_keyOn = keyOn;
-    m_keyOff = keyOff;
     m_fs = fs;
     m_elapsed = 0;
     m_state = -1;
@@ -142,11 +140,6 @@ public:
 
     // increment time
     m_elapsed++;
-
-    // broadcast the keyOn event once envelope is finished
-    if (m_elapsed >= m_durs_cumulative.back() && m_elapsed < m_durs_cumulative.back()+1) {
-      broadcast(m_keyOn);
-    }
 
     // advance envelope state...
     if (m_state == m_durs_cumulative.size() - 1) {
@@ -219,11 +212,11 @@ public:
     setCumulative();
   }
 
-  Chuck_Object* keyOn() {
+  t_CKDUR keyOn() {
     m_elapsed = 0;
     m_state = 0;
 
-    return m_keyOn;
+    return m_durs_cumulative.back();
   }
 
   t_CKDUR keyOffDur(t_CKDUR d) {
@@ -231,35 +224,35 @@ public:
     return d;
   }
 
-  Chuck_Object* keyOff() {
+  t_CKDUR keyOff() {
     m_elapsed = 0;
     m_state = -2;
 
     m_keyOffRate = (m_initial - m_value) / m_keyOffDur;
-    return m_keyOff;
+    return m_keyOffDur;
   }
 
-  Chuck_Object* keyOff(t_CKDUR d) {
+  t_CKDUR keyOff(t_CKDUR d) {
     m_elapsed = 0;
     m_state = -2;
 
     m_keyOffDur = d;
     m_keyOffRate = (m_initial - m_value) / m_keyOffDur;
 
-    return m_keyOff;
+    return m_keyOffDur;
   }
 
-  Chuck_Object* keyOffTarget(t_CKFLOAT target) {
+  t_CKDUR keyOffTarget(t_CKFLOAT target) {
     m_elapsed = 0;
     m_state = -2;
 
     m_initial = target;
     m_keyOffRate = (m_initial - m_value) / m_keyOffDur;
 
-    return m_keyOff;
+    return m_keyOffDur;
   }
 
-  Chuck_Object* keyOff(t_CKFLOAT target, t_CKDUR d) {
+  t_CKDUR keyOff(t_CKFLOAT target, t_CKDUR d) {
     m_elapsed = 0;
     m_state = -2;
     m_initial = target;
@@ -267,15 +260,7 @@ public:
     m_keyOffDur = d;
     m_keyOffRate = (m_initial - m_value) / m_keyOffDur;
 
-    return m_keyOff;
-  }
-
-  Chuck_Object* getKeyOn() {
-    return m_keyOn;
-  }
-
-  Chuck_Object* getKeyOff() {
-    return m_keyOff;
+    return m_keyOffDur;
   }
 
   t_CKFLOAT last() {
@@ -365,23 +350,12 @@ private:
     }
   }
 
-  void broadcast(Chuck_Object* key) {
-    Chuck_DL_Api::Type event_type = m_API->type->lookup(m_VM, "Event");
-    t_CKINT broadcast = m_API->type->get_vtable_offset(m_VM, event_type, "broadcast");
-    m_API->vm->invoke_mfun_immediate_mode(key, broadcast, m_VM, m_shred, nullptr, 0);
-  }
-
   SAMPLE keyOffTick(SAMPLE in) {
     m_value += m_keyOffRate;
     if (m_keyOffRate > 0 && m_value > m_initial) m_value = m_initial;
     if (m_keyOffRate < 0 && m_value < m_initial) m_value = m_initial;
 
     m_elapsed++;
-
-    // broadcast the keyOn event once envelope is finished
-    if (m_elapsed >= m_keyOffDur && m_elapsed < m_keyOffDur+1) {
-      broadcast(m_keyOff);
-    }
 
     // scale the input by the current value of the envelope;
     return in * m_value;
@@ -457,55 +431,55 @@ CK_DLL_QUERY( Line )
 
 
   // keyOn function
-  QUERY->add_mfun( QUERY, line_keyOn, "Event", "keyOn" );
+  QUERY->add_mfun( QUERY, line_keyOn, "dur", "keyOn" );
   QUERY->doc_func( QUERY, "Trigger ramp");
 
-  QUERY->add_mfun( QUERY, line_keyOnSingle, "Event", "keyOn" );
+  QUERY->add_mfun( QUERY, line_keyOnSingle, "dur", "keyOn" );
   QUERY->add_arg( QUERY, "dur", "duration" );
-  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...)). Returns total duration of envelope.");
 
   // singular keyOn with default start
-  QUERY->add_mfun( QUERY, line_keyOnSingleTarget, "Event", "keyOn" );
+  QUERY->add_mfun( QUERY, line_keyOnSingleTarget, "dur", "keyOn" );
   QUERY->add_arg( QUERY, "float", "target" );
   QUERY->add_arg( QUERY, "dur", "duration" );
-  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...)). Returns total duration of envelope.");
 
   // singular keyOn with no defaults
-  QUERY->add_mfun( QUERY, line_keyOnSingleTargetStart, "Event", "keyOn" );
+  QUERY->add_mfun( QUERY, line_keyOnSingleTargetStart, "dur", "keyOn" );
   QUERY->add_arg( QUERY, "float", "initial" );
   QUERY->add_arg( QUERY, "float", "target" );
   QUERY->add_arg( QUERY, "dur", "duration" );
-  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...)). Returns total duration of envelope.");
 
   // array keyOn with default start
-  QUERY->add_mfun( QUERY, line_keyOnArray, "Event", "keyOn" );
+  QUERY->add_mfun( QUERY, line_keyOnArray, "dur", "keyOn" );
   QUERY->add_arg( QUERY, "float[]", "targets" );
   QUERY->add_arg( QUERY, "dur[]", "durations" );
-  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...)). Returns total duration of envelope.");
 
   // array keyOn with no defaults
-  QUERY->add_mfun( QUERY, line_keyOnArrayStart, "Event", "keyOn" );
+  QUERY->add_mfun( QUERY, line_keyOnArrayStart, "dur", "keyOn" );
   QUERY->add_arg( QUERY, "float", "initial" );
   QUERY->add_arg( QUERY, "float[]", "targets" );
   QUERY->add_arg( QUERY, "dur[]", "durations" );
-  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...))");
+  QUERY->doc_func( QUERY, "Set and trigger ramp (see set(...)). Returns total duration of envelope.");
 
   // keyOff functions
-  QUERY->add_mfun( QUERY, line_keyOff, "Event", "keyOff" );
-  QUERY->doc_func( QUERY, "Ramp down from current value to initial (default duration is 1000:samp)");
+  QUERY->add_mfun( QUERY, line_keyOff, "dur", "keyOff" );
+  QUERY->doc_func( QUERY, "Ramp down from current value to initial (default duration is 1000:samp). Returns total duration of envelope.");
 
-  QUERY->add_mfun( QUERY, line_keyOffDur, "Event", "keyOff" );
+  QUERY->add_mfun( QUERY, line_keyOffDur, "dur", "keyOff" );
   QUERY->add_arg( QUERY, "dur", "duration" );
-  QUERY->doc_func( QUERY, "Ramp down from current value to initial over duration");
+  QUERY->doc_func( QUERY, "Ramp down from current value to initial over duration. Returns total duration of envelope.");
 
-  QUERY->add_mfun( QUERY, line_keyOffTarget, "Event", "keyOff" );
+  QUERY->add_mfun( QUERY, line_keyOffTarget, "dur", "keyOff" );
   QUERY->add_arg( QUERY, "float", "target" );
-  QUERY->doc_func( QUERY, "Ramp down from current value to target. Sets initial value to target");
+  QUERY->doc_func( QUERY, "Ramp down from current value to target. Sets initial value to target. Returns total duration of envelope.");
 
-  QUERY->add_mfun( QUERY, line_keyOffDurTarget, "Event", "keyOff" );
+  QUERY->add_mfun( QUERY, line_keyOffDurTarget, "dur", "keyOff" );
   QUERY->add_arg( QUERY, "float", "target" );
   QUERY->add_arg( QUERY, "dur", "duration" );
-  QUERY->doc_func( QUERY, "Ramp down from current value to target over duration. Sets initial value to target");
+  QUERY->doc_func( QUERY, "Ramp down from current value to target over duration. Sets initial value to target. Returns total duration of envelope.");
 
   QUERY->add_mfun( QUERY, line_last, "float", "last" );
   QUERY->doc_func( QUERY, "get the last sample value of the unit generator.");
@@ -533,21 +507,8 @@ CK_DLL_CTOR( line_ctor )
   // get the offset where we'll store our internal c++ class pointer
   OBJ_MEMBER_INT( SELF, line_data_offset ) = 0;
 
-
-  // keyOn and keyOff events
-  Chuck_DL_Api::Object keyOn = API->object->create(SHRED,
-                                                   API->type->lookup(VM, "Event"),
-                                                   true);
-  Chuck_DL_Api::Object keyOff = API->object->create(SHRED,
-                                                    API->type->lookup(VM, "Event"),
-                                                    true);
-
-  // need to manage references since these are persistent objects
-  API->object->add_ref(keyOn);
-  API->object->add_ref(keyOff);
-
   // instantiate our internal c++ class representation
-  Line * l_obj = new Line( API->vm->srate(VM), keyOn, keyOff, API, VM, SHRED );
+  Line * l_obj = new Line( API->vm->srate(VM), API, VM, SHRED );
 
   // store the pointer in the ChucK object member
   OBJ_MEMBER_INT( SELF, line_data_offset ) = (t_CKINT)l_obj;
@@ -559,10 +520,6 @@ CK_DLL_DTOR( line_dtor )
 {
   // get our c++ class pointer
   Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
-
-  // remove_references
-  API->object->release(l_obj->getKeyOn());
-  API->object->release(l_obj->getKeyOff());
 
   // clean up (this macro tests for NULL, deletes, and zeros out the variable)
   CK_SAFE_DELETE( l_obj );
@@ -713,7 +670,7 @@ CK_DLL_MFUN( line_keyOn )
   // get our c++ class pointer
   Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
 
-  RETURN->v_object = l_obj->keyOn();
+  RETURN->v_dur = l_obj->keyOn();
 }
 
 // single-ramp with 0 start and 1 target
@@ -725,7 +682,7 @@ CK_DLL_MFUN( line_keyOnSingle )
   t_CKDUR duration = GET_NEXT_DUR( ARGS );
 
   l_obj->set(duration);
-  RETURN->v_object = l_obj->keyOn();
+  RETURN->v_dur = l_obj->keyOn();
 }
 
 // single-ramp with 0 start and user-defined target
@@ -738,7 +695,7 @@ CK_DLL_MFUN( line_keyOnSingleTarget )
   t_CKDUR duration = GET_NEXT_DUR( ARGS );
 
   l_obj->set(duration, target);
-  RETURN->v_object = l_obj->keyOn();
+  RETURN->v_dur = l_obj->keyOn();
 }
 
 // single-ramp with user-defined start and user-defined target
@@ -752,7 +709,7 @@ CK_DLL_MFUN( line_keyOnSingleTargetStart )
   t_CKDUR duration = GET_NEXT_DUR( ARGS );
 
   l_obj->set(duration, target, initial);
-  RETURN->v_object = l_obj->keyOn();
+  RETURN->v_dur = l_obj->keyOn();
 }
 
 // multi-ramp with 0 start
@@ -791,7 +748,7 @@ CK_DLL_MFUN( line_keyOnArray )
   }
 
   l_obj->set(durations_vec, targets_vec);
-  RETURN->v_object = l_obj->keyOn();
+  RETURN->v_dur = l_obj->keyOn();
 }
 // multi-ramp with user-defined start
 CK_DLL_MFUN( line_keyOnArrayStart )
@@ -830,7 +787,7 @@ CK_DLL_MFUN( line_keyOnArrayStart )
   }
 
   l_obj->set(durations_vec, targets_vec, initial);
-  RETURN->v_object = l_obj->keyOn();
+  RETURN->v_dur = l_obj->keyOn();
 }
 
 
@@ -838,7 +795,7 @@ CK_DLL_MFUN( line_keyOff )
 {
   // get our c++ class pointer
   Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
-  RETURN->v_object = l_obj->keyOff();
+  RETURN->v_dur = l_obj->keyOff();
 }
 
 CK_DLL_MFUN( line_keyOffDur )
@@ -848,7 +805,7 @@ CK_DLL_MFUN( line_keyOffDur )
 
   t_CKDUR duration = GET_NEXT_DUR( ARGS );
 
-  RETURN->v_object = l_obj->keyOff(duration);
+  RETURN->v_dur = l_obj->keyOff(duration);
 }
 
 CK_DLL_MFUN( line_keyOffTarget )
@@ -858,7 +815,7 @@ CK_DLL_MFUN( line_keyOffTarget )
 
   t_CKFLOAT target = GET_NEXT_FLOAT( ARGS );
 
-  RETURN->v_object = l_obj->keyOffTarget(target);
+  RETURN->v_dur = l_obj->keyOffTarget(target);
 }
 
 CK_DLL_MFUN( line_keyOffDurTarget )
@@ -869,7 +826,7 @@ CK_DLL_MFUN( line_keyOffDurTarget )
   t_CKFLOAT target = GET_NEXT_FLOAT( ARGS );
   t_CKDUR duration = GET_NEXT_DUR( ARGS );
 
-  RETURN->v_object = l_obj->keyOff(target, duration);
+  RETURN->v_dur = l_obj->keyOff(target, duration);
 }
 
 CK_DLL_MFUN( line_last ) {
