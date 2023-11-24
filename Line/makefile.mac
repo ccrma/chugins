@@ -20,7 +20,7 @@ ARCHS?=
 ARCHOPTS=$(addprefix -arch ,$(ARCHS))
 
 # compiler flags
-FLAGS+=-mmacosx-version-min=10.9 -D__MACOSX_CORE__ -I$(CK_SRC_PATH) $(ARCHOPTS) -fPIC
+FLAGS+=-mmacosx-version-min=10.9 -std=c++11 -I$(CK_SRC_PATH) $(ARCHOPTS) -fPIC
 # linker flags
 LDFLAGS+=-mmacosx-version-min=10.9 -shared -lc++ $(ARCHOPTS)
 

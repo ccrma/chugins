@@ -3,7 +3,8 @@ CHUGINS=ABSaturator AmbPan Bitcrusher KasFilter MagicSine FIR \
 	FoldbackSaturator Ladspa NHHall PanN PitchTrack GVerb \
 	Mesh2D Spectacle Elliptic Sigmund ExpDelay Overdrive \
 	Multicomb PowerADSR WinFuncEnv WPDiodeLadder WPKorg35 \
-	Binaural ExpEnv Perlin Random RegEx Wavetable
+	Binaural ExpEnv Perlin Random RegEx Wavetable XML \
+	Line Range Patch 
 
 CHUGS_NOT_ON_WIN32=FluidSynth
 CHUGINS_WIN32=$(filter-out $(CHUGS_NOT_ON_WIN32),$(CHUGINS))
