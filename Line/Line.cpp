@@ -52,6 +52,11 @@ CK_DLL_MFUN( line_setArray );
 // multi-ramp with user-defined start
 CK_DLL_MFUN( line_setArrayStart );
 
+// getters
+CK_DLL_MFUN( line_getInitial );
+CK_DLL_MFUN( line_getTargets );
+CK_DLL_MFUN( line_getDurations );
+
 // keyOn functions
 CK_DLL_MFUN( line_keyOn );
 // immediately reset to initial value before ramping
@@ -96,7 +101,7 @@ public:
   Line( t_CKFLOAT fs, CK_DL_API API, Chuck_VM* VM, Chuck_VM_Shred* shred )
   {
     m_fs = fs;
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -1;
 
     m_API = API;
@@ -118,8 +123,7 @@ public:
     setCumulative();
   }
 
-  // for chugins extending UGen
-  SAMPLE tick( SAMPLE in ) {
+  SAMPLE tick(SAMPLE in) {
     // envelope isn't on, do nothing.
     if (m_state == -1) return m_initial;
     // key off is enabled
@@ -128,17 +132,27 @@ public:
     t_CKFLOAT target = m_targets[m_state];
     t_CKFLOAT rate = m_rates[m_state];
 
-    // update the current value and then clip it to the target's value
-    // if needed
-    m_value += rate;
+    // Calculate how much of the current ramp has elapsed
+    t_CKDUR curr = m_elapsed;
+    if (m_state > 0) 
+        curr = m_elapsed - m_durs_cumulative[m_state - 1];
+
+    // Get the value that the current state starts in
+    t_CKFLOAT val = m_initial;
+    if (m_state > 0)
+        val = m_targets[m_state - 1];
+    
+    // calculate the current value of the envelope
+    val += rate * curr;
+    m_value = val;
 
     // clip envelope if moving in a positive direction
     if (rate >= 0 && m_value > target) {
-      m_value = target;
+        m_value = target;
     }
     // clip envelope if moving in a negative direction
     if (rate < 0 && m_value < target) {
-      m_value = target;
+        m_value = target;
     }
 
     // increment time
@@ -146,10 +160,10 @@ public:
 
     // advance envelope state...
     if (m_state == m_durs_cumulative.size() - 1) {
-      // do nothing
+        // do nothing
     }
     else if (m_elapsed >= m_durs_cumulative[m_state]) {
-      m_state++;
+        m_state++;
     }
 
     // scale the input by the current value of the envelope;
@@ -170,7 +184,7 @@ public:
   }
 
   void setValue(t_CKFLOAT val) {
-    // m_initial = 0;
+    m_initial = val;
     m_value = val;
 
     setRates();
@@ -224,8 +238,9 @@ public:
   }
 
   t_CKDUR keyOn() {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = 0;
+    m_initial = m_value; // whatever the current value is
 
     // update first rate
     updateInitialRate();
@@ -239,7 +254,7 @@ public:
   }
 
   t_CKDUR keyOff() {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -2;
 
     m_keyOffRate = (m_initial - m_value) / m_keyOffDur;
@@ -247,7 +262,7 @@ public:
   }
 
   t_CKDUR keyOff(t_CKDUR d) {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -2;
 
     m_keyOffDur = d;
@@ -257,7 +272,7 @@ public:
   }
 
   t_CKDUR keyOffTarget(t_CKFLOAT target) {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -2;
 
     m_initial = target;
@@ -267,7 +282,7 @@ public:
   }
 
   t_CKDUR keyOff(t_CKFLOAT target, t_CKDUR d) {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -2;
     m_initial = target;
 
@@ -280,6 +295,28 @@ public:
   t_CKFLOAT last() {
     return m_value;
   }
+
+  t_CKFLOAT initial() {
+    return m_initial;
+  }
+
+  std::vector<t_CKFLOAT> targets() {
+      return m_targets;
+  }
+
+  std::vector<t_CKDUR> durations() {
+      return m_durs;
+  }
+
+  // return position in envelope.
+  // 0 indicates that it's not on
+  // x.%% - x indicates state/index of which envlope
+  // %% indicates the percentage complete of that envelope
+  t_CKFLOAT pos() {
+      // TODO
+      return 0.0;
+  }
+
 
 private:
   // API-related stuff
@@ -447,6 +484,17 @@ CK_DLL_QUERY( Line )
   QUERY->add_arg( QUERY, "float[]", "targets" );
   QUERY->add_arg( QUERY, "dur[]", "durations" );
   QUERY->doc_func( QUERY, "Set ramp, starting at initial and going through all (target, duration) pairs.");
+
+  // getters
+  QUERY->add_mfun( QUERY, line_getInitial, "float", "initial");
+  QUERY->doc_func( QUERY, "Get initial value of ramp.");
+
+  QUERY->add_mfun( QUERY, line_getTargets, "float[]", "targets");
+  QUERY->doc_func( QUERY, "Get ramp target values.");
+
+  QUERY->add_mfun(QUERY, line_getDurations, "dur[]", "durations");
+  QUERY->doc_func(QUERY, "Get ramp durations.");
+
 
   // keyOn function
   QUERY->add_mfun( QUERY, line_keyOn, "dur", "keyOn" );
@@ -885,4 +933,55 @@ CK_DLL_MFUN( line_last ) {
   Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
 
   RETURN->v_float = l_obj->last();
+}
+
+CK_DLL_MFUN( line_getInitial ) {
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  RETURN->v_float = l_obj->initial();
+}
+
+CK_DLL_MFUN( line_getTargets ) {
+
+  Chuck_DL_Api::Object target2 = API->object->create(SHRED, API->type->lookup(VM, "float[][]"), false);
+  Chuck_ArrayInt* target_arr2 = (Chuck_ArrayInt*)target2;
+
+  for (int i = 0; i < 3; i++) {
+      Chuck_DL_Api::Object target_tmp = API->object->create(SHRED, API->type->lookup(VM, "float[]"), false);
+      Chuck_ArrayFloat* target_arr_tmp = (Chuck_ArrayFloat*)target_tmp;
+
+      for (int j = 0; j < 3; j++) {
+          API->object->array_float_push_back(target_arr_tmp, j);
+      }
+
+      API->object->array_int_push_back(target_arr2, (t_CKINT)target_arr_tmp);
+  }
+
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  // Create a float[] array
+  Chuck_DL_Api::Object target = API->object->create(SHRED, API->type->lookup(VM, "float[]"), false);
+  Chuck_ArrayFloat * target_arr = (Chuck_ArrayFloat *) target;
+
+  for (auto x : l_obj->targets()) {
+      API->object->array_float_push_back(target_arr, x);
+  }
+
+  // Need to cast back to object due to lost inheirtience structure
+  RETURN->v_object = (Chuck_Object*) target_arr;
+}
+
+CK_DLL_MFUN(line_getDurations) {
+    Line* l_obj = (Line*)OBJ_MEMBER_INT(SELF, line_data_offset);
+
+    // Create a dur[] array
+    Chuck_DL_Api::Object dur = API->object->create(SHRED, API->type->lookup(VM, "dur[]"), false);
+    Chuck_ArrayFloat* dur_arr = (Chuck_ArrayFloat*)dur;
+
+    for (auto x : l_obj->durations()) {
+        API->object->array_float_push_back(dur_arr, x);
+    }
+
+    RETURN->v_object = (Chuck_Object*) dur_arr;
+
 }
