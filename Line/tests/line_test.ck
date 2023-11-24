@@ -2,7 +2,7 @@ class LineTest extends Assert {
     0.0001 => float FP_MARGIN;
     {
         true => exitOnFailure;
-
+        
         testSingleDefault();
         testSingleDuration();
         testSingleDurationAndTarget();
@@ -11,7 +11,7 @@ class LineTest extends Assert {
         testMultiInit();
         testFailDifferentSizesSet();
         testFailDifferentSizesKeyOn();
-
+        
         testKeyOnInit();
         testKeyOnSingleDuration();
         testKeyOnSingleDurationAndTarget();
@@ -36,6 +36,9 @@ class LineTest extends Assert {
         testConstructorSingleDurationAndTarget();
         testConstructorMulti();
         testConstructorMultiInit();
+
+        testGetDurations();
+        testGetTargets();
 
         chout <= "success!" <= IO.newline();
     }
@@ -106,25 +109,25 @@ class LineTest extends Assert {
            Step s => Line l => blackhole;
 
            [1.0, -2, -3] @=> float targets[];
-           [2::samp, 2::ms, 3::ms] @=> dur durs[];
+           [1.5::samp, 1.5::samp, 1.5::samp] @=> dur durs[];
 
            l.set(targets, durs);
            l.keyOn();
 
-           assertRampMulti(l, 0, targets, durs);
+           assertSamps(l, [0.0, 0.666666, 0, -2, -2.6666666, -3, -3]);
     }
 
     public void testConstructorMulti() {
            <<< "testConstructorMulti" >>>;
 
            [1.0, -2, -3] @=> float targets[];
-           [2::samp, 2::ms, 3::ms] @=> dur durs[];
+           [1.5::samp, 1.5::samp, 1.5::samp] @=> dur durs[];
 
            Step s => Line l(targets, durs) => blackhole;
 
            l.keyOn();
 
-           assertRampMulti(l, 0, targets, durs);
+           assertSamps(l, [0.0, 0.666666, 0, -2, -2.6666666, -3, -3]);
     }
 
     public void testMultiInit() {
@@ -133,12 +136,12 @@ class LineTest extends Assert {
 
            -1.0 => float init;
            [1.0, -2, 3] @=> float targets[];
-           [2::samp, 2::ms, 3::ms] @=> dur durs[];
+           [1.5::samp, 1.5::samp, 1.5::samp] @=> dur durs[];
 
            l.set(init, targets, durs);
            l.keyOn();
 
-           assertRampMulti(l, init, targets, durs);
+           assertSamps(l, [-1.0, 0.33333, 0, -2, 1.3333, 3, 3]);
     }
 
     public void testConstructorMultiInit() {
@@ -146,13 +149,13 @@ class LineTest extends Assert {
 
            -1.0 => float init;
            [1.0, -2, 3] @=> float targets[];
-           [2::samp, 2::ms, 3::ms] @=> dur durs[];
+           [1.5::samp, 1.5::samp, 1.5::samp] @=> dur durs[];
 
            Step s => Line l(init, targets, durs) => blackhole;
 
            l.keyOn();
 
-           assertRampMulti(l, init, targets, durs);
+           assertSamps(l, [-1.0, 0.33333, 0, -2, 1.3333, 3, 3]);
     }
 
     public void testKeyOnInit() {
@@ -198,11 +201,11 @@ class LineTest extends Assert {
            Step s => Line l => blackhole;
 
            [1.0, -2, -3] @=> float targets[];
-           [2::samp, 2::ms, 3::ms] @=> dur durs[];
+           [1.5::samp, 1.5::samp, 1.5::samp] @=> dur durs[];
 
            l.keyOn(targets, durs);
 
-           assertRampMulti(l, 0, targets, durs);
+           assertSamps(l, [0.0, 0.666666, 0, -2, -2.6666666, -3, -3]);
     }
 
     public void testKeyOnMultiInit() {
@@ -211,11 +214,11 @@ class LineTest extends Assert {
 
            -1.0 => float init;
            [1.0, -2, 3] @=> float targets[];
-           [2::samp, 2::ms, 3::ms] @=> dur durs[];
+           [1.5::samp, 1.5::samp, 1.5::samp] @=> dur durs[];
 
            l.keyOn(init, targets, durs);
 
-           assertRampMulti(l, init, targets, durs);
+           assertSamps(l, [-1.0, 0.33333, 0, -2, 1.3333, 3, 3]);
     }
 
     public void testKeyOnEvent() {
@@ -334,6 +337,38 @@ class LineTest extends Assert {
            assertEquals(want, got);
     }
 
+    public testGetDurations() {
+        <<< "testGetDurations" >>>;
+
+        [1::ms, 2::ms, 3::ms, 4::ms] @=> dur want[];
+        Step s => Line l([1.0,2,3,4], want) => blackhole;
+
+        l.durations() @=> dur got[];
+
+        assertEquals(want.size(), got.size());
+
+        for (int i: Std.range(want.size())) {
+            assertEquals(want[i], got[i]);
+        }
+
+    }
+
+    public testGetTargets() {
+        <<< "testGetTargets" >>>;
+
+        [1.0,2,3,4] @=> float want[];
+        Step s => Line l(want,  [1::ms, 2::ms, 3::ms, 4::ms]) => blackhole;
+
+        l.targets() @=> float got[];
+
+        assertEquals(want.size(), got.size());
+
+        for (int i: Std.range(want.size())) {
+            assertEquals(want[i], got[i], FP_MARGIN);
+        }
+
+    }
+
     fun void assertRamp(Line @ l, dur d, float target) {
         assertRamp(l, d, 0, target, true);
     }
@@ -361,10 +396,14 @@ class LineTest extends Assert {
         initial => float prev;
         for (int i: Std.range(targets.size())) {
             (durs[i] / samp) $ int => int samps;
+
+            // because durations can be sub-sample, need to properly account for this.
+            durs[i] / samp => float sampsF;
             targets[i] => float target;
             // validate ramp
             for(int i: Std.range(samps)) {
-                (target - prev) * ((i $ float) / samps) + prev => float want;
+                (target - prev) * ((i $ float) / sampsF) + prev => float want;
+                // <<< want, l.last() >>>;
                 assertEquals(want, l.last(), FP_MARGIN);
                 samp => now;
             }
@@ -375,6 +414,14 @@ class LineTest extends Assert {
         for(int i: Std.range(1000)) {
                 assertEquals(targets[-1], l.last(), FP_MARGIN);
                 samp => now;
+        }
+    }
+
+    fun void assertSamps(Line @ l, float wants[]) {
+        for (auto want: wants) {
+            // <<< want, l.last() >>>;
+            assertEquals(want, l.last(), FP_MARGIN);
+            samp => now;
         }
     }
 }

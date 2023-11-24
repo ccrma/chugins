@@ -101,7 +101,7 @@ public:
   Line( t_CKFLOAT fs, CK_DL_API API, Chuck_VM* VM, Chuck_VM_Shred* shred )
   {
     m_fs = fs;
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -1;
 
     m_API = API;
@@ -123,8 +123,7 @@ public:
     setCumulative();
   }
 
-  // for chugins extending UGen
-  SAMPLE tick( SAMPLE in ) {
+  SAMPLE tick(SAMPLE in) {
     // envelope isn't on, do nothing.
     if (m_state == -1) return m_initial;
     // key off is enabled
@@ -133,17 +132,27 @@ public:
     t_CKFLOAT target = m_targets[m_state];
     t_CKFLOAT rate = m_rates[m_state];
 
-    // update the current value and then clip it to the target's value
-    // if needed
-    m_value += rate;
+    // Calculate how much of the current ramp has elapsed
+    t_CKDUR curr = m_elapsed;
+    if (m_state > 0) 
+        curr = m_elapsed - m_durs_cumulative[m_state - 1];
+
+    // Get the value that the current state starts in
+    t_CKFLOAT val = m_initial;
+    if (m_state > 0)
+        val = m_targets[m_state - 1];
+    
+    // calculate the current value of the envelope
+    val += rate * curr;
+    m_value = val;
 
     // clip envelope if moving in a positive direction
     if (rate >= 0 && m_value > target) {
-      m_value = target;
+        m_value = target;
     }
     // clip envelope if moving in a negative direction
     if (rate < 0 && m_value < target) {
-      m_value = target;
+        m_value = target;
     }
 
     // increment time
@@ -151,10 +160,10 @@ public:
 
     // advance envelope state...
     if (m_state == m_durs_cumulative.size() - 1) {
-      // do nothing
+        // do nothing
     }
     else if (m_elapsed >= m_durs_cumulative[m_state]) {
-      m_state++;
+        m_state++;
     }
 
     // scale the input by the current value of the envelope;
@@ -175,7 +184,7 @@ public:
   }
 
   void setValue(t_CKFLOAT val) {
-    // m_initial = 0;
+    m_initial = val;
     m_value = val;
 
     setRates();
@@ -229,8 +238,9 @@ public:
   }
 
   t_CKDUR keyOn() {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = 0;
+    m_initial = m_value; // whatever the current value is
 
     // update first rate
     updateInitialRate();
@@ -244,7 +254,7 @@ public:
   }
 
   t_CKDUR keyOff() {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -2;
 
     m_keyOffRate = (m_initial - m_value) / m_keyOffDur;
@@ -252,7 +262,7 @@ public:
   }
 
   t_CKDUR keyOff(t_CKDUR d) {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -2;
 
     m_keyOffDur = d;
@@ -262,7 +272,7 @@ public:
   }
 
   t_CKDUR keyOffTarget(t_CKFLOAT target) {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -2;
 
     m_initial = target;
@@ -272,7 +282,7 @@ public:
   }
 
   t_CKDUR keyOff(t_CKFLOAT target, t_CKDUR d) {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -2;
     m_initial = target;
 
@@ -957,7 +967,8 @@ CK_DLL_MFUN( line_getTargets ) {
       API->object->array_float_push_back(target_arr, x);
   }
 
-  RETURN->v_object = target_arr;
+  // Need to cast back to object due to lost inheirtience structure
+  RETURN->v_object = (Chuck_Object*) target_arr;
 }
 
 CK_DLL_MFUN(line_getDurations) {
@@ -971,6 +982,6 @@ CK_DLL_MFUN(line_getDurations) {
         API->object->array_float_push_back(dur_arr, x);
     }
 
-    RETURN->v_object = dur_arr;
+    RETURN->v_object = (Chuck_Object*) dur_arr;
 
 }
