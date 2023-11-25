@@ -38,7 +38,7 @@ LD=g++
 CHUGIN_PATH=/usr/local/lib/chuck
 
 ifneq (,$(strip $(filter mac osx bin-dist-osx,$(MAKECMDGOALS))))
-include makefile.osx
+include makefile.mac
 endif
 
 ifneq (,$(strip $(filter linux,$(MAKECMDGOALS))))
