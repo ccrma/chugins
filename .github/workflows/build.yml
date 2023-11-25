@@ -27,7 +27,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Add msbuild to PATH
-      if: ${{ matrix.os }} == windows-latest
+      if: ${{ matrix.os == 'windows-latest' }}
       uses: microsoft/setup-msbuild@v1.1
     - name: make
       run: make ${{ matrix.rule }}
