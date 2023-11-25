@@ -40,7 +40,7 @@ CXX=gcc
 LD=g++
 
 ifneq (,$(strip $(filter osx mac,$(MAKECMDGOALS))))
-include makefile.osx
+include makefile.mac
 endif
 
 ifneq (,$(strip $(filter linux,$(MAKECMDGOALS))))
