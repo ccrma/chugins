@@ -9,6 +9,9 @@ CXX_MODULES=ExpEnv.cpp
 # where the chuck headers are
 CK_SRC_PATH?=../chuck/include/
 
+# where to install chugin
+CHUGIN_PATH?=/usr/local/lib/chuck
+
 
 # ---------------------------------------------------------------------------- #
 # you won't generally need to change anything below this line for a new chugin #
@@ -26,8 +29,8 @@ MAKECMDGOALS:=$(.DEFAULT_GOAL)
 endif
 endif
 
-.PHONY: mac osx linux linux-oss linux-jack linux-alsa win32
-mac osx linux linux-oss linux-jack linux-alsa: all
+.PHONY: mac osx linux linux-pulse linux-oss linux-jack linux-alsa win32
+mac osx linux linux-pulse linux-oss linux-jack linux-alsa: all
 
 win32:
 	make -f makefile.win32
@@ -36,10 +39,8 @@ CC=gcc
 CXX=gcc
 LD=g++
 
-CHUGIN_PATH=/usr/local/lib/chuck
-
-ifneq (,$(strip $(filter mac osx bin-dist-osx,$(MAKECMDGOALS))))
-include makefile.osx
+ifneq (,$(strip $(filter osx mac,$(MAKECMDGOALS))))
+include makefile.mac
 endif
 
 ifneq (,$(strip $(filter linux,$(MAKECMDGOALS))))
@@ -58,7 +59,6 @@ ifneq (,$(strip $(filter linux-alsa,$(MAKECMDGOALS))))
 include makefile.linux
 endif
 
-
 ifneq ($(CHUCK_DEBUG),)
 FLAGS+= -g
 else
@@ -68,7 +68,6 @@ endif
 ifneq ($(CHUCK_STRICT),)
 FLAGS+= -Werror
 endif
-
 
 
 # default: build a dynamic chugin
