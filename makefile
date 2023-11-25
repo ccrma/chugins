@@ -40,14 +40,7 @@ linux-jack: $(CHUGS)
 win32: $(CHUGS_WIN32)
 
 $(CHUGS):
-ifeq ($(filter win32,$(MAKECMDGOALS)),win32)
-    # setting environment variable for window
-	SET CHUCK_STRICT=1
-	make -C $(dir $@) $(MAKECMDGOALS)
-else
-	# setting environment variable for other platforms
 	CHUCK_STRICT=1 make -C $(dir $@) $(MAKECMDGOALS)
-endif
 
 clean: $(CHUGS_CLEAN)
 .PHONY: $(CHUGS_CLEAN)
