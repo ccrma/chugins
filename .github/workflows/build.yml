@@ -26,11 +26,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Add msbuild to PATH
+      if: ${{ matrix.os }} == windows-latest
+      uses: microsoft/setup-msbuild@v1.1
     - name: make
       run: make ${{ matrix.rule }}
-    - name: Breakpoint if tests failed
-      if: failure()
-      uses: namespacelabs/breakpoint-action@v0
-      with:
-        duration: 30m
-        authorized-users: nshaheed
