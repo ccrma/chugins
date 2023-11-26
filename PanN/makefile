@@ -30,7 +30,7 @@ endif
 mac osx linux linux-oss linux-jack linux-alsa: all
 
 win32:
-	make -f makefile.win32
+	make -f makefile.win
 
 CC=gcc
 CXX=gcc
