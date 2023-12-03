@@ -59,6 +59,11 @@
 #define __CHUCK_CHUGIN__
 #endif // #ifndef __CHUCK_CHUGIN__
 
+// use CHUGIN_API_VERSION_MAJOR for chugin API major version (as an integer)
+#define CHUGIN_API_VERSION_MAJOR CK_DLL_VERSION_MAJOR
+// use CHUGIN_API_VERSION_MINOR for chugin API minor version (as an integer)
+#define CHUGIN_API_VERSION_MINOR CK_DLL_VERSION_MINOR
+
 
 /*----------------------------------------------------------------------------
   ChucK Strongly-timed Audio Programming Language
@@ -110,7 +115,7 @@
 // 1.5.0.0 (ge) | moved to chuck.h for at-a-glance visibility
 // 1.5.2.0 (ge) | moved to chuck_def.h for chugins headers streamlining
 //-----------------------------------------------------------------------------
-#define CHUCK_VERSION_STRING        "1.5.2.0-dev (chai)"
+#define CHUCK_VERSION_STRING        "1.5.2.0 (chai)"
 //-----------------------------------------------------------------------------
 
 
