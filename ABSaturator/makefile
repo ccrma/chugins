@@ -6,8 +6,9 @@ CHUGIN_NAME=ABSaturator
 C_MODULES=
 CXX_MODULES=ABSaturator.cpp Filters.cpp
 
-# where the chuck headers are
+# where to find chugin.h
 CK_SRC_PATH?=../chuck/include/
+
 
 # ---------------------------------------------------------------------------- #
 # you won't generally need to change anything below this line for a new chugin #
@@ -16,7 +17,7 @@ CK_SRC_PATH?=../chuck/include/
 # default target: print usage message and quit
 current: 
 	@echo "[chugin build]: please use one of the following configurations:"
-	@echo "   make linux, make mac, make web, make win32"
+	@echo "   make linux, make mac, make web, or make win32"
 
 ifneq ($(CK_TARGET),)
 .DEFAULT_GOAL:=$(CK_TARGET)
@@ -104,9 +105,8 @@ $(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chugin.h
 
 # build as webchugin
 web:
-	emcc -O3 -s SIDE_MODULE=1 -s DISABLE_EXCEPTION_CATCHING=0 \
-	-fPIC -Wformat=0 -I ../chuck/include/ \
-	$(CXX_MODULES) -o $(WEBCHUG)
+	emcc -O3 -s SIDE_MODULE=1 -s DISABLE_EXCEPTION_CATCHING=0 -fPIC -Wformat=0 \
+	-I ../chuck/include/ $(CXX_MODULES) $(C_MODULES) -o $(WEBCHUG)
 
 install: $(CHUG)
 	mkdir -p $(CHUGIN_PATH)

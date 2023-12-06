@@ -10,6 +10,7 @@ CHUGS_NOT_ON_WIN32=FluidSynth
 CHUGINS_WIN32=$(filter-out $(CHUGS_NOT_ON_WIN32),$(CHUGINS))
 
 CHUGS=$(foreach CHUG,$(CHUGINS),$(CHUG)/$(CHUG).chug)
+WEBCHUGS=$(foreach CHUG,$(CHUGINS),$(CHUG)/$(CHUG).chug.wasm)
 CHUGS_WIN32=$(foreach CHUG,$(CHUGINS_WIN32),$(CHUG)/$(CHUG).chug)
 CHUGS_RELEASE=$(foreach CHUG,$(CHUGINS_WIN32),$(CHUG)/Release/$(CHUG).chug)
 CHUGS_CLEAN=$(addsuffix .clean,$(CHUGINS))
@@ -21,7 +22,7 @@ INSTALL_DIR_WIN32="C:/Program Files/ChucK/chugins"
 # default target: print usage message and quit
 current: 
 	@echo "[chugins build]: please use one of the following configurations:"
-	@echo "   make linux, make mac, or make win32"
+	@echo "   make linux, make mac, make web, or make win32"
 
 ifneq ($(CK_TARGET),)
 .DEFAULT_GOAL:=$(CK_TARGET)
@@ -37,9 +38,13 @@ osx: $(CHUGS)
 linux: $(CHUGS)
 linux-alsa: $(CHUGS)
 linux-jack: $(CHUGS)
+web: $(WEBCHUGS)
 win32: $(CHUGS_WIN32)
 
 $(CHUGS):
+	CHUCK_STRICT=1 make -C $(dir $@) $(MAKECMDGOALS)
+
+$(WEBCHUGS):
 	CHUCK_STRICT=1 make -C $(dir $@) $(MAKECMDGOALS)
 
 clean: $(CHUGS_CLEAN)
