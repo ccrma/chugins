@@ -1,7 +1,7 @@
 
 #include "Filters.h"
+#include "chugin.h"
 #include <math.h>
-#include "chuck_def.h"
 
 //------------------------------------------------------------------------------
 void Filters::bilinearTranform(double acoefs[], double dcoefs[], double fs)

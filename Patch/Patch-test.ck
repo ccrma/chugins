@@ -1,19 +1,14 @@
-SinOsc sin;
+SinOsc sin => dac;
 
-Step step => Patch p => blackhole;
+Step step => Patch p(sin, "gain") => blackhole;
 
 spork~ updateStep();
-
-p.connect(sin, "gain");
-
 
 if (p.method() != "gain") {
    <<< "FAILURE,", p.method(), "!=", "gain" >>>;
 }
 
 repeat (10) {
-    <<< "gain:", sin.gain() >>>;
-
     if (step.next() != sin.gain()) {
        <<< "FAILURE, input" , step.next(), "!=", sin.gain() >>>;
     }

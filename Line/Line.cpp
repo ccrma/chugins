@@ -23,14 +23,20 @@
  */
 
 // include chuck dynamic linking header
-#include "chuck_dl.h"
+#include "chugin.h"
 
 // general includes
 #include <iostream>
+#include <vector>
 
 
 // declaration of chugin constructor
 CK_DLL_CTOR( line_ctor );
+CK_DLL_CTOR( line_ctor_single );
+CK_DLL_CTOR( line_ctor_singleTarget );
+CK_DLL_CTOR( line_ctor_singleTargetStart );
+CK_DLL_CTOR( line_ctor_setArray );
+CK_DLL_CTOR( line_ctor_setArrayStart );
 // declaration of chugin desctructor
 CK_DLL_DTOR( line_dtor );
 
@@ -46,8 +52,15 @@ CK_DLL_MFUN( line_setArray );
 // multi-ramp with user-defined start
 CK_DLL_MFUN( line_setArrayStart );
 
+// getters
+CK_DLL_MFUN( line_getInitial );
+CK_DLL_MFUN( line_getTargets );
+CK_DLL_MFUN( line_getDurations );
+
 // keyOn functions
 CK_DLL_MFUN( line_keyOn );
+// immediately reset to initial value before ramping
+CK_DLL_MFUN( line_keyOnInitial );
 // single-ramp with 0 start and 1 target
 CK_DLL_MFUN( line_keyOnSingle );
 // single-ramp with 0 start and user-defined target
@@ -88,7 +101,7 @@ public:
   Line( t_CKFLOAT fs, CK_DL_API API, Chuck_VM* VM, Chuck_VM_Shred* shred )
   {
     m_fs = fs;
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -1;
 
     m_API = API;
@@ -110,8 +123,7 @@ public:
     setCumulative();
   }
 
-  // for chugins extending UGen
-  SAMPLE tick( SAMPLE in ) {
+  SAMPLE tick(SAMPLE in) {
     // envelope isn't on, do nothing.
     if (m_state == -1) return m_initial;
     // key off is enabled
@@ -120,17 +132,27 @@ public:
     t_CKFLOAT target = m_targets[m_state];
     t_CKFLOAT rate = m_rates[m_state];
 
-    // update the current value and then clip it to the target's value
-    // if needed
-    m_value += rate;
+    // Calculate how much of the current ramp has elapsed
+    t_CKDUR curr = m_elapsed;
+    if (m_state > 0) 
+        curr = m_elapsed - m_durs_cumulative[m_state - 1];
+
+    // Get the value that the current state starts in
+    t_CKFLOAT val = m_initial;
+    if (m_state > 0)
+        val = m_targets[m_state - 1];
+    
+    // calculate the current value of the envelope
+    val += rate * curr;
+    m_value = val;
 
     // clip envelope if moving in a positive direction
     if (rate >= 0 && m_value > target) {
-      m_value = target;
+        m_value = target;
     }
     // clip envelope if moving in a negative direction
     if (rate < 0 && m_value < target) {
-      m_value = target;
+        m_value = target;
     }
 
     // increment time
@@ -138,10 +160,10 @@ public:
 
     // advance envelope state...
     if (m_state == m_durs_cumulative.size() - 1) {
-      // do nothing
+        // do nothing
     }
     else if (m_elapsed >= m_durs_cumulative[m_state]) {
-      m_state++;
+        m_state++;
     }
 
     // scale the input by the current value of the envelope;
@@ -161,9 +183,17 @@ public:
     setCumulative();
   }
 
+  void setValue(t_CKFLOAT val) {
+    m_initial = val;
+    m_value = val;
+
+    setRates();
+    setCumulative();
+  }
+
   void set(t_CKDUR d, t_CKFLOAT target) {
     m_initial = 0;
-    m_value = 0;
+    // m_value = 0;
     std::vector<t_CKFLOAT> targets{target};
     m_targets = targets;
 
@@ -208,8 +238,12 @@ public:
   }
 
   t_CKDUR keyOn() {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = 0;
+    m_initial = m_value; // whatever the current value is
+
+    // update first rate
+    updateInitialRate();
 
     return m_durs_cumulative.back();
   }
@@ -220,7 +254,7 @@ public:
   }
 
   t_CKDUR keyOff() {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -2;
 
     m_keyOffRate = (m_initial - m_value) / m_keyOffDur;
@@ -228,7 +262,7 @@ public:
   }
 
   t_CKDUR keyOff(t_CKDUR d) {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -2;
 
     m_keyOffDur = d;
@@ -238,7 +272,7 @@ public:
   }
 
   t_CKDUR keyOffTarget(t_CKFLOAT target) {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -2;
 
     m_initial = target;
@@ -248,7 +282,7 @@ public:
   }
 
   t_CKDUR keyOff(t_CKFLOAT target, t_CKDUR d) {
-    m_elapsed = 0;
+    m_elapsed = 1;
     m_state = -2;
     m_initial = target;
 
@@ -261,6 +295,28 @@ public:
   t_CKFLOAT last() {
     return m_value;
   }
+
+  t_CKFLOAT initial() {
+    return m_initial;
+  }
+
+  std::vector<t_CKFLOAT> targets() {
+      return m_targets;
+  }
+
+  std::vector<t_CKDUR> durations() {
+      return m_durs;
+  }
+
+  // return position in envelope.
+  // 0 indicates that it's not on
+  // x.%% - x indicates state/index of which envlope
+  // %% indicates the percentage complete of that envelope
+  t_CKFLOAT pos() {
+      // TODO
+      return 0.0;
+  }
+
 
 private:
   // API-related stuff
@@ -308,6 +364,15 @@ private:
     }
   }
 
+  // update the first rate based off of what the current value is
+  // (rather than m_initial)
+  void updateInitialRate() {
+    if (m_durs.size() == 0) return;
+
+    t_CKDUR rate = (m_targets[0] - m_value) / m_durs[0];
+    m_rates[0] = rate;
+  }
+
   // calculate the cumulative durs for the envelope
   void setCumulative() {
     m_durs_cumulative.clear();
@@ -344,6 +409,19 @@ CK_DLL_QUERY( Line )
   // hmm, don't change this...
   QUERY->setname( QUERY, "Line" );
 
+  // ------------------------------------------------------------------------
+  // Chugin metadata
+  // ------------------------------------------------------------------------
+  QUERY->setinfo( QUERY, CHUGIN_INFO_AUTHORS, "Nick Shaheed" );
+  // the version string of this chugin, e.g., "v1.2"
+  QUERY->setinfo( QUERY, CHUGIN_INFO_CHUGIN_VERSION, "1.0" );
+  // text description of this chugin; what is it? what does it do? who is it for?
+  QUERY->setinfo( QUERY, CHUGIN_INFO_DESCRIPTION, "Envelope of a arbitrary ramps (ala Max/PD's line~)." );
+  // (optional) URL of the homepage for this chugin
+  QUERY->setinfo( QUERY, CHUGIN_INFO_URL, "https://github.com/ccrma/chugins/tree/main/Line" );
+  // (optional) contact email
+  QUERY->setinfo( QUERY, CHUGIN_INFO_EMAIL, "nshaheed@ccrma.stanford.edu" );
+
   // begin the class definition
   // NOTE to create a non-UGen class, change the second argument
   // to extend a different ChucK class (e.g., "Object")
@@ -351,6 +429,34 @@ CK_DLL_QUERY( Line )
 
   // register the constructor (probably no need to change)
   QUERY->add_ctor( QUERY, line_ctor );
+
+  QUERY->add_ctor( QUERY, line_ctor_single );
+  QUERY->add_arg( QUERY, "dur", "duration" );
+  QUERY->doc_func( QUERY, "Set ramp, going [0,1] over duration (default 1000::samp).");
+
+  QUERY->add_ctor( QUERY, line_ctor_singleTarget );
+  QUERY->add_arg( QUERY, "float", "target" );
+  QUERY->add_arg( QUERY, "dur", "duration" );
+  QUERY->doc_func( QUERY, "Set ramp, going [0,target] over duration.");
+
+  QUERY->add_ctor( QUERY, line_ctor_singleTargetStart );
+  QUERY->add_arg( QUERY, "float", "initial" );
+  QUERY->add_arg( QUERY, "float", "target" );
+  QUERY->add_arg( QUERY, "dur", "duration" );
+  QUERY->doc_func( QUERY, "Set ramp, going [initial,target] over duration.");
+
+  QUERY->add_ctor( QUERY, line_ctor_setArray );
+  QUERY->add_arg( QUERY, "float[]", "targets" );
+  QUERY->add_arg( QUERY, "dur[]", "durations" );
+  QUERY->doc_func( QUERY, "Set ramp, starting at 0 and going through all (target, duration) pairs.");
+
+  QUERY->add_ctor( QUERY, line_ctor_setArrayStart );
+  QUERY->add_arg( QUERY, "float", "initial" );
+  QUERY->add_arg( QUERY, "float[]", "targets" );
+  QUERY->add_arg( QUERY, "dur[]", "durations" );
+  QUERY->doc_func( QUERY, "Set ramp, starting at initial and going through all (target, duration) pairs.");
+
+
   // register the destructor (probably no need to change)
   QUERY->add_dtor( QUERY, line_dtor );
 
@@ -392,9 +498,24 @@ CK_DLL_QUERY( Line )
   QUERY->add_arg( QUERY, "dur[]", "durations" );
   QUERY->doc_func( QUERY, "Set ramp, starting at initial and going through all (target, duration) pairs.");
 
+  // getters
+  QUERY->add_mfun( QUERY, line_getInitial, "float", "initial");
+  QUERY->doc_func( QUERY, "Get initial value of ramp.");
+
+  QUERY->add_mfun( QUERY, line_getTargets, "float[]", "targets");
+  QUERY->doc_func( QUERY, "Get ramp target values.");
+
+  QUERY->add_mfun(QUERY, line_getDurations, "dur[]", "durations");
+  QUERY->doc_func(QUERY, "Get ramp durations.");
+
+
   // keyOn function
   QUERY->add_mfun( QUERY, line_keyOn, "dur", "keyOn" );
   QUERY->doc_func( QUERY, "Trigger ramp");
+
+  QUERY->add_mfun( QUERY, line_keyOnInitial, "dur", "keyOn" );
+  QUERY->add_arg( QUERY, "float", "inital" );
+  QUERY->doc_func( QUERY, "Immediately set output to intial, before ramping.");
 
   QUERY->add_mfun( QUERY, line_keyOnSingle, "dur", "keyOn" );
   QUERY->add_arg( QUERY, "dur", "duration" );
@@ -474,6 +595,47 @@ CK_DLL_CTOR( line_ctor )
 
   // store the pointer in the ChucK object member
   OBJ_MEMBER_INT( SELF, line_data_offset ) = (t_CKINT)l_obj;
+}
+
+
+// implementation for the constructor
+CK_DLL_CTOR( line_ctor_single )
+{
+  line_ctor(SELF, ARGS, VM, SHRED, API);
+  Chuck_DL_Return* ret = new Chuck_DL_Return;
+  line_setSingle(SELF, ARGS, ret, VM, SHRED, API);
+}
+
+
+CK_DLL_CTOR( line_ctor_singleTarget )
+{
+  line_ctor(SELF, ARGS, VM, SHRED, API);
+  Chuck_DL_Return* ret = new Chuck_DL_Return;
+  line_setSingleTarget(SELF, ARGS, ret, VM, SHRED, API);
+}
+
+
+CK_DLL_CTOR( line_ctor_singleTargetStart )
+{
+  line_ctor(SELF, ARGS, VM, SHRED, API);
+  Chuck_DL_Return* ret = new Chuck_DL_Return;
+  line_setSingleTargetStart(SELF, ARGS, ret, VM, SHRED, API);
+}
+
+
+CK_DLL_CTOR( line_ctor_setArray )
+{
+  line_ctor(SELF, ARGS, VM, SHRED, API);
+  Chuck_DL_Return* ret = new Chuck_DL_Return;
+  line_setArray(SELF, ARGS, ret, VM, SHRED, API);
+}
+
+
+CK_DLL_CTOR( line_ctor_setArrayStart )
+{
+  line_ctor(SELF, ARGS, VM, SHRED, API);
+  Chuck_DL_Return* ret = new Chuck_DL_Return;
+  line_setArrayStart(SELF, ARGS, ret, VM, SHRED, API);
 }
 
 
@@ -557,8 +719,8 @@ CK_DLL_MFUN( line_setArray )
 
   // bounds checking
   t_CKINT durations_size, targets_size;
-  API->object->array_float_size(durations, durations_size);
-  API->object->array_float_size(targets, targets_size);
+  durations_size = API->object->array_float_size(durations);
+  targets_size = API->object->array_float_size(targets);
 
   if (durations_size != targets_size) {
     API->vm->throw_exception("LineMismatchedArrays", "Duration and target arrays must be same size in a Line.set(...)", nullptr);
@@ -571,14 +733,8 @@ CK_DLL_MFUN( line_setArray )
   std::vector<t_CKFLOAT> targets_vec;
 
   for (int i = 0; i < durations_size; i++) {
-    t_CKDUR dur;
-    t_CKFLOAT target;
-
-    API->object->array_float_get_idx(durations, i, dur);
-    API->object->array_float_get_idx(targets, i, target);
-
-    durations_vec.push_back(dur);
-    targets_vec.push_back(target);
+    durations_vec.push_back( API->object->array_float_get_idx( durations, i ) );
+    targets_vec.push_back( API->object->array_float_get_idx( targets, i ) );
   }
 
   l_obj->set(durations_vec, targets_vec);
@@ -598,8 +754,8 @@ CK_DLL_MFUN( line_setArrayStart )
 
   // bounds checking
   t_CKINT durations_size, targets_size;
-  API->object->array_float_size(durations, durations_size);
-  API->object->array_float_size(targets, targets_size);
+  durations_size = API->object->array_float_size(durations);
+  targets_size = API->object->array_float_size(targets);
 
   if (durations_size != targets_size) {
     API->vm->throw_exception("LineMismatchedArrays", "Duration and target arrays must be same size in a Line.set(...)", nullptr);
@@ -612,14 +768,8 @@ CK_DLL_MFUN( line_setArrayStart )
   std::vector<t_CKFLOAT> targets_vec;
 
   for (int i = 0; i < durations_size; i++) {
-    t_CKDUR dur;
-    t_CKFLOAT target;
-
-    API->object->array_float_get_idx(durations, i, dur);
-    API->object->array_float_get_idx(targets, i, target);
-
-    durations_vec.push_back(dur);
-    targets_vec.push_back(target);
+    durations_vec.push_back( API->object->array_float_get_idx( durations, i ) );
+    targets_vec.push_back( API->object->array_float_get_idx( targets, i ) );
   }
 
   l_obj->set(durations_vec, targets_vec, initial);
@@ -632,6 +782,18 @@ CK_DLL_MFUN( line_keyOn )
   // get our c++ class pointer
   Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
 
+  RETURN->v_dur = l_obj->keyOn();
+}
+
+// immediately reset to initial value before ramping
+CK_DLL_MFUN( line_keyOnInitial )
+{
+  // get our c++ class pointer
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  t_CKFLOAT init = GET_NEXT_FLOAT( ARGS );
+
+  l_obj->setValue(init);
   RETURN->v_dur = l_obj->keyOn();
 }
 
@@ -684,10 +846,10 @@ CK_DLL_MFUN( line_keyOnArray )
   Chuck_ArrayFloat* targets = (Chuck_ArrayFloat *)GET_NEXT_OBJECT( ARGS );
   Chuck_ArrayFloat* durations = (Chuck_ArrayFloat *)GET_NEXT_OBJECT( ARGS );
 
-  // bounds checking
+  // bounds checking0
   t_CKINT durations_size, targets_size;
-  API->object->array_float_size(durations, durations_size);
-  API->object->array_float_size(targets, targets_size);
+  durations_size = API->object->array_float_size(durations);
+  targets_size = API->object->array_float_size(targets);
 
   if (durations_size != targets_size) {
     API->vm->throw_exception("LineMismatchedArrays", "Duration and target arrays must be same size in a Line.keyOn(...)", nullptr);
@@ -699,14 +861,8 @@ CK_DLL_MFUN( line_keyOnArray )
   std::vector<t_CKFLOAT> targets_vec;
 
   for (int i = 0; i < durations_size; i++) {
-    t_CKDUR dur;
-    t_CKFLOAT target;
-
-    API->object->array_float_get_idx(durations, i, dur);
-    API->object->array_float_get_idx(targets, i, target);
-
-    durations_vec.push_back(dur);
-    targets_vec.push_back(target);
+      durations_vec.push_back( API->object->array_float_get_idx( durations, i ) );
+      targets_vec.push_back( API->object->array_float_get_idx( targets, i ) );
   }
 
   l_obj->set(durations_vec, targets_vec);
@@ -725,8 +881,8 @@ CK_DLL_MFUN( line_keyOnArrayStart )
 
   // bounds checking
   t_CKINT durations_size, targets_size;
-  API->object->array_float_size(durations, durations_size);
-  API->object->array_float_size(targets, targets_size);
+  durations_size = API->object->array_float_size(durations);
+  targets_size = API->object->array_float_size(targets);
 
   if (durations_size != targets_size) {
     API->vm->throw_exception("LineMismatchedArrays", "Duration and target arrays must be same size in a Line.keyOn(...)", nullptr);
@@ -738,14 +894,8 @@ CK_DLL_MFUN( line_keyOnArrayStart )
   std::vector<t_CKFLOAT> targets_vec;
 
   for (int i = 0; i < durations_size; i++) {
-    t_CKDUR dur;
-    t_CKFLOAT target;
-
-    API->object->array_float_get_idx(durations, i, dur);
-    API->object->array_float_get_idx(targets, i, target);
-
-    durations_vec.push_back(dur);
-    targets_vec.push_back(target);
+      durations_vec.push_back( API->object->array_float_get_idx( durations, i ) );
+      targets_vec.push_back( API->object->array_float_get_idx( targets, i ) );
   }
 
   l_obj->set(durations_vec, targets_vec, initial);
@@ -796,4 +946,55 @@ CK_DLL_MFUN( line_last ) {
   Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
 
   RETURN->v_float = l_obj->last();
+}
+
+CK_DLL_MFUN( line_getInitial ) {
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  RETURN->v_float = l_obj->initial();
+}
+
+CK_DLL_MFUN( line_getTargets ) {
+
+  Chuck_DL_Api::Object target2 = API->object->create(SHRED, API->type->lookup(VM, "float[][]"), false);
+  Chuck_ArrayInt* target_arr2 = (Chuck_ArrayInt*)target2;
+
+  for (int i = 0; i < 3; i++) {
+      Chuck_DL_Api::Object target_tmp = API->object->create(SHRED, API->type->lookup(VM, "float[]"), false);
+      Chuck_ArrayFloat* target_arr_tmp = (Chuck_ArrayFloat*)target_tmp;
+
+      for (int j = 0; j < 3; j++) {
+          API->object->array_float_push_back(target_arr_tmp, j);
+      }
+
+      API->object->array_int_push_back(target_arr2, (t_CKINT)target_arr_tmp);
+  }
+
+  Line * l_obj = (Line *)OBJ_MEMBER_INT( SELF, line_data_offset );
+
+  // Create a float[] array
+  Chuck_DL_Api::Object target = API->object->create(SHRED, API->type->lookup(VM, "float[]"), false);
+  Chuck_ArrayFloat * target_arr = (Chuck_ArrayFloat *) target;
+
+  for (auto x : l_obj->targets()) {
+      API->object->array_float_push_back(target_arr, x);
+  }
+
+  // Need to cast back to object due to lost inheirtience structure
+  RETURN->v_object = (Chuck_Object*) target_arr;
+}
+
+CK_DLL_MFUN(line_getDurations) {
+    Line* l_obj = (Line*)OBJ_MEMBER_INT(SELF, line_data_offset);
+
+    // Create a dur[] array
+    Chuck_DL_Api::Object dur = API->object->create(SHRED, API->type->lookup(VM, "dur[]"), false);
+    Chuck_ArrayFloat* dur_arr = (Chuck_ArrayFloat*)dur;
+
+    for (auto x : l_obj->durations()) {
+        API->object->array_float_push_back(dur_arr, x);
+    }
+
+    RETURN->v_object = (Chuck_Object*) dur_arr;
+
 }

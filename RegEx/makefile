@@ -6,7 +6,7 @@ CHUGIN_NAME=RegEx
 C_MODULES=
 CXX_MODULES=RegEx.cpp
 
-# where the chuck headers are
+# where to find chugin.h
 CK_SRC_PATH?=../chuck/include
 
 
@@ -16,7 +16,7 @@ CK_SRC_PATH?=../chuck/include
 
 # default target: print usage message and quit
 current: 
-	@echo "[chuck build]: please use one of the following configurations:"
+	@echo "[chugin build]: please use one of the following configurations:"
 	@echo "   make linux, make mac, make mac-ub, or make win32"
 
 ifneq ($(CK_TARGET),)
@@ -30,7 +30,7 @@ endif
 osx mac mac-ub linux linux-oss linux-jack linux-alsa: all
 
 win32:
-	make -f makefile.win32
+	make -f makefile.win
 
 CC=gcc
 CXX=gcc
@@ -38,7 +38,7 @@ LD=g++
 
 CHUGIN_PATH=/usr/local/lib/chuck
 
-ifneq (,$(strip $(filter osx bin-dist-osx,$(MAKECMDGOALS))))
+ifneq (,$(strip $(filter mac osx bin-dist-osx,$(MAKECMDGOALS))))
 include makefile.mac
 endif
 
@@ -87,11 +87,14 @@ else
 SUFFIX=.schug
 FLAGS+= -D__CK_DLL_STATIC__
 endif
+# webchugin extension
+WEBSUFFIX=.wasm
 
 C_OBJECTS=$(addsuffix .o,$(basename $(C_MODULES)))
 CXX_OBJECTS=$(addsuffix .o,$(basename $(CXX_MODULES)))
 
 CHUG=$(addsuffix $(SUFFIX),$(CHUGIN_NAME))
+WEBCHUG=$(addsuffix $(WEBSUFFIX),$(CHUG))
 
 all: $(CHUG)
 
@@ -106,8 +109,13 @@ endif
 $(C_OBJECTS): %.o: %.c
 	$(CC) $(FLAGS) -c -o $@ $<
 
-$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chuck_dl.h
+$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chugin.h
 	$(CXX) $(FLAGS) -c -o $@ $<
+
+# build as webchugin
+web:
+	emcc -O3 -s SIDE_MODULE=1 -s DISABLE_EXCEPTION_CATCHING=0 -fPIC -Wformat=0 \
+	-I ../chuck/include/ $(CXX_MODULES) $(C_MODULES) -o $(WEBCHUG)
 
 install: $(CHUG)
 	mkdir -p $(CHUGIN_PATH)
@@ -115,5 +123,5 @@ install: $(CHUG)
 	chmod 755 $(CHUGIN_PATH)/$(CHUG)
 
 clean: 
-	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) Release Debug
+	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) $(WEBCHUG) Release Debug
 

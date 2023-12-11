@@ -28,15 +28,15 @@
 //      --chugin-load:{on/off}
 //
 // for more information on command-line options:
-// https://chuck.stanford.edu/doc/program/options.html
+//      https://chuck.stanford.edu/doc/program/options.html
 // for more information on chugins:
-// https://chuck.stanford.edu/extend/
+//      https://chuck.stanford.edu/extend/
 //-----------------------------------------------------------------------------
 // happy chucking & chugging!
 //-----------------------------------------------------------------------------
 
-// include chuck dynamic linking header
-#include "chuck_dl.h"
+// include chugin header
+#include "chugin.h"
 
 // general includes
 #include <iostream>
@@ -58,8 +58,10 @@ CK_DLL_TICK( %(CHUGIN_LCNAME)%_tick );
 t_CKINT %(CHUGIN_LCNAME)%_data_offset = 0;
 
 
+//-----------------------------------------------------------------------------
 // class definition for internal chugin data
-// (NOTE this isn't strictly necessary, but serves as example of one recommended approach)
+// (NOTE this isn't strictly necessary, but is one example of a recommended approach)
+//-----------------------------------------------------------------------------
 class %(CHUGIN_NAME)%
 {
 public:
@@ -92,20 +94,45 @@ private:
 };
 
 
-// query function: chuck calls this when loading the chugin
-// (NOTE developer will need to modify this function to add additional functions to this chugin)
+//-----------------------------------------------------------------------------
+// query function: ChucK calls this when loading the chugin
+// modify this function to define this chugin's API and language extensions
+//-----------------------------------------------------------------------------
 CK_DLL_QUERY( %(CHUGIN_NAME)% )
 {
-    // hmm, don't change this...
+    // generally, don't change this...
     QUERY->setname( QUERY, "%(CHUGIN_NAME)%" );
     
-    // begin the class definition
+    // ------------------------------------------------------------------------
+    // please DO customize these info fields below; they will be
+    // used for chugins package management and documentation
+    // ------------------------------------------------------------------------
+    // the author(s) of this chugin, e.g., "Alice Baker & Carl Donut"
+    QUERY->setinfo( QUERY, CHUGIN_INFO_AUTHORS, "" );
+    // the version string of this chugin, e.g., "v1.2"
+    QUERY->setinfo( QUERY, CHUGIN_INFO_CHUGIN_VERSION, "" );
+    // text description of this chugin; what is it? what does it do? who is it for?
+    QUERY->setinfo( QUERY, CHUGIN_INFO_DESCRIPTION, "" );
+    // (optional) URL of the homepage for this chugin
+    QUERY->setinfo( QUERY, CHUGIN_INFO_URL, "" );
+    // (optional) contact email
+    QUERY->setinfo( QUERY, CHUGIN_INFO_EMAIL, "" );
+    // ------------------------------------------------------------------------
+
+    // ------------------------------------------------------------------------
+    // begin class definition(s); will be compiled, verified,
+    // and added to the chuck host type system for use
+    // ------------------------------------------------------------------------
     // NOTE to create a non-UGen class, change the second argument
     // to extend a different ChucK class (e.g., "Object")
     QUERY->begin_class( QUERY, "%(CHUGIN_NAME)%", "UGen" );
 
-    // register the constructor (probably no need to change)
+    // register default constructor
     QUERY->add_ctor( QUERY, %(CHUGIN_LCNAME)%_ctor );
+    // NOTE constructors can be overloaded like any other functions,
+    // each overloaded constructor begins with `QUERY->add_ctor()`
+    // followed by a sequence of `QUERY->add_arg()`
+
     // register the destructor (probably no need to change)
     QUERY->add_dtor( QUERY, %(CHUGIN_LCNAME)%_dtor );
 
@@ -128,8 +155,10 @@ CK_DLL_QUERY( %(CHUGIN_NAME)% )
     // referene to the c++ class we defined above
     %(CHUGIN_LCNAME)%_data_offset = QUERY->add_mvar( QUERY, "int", "@%(CHUGIN_INITIALS)%_data", false );
 
+    // ------------------------------------------------------------------------
     // end the class definition
-    // IMPORTANT: this MUST be called!
+    // IMPORTANT: this MUST be called to each class definition!
+    // ------------------------------------------------------------------------
     QUERY->end_class( QUERY );
 
     // wasn't that a breeze?
@@ -137,7 +166,7 @@ CK_DLL_QUERY( %(CHUGIN_NAME)% )
 }
 
 
-// implementation for the constructor
+// implementation for the default constructor
 CK_DLL_CTOR( %(CHUGIN_LCNAME)%_ctor )
 {
     // get the offset where we'll store our internal c++ class pointer
@@ -163,7 +192,7 @@ CK_DLL_DTOR( %(CHUGIN_LCNAME)%_dtor )
 }
 
 
-// implementation for tick function
+// implementation for tick function (relevant only for UGens)
 CK_DLL_TICK( %(CHUGIN_LCNAME)%_tick )
 {
     // get our c++ class pointer

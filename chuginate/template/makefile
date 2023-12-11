@@ -33,7 +33,7 @@ endif
 mac osx linux linux-pulse linux-oss linux-jack linux-alsa: all
 
 win32:
-	make -f makefile.win32
+	make -f makefile.win
 
 CC=gcc
 CXX=gcc
@@ -98,7 +98,7 @@ endif
 $(C_OBJECTS): %.o: %.c
 	$(CC) $(FLAGS) -c -o $@ $<
 
-$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chuck_dl.h
+$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chugin.h
 	$(CXX) $(FLAGS) -c -o $@ $<
 
 install: $(CHUG)

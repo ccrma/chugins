@@ -31,8 +31,7 @@
 -----------------------------------------------------------------------------*/
 
 // this should align with the correct versions of these ChucK files
-#include "chuck_dl.h"
-#include "chuck_def.h"
+#include "chugin.h"
 
 // general includes
 #include <stdio.h>
@@ -749,7 +748,7 @@ CK_DLL_CTOR(miap_ctor)
     OBJ_MEMBER_INT(SELF, miap_data_offset) = 0;
 
     // instantiate our internal c++ class representation
-    MIAP * miap_obj = new MIAP(API->vm->get_srate());
+    MIAP * miap_obj = new MIAP(API->vm->srate(VM));
 
     // store the pointer in the ChucK object member
     OBJ_MEMBER_INT(SELF, miap_data_offset) = (t_CKINT) miap_obj;

@@ -4,8 +4,7 @@
 //-----------------------------------------------------------------------------
 
 // this should align with the correct versions of these ChucK files
-#include "chuck_dl.h"
-#include "chuck_def.h"
+#include "chugin.h"
 
 // general includes
 #include <stdio.h>
@@ -58,6 +57,16 @@ Wavetable( t_CKFLOAT fs)
         interpolate = 0;
         sync = 0;
         //printf("step: %f\n", step);
+}
+
+~Wavetable() // (ge) added 1.5.2.0
+{
+    // see if current_table is pointing to internal
+    bool same = current_table == internal_table;
+    // clean up internal
+    CK_SAFE_DELETE_ARRAY( internal_table );
+    // if not same, clean up current
+    if( !same ) CK_SAFE_DELETE_ARRAY( current_table );
 }
 
 // for Chugins extending UGen
@@ -148,13 +157,22 @@ int getSync ()
   return sync;
 }
 
-void setTable(Chuck_Object *p)
+void setTable( Chuck_ArrayFloat * ckarray, CK_DL_API api )
 {
-  Chuck_ArrayFloat *userArray = (Chuck_ArrayFloat *)p;
-  
-  current_table = &userArray->m_vector[0];
-  table_size = (int)userArray->size();
-  step = table_size * freq / srate;
+    // clean up first
+    CK_SAFE_DELETE_ARRAY( current_table );
+    // get size
+    table_size = api->object->array_float_size( ckarray );
+    // allocate
+    current_table = new t_CKFLOAT[table_size];
+    // copy
+    for( t_CKINT i = 0; i < table_size; i++ )
+    {
+        // get element using portable API and set
+        current_table[i] = api->object->array_float_get_idx( ckarray, i );
+    }
+    // compute step
+    step = table_size * freq / srate;
   /*
   printf("size of userArray: %d\n", table_size);
   for (int i=0; i<table_size; i++)
@@ -332,5 +350,5 @@ CK_DLL_MFUN(wavetable_getSync)
 CK_DLL_MFUN(wavetable_setTable)
 {
         Wavetable * w_obj = (Wavetable *) OBJ_MEMBER_INT(SELF, wavetable_data_offset);
-        w_obj->setTable(GET_NEXT_OBJECT(ARGS));
+        w_obj->setTable((Chuck_ArrayFloat *)GET_NEXT_OBJECT(ARGS), API);
 }

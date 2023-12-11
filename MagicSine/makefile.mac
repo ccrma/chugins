@@ -1,0 +1,8 @@
+ARCHS?=x86_64 arm64
+ARCHOPTS=$(addprefix -arch ,$(ARCHS))
+
+FLAGS+=-mmacosx-version-min=10.9 -I$(CK_SRC_PATH) $(ARCHOPTS) -fPIC
+LDFLAGS+=-mmacosx-version-min=10.9 -shared -lc++ $(ARCHOPTS)
+
+LD=clang++
+CXX=clang++

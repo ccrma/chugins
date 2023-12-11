@@ -1,6 +1,5 @@
 #include "nh_hall.hpp"
-#include "chuck_dl.h"
-#include "chuck_def.h"
+#include "chugin.h"
 
 CK_DLL_CTOR(nhhall_ctor);
 CK_DLL_DTOR(nhhall_dtor);
