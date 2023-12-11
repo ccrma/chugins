@@ -167,6 +167,20 @@ CK_DLL_QUERY( Patch )
     // hmm, don't change this...
     QUERY->setname(QUERY, "Patch");
 
+    // ------------------------------------------------------------------------
+    // Chugin metadata
+    // ------------------------------------------------------------------------
+    // the author(s) of this chugin, e.g., "Alice Baker & Carl Donut"
+    QUERY->setinfo( QUERY, CHUGIN_INFO_AUTHORS, "Nick Shaheed" );
+    // the version string of this chugin, e.g., "v1.2"
+    QUERY->setinfo( QUERY, CHUGIN_INFO_CHUGIN_VERSION, "1.0" );
+    // text description of this chugin; what is it? what does it do? who is it for?
+    QUERY->setinfo( QUERY, CHUGIN_INFO_DESCRIPTION, "Take a UGen signal and patch it into a UGen's setter function." );
+    // (optional) URL of the homepage for this chugin
+    QUERY->setinfo( QUERY, CHUGIN_INFO_URL, "https://github.com/ccrma/chugins/tree/main/Patch" );
+    // (optional) contact email
+    QUERY->setinfo( QUERY, CHUGIN_INFO_EMAIL, "nshaheed@ccrma.stanford.edu" );
+
     // begin the class definition
     // can change the second argument to extend a different ChucK class
     QUERY->begin_class(QUERY, "Patch", "UGen");

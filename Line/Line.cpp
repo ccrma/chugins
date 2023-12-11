@@ -409,6 +409,19 @@ CK_DLL_QUERY( Line )
   // hmm, don't change this...
   QUERY->setname( QUERY, "Line" );
 
+  // ------------------------------------------------------------------------
+  // Chugin metadata
+  // ------------------------------------------------------------------------
+  QUERY->setinfo( QUERY, CHUGIN_INFO_AUTHORS, "Nick Shaheed" );
+  // the version string of this chugin, e.g., "v1.2"
+  QUERY->setinfo( QUERY, CHUGIN_INFO_CHUGIN_VERSION, "1.0" );
+  // text description of this chugin; what is it? what does it do? who is it for?
+  QUERY->setinfo( QUERY, CHUGIN_INFO_DESCRIPTION, "Envelope of a arbitrary ramps (ala Max/PD's line~)." );
+  // (optional) URL of the homepage for this chugin
+  QUERY->setinfo( QUERY, CHUGIN_INFO_URL, "https://github.com/ccrma/chugins/tree/main/Line" );
+  // (optional) contact email
+  QUERY->setinfo( QUERY, CHUGIN_INFO_EMAIL, "nshaheed@ccrma.stanford.edu" );
+
   // begin the class definition
   // NOTE to create a non-UGen class, change the second argument
   // to extend a different ChucK class (e.g., "Object")

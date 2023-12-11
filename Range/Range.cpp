@@ -165,8 +165,20 @@ private:
 // add additional functions to this Chugin
 CK_DLL_QUERY( Range )
 {
-    // hmm, don't change this...
     QUERY->setname(QUERY, "Range");
+
+    // ------------------------------------------------------------------------
+    // Chugin metadata
+    // ------------------------------------------------------------------------
+    QUERY->setinfo( QUERY, CHUGIN_INFO_AUTHORS, "Nick Shaheed" );
+    // the version string of this chugin, e.g., "v1.2"
+    QUERY->setinfo( QUERY, CHUGIN_INFO_CHUGIN_VERSION, "1.0" );
+    // text description of this chugin; what is it? what does it do? who is it for?
+    QUERY->setinfo( QUERY, CHUGIN_INFO_DESCRIPTION, "Linearly scale an input signal to a different range of numbers." );
+    // (optional) URL of the homepage for this chugin
+    QUERY->setinfo( QUERY, CHUGIN_INFO_URL, "https://github.com/ccrma/chugins/tree/main/Range" );
+    // (optional) contact email
+    QUERY->setinfo( QUERY, CHUGIN_INFO_EMAIL, "nshaheed@ccrma.stanford.edu" );
 
     // begin the class definition
     // can change the second argument to extend a different ChucK class
