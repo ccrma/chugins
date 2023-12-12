@@ -72,7 +72,7 @@ endif
 # ConvRev requires cpp11
 FLAGS+= -std=c++11
 
-# define SSE (Disabling for now, requires platform-specific build flags)
+# define SSE (comment out to disable using vector intrinsics)
 FLAGS+= -DFFTCONVOLVER_USE_SSE
 
 # default: build a dynamic chugin
@@ -103,7 +103,7 @@ endif
 $(C_OBJECTS): %.o: %.c
 	$(CC) $(FLAGS) -c -o $@ $<
 
-$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chuck_dl.h
+$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chugin.h
 	$(CXX) $(FLAGS) -c -o $@ $<
 
 install: $(CHUG)

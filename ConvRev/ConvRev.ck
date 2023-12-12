@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// name: ConvRev-hagia-sophia-dope.ck
+// name: ConvRev.ck
 // desc: Example convolving a 16s Hagia Sophia IR with special:dope
 //
 // author: Andrew Zhu Aday (https://ccrma.stanford.edu/~azaday/)
@@ -32,14 +32,6 @@ cr.init();
 
 // Loop =======================================================================
 
-fun void debug(dur d) {
-    while (d => now) {
-        <<< cr.last() >>>;
-    }
-} 
-// spork ~ debug (100::ms);
-
-// repeat sample every block
 while (true) {
     (cr.order() + buf.samples())::samp => now;  // wait for reverb to finish
     0 => buf.pos;  // restart sample

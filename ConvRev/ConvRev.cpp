@@ -7,13 +7,13 @@
 //-----------------------------------------------------------------------------
 
 // include chuck dynamic linking header
-#include "chuck_dl.h"
+#include "chugin.h"
 
 // vendor includes
 #include "FFTConvolver.h"
 
 // local includes
-#define CONV_REV_PROFILE // TODO: remove when building
+// #define CONV_REV_PROFILE // TODO: remove when building
 
 #ifdef CONV_REV_PROFILE
 #include "Timer.h"
@@ -69,13 +69,9 @@ private:  // internal data
     // input double buffer
     std::vector<fftconvolver::Sample> _input_buffer;
     std::vector<fftconvolver::Sample> _staging_in_buffer;
-    // fftconvolver::Sample _input_buffer[CONV_REV_BLOCKSIZE];
-    // fftconvolver::Sample _staging_in_buffer[CONV_REV_BLOCKSIZE];
     bool _which_input_buffer;
 
     // output double buffer
-    // std::vector<fftconvolver::Sample> _output_buffer;
-    // std::vector<fftconvolver::Sample> _staging_out_buffer;
     fftconvolver::Sample* _output_buffer;
     fftconvolver::Sample* _staging_out_buffer;
     bool _which_output_buffer;
@@ -105,18 +101,16 @@ public:
 
     // double buffer getters
     std::vector<fftconvolver::Sample>& getInputBuffer() { 
-    // fftconvolver::Sample* getInputBuffer() { 
         return _which_input_buffer ? _input_buffer : _staging_in_buffer;
     }
     std::vector<fftconvolver::Sample>& getStagingInputBuffer() { 
-    // fftconvolver::Sample* getStagingInputBuffer() { 
         return _which_input_buffer ? _staging_in_buffer : _input_buffer;
     }
-    // std::vector<fftconvolver::Sample>& getOutputBuffer() { 
+
     fftconvolver::Sample* getOutputBuffer() {
         return _which_output_buffer ? _output_buffer : _staging_out_buffer;
     }
-    // std::vector<fftconvolver::Sample>& getStagingOutputBuffer() {
+
     fftconvolver::Sample* getStagingOutputBuffer() {
         return _which_output_buffer ? _staging_out_buffer : _output_buffer;
     }
@@ -130,6 +124,9 @@ public:
     // for Chugins extending UGen
     SAMPLE tick( SAMPLE in )
     {
+#ifdef CONV_REV_PROFILE
+        Timer timer("tick", _blocksize);
+#endif
         getInputBuffer()[_idx] = in;
         SAMPLE output  = _scale_factor * (getOutputBuffer()[_idx]);
 
@@ -138,7 +135,7 @@ public:
 
         if (_idx == _blocksize) {
 #ifdef CONV_REV_PROFILE
-        Timer timer("tick at blocksize");
+        Timer timer("----tick at blocksize");
 #endif
             _idx = 0; // reset circular buffer head
 
@@ -150,29 +147,21 @@ public:
 
             // start processing the new input block
             // on VR lab laptop drops average Tick time from 1.5ms --> 1.3ms
-            // shockingly low...
-            _conv_thr = std::thread(
-                &ConvRev::_process, 
-                this,
-                getStagingInputBuffer(),
-                getStagingOutputBuffer()
-            );
-
-            // _process(getStagingInputBuffer(), getStagingOutputBuffer());
+            // shockingly low... but the more complex the ugen graph, the more
+            // we should see a benefit from puting the convolution engine on a
+            // separate thread
+            _conv_thr = std::thread([&]() {
+                _process(getStagingInputBuffer(), getStagingOutputBuffer());
+            });
         }
+
         return output;
     }
 
-    // void _process(std::vector<fftconvolver::Sample>& input_buffer, std::vector<fftconvolver::Sample>& output_buffer) {
-    // void _process(fftconvolver::Sample* input_buffer, fftconvolver::Sample* output_buffer) {
     void _process(std::vector<fftconvolver::Sample>& input_buffer, fftconvolver::Sample* output_buffer) {
-
-		// _convolver.process(input_buffer.data(), output_buffer, _blocksize);
-		// _convolver.process(input_buffer.data(), &output_buffer[0], _blocksize);
-            
         // TODO process does not work with std::vector for output buffer. why??
 #ifdef CONV_REV_PROFILE
-        Timer timer("convolver.process()");
+        Timer timer("--------convolver.process()");
 #endif
 		_convolver.process(input_buffer.data(), output_buffer, _blocksize);
     }
@@ -208,10 +197,6 @@ public:
         _input_buffer.resize(_blocksize, 0);
         _staging_in_buffer.resize(_blocksize, 0);
 
-        // TODO: why does FFTConvolver not work when using a std::vector for output buffer?
-        // _output_buffer.resize(_blocksize, 0);
-        // _staging_out_buffer.resize(_blocksize, 0);
-        
         // free old buffer
         if (_output_buffer) delete[] _output_buffer;
         if (_staging_out_buffer) delete[] _staging_out_buffer;
@@ -238,6 +223,8 @@ CK_DLL_QUERY( ConvRev )
     
     // begin the class definition
     QUERY->begin_class( QUERY, "ConvRev", "UGen" );
+    QUERY->doc_class(QUERY, "Convolution Reverb Chugin");
+    QUERY->add_ex(QUERY, "effects/ConvRev.ck");
 
     QUERY->add_ctor( QUERY, convrev_ctor );
     QUERY->add_dtor( QUERY, convrev_dtor );
@@ -250,22 +237,44 @@ CK_DLL_QUERY( ConvRev )
 
     QUERY->add_mfun(QUERY, convrev_setBlockSize, "float", "blocksize");
     QUERY->add_arg(QUERY, "float", "arg");
+    QUERY->doc_func(QUERY, 
+        "Set the blocksize of the FFT convolution engine. "
+        "Larger blocksize means more efficient processing, but more latency. "
+        "Latency is equal to blocksize / sample rate."
+        "Defaults to 128 samples."
+    );
 
     QUERY->add_mfun(QUERY, convrev_getBlockSize, "float", "blocksize");
+    QUERY->doc_func(QUERY, "Get the blocksize of the FFT convolution engine.");
 
     QUERY->add_mfun(QUERY, convrev_setOrder, "int", "order");
     QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->doc_func(QUERY, 
+        "Set the order of the convolution filter. "
+        "This should be set to the length of the impulse response buffer in samples"
+    );
 
     QUERY->add_mfun(QUERY, convrev_getOrder, "int", "order");
+    QUERY->doc_func(QUERY, "Get the order of the convolution filter.");
 
     QUERY->add_mfun(QUERY, convrev_setCoeff, "float", "coeff");
     QUERY->add_arg(QUERY, "int", "index");
     QUERY->add_arg(QUERY, "float", "coefficient");
+    QUERY->doc_func(QUERY, 
+        "Set the coefficient of the convolution filter at position <index>. "
+    );
 
     QUERY->add_mfun(QUERY, convrev_getCoeff, "float", "coeff");
-    QUERY->add_arg(QUERY, "int", "arg");
+    QUERY->add_arg(QUERY, "int", "index");
+    QUERY->doc_func(QUERY, 
+        "Get the coefficient of the convolution filter at position <index>. "
+    );
 
     QUERY->add_mfun(QUERY, convrev_init, "void", "init");
+    QUERY->doc_func(QUERY, 
+        "Initialize the convolution engine. Performs memory allocations, pre-computes the IR FFT etc."
+        "This should be called after setting the order and coefficients of the filter, and before using the UGen."
+    );
 
     // this reserves a variable in the ChucK internal class to store
     // reference to the c++ class we defined above
