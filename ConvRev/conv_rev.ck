@@ -12,7 +12,7 @@ cr => g => dac;
 
 SndBuf2 ir => blackhole;
 /* "../IRs/church_of_gesu.wav" => ir.read; // 44100 sr, mono */
-"../IRs/hagia_sophia.wav" => ir.read; // 48000 sr, mono
+me.dir() + "./IRs/hagia_sophia.wav" => ir.read; // 48000 sr, mono
 /* "../IRs/musikvereinIR.wav" => ir.read; // 48000 sr, mono */
 /* "../IRs/small.wav" => ir.read; // 44100 sr, stereo */
 
