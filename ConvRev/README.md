@@ -1,24 +1,15 @@
 # ConvRev: A Convolution Reverb Chugin
 
-## m220A Final Project -- Summer 2021
+## m220A Final Project -- Summer 2021. Edited and improved Fall 2023
 
-#### ConvRev.zip Contents
+### Build Options
 
-- __chugin_includes__: Includes to compile chugins. Copied from the official chugin git repository, no need to touch.
-- __convolved__: Examples wav files convolved with the ConvRev chugin
-- __ConvRev__: chugin source code + makefile. Build instructions below.
-- __examples__: chuck examples for how to use ConvRev with SndBuf or ADC input
-- __IRs__: a few impulse responses to seed the ConvRev ugen
-- TODO: add presentation
+The ConvRev `makefile` defines a flag `FFTCONVOLVER_USE_SSE`. This tells the convolution engine to use SIMD vector intrinsics, which by my tests increases performance up to 2x.
+To enable SSE support for MacOS, ConvRev uses the [sse2neon](https://github.com/DLTcollab/sse2neon/tree/master) translation header.
 
-#### Build Requirements
+If your OS does not support either SSE or Neon, comment out the `FFTCONVOLVER_USE_SSE` flag before building.
 
-This Chugin performs FFTs using the [Apple Accelerate Framework dsp library](https://developer.apple.com/documentation/accelerate/vdsp), and so it is only compatible with mac os. Developer tools may need to be installed.
-
-Future work includes switching the FFT implementation to the built-in chuck version, which would make this Chugin buildable on any OS.
-
-
-#### HOWTO Build
+#### HOWTO Build on Mac
 
 In the `ConvRev/` directory, run
 
@@ -68,4 +59,4 @@ In the near future I may be optimizing the convolution algorithm to have negligi
 
 #### Sources Cited
 
-PLEASE NOTE that the overlap-add convolution implementation is taken from the [HiFi-LoFi FFTConvolver Library](https://github.com/HiFi-LoFi/FFTConvolver), under the MIT license. All cpp and header files under the `ConvRev/` directory, excluding `ConvRev.cpp`, are from this library.
+The overlap-add convolution implementation is taken from the [HiFi-LoFi FFTConvolver Library](https://github.com/HiFi-LoFi/FFTConvolver), under the MIT license.
