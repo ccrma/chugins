@@ -95,6 +95,26 @@ private:
 
 
 //-----------------------------------------------------------------------------
+// info function: ChucK calls this when loading/probing the chugin
+// NOTE: please customize these info fields below; they will be used for
+// chugins loading, probing, and package management and documentation
+//-----------------------------------------------------------------------------
+CK_DLL_INFO( %(CHUGIN_NAME)% )
+{
+    // the version string of this chugin, e.g., "v1.2.1"
+    QUERY->setinfo( QUERY, CHUGIN_INFO_CHUGIN_VERSION, "" );
+    // the author(s) of this chugin, e.g., "Alice Baker & Carl Donut"
+    QUERY->setinfo( QUERY, CHUGIN_INFO_AUTHORS, "" );
+    // text description of this chugin; what is it? what does it do? who is it for?
+    QUERY->setinfo( QUERY, CHUGIN_INFO_DESCRIPTION, "" );
+    // (optional) URL of the homepage for this chugin
+    QUERY->setinfo( QUERY, CHUGIN_INFO_URL, "" );
+    // (optional) contact email
+    QUERY->setinfo( QUERY, CHUGIN_INFO_EMAIL, "" );
+}
+
+
+//-----------------------------------------------------------------------------
 // query function: ChucK calls this when loading the chugin
 // modify this function to define this chugin's API and language extensions
 //-----------------------------------------------------------------------------
@@ -102,22 +122,6 @@ CK_DLL_QUERY( %(CHUGIN_NAME)% )
 {
     // generally, don't change this...
     QUERY->setname( QUERY, "%(CHUGIN_NAME)%" );
-    
-    // ------------------------------------------------------------------------
-    // please DO customize these info fields below; they will be
-    // used for chugins package management and documentation
-    // ------------------------------------------------------------------------
-    // the author(s) of this chugin, e.g., "Alice Baker & Carl Donut"
-    QUERY->setinfo( QUERY, CHUGIN_INFO_AUTHORS, "" );
-    // the version string of this chugin, e.g., "v1.2"
-    QUERY->setinfo( QUERY, CHUGIN_INFO_CHUGIN_VERSION, "" );
-    // text description of this chugin; what is it? what does it do? who is it for?
-    QUERY->setinfo( QUERY, CHUGIN_INFO_DESCRIPTION, "" );
-    // (optional) URL of the homepage for this chugin
-    QUERY->setinfo( QUERY, CHUGIN_INFO_URL, "" );
-    // (optional) contact email
-    QUERY->setinfo( QUERY, CHUGIN_INFO_EMAIL, "" );
-    // ------------------------------------------------------------------------
 
     // ------------------------------------------------------------------------
     // begin class definition(s); will be compiled, verified,

@@ -6,7 +6,7 @@ CHUGIN_NAME=%(CHUGIN_NAME)%
 C_MODULES=
 CXX_MODULES=%(CHUGIN_NAME)%.cpp
 
-# where the chuck headers are
+# where to find chugin.h
 CK_SRC_PATH?=%(CHUGIN_HEADER_PATH)%
 
 # where to install chugin
@@ -19,8 +19,8 @@ CHUGIN_PATH?=/usr/local/lib/chuck
 
 # default target: print usage message and quit
 current: 
-	@echo "[chuck build]: please use one of the following configurations:"
-	@echo "   make linux, make mac, or make win32"
+	@echo "[chugin build]: please use one of the following configurations:"
+	@echo "   make linux, make mac, make web, or make win32"
 
 ifneq ($(CK_TARGET),)
 .DEFAULT_GOAL:=$(CK_TARGET)
@@ -39,7 +39,7 @@ CC=gcc
 CXX=gcc
 LD=g++
 
-ifneq (,$(strip $(filter osx mac,$(MAKECMDGOALS))))
+ifneq (,$(strip $(filter mac osx,$(MAKECMDGOALS))))
 include makefile.mac
 endif
 
@@ -48,6 +48,10 @@ include makefile.linux
 endif
 
 ifneq (,$(strip $(filter linux-oss,$(MAKECMDGOALS))))
+include makefile.linux
+endif
+
+ifneq (,$(strip $(filter linux-pulse,$(MAKECMDGOALS))))
 include makefile.linux
 endif
 
@@ -69,7 +73,6 @@ ifneq ($(CHUCK_STRICT),)
 FLAGS+= -Werror
 endif
 
-
 # default: build a dynamic chugin
 CK_CHUGIN_STATIC?=0
 
@@ -79,11 +82,14 @@ else
 SUFFIX=.schug
 FLAGS+= -D__CK_DLL_STATIC__
 endif
+# webchugin extension
+WEBSUFFIX=.wasm
 
 C_OBJECTS=$(addsuffix .o,$(basename $(C_MODULES)))
 CXX_OBJECTS=$(addsuffix .o,$(basename $(CXX_MODULES)))
 
 CHUG=$(addsuffix $(SUFFIX),$(CHUGIN_NAME))
+WEBCHUG=$(addsuffix $(WEBSUFFIX),$(CHUG))
 
 all: $(CHUG)
 
@@ -101,11 +107,15 @@ $(C_OBJECTS): %.o: %.c
 $(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chugin.h
 	$(CXX) $(FLAGS) -c -o $@ $<
 
+# build as webchugin
+web:
+	emcc -O3 -s SIDE_MODULE=1 -s DISABLE_EXCEPTION_CATCHING=0 -fPIC -Wformat=0 \
+	-I $(CK_SRC_PATH) $(CXX_MODULES) $(C_MODULES) -o $(WEBCHUG)
+
 install: $(CHUG)
 	mkdir -p $(CHUGIN_PATH)
 	cp $^ $(CHUGIN_PATH)
 	chmod 755 $(CHUGIN_PATH)/$(CHUG)
 
 clean: 
-	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) Release Debug
-
+	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) $(WEBCHUG) Release Debug
