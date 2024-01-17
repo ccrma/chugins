@@ -102,7 +102,7 @@ WarpBufChugin::setPlayhead(double playhead) {
 
     m_playHeadBeats = playhead;
     sfReadPos = m_clipInfo.beat_to_sample(m_playHeadBeats, sfinfo.samplerate);
-    sf_seek(sndfile, max(0, sfReadPos), SEEK_SET);
+    sf_seek(sndfile, std::max(0, sfReadPos), SEEK_SET);
     // seeking doesn't change sfReadPos
 }
 
@@ -279,19 +279,19 @@ WarpBufChugin::tick(SAMPLE* in, SAMPLE* out, int nframes)
 
 // return true if the file was read
 bool
-WarpBufChugin::read(const string& path) {
+WarpBufChugin::read(const std::string& path) {
     
     memset(&sfinfo, 0, sizeof(SF_INFO));
 
     sndfile = sf_open(path.c_str(), SFM_READ, &sfinfo);
     if (!sndfile) {
-        cerr << "ERROR: Failed to open input file \"" << path << "\": "
-            << sf_strerror(sndfile) << endl;
+        std::cerr << "ERROR: Failed to open input file \"" << path << "\": "
+            << sf_strerror(sndfile) << std::endl;
         return false;
     }
 
     if (sfinfo.samplerate == 0) {
-        cerr << "ERROR: File lacks sample rate in header" << endl;
+        std::cerr << "ERROR: File lacks sample rate in header" << std::endl;
         return false;
     }
 

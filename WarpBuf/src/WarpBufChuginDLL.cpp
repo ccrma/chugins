@@ -188,7 +188,7 @@ CK_DLL_MFUN(warpbuf_setplay)
 
 CK_DLL_MFUN(warpbuf_read)
 {
-    string filename = GET_NEXT_STRING_SAFE(ARGS);
+    std::string filename = GET_NEXT_STRING_SAFE(ARGS);
 
     WarpBufChugin* chug = (WarpBufChugin*)OBJ_MEMBER_INT(SELF, warpbuf_data_offset);
 

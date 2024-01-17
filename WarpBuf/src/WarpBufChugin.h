@@ -9,7 +9,6 @@
 // STL includes
 #include <iostream>
 #include <string>
-using namespace std;
 
 #include <sndfile.h>
 
@@ -42,7 +41,7 @@ public:
     double getBPM();
     void setBPM(double bpm);
 
-    bool read(const string& filename);
+    bool read(const std::string& filename);
 
     bool getPlay() { return m_play; };
     void setPlay(bool play) { m_play = play; };
