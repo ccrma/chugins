@@ -1,6 +1,7 @@
 build/*
 Debug/
 *.zip
+thirdparty/libsndfile-*win64
 
 # Prerequisites
 *.d
