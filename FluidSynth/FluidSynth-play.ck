@@ -18,6 +18,11 @@ if(!min.open(filename))
 
 chout <= filename <= ": " <= min.numTracks() <= " tracks\n";
 
+FluidSynth m => rev;
+m => dac;
+0.91 => m.gain;
+m.open(sfont);
+
 int done;
 
 for(int t; t < min.numTracks(); t++)
@@ -32,10 +37,7 @@ minute => now;
 
 fun void track(int t)
 {
-    FluidSynth m => rev;
-    m => dac;
-    0.91 => m.gain;
-    m.open(sfont);
+    
     
     while(min.read(msg, t))
     {

@@ -60,7 +60,7 @@ public:
         m_settings = new_fluid_settings();
         m_synth = new_fluid_synth(m_settings);
 
-        fluid_synth_set_sample_rate(m_synth, m_srate);
+        fluid_settings_setnum(m_settings, "synth.sample-rate", m_srate);
     }
 
     ~FluidSynth()
@@ -104,14 +104,15 @@ public:
         fluid_synth_bank_select(m_synth, chan, bankNum);
     }
 
-    void setTuning(int chan, Chuck_ArrayFloat * tuning)
+    void setTuning(int chan, Chuck_ArrayFloat * tuning, CK_DL_API api)
     {
         bool allChans = false;
         if (chan < 0) {
             allChans = true;
             chan = 0;
         }
-        fluid_synth_activate_key_tuning(m_synth, 0, chan, "", &tuning->m_vector[0], false);
+        fluid_synth_activate_key_tuning(m_synth, 0, chan, "", (double *) tuning, false);
+        
         if (allChans) {
             for (chan = 0 ; chan<16 ; chan++) {
                 fluid_synth_activate_tuning(m_synth, chan, 0, 0, false);
@@ -121,14 +122,15 @@ public:
         }
     }
 
-    void setOctaveTuning(int chan, Chuck_ArrayFloat * tuning)
+    void setOctaveTuning(int chan, Chuck_ArrayFloat * tuning, CK_DL_API api)
     {
         bool allChans = false;
         if (chan < 0) {
             allChans = true;
             chan = 0;
         }
-        fluid_synth_activate_octave_tuning(m_synth, 0, chan, "", &tuning->m_vector[0], false);
+        fluid_synth_activate_octave_tuning(m_synth, 0, chan, "", (double *) tuning, false);
+        
         if (allChans) {
             for (chan = 0 ; chan<16 ; chan++) {
                 fluid_synth_activate_tuning(m_synth, chan, 0, 0, false);
@@ -154,7 +156,7 @@ public:
         fluid_synth_tune_notes(m_synth, 0, chan, 1, &noteNum , &pitch, false);
     }
 
-    void tuneNotes(Chuck_ArrayInt * noteNums, Chuck_ArrayFloat * pitches, int chan)
+    void tuneNotes(Chuck_ArrayInt * noteNums, Chuck_ArrayFloat * pitches, int chan, CK_DL_API api)
     {
         /* 
         This ugly hack is required because Chuck_ArrayInt doesn't actually
@@ -162,12 +164,12 @@ public:
         need to copy the elements into an int array.
         */
         int * noteNumArr;
-        noteNumArr = new int[noteNums->size()];
-        for (int i = 0; i < noteNums->size(); i++) {
-            noteNumArr[i] = (int) noteNums->m_vector[i];
+        noteNumArr = new int[api->object->array_int_size(noteNums)];
+        for (int i = 0; i < api->object->array_int_size(noteNums); i++) {
+            noteNumArr[i] = (int) api->object->array_int_get_idx(noteNums,i);
         }
-        fluid_synth_tune_notes(m_synth, 0, chan, pitches->size(),
-                               noteNumArr, &pitches->m_vector[0], false);
+        fluid_synth_tune_notes(m_synth, 0, chan, api->object->array_float_size(pitches),
+                               noteNumArr, (double *) pitches, false);
 
         delete [] noteNumArr;
     }
@@ -449,12 +451,12 @@ CK_DLL_MFUN(fluidsynth_setTuning)
 
     Chuck_ArrayFloat * tuning = (Chuck_ArrayFloat *) GET_NEXT_OBJECT(ARGS);
 
-    if (tuning->size() != 128 ) {
+    if (API->object->array_float_size(tuning) != 128 ) {
         printf("FluidSynth ERROR: setTuning() requires a tuning array of exactly 128 values\n");
         return;
     }
 
-    f_data->setTuning(-1, tuning);
+    f_data->setTuning(-1, tuning, API);
 }
 
 CK_DLL_MFUN(fluidsynth_setTuningChan)
@@ -464,12 +466,12 @@ CK_DLL_MFUN(fluidsynth_setTuningChan)
     Chuck_ArrayFloat * tuning = (Chuck_ArrayFloat *) GET_NEXT_OBJECT(ARGS);
     t_CKINT chan = GET_NEXT_INT(ARGS);
 
-    if (tuning->size() != 128 ) {
+    if (API->object->array_float_size(tuning) != 128 ) {
         printf("FluidSynth ERROR: setOctaveTuning() requires a tuning array of exactly 12 values\n");
         return;
     }
 
-    f_data->setTuning(chan, tuning);
+    f_data->setTuning(chan, tuning, API);
 }
 
 CK_DLL_MFUN(fluidsynth_setOctaveTuning)
@@ -478,12 +480,12 @@ CK_DLL_MFUN(fluidsynth_setOctaveTuning)
 
     Chuck_ArrayFloat * tuning = (Chuck_ArrayFloat *) GET_NEXT_OBJECT(ARGS);
 
-    if (tuning->size() != 12 ) {
+    if (API->object->array_float_size(tuning) != 12 ) {
         printf("FluidSynth ERROR: setOctaveTuning() requires a tuning array of exactly 12 values\n");
         return;
     }
 
-    f_data->setOctaveTuning(-1, tuning);
+    f_data->setOctaveTuning(-1, tuning, API);
 }
 
 CK_DLL_MFUN(fluidsynth_setOctaveTuningChan)
@@ -493,12 +495,12 @@ CK_DLL_MFUN(fluidsynth_setOctaveTuningChan)
     Chuck_ArrayFloat * tuning = (Chuck_ArrayFloat *) GET_NEXT_OBJECT(ARGS);
     t_CKINT chan = GET_NEXT_INT(ARGS);
 
-    if (tuning->size() != 12 ) {
+    if (API->object->array_float_size(tuning) != 12 ) {
         printf("FluidSynth ERROR: setOctaveTuning() requires a tuning array of exactly 12 values\n");
         return;
     }
 
-    f_data->setOctaveTuning(chan, tuning);
+    f_data->setOctaveTuning(chan, tuning, API);
 }
 
 CK_DLL_MFUN(fluidsynth_resetTuning)
@@ -543,12 +545,12 @@ CK_DLL_MFUN(fluidsynth_tuneNotes)
     Chuck_ArrayInt * noteNums = (Chuck_ArrayInt *) GET_NEXT_OBJECT(ARGS);
     Chuck_ArrayFloat * pitches = (Chuck_ArrayFloat *) GET_NEXT_OBJECT(ARGS);
 
-    if (pitches->size() != noteNums->size()) {
+    if (API->object->array_float_size(pitches) != API->object->array_int_size(noteNums)) {
         printf("FluidSynth ERROR: tuneNotes requires pitches and noteNums arrays to be the same length\n");
         return;
     }
 
-    f_data->tuneNotes(noteNums, pitches, 0);
+    f_data->tuneNotes(noteNums, pitches, 0, API);
 }
 
 CK_DLL_MFUN(fluidsynth_tuneNotesChan)
@@ -559,12 +561,12 @@ CK_DLL_MFUN(fluidsynth_tuneNotesChan)
     Chuck_ArrayFloat * pitches = (Chuck_ArrayFloat *) GET_NEXT_OBJECT(ARGS);
     t_CKINT chan = GET_NEXT_INT(ARGS);
 
-    if (pitches->size() != noteNums->size()) {
+    if (API->object->array_float_size(pitches) != API->object->array_int_size(noteNums)) {
         printf("FluidSynth ERROR: tuneNotes requires pitches and noteNums arrays to be the same length\n");
         return;
     }
 
-    f_data->tuneNotes(noteNums, pitches, chan);
+    f_data->tuneNotes(noteNums, pitches, chan, API);
 }
 
 CK_DLL_MFUN(fluidsynth_setPitchBend)
