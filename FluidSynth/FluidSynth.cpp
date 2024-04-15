@@ -111,7 +111,14 @@ public:
             allChans = true;
             chan = 0;
         }
-        fluid_synth_activate_key_tuning(m_synth, 0, chan, "", (double *) tuning, false);
+
+        double * tuningArr;
+        tuningArr = new double[api->object->array_float_size(tuning)];
+        for (int i = 0; i < api->object->array_float_size(tuning); i++) {
+            tuningArr[i] = (double) api->object->array_float_get_idx(tuning,i);
+        }
+
+        fluid_synth_activate_key_tuning(m_synth, 0, chan, "", tuningArr, false);
         
         if (allChans) {
             for (chan = 0 ; chan<16 ; chan++) {
@@ -129,7 +136,14 @@ public:
             allChans = true;
             chan = 0;
         }
-        fluid_synth_activate_octave_tuning(m_synth, 0, chan, "", (double *) tuning, false);
+
+        double * tuningArr;
+        tuningArr = new double[api->object->array_float_size(tuning)];
+        for (int i = 0; i < api->object->array_float_size(tuning); i++) {
+            tuningArr[i] = (double) api->object->array_float_get_idx(tuning,i);
+        }  
+
+        fluid_synth_activate_octave_tuning(m_synth, 0, chan, "", tuningArr, false);
         
         if (allChans) {
             for (chan = 0 ; chan<16 ; chan++) {
@@ -168,8 +182,15 @@ public:
         for (int i = 0; i < api->object->array_int_size(noteNums); i++) {
             noteNumArr[i] = (int) api->object->array_int_get_idx(noteNums,i);
         }
+
+        double * pitchesArr;
+        pitchesArr = new double[api->object->array_float_size(pitches)];
+        for (int i = 0; i < api->object->array_float_size(pitches); i++) {
+            pitchesArr[i] = (double) api->object->array_float_get_idx(pitches,i);
+        }
+
         fluid_synth_tune_notes(m_synth, 0, chan, api->object->array_float_size(pitches),
-                               noteNumArr, (double *) pitches, false);
+                               noteNumArr, pitchesArr, false);
 
         delete [] noteNumArr;
     }
