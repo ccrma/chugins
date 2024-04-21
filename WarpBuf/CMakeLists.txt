@@ -78,6 +78,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_compile_options(-fPIC)
 
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15)
+
 if(APPLE)
 set_target_properties(${PROJECT_NAME} PROPERTIES
     LINK_FLAGS "-Wl,-U,_object_new_imp -Wl,-U,_object_method_imp"
