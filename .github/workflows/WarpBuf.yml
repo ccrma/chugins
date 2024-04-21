@@ -21,15 +21,25 @@ jobs:
         include:
           - name: ubuntu-x86_64
             os: ubuntu-20.04
+            CMAKE_OSX_ARCHITECTURES: "x86_64"
+            os-simple: linux
           - name: macos-x86_64
-            os: macos-11
+            os: macos-12
+            CMAKE_OSX_ARCHITECTURES: "x86_64"
+            os-simple: mac
+          - name: macos-arm64
+            os: macos-12
+            CMAKE_OSX_ARCHITECTURES: "arm64"
+            os-simple: mac
           - name: win64
             os: windows-2022
+            CMAKE_OSX_ARCHITECTURES: "x86_64"
+            os-simple: win
 
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
 
@@ -40,8 +50,30 @@ jobs:
         libflac-dev libogg-dev libtool libvorbis-dev libopus-dev libmp3lame-dev \
         libmpg123-dev pkg-config python
 
-    - name: Install dependencies macOS
-      if: startsWith(matrix.os, 'macos')
+    - name: Brew dependencies macOS (arm64)
+      if: ${{ endsWith( matrix.name, 'macos-arm64') }}
+      run: |
+        brew update
+        PACKAGES=(flac libogg libtool libvorbis opus mpg123 lame)
+        DEPS=($(brew deps --union --topological $(echo $PACKAGES) | tr '\n' ' '))
+        PACKAGES=("${DEPS[@]}" "${PACKAGES[@]}")
+        export HOMEBREW_NO_INSTALL_CLEANUP=1
+        export HOMEBREW_NO_INSTALL_UPGRADE=1
+        export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+        for PACKAGE in "${PACKAGES[@]}"
+        do
+          echo "Fetching bottle: $PACKAGE"
+          response=$(brew fetch --bottle-tag=arm64_monterey $PACKAGE 2>&1)
+          package_path=$(echo $response | sed -n 's/.*\:\ \(.*\.tar\.gz\).*/\1/p')
+          package_path=$(echo "$package_path" | xargs)
+          echo "Package Path: $package_path"
+          brew reinstall --verbose --force-bottle "$package_path" || true
+        done
+
+        brew uninstall --ignore-dependencies curl git || true
+
+    - name: Brew dependencies macOS (x86)
+      if: ${{ endsWith( matrix.name, 'macos-x86_64') }}
       run: |
         brew install autoconf autogen automake flac libogg libtool libvorbis opus mpg123 pkg-config
 
@@ -57,18 +89,18 @@ jobs:
       if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
       run: |
         cd WarpBuf/thirdparty/libsndfile
-        cmake -Bbuild -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_C_FLAGS="-fPIC" -DCMAKE_CXX_FLAGS="-fPIC" -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="./install"
+        cmake -Bbuild -DCMAKE_OSX_ARCHITECTURES=${{ matrix.CMAKE_OSX_ARCHITECTURES }} -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_C_FLAGS="-fPIC" -DCMAKE_CXX_FLAGS="-fPIC" -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="./install"
         cmake --build build --config Release
         cmake --build build --target install
 
     - name: Build WarpBuf Release
       run: |
         cd WarpBuf
-        cmake -Bbuild -DCMAKE_VERBOSE_MAKEFILE=ON
+        cmake -Bbuild -DCMAKE_OSX_ARCHITECTURES=${{ matrix.CMAKE_OSX_ARCHITECTURES }} -DCMAKE_VERBOSE_MAKEFILE=ON
         cmake --build build --config Release
         cmake --build build --config Release --target install
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: warpbuf-${{ matrix.name }}.zip
         path: "WarpBuf/package/warpbuf-${{ env.WARPBUF_VERSION }}"
