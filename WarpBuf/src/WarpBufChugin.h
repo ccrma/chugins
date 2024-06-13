@@ -10,6 +10,8 @@
 #include <iostream>
 #include <string>
 
+#include <memory>
+
 #include <sndfile.h>
 
 #include <rubberband/RubberBandStretcher.h>

@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <limits>
+#include <memory>
 
 class AbletonClipInfo {
 public:

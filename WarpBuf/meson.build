@@ -24,7 +24,6 @@ inc = [chuck_inc, portable_endian_inc]
 rubberband = dependency('rubberband')
 libsndfile = dependency('sndfile')
 
-
 warpbuf_lib = library(
   'warpbuf_lib',
   sources: warpbuf_sources,
@@ -32,3 +31,7 @@ warpbuf_lib = library(
   dependencies: [rubberband, libsndfile],
   install: true,
 )
+
+# rename the object to a proper chugin file
+fs = import('fs')
+fs.copyfile(warpbuf_lib.path(), 'WarpBuf.chug')
