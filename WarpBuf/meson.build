@@ -22,7 +22,7 @@ inc = [chuck_inc, portable_endian_inc]
 # dependencies
 # subdir('thirdparty/rubberband')
 rubberband = dependency('rubberband')
-libsndfile = dependency('sndfile')
+libsndfile = dependency('sndfile', static: true)
 
 warpbuf_lib = library(
   'warpbuf_lib',
