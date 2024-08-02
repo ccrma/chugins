@@ -4,31 +4,29 @@ the two intsances of '\M' should change to be just 'M'
 take care not to use the same name as another stock Chuck UGen or existing chugin from this library, add only uniquely name new chugins
 
 ///////////////////////////////////////////////////////////////////////////////////////
-  copy your src from faust repo
-cp ~/faust/examples/physicalModeling/djembeMIDI.dsp /tmp/djembeMIDI.dsp
+  edit your src and make sure chugin name is capitalized
+gedit /tmp/freeverbStereo.dsp
+  [ declare name "FreeverbStereo"; ]
 
-  if needed, edit your src to make sure chugin name is capitalized
-gedit /tmp/djembeMIDI.dsp
-  
   generate the template and cd into it
-chuginate/chuginate DjembeMIDI
-cd DjembeMIDI
+chuginate/chuginate FreeverbStereo
+cd FreeverbStereo
 
-  copy your edited src and rename it to DjembeMIDIF
-cp /tmp/djembeMIDI.dsp DjembeMIDIF.dsp
+  copy your edited src and rename it to FreeverbStereoF
+cp /tmp/freeverbStereo.dsp FreeverbStereoF.dsp
 
   compile the edited and renamed src in the working directory 
-faust2ck DjembeMIDIF.dsp
+faust2ck FreeverbStereoF.dsp
 
   copy the new faust-generated .cpp file over the old chuginate template .cpp file
-cp DjembeMIDIF.dsp.cpp DjembeMIDI.cpp
+cp FreeverbStereoF.dsp.cpp FreeverbStereo.cpp
 
   if this is not the first make run, remove the .wasm so make will trigger again
-rm DjembeMIDI.chug.wasm
+rm FreeverbStereo.chug.wasm
   
   make the .wasm
 make web
 
   copy the .wasm to where you'll be testing it with webchuck
-cp -p DjembeMIDI.chug.wasm ~/webchuck-github/test/testFiles/
+cp -p FreeverbStereo.chug.wasm ~/webchuck-github/test/testFiles/
 
