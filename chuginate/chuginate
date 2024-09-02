@@ -529,7 +529,7 @@ code['.vcxproj'] = u'''<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns=
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <Import Project="$(VCTargetsPath)Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -639,7 +639,7 @@ code['.vcxproj'] = u'''<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns=
   <ItemGroup>
     <ClInclude Include="%(CHUGIN_NAME)%.h" />
   </ItemGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Targets" />
+  <Import Project="$(VCTargetsPath)Microsoft.Cpp.Targets" />
 </Project>
 '''
 
