@@ -1,7 +1,4 @@
-declare name FreeverbStereo";
-
-
-
+declare name "FreeverbStereo";
 declare version "0.0";
 declare author "RM-CC";
 declare description "Original freeverb demo application, modified so it doesn't mix inputs to mono";
