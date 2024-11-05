@@ -28,6 +28,8 @@ ifeq ($(MAKECMDGOALS),)
 MAKECMDGOALS:=$(.DEFAULT_GOAL)
 endif
 endif
+# webchugin extension
+WEBSUFFIX=.wasm
 
 .PHONY: mac osx linux linux-pulse linux-oss linux-jack linux-alsa win32
 mac osx linux linux-pulse linux-oss linux-jack linux-alsa: all
@@ -89,6 +91,7 @@ C_OBJECTS=$(addsuffix .o,$(basename $(C_MODULES)))
 CXX_OBJECTS=$(addsuffix .o,$(basename $(CXX_MODULES)))
 
 CHUG=$(addsuffix $(SUFFIX),$(CHUGIN_NAME))
+WEBCHUG=$(addsuffix $(WEBSUFFIX),$(CHUG))
 
 all: $(CHUG)
 
@@ -106,11 +109,16 @@ $(C_OBJECTS): %.o: %.c
 $(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chugin.h
 	$(CXX) $(FLAGS) -c -o $@ $<
 
+# build as webchugin
+web:
+	emcc -O3 -s SIDE_MODULE=1 -s DISABLE_EXCEPTION_CATCHING=0 -fPIC -Wformat=0 \
+	-I ../chuck/include/ $(CXX_MODULES) $(C_MODULES) -o $(WEBCHUG)
+
 install: $(CHUG)
 	mkdir -p $(CHUGIN_PATH)
 	cp $^ $(CHUGIN_PATH)
 	chmod 755 $(CHUGIN_PATH)/$(CHUG)
 
 clean: 
-	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) Release Debug
+	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) $(WEBCHUG) Release Debug
 
