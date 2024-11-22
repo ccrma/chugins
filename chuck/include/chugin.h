@@ -116,7 +116,7 @@
 // 1.5.0.0 (ge) | moved to chuck.h for at-a-glance visibility
 // 1.5.2.0 (ge) | moved to chuck_def.h for chugins headers streamlining
 //-----------------------------------------------------------------------------
-#define CHUCK_VERSION_STRING        "1.5.4.0 (chai)"
+#define CHUCK_VERSION_STRING        "1.5.4.2 (chai)"
 //-----------------------------------------------------------------------------
 
 
@@ -884,7 +884,7 @@ struct a_Exp_Dur_ { a_Exp base; a_Exp unit; uint32_t line; uint32_t where; a_Exp
 struct a_Exp_Array_ { a_Exp base; a_Array_Sub indices; uint32_t line; uint32_t where; a_Exp self; };
 struct a_Exp_Func_Call_ { a_Exp func; a_Exp args; t_CKTYPE ret_type;
                           t_CKFUNC ck_func; t_CKVMCODE ck_vm_code; uint32_t line; uint32_t where; a_Exp self; };
-struct a_Exp_Dot_Member_ { a_Exp base; t_CKTYPE t_base; S_Symbol xid; uint32_t line; uint32_t where; a_Exp self; };
+struct a_Exp_Dot_Member_ { a_Exp base; t_CKTYPE t_base; S_Symbol xid; t_CKBOOL isSpecialPrimitiveFunc; uint32_t line; uint32_t where; a_Exp self; };
 struct a_Exp_If_ { a_Exp cond; a_Exp if_exp; a_Exp else_exp; uint32_t line; uint32_t where; a_Exp self; };
 struct a_Exp_Decl_ { a_Type_Decl type; a_Var_Decl_List var_decl_list; int num_var_decls; int is_static; int is_global;
                      int is_const; t_CKTYPE ck_type; int is_auto; uint32_t line; uint32_t where; a_Exp self; };
@@ -1456,6 +1456,8 @@ typedef t_CKBOOL (CK_DLL_CALL * f_mainthreadhook)( void * bindle );
 typedef t_CKBOOL (CK_DLL_CALL * f_mainthreadquit)( void * bindle );
 // callback function, called on host shutdown
 typedef void (CK_DLL_CALL * f_callback_on_shutdown)( void * bindle );
+// sample rate update callback | 1.5.4.2 (ge) added
+typedef void (CK_DLL_CALL * f_callback_on_srate_update)( t_CKUINT srate, void * bindle );
 // shreds watcher callback
 typedef void (CK_DLL_CALL * f_shreds_watcher)( Chuck_VM_Shred * SHRED, t_CKINT CODE, t_CKINT PARAM, Chuck_VM * VM, void * BINDLE );
 // type instantiation callback
@@ -1532,6 +1534,8 @@ typedef t_CKBOOL (CK_DLL_CALL * f_end_class)( Chuck_DL_Query * query );
 typedef Chuck_DL_MainThreadHook * (CK_DLL_CALL * f_create_main_thread_hook)( Chuck_DL_Query * query, f_mainthreadhook hook, f_mainthreadquit quit, void * bindle );
 // register a callback to be called on host shutdown, e.g., for chugin cleanup
 typedef void (CK_DLL_CALL * f_register_callback_on_shutdown)( Chuck_DL_Query * query, f_callback_on_shutdown cb, void * bindle );
+// register a callback to be called on sample rate change
+typedef void (CK_DLL_CALL * f_register_callback_on_srate_update)( Chuck_DL_Query * query, f_callback_on_srate_update cb, void * bindle );
 // register a callback function to receive notification from the VM about shreds (add, remove, etc.)
 typedef void (CK_DLL_CALL * f_register_shreds_watcher)( Chuck_DL_Query * query, f_shreds_watcher cb, t_CKUINT options, void * bindle );
 // unregister a shreds notification callback
@@ -1726,6 +1730,15 @@ public:
     // un-register shred notifcations
     f_unregister_shreds_watcher unregister_shreds_watcher;
 
+public:
+    // -------------
+    // register callback to be invoked by chuck host on
+    // sample rate changes | 1.5.4.2 (ge) added
+    // -------------
+    f_register_callback_on_srate_update register_callback_on_srate_update;
+
+
+
 
 //-------------------------------------------------------------------------
 // HOST ONLY beyond this point...
@@ -1734,7 +1747,7 @@ public:
     //-------------------------------------------------------------------------
     // NOTE: everything below std::anything cannot be reliably accessed by
     // offset across DLL/shared-library boundaries, since std::anything could
-    // be variable size;
+    // be variable size; *** chugins should never access anything below ***
     //-------------------------------------------------------------------------
     // *** put everything to be accessed from chugins ABOVE this point! ***
     //-------------------------------------------------------------------------
@@ -1780,14 +1793,16 @@ public:
     Chuck_Carrier * carrier() const;
 
 public:
+    // get sample rate; to be called by host only; (chugins use API->vm->srate)
+    t_CKUINT srate();
     // flag any error encountered during the query | 1.5.0.5 (ge) added
     t_CKBOOL errorEncountered;
-    // host sample rate
-    t_CKUINT srate;
 
 protected:
     // REFACTOR-2017: carrier ref
     Chuck_Carrier * m_carrier;
+    // host sample rate
+    t_CKUINT m_srate;
 };
 
 
@@ -1991,11 +2006,14 @@ struct Chuck_DL_Arg
 
 
 //------------------------------------------------------------------------------
-// alternative functions to make stuff
+// alternative functions to make stuff`
 //------------------------------------------------------------------------------
 Chuck_DL_Func * make_new_ctor( f_ctor ctor );
 Chuck_DL_Func * make_new_mfun( const char * t, const char * n, f_mfun mfun );
 Chuck_DL_Func * make_new_sfun( const char * t, const char * n, f_sfun sfun );
+Chuck_DL_Func * make_new_op_binary( const char * t, ae_Operator op, f_gfun gfun );
+Chuck_DL_Func * make_new_op_prefix( const char * t, ae_Operator op, f_gfun gfun );
+Chuck_DL_Func * make_new_op_postfix( const char * t, ae_Operator op, f_gfun gfun );
 Chuck_DL_Value * make_new_arg( const char * t, const char * n );
 Chuck_DL_Value * make_new_mvar( const char * t, const char * n, t_CKBOOL c = FALSE );
 Chuck_DL_Value * make_new_svar( const char * t, const char * n, t_CKBOOL c, void * a );
