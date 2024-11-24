@@ -1,0 +1,30 @@
+#-----------------------------------
+# makefile.mac
+# macOS-specific build configuration
+#-----------------------------------
+
+# to build for the native architecture: (leave blank)
+# ARCHS?=
+#
+# to build for intel:
+# ARCHS?=x86_64
+#
+# to build for apple silicon:
+# ARCHS?=arm64
+#
+# to build a universal=binary chugin:
+# ARCHS?=x86_64 arm64
+ARCHS?=
+
+# construct compiler option string
+ARCHOPTS=$(addprefix -arch ,$(ARCHS))
+
+# compiler flags
+FLAGS+=-mmacosx-version-min=10.9 -I$(CK_SRC_PATH) $(ARCHOPTS) -fPIC
+# linker flags
+LDFLAGS+=-mmacosx-version-min=10.9 -shared -lc++ $(ARCHOPTS)
+
+# which C++ compiler
+CXX=clang++
+# which linker to user
+LD=clang++
