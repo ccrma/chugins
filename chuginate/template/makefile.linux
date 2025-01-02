@@ -9,7 +9,7 @@
 # compiler flags
 FLAGS=-D__LINUX_ALSA__ -D__PLATFORM_LINUX__ -I$(CK_SRC_PATH) -fPIC
 # linker flags
-LDFLAGS=-shared -lstdc++
+LDFLAGS=-shared
 
 # which C++ compiler to use
 CXX=g++
