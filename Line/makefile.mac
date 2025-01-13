@@ -13,8 +13,8 @@
 # ARCHS?=arm64
 #
 # to build a universal=binary chugin:
-# ARCHS?=x86_64 arm64
-ARCHS?=
+ARCHS?=x86_64 arm64
+# ARCHS?=
 
 # construct compiler option string
 ARCHOPTS=$(addprefix -arch ,$(ARCHS))
