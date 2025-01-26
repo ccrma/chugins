@@ -1,3 +1,5 @@
+@import "FluidSynth"
+
 NRev rev => dac;
 0.01 => rev.mix;
 
