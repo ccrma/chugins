@@ -28,6 +28,10 @@ static void srandom( unsigned s ) { srand( s ); }
 // example of getter/setter
 CK_DLL_SFUN(Random_seed);
 CK_DLL_SFUN(Random_gaussian);
+CK_DLL_SFUN(Random_binomial);
+CK_DLL_SFUN(Random_exponential);
+CK_DLL_SFUN(Random_geometric);
+CK_DLL_SFUN(Random_poisson);
 
 
 CK_DLL_QUERY( Random )
@@ -43,6 +47,19 @@ CK_DLL_QUERY( Random )
     QUERY->add_sfun(QUERY, Random_gaussian, "float", "gaussian");
     QUERY->add_arg(QUERY, "float", "mean");
     QUERY->add_arg(QUERY, "float", "stdv");
+
+    QUERY->add_sfun(QUERY, Random_binomial, "int", "binomial");
+    QUERY->add_arg(QUERY, "int", "n");
+    QUERY->add_arg(QUERY, "float", "p");
+
+    QUERY->add_sfun(QUERY, Random_exponential, "float", "exponential");
+    QUERY->add_arg(QUERY, "float", "scale");
+
+    QUERY->add_sfun(QUERY, Random_geometric, "int", "geometric");
+    QUERY->add_arg(QUERY, "float", "p");
+
+    QUERY->add_sfun(QUERY, Random_poisson, "int", "poisson");
+    QUERY->add_arg(QUERY, "float", "lambda");
 
     // end the class definition
     // IMPORTANT: this MUST be called!
@@ -75,3 +92,52 @@ CK_DLL_SFUN(Random_gaussian)
     RETURN->v_float = mean+Z0*stdv;
 }
 
+CK_DLL_SFUN(Random_binomial)
+{
+    t_CKFLOAT n = GET_NEXT_INT(ARGS);
+    t_CKFLOAT p = GET_NEXT_FLOAT(ARGS);
+
+    t_CKINT count = 0;
+    for (t_CKINT i = 0; i < n; ++i) {
+        t_CKFLOAT U = random()/((float) CK_RANDOM_MAX);
+        if (U < p) count++;
+    }
+    RETURN->v_int = count;
+}
+
+CK_DLL_SFUN(Random_exponential)
+{
+    t_CKFLOAT scale = GET_NEXT_FLOAT(ARGS);
+
+    t_CKFLOAT U = random()/((float) CK_RANDOM_MAX);
+    RETURN->v_float = -1 * scale * log(U);
+}
+
+CK_DLL_SFUN(Random_geometric)
+{
+    t_CKFLOAT p = GET_NEXT_FLOAT(ARGS);
+
+    t_CKINT count = 1;
+    while (1) {
+        t_CKFLOAT U = random()/((float) CK_RANDOM_MAX);
+        if (U < p) break;
+        count++;
+    }
+    RETURN->v_int = count;
+}
+
+CK_DLL_SFUN(Random_poisson)
+{
+    t_CKFLOAT lambda = GET_NEXT_FLOAT(ARGS);
+
+    t_CKINT x = 0;
+    t_CKFLOAT p = exp(- lambda);
+    t_CKFLOAT s = p;
+    t_CKFLOAT U = random()/((float) CK_RANDOM_MAX);
+    while (U > s) {
+        x++;
+        p = p * lambda / x;
+        s = s + p;
+    }
+    RETURN->v_int = x;
+}
