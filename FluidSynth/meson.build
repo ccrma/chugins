@@ -4,7 +4,7 @@ project('FluidSynth', ['c', 'cpp'],
   license : '?')
 
 inc = [include_directories('../chuck/include')]
-fluidsynth_dep = subproject('fluidsynth', required: true).get_variable('fluidsynth_dep')
+fluidsynth_dep = subproject('fluidsynth', required: true, default_options: ['try-static-deps=true']).get_variable('fluidsynth_dep')
 
 shared_library(
   'FluidSynth',
@@ -13,4 +13,5 @@ shared_library(
   name_suffix: 'chug',
   include_directories: inc,
   dependencies: fluidsynth_dep,
+  # install_rpath: '@loader_path',
 )
