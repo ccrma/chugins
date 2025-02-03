@@ -126,9 +126,8 @@ setup-mac-arm64:
 
 build-mac-x86_64: setup-mac-x86_64
 	meson compile -C builddir-x86_64
+	cp builddir-x86_64/FluidSynth.chug FluidSynth-x86_64.chug
 
 build-mac-arm64: setup-mac-arm64
 	meson compile -C builddir-arm64
-
-mac-universal: 
-	lipo -create -output FluidSynth.chug FluidSynth-x86_64.chug FluidSynth-arm64.chug
+	cp builddir-arm64/FluidSynth.chug FluidSynth-arm64.chug

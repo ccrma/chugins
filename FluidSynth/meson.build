@@ -13,5 +13,7 @@ shared_library(
   name_suffix: 'chug',
   include_directories: inc,
   dependencies: fluidsynth_dep,
-  # install_rpath: '@loader_path',
+  install: true,
+  install_dir: './',
+  install_rpath: '@loader_path',
 )
