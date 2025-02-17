@@ -32,11 +32,11 @@ PackageVersion ver("FluidSynth", version);
 
 "1.5.4.0" => ver.languageVersionMin;
 
-"mac" => ver.os;
-"universal" => ver.arch;
+"win" => ver.os;
+"x86_64" => ver.arch;
 
 // The chugin file
-ver.addFile("./FluidSynth.chug");
+ver.addFile("./builddir-release/FluidSynth.chug");
 
 // These build files are examples as well
 ver.addExampleFile("FluidSynth-play.ck");
@@ -53,12 +53,12 @@ ver.addExampleFile("HS_African_Percussion.sf2");
 
 // wrap up all our files into a zip file, and tell Chumpinate what URL
 // this zip file will be located at.
-ver.generateVersion("./", "FluidSynth_mac", "https://ccrma.stanford.edu/~nshaheed/" + path);
+ver.generateVersion("./", "FluidSynth_win", "https://ccrma.stanford.edu/~nshaheed/" + path);
 
 chout <= "After notarizing, use the following commands to upload the package to CCRMA's servers:" <= IO.newline();
 chout <= "ssh nshaheed@ccrma-gate.stanford.edu \"mkdir -p ~/Library/Web/chugins/FluidSynth/"
       <= ver.version() <= "/" <= ver.os() <= "\"" <= IO.newline();
-chout <= "scp FluidSynth_mac.zip nshaheed@ccrma-gate.stanford.edu:~/Library/Web/" <= path <= IO.newline();
+chout <= "scp FluidSynth_win.zip nshaheed@ccrma-gate.stanford.edu:~/Library/Web/" <= path <= IO.newline();
 
-// Generate a version definition json file, stores this in "chumpinate/<VerNo>/FluidSynth_mac.json"
-ver.generateVersionDefinition("FluidSynth_mac", "./" );
+// Generate a version definition json file, stores this in "chumpinate/<VerNo>/Chumpinate_win.json"
+ver.generateVersionDefinition("FluidSynth_win", "./" );
