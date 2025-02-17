@@ -30,11 +30,11 @@ if os.path.isdir("%s/../chuck/include" % (dest_dir)):
 
 def substitute(text):
     global chugin_name, chugin_lcname, chugin_ucname, chugin_initials, chugin_header_path
-    text = re.sub('\%\(CHUGIN_NAME\)\%', chugin_name, text)
-    text = re.sub('\%\(CHUGIN_LCNAME\)\%', chugin_lcname, text)
-    text = re.sub('\%\(CHUGIN_UCNAME\)\%', chugin_ucname, text)
-    text = re.sub('\%\(CHUGIN_INITIALS\)\%', chugin_initials, text)
-    text = re.sub('\%\(CHUGIN_HEADER_PATH\)\%', chugin_header_path, text)
+    text = re.sub(r'\%\(CHUGIN_NAME\)\%', chugin_name, text)
+    text = re.sub(r'\%\(CHUGIN_LCNAME\)\%', chugin_lcname, text)
+    text = re.sub(r'\%\(CHUGIN_UCNAME\)\%', chugin_ucname, text)
+    text = re.sub(r'\%\(CHUGIN_INITIALS\)\%', chugin_initials, text)
+    text = re.sub(r'\%\(CHUGIN_HEADER_PATH\)\%', chugin_header_path, text)
     return text
 
 # print "name: %s lc: %s initials: %s" % (chugin_name, chugin_lcname, chugin_initials)
