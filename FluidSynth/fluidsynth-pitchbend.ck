@@ -21,6 +21,8 @@ Values less than the minimum value of 0 or more than the maximum value of 16383 
 respectively. This ensures a small rounding error won't stop your program.
 */
 
+@import "FluidSynth"
+
 // Here's a function which manipulates the pitch bend in a sinusoidal manner:
 fun void pitchWobble(FluidSynth f, dur duration, int cycles, int chan) {
     (duration/1::samp) $ int => int sampleLength;

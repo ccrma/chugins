@@ -3,7 +3,7 @@
 # macOS-specific build configuration
 #-----------------------------------
 
-FLUIDSYNTH_PREFIX=/usr/local
+FLUIDSYNTH_PREFIX=./builddir-relase/subprojects/fluidsynth-2.3.3
 
 # to build for the native architecture: (leave blank)
 # ARCHS?=
@@ -12,19 +12,19 @@ FLUIDSYNTH_PREFIX=/usr/local
 # ARCHS?=x86_64
 #
 # to build for apple silicon:
-# ARCHS?=arm64
+ARCHS?=arm64
 #
 # to build a universal=binary chugin:
 # ARCHS?=x86_64 arm64
-ARCHS?=
+# ARCHS?=
 
 # construct compiler option string
 ARCHOPTS=$(addprefix -arch ,$(ARCHS))
 
 # compiler flags
-FLAGS+=-mmacosx-version-min=10.9 -I$(CK_SRC_PATH) $(ARCHOPTS) -I$(FLUIDSYNTH_PREFIX)/include
+FLAGS+=-mmacosx-version-min=15.1 -I$(CK_SRC_PATH) $(ARCHOPTS) -I$(FLUIDSYNTH_PREFIX)/include
 # linker flags
-LDFLAGS+=-mmacosx-version-min=10.9 -shared $(ARCHOPTS) -L$(FLUIDSYNTH_PREFIX)/lib -lfluidsynth
+LDFLAGS+=-mmacosx-version-min=15.1 -shared $(ARCHOPTS) -L$(FLUIDSYNTH_PREFIX) -lfluidsynth
 
 # which C++ compiler
 CXX=clang++

@@ -224,6 +224,8 @@ CK_DLL_QUERY( fluidsynth )
     // begin the class definition
     QUERY->begin_class(QUERY, "FluidSynth", "UGen");
 
+    QUERY->doc_class(QUERY, "A chugin to load and use FluidSynth soundfonts");
+
     QUERY->add_ctor(QUERY, fluidsynth_ctor);
     QUERY->add_dtor(QUERY, fluidsynth_dtor);
 
