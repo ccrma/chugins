@@ -1,3 +1,5 @@
+@import "WarpBuf.chug"
+
 fun void heartbeat() {
     while(true) {
         <<<"heartbeat">>>;
