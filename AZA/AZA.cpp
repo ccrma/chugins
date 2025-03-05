@@ -123,8 +123,14 @@ CK_DLL_MFUN(plateau_clear);
 CK_DLL_MFUN(plateau_get_predelay_time);
 CK_DLL_MFUN(plateau_set_predelay_time);
 
+CK_DLL_MFUN(plateau_get_predelay_smoothing);
+CK_DLL_MFUN(plateau_set_predelay_smoothing);
+
 CK_DLL_MFUN(plateau_get_size);
 CK_DLL_MFUN(plateau_set_size);
+
+CK_DLL_MFUN(plateau_get_size_smoothing);
+CK_DLL_MFUN(plateau_set_size_smoothing);
 
 CK_DLL_MFUN(plateau_get_diffusion);
 CK_DLL_MFUN(plateau_set_diffusion);
@@ -176,10 +182,18 @@ struct Plateau
 
     float wet = 0.5f;
     float dry = 1.f;
-    float preDelay = 0.f;
+
+    float preDelay_smoothing = 0.0001f;
+    float preDelay_curr = 0.f;
+    float preDelay_target = preDelay_curr;
+
     float size = .5f;
+    float scaled_size_curr = 1.0f;
+    float scaled_size_target = scaled_size_curr;
+    float size_smoothing = .0001f;
+
     float diffusion = 1.f;
-    float decay = 0.5f;
+    float decay = 0.75f;
 
     float inputLowpassCutoff = 0.f;
     float inputHighpassCutoff = 1.f;
@@ -217,16 +231,11 @@ Plateau::Plateau(float sample_rate) : reverb(192000, 16, sizeMax)
 
 void Plateau::updateParams()
 {
-    // init reverb params
-    reverb.setTimeScale(rescale(size * size, 0.f, 1.f, 0.01f, sizeMax));
-    reverb.setPreDelay(preDelay);
     reverb.freeze(freeze);
 
     reverb.setInputFilterLowCutoffPitch(10 * inputLowpassCutoff);
     reverb.setInputFilterHighCutoffPitch(10 * inputHighpassCutoff);
     reverb.enableInputDiffusion(diffuseInput);
-    float d = 1.f - decay;
-    d = 1.f - d * d;
     reverb.setDecay(decay);
 
     // now rescale the size for reverb tank
@@ -234,9 +243,6 @@ void Plateau::updateParams()
 
     reverb.setTankFilterLowCutFrequency(10 * reverbLowpassCutoff);
     reverb.setTankFilterHighCutFrequency(10 * reverbHighpassCutoff);
-
-    // printf("input lowcut: %f, input highcut: %f\n", reverb.inputLowCut, reverb.inputHighCut);
-    // printf("rev lowcut: %f, rev highcut: %f\n", reverb.tank.leftLowCutFilter._cutoffFreq, reverb.tank.leftHighCutFilter._cutoffFreq);
 
     reverb.setTankModSpeed(modSpeed * modSpeed * 99.f + 1.f);
     reverb.setTankModDepth(rescale(modDepth, 0.f, 1.f, modDepthMin, modDepthMax));
@@ -264,7 +270,24 @@ void Plateau::tick(SAMPLE *in, SAMPLE *out)
     }
 
     // update reverb params
-    // updateParams();
+    {
+        // interpolate size_curr torwards target
+        if (tuned)
+        {
+            scaled_size_target = sizeMin * powf(2.f, size * 5.f);
+            scaled_size_target = CLAMP(scaled_size_target, sizeMin, 2.5f);
+        }
+        else
+        {
+            scaled_size_target = rescale(size * size, 0.f, 1.f, 0.01f, sizeMax);
+            scaled_size_target = CLAMP(scaled_size_target, 0.01f, sizeMax);
+        }
+        scaled_size_curr = scaled_size_curr + size_smoothing * (scaled_size_target - scaled_size_curr);
+        reverb.setTimeScale(scaled_size_curr);
+
+        preDelay_curr = preDelay_curr + preDelay_smoothing * (preDelay_target - preDelay_curr);
+        reverb.setPreDelay(preDelay_curr);
+    }
 
     float leftInput = CLAMP(in[0], -1.f, 1.f);
     float rightInput = CLAMP(in[1], -1.f, 1.f);
@@ -280,9 +303,6 @@ void Plateau::tick(SAMPLE *in, SAMPLE *out)
 
     SAMPLE leftOutput = leftInput * dry + left_wet;
     SAMPLE rightOutput = rightInput * dry + right_wet;
-
-    // printf("left_wet: %f right_wet: %f\n", left_wet, right_wet);
-    // printf("left_output: %f right_output: %f\n", leftOutput, rightOutput);
 
     out[0] = CLAMP(leftOutput, -1.f, 1.f);
     out[1] = CLAMP(rightOutput, -1.f, 1.f);
@@ -335,11 +355,23 @@ CK_DLL_QUERY(AZA)
         ARG("float", "time_secs");
         DOC_FUNC("Set pre-delay time in seconds. Clamped to [0,1]");
 
+        MFUN(plateau_get_predelay_smoothing, "float", "preDelaySmoothing");
+
+        MFUN(plateau_set_predelay_smoothing, "void", "preDelaySmoothing");
+        ARG("float", "alpha");
+        DOC_FUNC("The interpolation factor used to smoothly transition between delay amount. Default .0001. Set closer to 1 for more instantaneous updates, at the cost of introducing crunchy distortion from skipping too far in the delay line");
+
         MFUN(plateau_get_size, "float", "size");
 
         MFUN(plateau_set_size, "void", "size");
         ARG("float", "size");
         DOC_FUNC("Sets the overall delay time and apparent 'size' of the reverb. Ranges from very short to extremely long. Clamped to [0,1]");
+
+        MFUN(plateau_get_size_smoothing, "float", "sizeSmoothing");
+
+        MFUN(plateau_set_size_smoothing, "void", "sizeSmoothing");
+        ARG("float", "alpha");
+        DOC_FUNC("The interpolation factor used to smoothly transition between reverb sizes. Default .0001. Set closer to 1 for more instantaneous updates, at the cost of introducing crunchy distortion from skipping too far in the delay line");
 
         MFUN(plateau_get_diffusion, "float", "diffusion");
 
@@ -420,11 +452,8 @@ CK_DLL_DTOR(plateau_dtor)
     OBJ_MEMBER_INT(SELF, plateau_data_offset) = 0;
 }
 
-// implementation for tick function (relevant only for UGens)
 CK_DLL_TICKF(plateau_tick)
 {
-    // printf("nframes: %lu\n", nframes);
-    // printf("in[0]: %f  in[1]%f\n", in[0], in[1]);
     Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
     for (int i = 0; i < nframes; i++)
         plateau->tick(in + 2 * i, out + 2 * i);
@@ -489,15 +518,26 @@ CK_DLL_MFUN(plateau_clear)
 CK_DLL_MFUN(plateau_get_predelay_time)
 {
     Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
-    RETURN->v_float = plateau->preDelay;
+    RETURN->v_float = plateau->preDelay_target;
 }
 
 CK_DLL_MFUN(plateau_set_predelay_time)
 {
     Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
     float preDelay = GET_NEXT_FLOAT(ARGS);
-    plateau->preDelay = CLAMP(preDelay, 0.f, 1.f);
-    plateau->reverb.setPreDelay(plateau->preDelay);
+    plateau->preDelay_target = CLAMP(preDelay, 0.f, 1.f);
+}
+
+CK_DLL_MFUN(plateau_get_predelay_smoothing)
+{
+    Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
+    RETURN->v_float = plateau->preDelay_smoothing;
+}
+
+CK_DLL_MFUN(plateau_set_predelay_smoothing)
+{
+    Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
+    plateau->preDelay_smoothing = GET_NEXT_FLOAT(ARGS);
 }
 
 CK_DLL_MFUN(plateau_get_size)
@@ -512,22 +552,18 @@ CK_DLL_MFUN(plateau_set_size)
     float size = GET_NEXT_FLOAT(ARGS);
     size = CLAMP(size, 0.f, 1.f);
     plateau->size = size;
+}
 
-    // now rescale the size for reverb tank
-    if (plateau->tuned)
-    {
-        size = plateau->sizeMin * powf(2.f, size * 5.f);
-        size = CLAMP(size, plateau->sizeMin, 2.5f);
-    }
-    else
-    {
-        size *= size;
-        size = rescale(size, 0.f, 1.f, 0.01f, plateau->sizeMax);
-        size = CLAMP(size, 0.01f, plateau->sizeMax);
-    }
+CK_DLL_MFUN(plateau_get_size_smoothing)
+{
+    Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
+    RETURN->v_float = plateau->size_smoothing;
+}
 
-    // printf("setting size: %f\n", size);
-    plateau->reverb.setTimeScale(size);
+CK_DLL_MFUN(plateau_set_size_smoothing)
+{
+    Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
+    plateau->size_smoothing = GET_NEXT_FLOAT(ARGS);
 }
 
 CK_DLL_MFUN(plateau_get_diffusion)
@@ -558,10 +594,6 @@ CK_DLL_MFUN(plateau_set_decay)
     float decay = GET_NEXT_FLOAT(ARGS);
     decay = CLAMP(decay, 0.f, 1.f);
     plateau->decay = decay;
-
-    decay = CLAMP(decay, plateau->decayMin, plateau->decayMax);
-    decay = 1.f - decay;
-    decay = 1.f - decay * decay;
 
     plateau->reverb.setDecay(decay);
 }
