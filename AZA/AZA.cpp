@@ -172,7 +172,7 @@ struct Plateau
     const float modShapeMin = 0.001f;
     const float modShapeMax = 0.999f;
 
-    // float minus20dBGain = 1.0f;
+    float minus20dBGain = 0.1f;
 
     float wet = 0.5f;
     float dry = 1.f;
@@ -218,19 +218,20 @@ Plateau::Plateau(float sample_rate) : reverb(192000, 16, sizeMax)
 void Plateau::updateParams()
 {
     // init reverb params
-    reverb.freeze(freeze);
-    reverb.setPreDelay(preDelay);
-
-    // now rescale the size for reverb tank
     reverb.setTimeScale(rescale(size * size, 0.f, 1.f, 0.01f, sizeMax));
-    reverb.setTankDiffusion(10 * diffusion);
+    reverb.setPreDelay(preDelay);
+    reverb.freeze(freeze);
 
+    reverb.setInputFilterLowCutoffPitch(10 * inputLowpassCutoff);
+    reverb.setInputFilterHighCutoffPitch(10 * inputHighpassCutoff);
+    reverb.enableInputDiffusion(diffuseInput);
     float d = 1.f - decay;
     d = 1.f - d * d;
     reverb.setDecay(decay);
 
-    reverb.setInputFilterLowCutoffPitch(10 * inputLowpassCutoff);
-    reverb.setInputFilterHighCutoffPitch(10 * inputHighpassCutoff);
+    // now rescale the size for reverb tank
+    reverb.setTankDiffusion(10 * diffusion);
+
     reverb.setTankFilterLowCutFrequency(10 * reverbLowpassCutoff);
     reverb.setTankFilterHighCutFrequency(10 * reverbHighpassCutoff);
 
@@ -240,7 +241,6 @@ void Plateau::updateParams()
     reverb.setTankModSpeed(modSpeed * modSpeed * 99.f + 1.f);
     reverb.setTankModDepth(rescale(modDepth, 0.f, 1.f, modDepthMin, modDepthMax));
     reverb.setTankModShape(rescale(modShape, 0.f, 1.f, modShapeMin, modShapeMax));
-    reverb.enableInputDiffusion(diffuseInput);
 }
 
 void Plateau::tick(SAMPLE *in, SAMPLE *out)
@@ -264,7 +264,7 @@ void Plateau::tick(SAMPLE *in, SAMPLE *out)
     }
 
     // update reverb params
-    updateParams();
+    // updateParams();
 
     float leftInput = CLAMP(in[0], -1.f, 1.f);
     float rightInput = CLAMP(in[1], -1.f, 1.f);
@@ -526,8 +526,8 @@ CK_DLL_MFUN(plateau_set_size)
         size = CLAMP(size, 0.01f, plateau->sizeMax);
     }
 
-    printf("setting size: %f\n", size);
-    // plateau->reverb.setTimeScale(size);
+    // printf("setting size: %f\n", size);
+    plateau->reverb.setTimeScale(size);
 }
 
 CK_DLL_MFUN(plateau_get_diffusion)
