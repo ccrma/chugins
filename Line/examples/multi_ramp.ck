@@ -1,3 +1,5 @@
+@import "Line"
+
 // Line can be used to generate a sequence of ramps
 
 SawOsc s => Line l(

@@ -1,3 +1,5 @@
+@import "Line"
+
 TriOsc osc(880) => Gain g => dac;
 SinOsc lfo(5) => Patch p(g, "gain") => blackhole;
 

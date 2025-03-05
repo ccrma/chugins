@@ -1,3 +1,5 @@
+@import "Line"
+
 // Line can be used as a replacement for Envelope.
 
 SinOsc s(880) => Line l(5::second) => dac;
