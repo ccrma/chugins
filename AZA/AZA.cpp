@@ -348,16 +348,16 @@ CK_DLL_QUERY(AZA)
         MFUN(plateau_clear, "void", "clear");
         DOC_FUNC(" Purges the reverberator. Useful for creating gated reverb effects, or diminshing complete chaos.");
 
-        MFUN(plateau_get_predelay_time, "float", "preDelay");
+        MFUN(plateau_get_predelay_time, "float", "delay");
         DOC_FUNC("Get pre-delay time in seconds");
 
-        MFUN(plateau_set_predelay_time, "void", "preDelay");
+        MFUN(plateau_set_predelay_time, "void", "delay");
         ARG("float", "time_secs");
         DOC_FUNC("Set pre-delay time in seconds. Clamped to [0,1]");
 
-        MFUN(plateau_get_predelay_smoothing, "float", "preDelaySmoothing");
+        MFUN(plateau_get_predelay_smoothing, "float", "delaySmoothing");
 
-        MFUN(plateau_set_predelay_smoothing, "void", "preDelaySmoothing");
+        MFUN(plateau_set_predelay_smoothing, "void", "delaySmoothing");
         ARG("float", "alpha");
         DOC_FUNC("The interpolation factor used to smoothly transition between delay amount. Default .0001. Set closer to 1 for more instantaneous updates, at the cost of introducing crunchy distortion from skipping too far in the delay line");
 
