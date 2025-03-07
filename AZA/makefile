@@ -9,6 +9,7 @@ CXX_MODULES = \
 	Valley/dsp/filters/OnePoleFilters.cpp \
 	Valley/dsp/modulation/LinearEnvelope.cpp \
 	Valley/Plateau/Dattorro.cpp \
+	Geodesics/EnergyOsc.cpp \
 
 # where to find chugin.h
 CK_SRC_PATH?=../chuck/include/

@@ -40,9 +40,13 @@
 #include "Valley/Plateau/Dattorro.hpp"
 #include "Valley/dsp/modulation/LinearEnvelope.hpp"
 
-#include <cstdio>
+// Geodesics
+#include "Geodesics/EnergyOsc.hpp"
 
-// Helpers ============================================================
+#include <cstdio>
+#include <cmath>
+
+// Chugin Helpers ============================================================
 
 #define BEGIN_CLASS(type, base) QUERY->begin_class(QUERY, type, base)
 #define END_CLASS() QUERY->end_class(QUERY)
@@ -58,6 +62,9 @@
 #define DOC_VAR(doc) QUERY->doc_var(QUERY, doc)
 #define ADD_EX(path) QUERY->add_ex(QUERY, path)
 #define TICKF(func, in_channels, out_channels) QUERY->add_ugen_funcf(QUERY, func, NULL, in_channels, out_channels)
+#define TICK(func) QUERY->add_ugen_func(QUERY, func, NULL, 1, 1) // for mono UGens
+
+typedef t_CKBOOL(CK_DLL_CALL *f_tick)(Chuck_Object *SELF, SAMPLE in, SAMPLE *out, CK_DL_API API);
 
 #define GET_NEXT_INT_ARRAY(ptr) (*((Chuck_ArrayInt **&)ptr)++)
 #define GET_NEXT_INT_ARRAY(ptr) (*((Chuck_ArrayInt **&)ptr)++)
@@ -90,6 +97,33 @@ float rescale(float x, float a, float b, float c, float d)
 {
     return lerp(invLerp(x, a, b), c, d);
 }
+
+// VCV Rack conversion helpers =====================================
+struct AZA_Helpers
+{
+    static float referenceFrequency; // C4; frequency at which Rack 1v/octave CVs are zero.
+    static float log_ref_frequency;  // log2(referenceFrequency)
+
+    static float cvToFrequency(float cv)
+    {
+        return std::pow(2.0f, cv) * referenceFrequency;
+    }
+
+    static float freqToCV(float freq)
+    {
+        return log2(freq) - log_ref_frequency;
+    }
+
+    static float VCVAudioVoltageToSample(float v)
+    {
+        // Audio signals in VCV are [-5, 5]
+        // recales to chuck's expected range [-1, 1]
+        return v * .2f;
+    }
+};
+
+float AZA_Helpers::referenceFrequency = 261.626f;
+float AZA_Helpers::log_ref_frequency = log2(AZA_Helpers::referenceFrequency);
 
 // ==================================================================
 
@@ -195,10 +229,10 @@ struct Plateau
     float diffusion = 1.f;
     float decay = 0.75f;
 
-    float inputLowpassCutoff = 0.f;
-    float inputHighpassCutoff = 1.f;
-    float reverbLowpassCutoff = 0.f;
-    float reverbHighpassCutoff = 1.f;
+    float inputLowCut = 0.f;
+    float inputHighCut = 1.f;
+    float reverbLowCut = 0.f;
+    float reverbHighCut = 1.f;
 
     float modSpeed = 0.01f;
     float modShape = 0.5f;
@@ -216,7 +250,6 @@ struct Plateau
     bool diffuseInput = true;
 
     Plateau(float sample_rate);
-    void updateParams();
     void tick(SAMPLE *in, SAMPLE *out);
     void onSampleRateChange(float sample_rate);
 };
@@ -226,27 +259,24 @@ Plateau::Plateau(float sample_rate) : reverb(192000, 16, sizeMax)
     onSampleRateChange(sample_rate);
     envelope.setTime(0.004f);
     envelope._value = 1.f;
-    updateParams();
-}
 
-void Plateau::updateParams()
-{
-    reverb.freeze(freeze);
+    { // init reverb tank params
+        reverb.freeze(freeze);
 
-    reverb.setInputFilterLowCutoffPitch(10 * inputLowpassCutoff);
-    reverb.setInputFilterHighCutoffPitch(10 * inputHighpassCutoff);
-    reverb.enableInputDiffusion(diffuseInput);
-    reverb.setDecay(decay);
+        reverb.setInputFilterLowCutoffPitch(10 * inputLowCut);
+        reverb.setInputFilterHighCutoffPitch(10 * inputHighCut);
+        reverb.enableInputDiffusion(diffuseInput);
+        reverb.setDecay(decay);
 
-    // now rescale the size for reverb tank
-    reverb.setTankDiffusion(10 * diffusion);
+        reverb.setTankDiffusion(10 * diffusion);
 
-    reverb.setTankFilterLowCutFrequency(10 * reverbLowpassCutoff);
-    reverb.setTankFilterHighCutFrequency(10 * reverbHighpassCutoff);
+        reverb.setTankFilterLowCutFrequency(10 * reverbLowCut);
+        reverb.setTankFilterHighCutFrequency(10 * reverbHighCut);
 
-    reverb.setTankModSpeed(modSpeed * modSpeed * 99.f + 1.f);
-    reverb.setTankModDepth(rescale(modDepth, 0.f, 1.f, modDepthMin, modDepthMax));
-    reverb.setTankModShape(rescale(modShape, 0.f, 1.f, modShapeMin, modShapeMax));
+        reverb.setTankModSpeed(modSpeed * modSpeed * 99.f + 1.f);
+        reverb.setTankModDepth(rescale(modDepth, 0.f, 1.f, modDepthMin, modDepthMax));
+        reverb.setTankModShape(rescale(modShape, 0.f, 1.f, modShapeMin, modShapeMax));
+    }
 }
 
 void Plateau::tick(SAMPLE *in, SAMPLE *out)
@@ -314,12 +344,147 @@ void Plateau::onSampleRateChange(float sample_rate)
     envelope.setSampleRate(sample_rate);
 }
 
+// ==============================
+// Geodesics Energy
+// ==============================
+
+struct Geodesics_Energy_Chugin // suffix Chugin to avoid naming collisions
+{
+    // UGens --------------------------
+    FMOp oscM; // size N_POLY
+    FMOp oscC; // size N_POLY
+
+    // No need to save, no reset
+    float slewInput = 1.f;
+    SlewLimiter multiplySlewer;
+    uint8_t sample_count; // #samples processed, used as a refresh counter so OK if it overflows and wraps
+
+    // FM Timbre
+    float M_feedback;
+    float C_feedback;
+
+    // Frequency
+    float M_freq;
+    float C_freq;
+    float freq = AZA_Helpers::referenceFrequency; // final freq is freq + M_freq, freq + C_freq
+
+    Geodesics_Energy_Chugin(float sample_rate) : oscM(sample_rate), oscC(sample_rate)
+    {
+        // configButton(CROSS_PARAM, "Momentum crossing");
+        // configParam(MOMENTUM_PARAMS + 0, 0.0f, 1.0f, 0.0f, "Momentum M");
+        // configParam(MOMENTUM_PARAMS + 1, 0.0f, 1.0f, 0.0f, "Momentum C");
+        // configParam(FREQ_PARAMS + 0, -3.0f, 3.0f, 0.0f, "Freq M");
+        // configParam(FREQ_PARAMS + 1, -3.0f, 3.0f, 0.0f, "Freq C");
+        // configButton(ROUTING_PARAM, "Routing");
+        // configButton(PLANCK_PARAMS + 0, "Quantize (Planck) M");
+        // configButton(PLANCK_PARAMS + 1, "Quantize (Planck) C");
+        // configButton(MODTYPE_PARAMS + 0, "CV mod type M");
+        // configButton(MODTYPE_PARAMS + 1, "CV mod type C");
+
+        // configInput(FREQCV_INPUTS + 0, "Mass");
+        // configInput(FREQCV_INPUTS + 1, "Speed of light");
+        // configInput(FREQCV_INPUT, "1V/oct");
+        // configInput(MULTIPLY_INPUT, "Multiply");
+        // configInput(MOMENTUM_INPUTS + 0, "Momentum M");
+        // configInput(MOMENTUM_INPUTS + 1, "Momentum C");
+
+        onSampleRateChange(sample_rate);
+        onReset();
+    }
+
+    void onReset()
+    {
+        oscM.onReset();
+        oscC.onReset();
+    }
+
+    void onSampleRateChange(float sampleRate)
+    {
+        oscM.onSampleRateChange(sampleRate);
+        oscC.onSampleRateChange(sampleRate);
+        // setParams2(float sampleRate, float millisecondsUp, float millisecondsDown, float range)
+        multiplySlewer.setParams2(sampleRate, 2.5f, 20.0f, 1.0f);
+    }
+
+    SAMPLE tick()
+    {
+        // pitch modulation and feedbacks
+        if (sample_count++ & 0x3) // every 4 samps
+        {
+            { // calcFeedbacks(c); // feedback (momentum), a given channel is updated at sample_rate / 4
+              // feedbacks[0][chan] = clamp(feedbacks[0][chan], 0.0f, 1.0f);
+              // feedbacks[1][chan] = clamp(feedbacks[1][chan], 0.0f, 1.0f);
+            }
+        }
+
+        // calculate pitch voltage from params
+        // const float vocts[2] = {modSignals[0][c] + inputs[FREQCV_INPUT].getVoltage(c), modSignals[1][c] + inputs[FREQCV_INPUT].getVoltage(c)};
+        float m_pitch_voct = AZA_Helpers::freqToCV(freq + M_freq);
+        float c_pitch_voct = AZA_Helpers::freqToCV(freq + C_freq);
+
+        // update oscillator freq
+        // float FMOp::step(float voct, float momentum, float fmDepth, float fmInput)
+        // float oscMout = oscM.step(vocts[0], feedbacks[0][c] * 0.3f);
+        // float oscCout = oscC.step(vocts[1], feedbacks[1][c] * 0.3f);
+        float oscMout = oscM.step(m_pitch_voct, M_feedback * 0.3f);
+        float oscCout = oscC.step(c_pitch_voct, C_feedback * 0.3f);
+
+        // multiply (slewInput clamepd between 0,1)
+        float multiplySlewValue = multiplySlewer.next(slewInput) * 0.2f;
+
+        // final attenuverters
+        float attv1 = oscCout * oscCout * multiplySlewValue;
+        float attv2 = attv1 * oscMout * 0.2f;
+        return AZA_Helpers::VCVAudioVoltageToSample(attv2);
+    }
+};
+
+t_CKINT geodesics_energy_data_offset = 0;
+
+CK_DLL_CTOR(geodesics_energy_ctor);
+CK_DLL_DTOR(geodesics_energy_dtor);
+CK_DLL_TICK(geodesics_energy_tick);
+
+CK_DLL_MFUN(geodesics_energy_get_freq);
+CK_DLL_MFUN(geodesics_energy_set_freq);
+CK_DLL_MFUN(geodesics_energy_get_freq_m);
+CK_DLL_MFUN(geodesics_energy_set_freq_m);
+CK_DLL_MFUN(geodesics_energy_get_freq_c);
+CK_DLL_MFUN(geodesics_energy_set_freq_c);
+
+CK_DLL_MFUN(geodesics_energy_get_feedback_m);
+CK_DLL_MFUN(geodesics_energy_set_feedback_m);
+CK_DLL_MFUN(geodesics_energy_get_feedback_c);
+CK_DLL_MFUN(geodesics_energy_set_feedback_c);
+
+CK_DLL_MFUN(geodesics_energy_get_multiply);
+CK_DLL_MFUN(geodesics_energy_set_multiply);
+
+// using Energy in different modes
+
+// Routing
+// 1: freq adds to both M and C
+// 2: freq adds to M, -freq to C
+// 3: freq to M only
+
+// Planck modes (for quantizing frequency)
+// 1: no quantizatoin
+// 2: quantize to semitones
+// 3: quantize to P5, P8
+
+// frequency CV mode type: amp, add
+// add means we add to cv_in + M_freq
+// amp means we multiply cv_in * M_freq
+
 CK_DLL_QUERY(AZA)
 {
     QUERY->setname(QUERY, "AZA");
 
     { // Plateau
         BEGIN_CLASS("Plateau", "UGen");
+        DOC_CLASS("Valley Plateau (https://valleyaudio.github.io/rack/plateau/) is a lush plate reverb based on the famous, Dattorro (1997) design. "
+                  "See their webpage for more info.");
+
         plateau_data_offset = MVAR("int", "@plateau_data", false);
 
         CTOR(plateau_ctor);
@@ -327,23 +492,20 @@ CK_DLL_QUERY(AZA)
 
         TICKF(plateau_tick, 2, 2);
 
+        MFUN(plateau_get_dry, "float", "dry");
         MFUN(plateau_set_dry, CK_TYPE_VOID, "dry");
         ARG(CK_TYPE_FLOAT, "level");
         DOC_FUNC("level clamped to [0, 1]");
 
-        MFUN(plateau_get_dry, "float", "dry");
-
+        MFUN(plateau_get_wet, "float", "wet");
         MFUN(plateau_set_wet, "void", "wet");
         ARG("float", "level");
         DOC_FUNC("level clamped to [0, 1]");
 
-        MFUN(plateau_get_wet, "float", "wet");
-
+        MFUN(plateau_get_hold, "int", "hold");
         MFUN(plateau_set_hold, "void", "hold");
         ARG("int", "latch");
         DOC_FUNC("if true, sets the decay of the reverb to infinite so that it will continuously reverberate.");
-
-        MFUN(plateau_get_hold, "int", "hold");
 
         MFUN(plateau_clear, "void", "clear");
         DOC_FUNC(" Purges the reverberator. Useful for creating gated reverb effects, or diminshing complete chaos.");
@@ -356,13 +518,11 @@ CK_DLL_QUERY(AZA)
         DOC_FUNC("Set pre-delay time in seconds. Clamped to [0,1]");
 
         MFUN(plateau_get_predelay_smoothing, "float", "delaySmoothing");
-
         MFUN(plateau_set_predelay_smoothing, "void", "delaySmoothing");
         ARG("float", "alpha");
         DOC_FUNC("The interpolation factor used to smoothly transition between delay amount. Default .0001. Set closer to 1 for more instantaneous updates, at the cost of introducing crunchy distortion from skipping too far in the delay line");
 
         MFUN(plateau_get_size, "float", "size");
-
         MFUN(plateau_set_size, "void", "size");
         ARG("float", "size");
         DOC_FUNC("Sets the overall delay time and apparent 'size' of the reverb. Ranges from very short to extremely long. Clamped to [0,1]");
@@ -388,26 +548,33 @@ CK_DLL_QUERY(AZA)
         MFUN(plateau_get_inputLow, "float", "inputLow");
         MFUN(plateau_set_inputLow, "void", "inputLow");
         ARG("float", "amt");
-        DOC_FUNC("Sets input lowpass filter cutoff. Input is normalized and clamped between [0,1]. Internally remapped to [14, 14080]hz");
+        DOC_FUNC(
+            "Sets input filter low cut. Input is normalized and clamped between [0,1]. Internally remapped expontentionally to [14, 14080]hz. "
+            "A value of 0 allows all frequencies through, a value of 1 applies a low cut to all frequencies. Raising this value can help reduce reverb muddiness. Default 0.");
 
         MFUN(plateau_get_inputHigh, "float", "inputHigh");
         MFUN(plateau_set_inputHigh, "void", "inputHigh");
         ARG("float", "amt");
-        DOC_FUNC("Sets input highpass filter cutoff. Input is normalized and clamped between [0,1]. Internally remapped to [14, 14080]hz");
+        DOC_FUNC(
+            "Sets input filter high cut. Input is normalized and clamped between [0,1]. Internally remapped exponentially to [14, 14080]hz. "
+            "A value of 1 allows all frequencies through, a value of 0 applies a high cut to all frequencies. Lowering this value reduces reverb sharpness/brighness. Default 1.");
 
         MFUN(plateau_get_reverbLow, "float", "reverbLow");
         MFUN(plateau_set_reverbLow, "void", "reverbLow");
         ARG("float", "amt");
-        DOC_FUNC("Sets reverberator lowpass filter cutoff. Input is normalized and clamped between [0,1]. Internally remapped to [14, 14080]hz");
+        DOC_FUNC("Sets reverberator filter low cut. Input is normalized and clamped between [0,1]. Internally remapped to exponentially [14, 14080]hz. "
+                 "A value of 0 allows all frequencies through, a value of 1 applies a low cut to all frequencies. Raising this value can help reduce reverb muddiness. Default 0.");
 
         MFUN(plateau_get_reverbHigh, "float", "reverbHigh");
         MFUN(plateau_set_reverbHigh, "void", "reverbHigh");
         ARG("float", "amt");
-        DOC_FUNC("Sets reverberator highpass filter cutoff. Input is normalized and clamped between [0,1]. Internally remapped to [14, 14080]hz");
+        DOC_FUNC("Sets reverberator filter high cut. Input is normalized and clamped between [0,1]. Internally remapped to expontentially [14, 14080]hz. "
+                 "A value of 1 allows all frequencies through, a value of 0 applies a high cut to all frequencies. Lowering this value reduces reverb sharpness/brighness. Default 1.");
 
         MFUN(plateau_get_mod_speed, "float", "modSpeed");
         MFUN(plateau_get_mod_depth, "float", "modDepth");
         MFUN(plateau_get_mod_shape, "float", "modShape");
+
         MFUN(plateau_set_mod_speed, "void", "modSpeed");
         ARG("float", "amt");
         DOC_FUNC("input clamped to [0,1]. Controls the speed of the LFOs which modulate the delay times of the all-pass filters in the reverberation tank");
@@ -421,19 +588,59 @@ CK_DLL_QUERY(AZA)
         DOC_FUNC("input clamped to [0,1]. Controls the shape of the LFOs which modulate the delay times of the all-pass filters in the reverberation tank");
 
         MFUN(plateau_get_tuned, "int", "tuned");
-
         MFUN(plateau_set_tuned, "void", "tuned");
         ARG("int", "tuned");
         DOC_FUNC("If true, enables Tuned Mode: Shortens the delay times and tunes the all-pass filters to 1V/Oct so that the reverb can be 'played'.");
 
         MFUN(plateau_get_diffuse, "int", "diffuse");
-
         MFUN(plateau_set_diffuse, "void", "diffuse");
         ARG("int", "diffuse");
         DOC_FUNC("If true, Enages the input diffusion stage that pre-diffuses and smears the signal before reverberation. Setting to false sharpens the input signal.");
 
         END_CLASS();
     } // Plateau
+
+    // TODO: ADD INPUT CLAMPING FOR ENERGY
+
+    { // Geodesics Energy
+        BEGIN_CLASS("Energy", "UGen");
+        DOC_CLASS("Port of Geodesics Energy ring modulation oscillator. See https://github.com/MarcBoule/Geodesics/tree/master?tab=readme-ov-file#energy");
+
+        geodesics_energy_data_offset = MVAR("int", "@geodesics_energy_data", false);
+
+        CTOR(geodesics_energy_ctor);
+        DTOR(geodesics_energy_dtor);
+        TICK(geodesics_energy_tick);
+
+        MFUN(geodesics_energy_get_freq, "float", "freq");
+        MFUN(geodesics_energy_set_freq, "void", "freq");
+        ARG("float", "freq");
+
+        MFUN(geodesics_energy_get_freq_m, "float", "freqM");
+        MFUN(geodesics_energy_set_freq_m, "void", "freqM");
+        ARG("float", "freq_offset");
+
+        MFUN(geodesics_energy_get_freq_c, "float", "freqC");
+        MFUN(geodesics_energy_set_freq_c, "void", "freqC");
+        ARG("float", "freq_offset");
+
+        MFUN(geodesics_energy_get_feedback_m, "float", "feedbackM");
+        MFUN(geodesics_energy_set_feedback_m, "void", "feedbackM");
+        ARG("float", "feedback");
+        DOC_FUNC("FM feedback amount of the M sinus. Clamped to [0,1]");
+
+        MFUN(geodesics_energy_get_feedback_c, "float", "feedbackC");
+        MFUN(geodesics_energy_set_feedback_c, "void", "feedbackC");
+        ARG("float", "feedback");
+        DOC_FUNC("FM feedback amount of the C sinus. Clamped to [0,1]");
+
+        MFUN(geodesics_energy_get_multiply, "float", "multiply");
+        MFUN(geodesics_energy_set_multiply, "void", "multiply");
+        ARG("float", "gain");
+        DOC_FUNC("This parameter acts as a VCA. The output audio signal is scaled by this amount, which is internally slew limited so you can use it like an envelope (Open = 1, closed = 0) without audio popping.");
+
+        END_CLASS();
+    } // Geodesics Energy
 
     return true;
 }
@@ -601,7 +808,7 @@ CK_DLL_MFUN(plateau_set_decay)
 CK_DLL_MFUN(plateau_get_inputLow)
 {
     Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
-    RETURN->v_float = plateau->inputLowpassCutoff;
+    RETURN->v_float = plateau->inputLowCut;
 }
 
 CK_DLL_MFUN(plateau_set_inputLow)
@@ -609,7 +816,7 @@ CK_DLL_MFUN(plateau_set_inputLow)
     Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
     float lp_cutoff = GET_NEXT_FLOAT(ARGS);
     lp_cutoff = CLAMP01(lp_cutoff);
-    plateau->inputLowpassCutoff = lp_cutoff;
+    plateau->inputLowCut = lp_cutoff;
 
     plateau->reverb.setInputFilterLowCutoffPitch(10 * lp_cutoff);
 }
@@ -617,7 +824,7 @@ CK_DLL_MFUN(plateau_set_inputLow)
 CK_DLL_MFUN(plateau_get_inputHigh)
 {
     Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
-    RETURN->v_float = plateau->inputHighpassCutoff;
+    RETURN->v_float = plateau->inputHighCut;
 }
 
 CK_DLL_MFUN(plateau_set_inputHigh)
@@ -625,7 +832,7 @@ CK_DLL_MFUN(plateau_set_inputHigh)
     Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
     float cutoff = GET_NEXT_FLOAT(ARGS);
     cutoff = CLAMP01(cutoff);
-    plateau->inputHighpassCutoff = cutoff;
+    plateau->inputHighCut = cutoff;
 
     plateau->reverb.setInputFilterHighCutoffPitch(10 * cutoff);
 }
@@ -633,7 +840,7 @@ CK_DLL_MFUN(plateau_set_inputHigh)
 CK_DLL_MFUN(plateau_get_reverbLow)
 {
     Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
-    RETURN->v_float = plateau->reverbLowpassCutoff;
+    RETURN->v_float = plateau->reverbLowCut;
 }
 
 CK_DLL_MFUN(plateau_set_reverbLow)
@@ -641,7 +848,7 @@ CK_DLL_MFUN(plateau_set_reverbLow)
     Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
     float lp_cutoff = GET_NEXT_FLOAT(ARGS);
     lp_cutoff = CLAMP01(lp_cutoff);
-    plateau->reverbLowpassCutoff = lp_cutoff;
+    plateau->reverbLowCut = lp_cutoff;
 
     plateau->reverb.setTankFilterLowCutFrequency(10 * lp_cutoff);
 }
@@ -649,7 +856,7 @@ CK_DLL_MFUN(plateau_set_reverbLow)
 CK_DLL_MFUN(plateau_get_reverbHigh)
 {
     Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
-    RETURN->v_float = plateau->reverbHighpassCutoff;
+    RETURN->v_float = plateau->reverbHighCut;
 }
 
 CK_DLL_MFUN(plateau_set_reverbHigh)
@@ -657,7 +864,7 @@ CK_DLL_MFUN(plateau_set_reverbHigh)
     Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
     float cutoff = GET_NEXT_FLOAT(ARGS);
     cutoff = CLAMP01(cutoff);
-    plateau->reverbHighpassCutoff = cutoff;
+    plateau->reverbHighCut = cutoff;
 
     plateau->reverb.setTankFilterHighCutFrequency(10 * cutoff);
 }
@@ -730,4 +937,98 @@ CK_DLL_MFUN(plateau_set_diffuse)
     Plateau *plateau = (Plateau *)OBJ_MEMBER_INT(SELF, plateau_data_offset);
     plateau->diffuseInput = (bool)GET_NEXT_INT(ARGS);
     plateau->reverb.enableInputDiffusion(plateau->diffuseInput);
+}
+
+// Geodesics Energy ===========================================
+
+CK_DLL_CTOR(geodesics_energy_ctor)
+{
+    OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset) = (t_CKINT) new Geodesics_Energy_Chugin(API->vm->srate(VM));
+}
+
+CK_DLL_DTOR(geodesics_energy_dtor)
+{
+    Geodesics_Energy_Chugin *chugin = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    CK_SAFE_DELETE(chugin);
+    OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset) = 0;
+}
+
+CK_DLL_TICK(geodesics_energy_tick)
+{
+    Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    *out = energy->tick();
+    return TRUE;
+}
+
+CK_DLL_MFUN(geodesics_energy_get_freq)
+{
+    Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    RETURN->v_float = energy->freq;
+}
+
+CK_DLL_MFUN(geodesics_energy_set_freq)
+{
+    Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    energy->freq = GET_NEXT_FLOAT(ARGS);
+}
+
+CK_DLL_MFUN(geodesics_energy_get_freq_m)
+{
+    Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    RETURN->v_float = energy->M_freq;
+}
+
+CK_DLL_MFUN(geodesics_energy_set_freq_m)
+{
+    Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    energy->M_freq = GET_NEXT_FLOAT(ARGS);
+}
+
+CK_DLL_MFUN(geodesics_energy_get_freq_c)
+{
+    Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    RETURN->v_float = energy->C_freq;
+}
+
+CK_DLL_MFUN(geodesics_energy_set_freq_c)
+{
+    Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    energy->C_freq = GET_NEXT_FLOAT(ARGS);
+}
+
+CK_DLL_MFUN(geodesics_energy_get_feedback_m)
+{
+    Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    RETURN->v_float = energy->M_feedback;
+}
+
+CK_DLL_MFUN(geodesics_energy_set_feedback_m)
+{
+    Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    energy->M_feedback = GET_NEXT_FLOAT(ARGS);
+}
+
+CK_DLL_MFUN(geodesics_energy_get_feedback_c)
+{
+    Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    RETURN->v_float = energy->C_feedback;
+}
+
+CK_DLL_MFUN(geodesics_energy_set_feedback_c)
+{
+    Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    energy->C_feedback = GET_NEXT_FLOAT(ARGS);
+}
+
+CK_DLL_MFUN(geodesics_energy_get_multiply)
+{
+    Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    // RETURN->v_float = energy->multiplySlewer._last; // slewed value
+    RETURN->v_float = energy->slewInput;
+}
+
+CK_DLL_MFUN(geodesics_energy_set_multiply)
+{
+    Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
+    energy->slewInput = GET_NEXT_FLOAT(ARGS);
 }
