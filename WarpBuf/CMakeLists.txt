@@ -13,6 +13,12 @@ project(WarpBuf VERSION ${VERSION})
 # Set startup project for Visual Studio
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT WarpBuf)
 
+if (UNIX AND NOT APPLE)
+   SET(CMAKE_SKIP_BUILD_RPATH FALSE)
+   set(CMAKE_INSTALL_RPATH "$ORIGIN")
+   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+endif()
+
 # Collect ChucK sources
 FILE(GLOB CK_SOURCES ${PROJECT_SOURCE_DIR}/../../chuck/include/*.h)
 source_group("ChucK" FILES ${CK_SOURCES})
@@ -66,9 +72,10 @@ add_library(WarpBuf MODULE ${CK_SOURCES} ${Sources} ${RUBBERBAND_SOURCES} ${RUBB
 ####################################
 # Install - used for packaging
 ####################################
+
 set (PACKDIR ${ROOT}/package)
 set (DST warpbuf-${VERSION})
-install ( TARGETS WarpBuf
+install ( TARGETS WarpBuf RUNTIME_DEPENDENCIES
     RUNTIME DESTINATION ${PACKDIR}/${DST}
     LIBRARY DESTINATION ${PACKDIR}/${DST}
     ARCHIVE DESTINATION ${PACKDIR}/${DST}
@@ -93,6 +100,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 else()
 set_target_properties (${PROJECT_NAME} PROPERTIES 
     SUFFIX ".chug"
+    PREFIX ""
     OUTPUT_NAME WarpBuf)
 endif()
 

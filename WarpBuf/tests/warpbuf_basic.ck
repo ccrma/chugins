@@ -1,4 +1,4 @@
-@import "WarpBuf"
+@import "WarpBuf.chug"
 
 fun void heartbeat() {
     while(true) {

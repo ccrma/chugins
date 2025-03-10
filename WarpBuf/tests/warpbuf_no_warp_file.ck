@@ -1,6 +1,8 @@
 // Test that the bpm works even when 
 // no ".asd" file exists.
 // You should hear 2 beats, then a tempo change, then repeat.
+@import "WarpBuf.chug"
+
 WarpBuf s1 => dac;
 
 me.dir() + "assets/381353__waveplaysfx__drumloop-120-bpm-edm-drum-loop-022_no_asd.wav" => s1.read;
