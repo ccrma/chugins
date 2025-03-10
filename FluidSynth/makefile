@@ -117,3 +117,17 @@ install: $(CHUG)
 clean: 
 	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) $(WEBCHUG) Release Debug
 
+
+setup-mac-x86_64:
+	meson setup --cross-file cross/x86_64-macos.txt builddir-x86_64
+
+setup-mac-arm64:
+	meson setup --cross-file cross/arm64-macos.txt builddir-arm64
+
+build-mac-x86_64: setup-mac-x86_64
+	meson compile -C builddir-x86_64
+	cp builddir-x86_64/FluidSynth.chug FluidSynth-x86_64.chug
+
+build-mac-arm64: setup-mac-arm64
+	meson compile -C builddir-arm64
+	cp builddir-arm64/FluidSynth.chug FluidSynth-arm64.chug
