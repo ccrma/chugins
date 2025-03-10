@@ -46,4 +46,30 @@ cp -r FluidSynth/ <path_to_chump_packages_repo>
 
 ### Windows
 
+Note: this requires `meson` to build `FluidSynth` as a chump package.
+
+First, setup your build directory:
+
+```meson setup --buildtype=release builddir-release --backend vs```
+
+Next, we build the chugin:
+
+```meson compile -C builddir-release```
+
+After this, we create a chump package:
+
+```chuck build-pkg-win.ck```
+
+Afterwards, we upload this to ccrma servers:
+```
+ssh nshaheed@ccrma-gate.stanford.edu \"mkdir -p ~/Library/Web/chugins/FluidSynth/<verno>/win/
+scp FluidSynth_win.zip nshaheed@ccrma-gate.stanford.edu:~/Library/Web/chugins/FluidSynth/<verno>/win
+```
+
+And then we add this new version definition to the chump manifest repo:
+```
+cp -r FluidSynth/ <path_to_chump_packages_repo>
+```
+
+
 ### Linux
