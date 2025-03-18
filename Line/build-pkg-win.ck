@@ -36,7 +36,7 @@ PackageVersion ver("Line", version);
 "x86_64" => ver.arch;
 
 // The chugin file
-ver.addFile("./Line.chug");
+ver.addFile("./x64/Release/Line.chug");
 
 // These build files are examples as well
 ver.addExampleFile("examples/basic.ck");
