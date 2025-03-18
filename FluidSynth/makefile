@@ -133,6 +133,9 @@ setup-mac-arm64:
 setup-win:
 	meson setup --buildtype=release builddir-win --backend vs
 
+setup-linux:
+	meson setup --buildtype=release builddir-linux
+
 
 #-----------  building -----------
 build-mac-x86_64: setup-mac-x86_64
@@ -145,6 +148,9 @@ build-mac-arm64: setup-mac-arm64
 
 build-win: setup-win
 	meson compile -C builddir-win
+
+build-linux: setup-linux
+	meson compile -C builddir-linux
 
 # note: presently, Nick and Ge are able to build on windows using a combination of
 # cygwin (which make and can install meson, and can setup BUT not build) with

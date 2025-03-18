@@ -32,7 +32,7 @@ PackageVersion ver("FluidSynth", version);
 
 "1.5.4.0" => ver.languageVersionMin;
 
-"win" => ver.os;
+"windows" => ver.os;
 "x86_64" => ver.arch;
 
 // The chugin file
