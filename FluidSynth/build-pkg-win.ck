@@ -15,9 +15,9 @@ Package pkg("FluidSynth");
 "https://github.com/ccrma/chugins" => pkg.repository;
 
 "MIT" => pkg.license;
-"Chugin for loading FluidSynth soundfonts" => pkg.description;
+"A UGen for loading and rendering soundfont" => pkg.description;
 
-["midi", "FluidSynth", "UGen"] => pkg.keywords;
+["MIDI", "FluidSynth", "UGen"] => pkg.keywords;
 
 // generate a package-definition.json
 // This will be stored in "Chumpinate/package.json"
@@ -36,7 +36,7 @@ PackageVersion ver("FluidSynth", version);
 "x86_64" => ver.arch;
 
 // The chugin file
-ver.addFile("./builddir-release/FluidSynth.chug");
+ver.addFile("./builddir-win/FluidSynth.chug");
 
 // These build files are examples as well
 ver.addExampleFile("FluidSynth-play.ck");
