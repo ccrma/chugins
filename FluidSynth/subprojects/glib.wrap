@@ -1,10 +1,10 @@
 [wrap-file]
-directory = glib-2.82.4
-source_url = https://download.gnome.org/sources/glib/2.82/glib-2.82.4.tar.xz
-source_fallback_url = https://github.com/mesonbuild/wrapdb/releases/download/glib_2.82.4-1/glib-2.82.4.tar.xz
-source_filename = glib-2.82.4.tar.xz
-source_hash = 37dd0877fe964cd15e9a2710b044a1830fb1bd93652a6d0cb6b8b2dff187c709
-wrapdb_version = 2.82.4-1
+directory = glib-2.84.0
+source_url = https://download.gnome.org/sources/glib/2.84/glib-2.84.0.tar.xz
+source_fallback_url = https://github.com/mesonbuild/wrapdb/releases/download/glib_2.84.0-1/glib-2.84.0.tar.xz
+source_filename = glib-2.84.0.tar.xz
+source_hash = f8823600cb85425e2815cfad82ea20fdaa538482ab74e7293d58b3f64a5aff6a
+wrapdb_version = 2.84.0-1
 
 [provide]
 dependency_names = gthread-2.0, gobject-2.0, gmodule-no-export-2.0, gmodule-export-2.0, gmodule-2.0, glib-2.0, gio-2.0, gio-windows-2.0, gio-unix-2.0

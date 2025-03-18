@@ -115,7 +115,7 @@ install: $(CHUG)
 	chmod 755 $(CHUGIN_PATH)/$(CHUG)
 
 clean: 
-	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) $(WEBCHUG) Release Debug
+	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) $(WEBCHUG) Release Debug builddir-x86_64 builddir-arm64 builddir-win builddir-linux
 
 
 #-------------------------------------------------------------------
@@ -125,7 +125,7 @@ clean:
 
 #-----------  setting up the build -----------
 setup-mac-x86_64:
-	meson setup --buildtype=release --cross-file cross/x86_64-macos.txt builddir-x86_64
+	meson setup --buildtype=release --wrap-mode=forcefallback --cross-file cross/x86_64-macos.txt builddir-x86_64
 
 setup-mac-arm64:
 	meson setup --buildtype=release --cross-file cross/arm64-macos.txt builddir-arm64
@@ -138,6 +138,9 @@ setup-linux:
 
 
 #-----------  building -----------
+.PHONY: build-mac
+build-mac: build-mac-x86_64 build-mac-arm64
+
 build-mac-x86_64: setup-mac-x86_64
 	meson compile -C builddir-x86_64
 	cp builddir-x86_64/FluidSynth.chug FluidSynth-x86_64.chug
