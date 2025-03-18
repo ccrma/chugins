@@ -6,7 +6,7 @@ T - (now % T) => now;
 
 // connect patch
 FluidSynth f => NRev reverb => dac;
-f.open("HS_African_Percussion.sf2");
+f.open(me.dir() + "HS_African_Percussion.sf2");
 .75 => f.gain;
 0.02 => reverb.mix;
 

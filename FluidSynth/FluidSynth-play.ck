@@ -6,7 +6,7 @@ NRev rev => dac;
 MidiFileIn min;
 MidiMsg msg;
 
-"HS_African_Percussion.sf2" => string sfont;
+me.dir() + "HS_African_Percussion.sf2" => string sfont;
 if(me.args() > 0) me.arg(0) => sfont;
 
 me.sourceDir() + "/bwv772.mid" => string filename;
