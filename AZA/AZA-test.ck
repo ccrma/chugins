@@ -21,10 +21,49 @@
 // print
 <<< "dac has", dac.channels(), "channels" >>>;
 
-Noise n => Plateau plateau => dac;
+Plateau plateau => dac;
 // Noise n1 => plateau.chan(1);
 
 <<< "plateau has", plateau.channels(), "channels" >>>;
-<<< "noise has", n.channels(), "channels" >>>;
 
 10::samp => now;
+
+/*
+Speech API Design
+
+Synthesis params:
+- speed
+- base frequency
+- declination (Declination, the tendency of fundamental frequency to gradually fall over the course of an utterance)
+
+- waveform (ignore for now, seems like speech.h has something more sophisticated)
+	KW_SAW,
+	KW_TRIANGLE,
+	KW_SIN,
+	KW_SQUARE,
+	KW_PULSE,
+	KW_NOISE,
+	KW_WARBLE
+
+*/
+
+Speech speech => dac;
+speech.freq(2000).rate(1.2).declination(5);
+
+speech.say("hello world you will be assimilated") => int samples;
+<<< speech.freq(), speech.rate(), speech.declination() >>>;
+<<< "generated samples: ", samples >>>;
+<<< "speech has ", speech.channels(), "channels" >>>;
+
+while (true) {
+    Speech s => dac;
+    s.say("techno techno")::samp => now;
+    .5::second => now;
+}
+
+// repeat(100) {
+//     <<< speech.last() >>>;
+//     samp => now;
+// }
+
+10::second => now;

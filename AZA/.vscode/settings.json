@@ -38,7 +38,10 @@
   "C_Cpp_Runner.compilerArgs": [],
   "C_Cpp_Runner.linkerArgs": [],
   "C_Cpp_Runner.includePaths": [],
-  "C_Cpp_Runner.includeSearch": ["*", "**/*"],
+  "C_Cpp_Runner.includeSearch": [
+    "*",
+    "**/*"
+  ],
   "C_Cpp_Runner.excludeSearch": [
     "**/build",
     "**/build/**",
@@ -77,6 +80,17 @@
     "map": "cpp",
     "string": "cpp",
     "string_view": "cpp",
-    "unordered_map": "cpp"
+    "unordered_map": "cpp",
+    "sstream": "cpp",
+    "__config": "cpp",
+    "__tuple": "cpp",
+    "algorithm": "cpp",
+    "atomic": "cpp",
+    "functional": "cpp",
+    "ios": "cpp",
+    "locale": "cpp",
+    "ostream": "cpp",
+    "streambuf": "cpp",
+    "variant": "cpp"
   }
 }

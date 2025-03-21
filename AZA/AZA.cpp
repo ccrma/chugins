@@ -43,6 +43,10 @@
 // Geodesics
 #include "Geodesics/EnergyOsc.hpp"
 
+// SoLoud
+#define SPEECH_IMPLEMENTATION
+#include "single_header/speech.h"
+
 #include <cstdio>
 #include <cmath>
 
@@ -64,8 +68,6 @@
 #define TICKF(func, in_channels, out_channels) QUERY->add_ugen_funcf(QUERY, func, NULL, in_channels, out_channels)
 #define TICK(func) QUERY->add_ugen_func(QUERY, func, NULL, 1, 1) // for mono UGens
 
-typedef t_CKBOOL(CK_DLL_CALL *f_tick)(Chuck_Object *SELF, SAMPLE in, SAMPLE *out, CK_DL_API API);
-
 #define GET_NEXT_INT_ARRAY(ptr) (*((Chuck_ArrayInt **&)ptr)++)
 #define GET_NEXT_INT_ARRAY(ptr) (*((Chuck_ArrayInt **&)ptr)++)
 #define GET_NEXT_FLOAT_ARRAY(ptr) (*((Chuck_ArrayFloat **&)ptr)++)
@@ -73,11 +75,20 @@ typedef t_CKBOOL(CK_DLL_CALL *f_tick)(Chuck_Object *SELF, SAMPLE in, SAMPLE *out
 #define GET_NEXT_VEC3_ARRAY(ptr) (*((Chuck_ArrayVec3 **&)ptr)++)
 #define GET_NEXT_VEC4_ARRAY(ptr) (*((Chuck_ArrayVec4 **&)ptr)++)
 #define GET_NEXT_OBJECT_ARRAY(ptr) (*((Chuck_ArrayInt **&)ptr)++)
+#define GET_NEXT_STRING(ptr) (*((Chuck_String **&)ptr)++)
 
 #define CK_TYPE_VOID "void"
 #define CK_TYPE_INT "int"
 #define CK_TYPE_FLOAT "float"
 
+#define ASSERT(expression)                                                  \
+    if (!(expression))                                                      \
+    {                                                                       \
+        printf("Assertion(%s) failed: file \"%s\", line %d\n", #expression, \
+               __FILE__, __LINE__);                                         \
+    }
+
+#define ARRAY_LENGTH(array) (sizeof(array) / sizeof((array)[0]))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define CLAMP(x, lo, hi) (MIN(hi, MAX(lo, x)))
@@ -102,7 +113,8 @@ float rescale(float x, float a, float b, float c, float d)
 struct AZA_Helpers
 {
     static float referenceFrequency; // C4; frequency at which Rack 1v/octave CVs are zero.
-    static float log_ref_frequency;  // log2(referenceFrequency)
+    static float referenceFrequency_midi;
+    static float log_ref_frequency; // log2(referenceFrequency)
 
     static float cvToFrequency(float cv)
     {
@@ -114,6 +126,16 @@ struct AZA_Helpers
         return log2(freq) - log_ref_frequency;
     }
 
+    static float mtof(float midi)
+    {
+        return std::pow(2.f, (midi - referenceFrequency_midi) / 12.f) * referenceFrequency;
+    }
+
+    static float ftom(float freq)
+    {
+        return 12.f * (log2(freq) - log_ref_frequency) + referenceFrequency_midi;
+    }
+
     static float VCVAudioVoltageToSample(float v)
     {
         // Audio signals in VCV are [-5, 5]
@@ -123,6 +145,7 @@ struct AZA_Helpers
 };
 
 float AZA_Helpers::referenceFrequency = 261.626f;
+float AZA_Helpers::referenceFrequency_midi = 60.f;
 float AZA_Helpers::log_ref_frequency = log2(AZA_Helpers::referenceFrequency);
 
 // ==================================================================
@@ -366,7 +389,7 @@ struct Geodesics_Energy_Chugin // suffix Chugin to avoid naming collisions
     // Frequency
     float M_freq;
     float C_freq;
-    float freq = AZA_Helpers::referenceFrequency; // final freq is freq + M_freq, freq + C_freq
+    float freq = AZA_Helpers::referenceFrequency_midi; // final midi is freq + M_freq, freq + C_freq
 
     Geodesics_Energy_Chugin(float sample_rate) : oscM(sample_rate), oscC(sample_rate)
     {
@@ -419,8 +442,8 @@ struct Geodesics_Energy_Chugin // suffix Chugin to avoid naming collisions
 
         // calculate pitch voltage from params
         // const float vocts[2] = {modSignals[0][c] + inputs[FREQCV_INPUT].getVoltage(c), modSignals[1][c] + inputs[FREQCV_INPUT].getVoltage(c)};
-        float m_pitch_voct = AZA_Helpers::freqToCV(freq + M_freq);
-        float c_pitch_voct = AZA_Helpers::freqToCV(freq + C_freq);
+        float m_pitch_voct = AZA_Helpers::freqToCV(AZA_Helpers::mtof(freq + M_freq));
+        float c_pitch_voct = AZA_Helpers::freqToCV(AZA_Helpers::mtof(freq + C_freq));
 
         // update oscillator freq
         // float FMOp::step(float voct, float momentum, float fmDepth, float fmInput)
@@ -475,6 +498,24 @@ CK_DLL_MFUN(geodesics_energy_set_multiply);
 // frequency CV mode type: amp, add
 // add means we add to cv_in + M_freq
 // amp means we multiply cv_in * M_freq
+
+// ==============================
+// SoLoud Speech
+// ==============================
+
+t_CKINT soloud_speech_data_offset = 0;
+CK_DLL_CTOR(soloud_speech_ctor);
+CK_DLL_DTOR(soloud_speech_dtor);
+CK_DLL_TICKF(soloud_speech_tick);
+
+CK_DLL_MFUN(soloud_speech_gen);
+
+CK_DLL_MFUN(soloud_speech_get_freq);
+CK_DLL_MFUN(soloud_speech_set_freq);
+CK_DLL_MFUN(soloud_speech_get_rate);
+CK_DLL_MFUN(soloud_speech_set_rate);
+CK_DLL_MFUN(soloud_speech_get_declination);
+CK_DLL_MFUN(soloud_speech_set_declination);
 
 CK_DLL_QUERY(AZA)
 {
@@ -600,8 +641,6 @@ CK_DLL_QUERY(AZA)
         END_CLASS();
     } // Plateau
 
-    // TODO: ADD INPUT CLAMPING FOR ENERGY
-
     { // Geodesics Energy
         BEGIN_CLASS("Energy", "UGen");
         DOC_CLASS("Port of Geodesics Energy ring modulation oscillator. See https://github.com/MarcBoule/Geodesics/tree/master?tab=readme-ov-file#energy");
@@ -612,27 +651,30 @@ CK_DLL_QUERY(AZA)
         DTOR(geodesics_energy_dtor);
         TICK(geodesics_energy_tick);
 
-        MFUN(geodesics_energy_get_freq, "float", "freq");
-        MFUN(geodesics_energy_set_freq, "void", "freq");
-        ARG("float", "freq");
+        MFUN(geodesics_energy_get_freq, "float", "midi");
+        MFUN(geodesics_energy_set_freq, "void", "midi");
+        ARG("float", "midi");
+        DOC_FUNC("Sets the base frequency of the oscillator in midi.");
 
-        MFUN(geodesics_energy_get_freq_m, "float", "freqM");
-        MFUN(geodesics_energy_set_freq_m, "void", "freqM");
-        ARG("float", "freq_offset");
+        MFUN(geodesics_energy_get_freq_m, "float", "midiM");
+        MFUN(geodesics_energy_set_freq_m, "void", "midiM");
+        ARG("float", "midi_offset");
+        DOC_FUNC("Sets the offset frequency of the M sinus in midi. Its final frequency will be midi + midiM");
 
-        MFUN(geodesics_energy_get_freq_c, "float", "freqC");
-        MFUN(geodesics_energy_set_freq_c, "void", "freqC");
-        ARG("float", "freq_offset");
+        MFUN(geodesics_energy_get_freq_c, "float", "midiC");
+        MFUN(geodesics_energy_set_freq_c, "void", "midiC");
+        ARG("float", "midi_offset");
+        DOC_FUNC("Sets the offset frequency of the C sinus in midi. Its final frequency will be midi + midiC");
 
         MFUN(geodesics_energy_get_feedback_m, "float", "feedbackM");
         MFUN(geodesics_energy_set_feedback_m, "void", "feedbackM");
         ARG("float", "feedback");
-        DOC_FUNC("FM feedback amount of the M sinus. Clamped to [0,1]");
+        DOC_FUNC("FM feedback amount of the M sinus. Expected values in [0,1]");
 
         MFUN(geodesics_energy_get_feedback_c, "float", "feedbackC");
         MFUN(geodesics_energy_set_feedback_c, "void", "feedbackC");
         ARG("float", "feedback");
-        DOC_FUNC("FM feedback amount of the C sinus. Clamped to [0,1]");
+        DOC_FUNC("FM feedback amount of the C sinus. Expects values in [0,1]");
 
         MFUN(geodesics_energy_get_multiply, "float", "multiply");
         MFUN(geodesics_energy_set_multiply, "void", "multiply");
@@ -641,6 +683,44 @@ CK_DLL_QUERY(AZA)
 
         END_CLASS();
     } // Geodesics Energy
+
+    { // SoLoud Speech
+        BEGIN_CLASS("Speech", "UGen");
+        DOC_CLASS("TODO");
+
+        soloud_speech_data_offset = MVAR("int", "@soloud_speech_data", false);
+
+        CTOR(soloud_speech_ctor);
+        DTOR(soloud_speech_dtor);
+        TICKF(soloud_speech_tick, 0, 2);
+
+        MFUN(soloud_speech_gen, "int", "say");
+        ARG("string", "text");
+        DOC_FUNC("Returns the sample length of the synthesized speech");
+
+        MFUN(soloud_speech_get_freq, "float", "freq");
+        DOC_FUNC("Returns the base frequency used to synthesize speech. Default 1330");
+
+        MFUN(soloud_speech_set_freq, "Speech", "freq");
+        ARG("float", "freq");
+        DOC_FUNC("Set the base frequency used to synthesize speech. Default 1330");
+
+        MFUN(soloud_speech_get_rate, "float", "rate");
+        DOC_FUNC("Returns the rate/speed of the synthesized speech. Default 1");
+
+        MFUN(soloud_speech_set_rate, "Speech", "rate");
+        ARG("float", "declination");
+        DOC_FUNC("Set the rate/speed of the synthesized speech. Default 1");
+
+        MFUN(soloud_speech_get_declination, "float", "declination");
+        DOC_FUNC("Returns the declination of the synthesized speech. Default 0.5");
+
+        MFUN(soloud_speech_set_declination, "Speech", "declination");
+        ARG("float", "declination");
+        DOC_FUNC("Set the declination of the synthesized speech. Default 0.5");
+
+        END_CLASS();
+    } // SoLoud Speech
 
     return true;
 }
@@ -1031,4 +1111,122 @@ CK_DLL_MFUN(geodesics_energy_set_multiply)
 {
     Geodesics_Energy_Chugin *energy = (Geodesics_Energy_Chugin *)OBJ_MEMBER_INT(SELF, geodesics_energy_data_offset);
     energy->slewInput = GET_NEXT_FLOAT(ARGS);
+}
+
+// ==================================
+// SoLoud Speech
+// ==================================
+
+struct SoLoud_Speech_Chugin
+{
+    short *buff = NULL;
+    int buff_nframes = 0; // number of frames in buff, buff length is buff_nframes*2 because stereo
+    int buff_read_pos = 0;
+
+    float freq = 1330.0f;
+    float rate = 1.0f;
+    float declination = 0.5f;
+};
+
+// temporary
+static short soloud_speech_buff[1024 * 1024] = {};
+static uint64_t soloud_speech_read_pos = 0;
+static uint64_t soloud_speech_write_pos = 0;
+
+CK_DLL_CTOR(soloud_speech_ctor)
+{
+    // just stores pointer to speech sample buffer
+    OBJ_MEMBER_INT(SELF, soloud_speech_data_offset) = (t_CKINT) new SoLoud_Speech_Chugin;
+}
+
+CK_DLL_DTOR(soloud_speech_dtor)
+{
+    SoLoud_Speech_Chugin *speech = (SoLoud_Speech_Chugin *)OBJ_MEMBER_INT(SELF, soloud_speech_data_offset);
+    if (speech->buff)
+        speech_free(speech->buff, NULL);
+    CK_SAFE_DELETE(speech);
+    OBJ_MEMBER_INT(SELF, soloud_speech_data_offset) = 0;
+}
+
+CK_DLL_TICKF(soloud_speech_tick)
+{
+    SoLoud_Speech_Chugin *speech = (SoLoud_Speech_Chugin *)OBJ_MEMBER_INT(SELF, soloud_speech_data_offset);
+    for (int i = 0; i < nframes; i++)
+    {
+        // break out if we reached end of synthesized speech buffer
+        if (speech->buff_read_pos >= speech->buff_nframes * 2)
+            break;
+
+        (out + 2 * i)[0] = (float)speech->buff[speech->buff_read_pos] / (SHRT_MAX + 1);
+        (out + 2 * i)[1] = (float)speech->buff[speech->buff_read_pos + 1] / (SHRT_MAX + 1);
+        speech->buff_read_pos += 2;
+    }
+
+    return TRUE;
+}
+
+CK_DLL_MFUN(soloud_speech_gen)
+{
+    Chuck_String *ck_string = GET_NEXT_STRING(ARGS);
+    if (!ck_string)
+        return;
+    const char *text = API->object->str(ck_string);
+
+    SoLoud_Speech_Chugin *speech = (SoLoud_Speech_Chugin *)OBJ_MEMBER_INT(SELF, soloud_speech_data_offset);
+
+    // free old buff, if exists
+    if (speech->buff)
+        speech_free(speech->buff, NULL);
+
+    speech->buff = speech_gen(
+        &speech->buff_nframes, text, NULL,
+        speech->freq,
+        speech->rate,
+        speech->declination);
+
+    // ASSERT(samples_pairs_generated % 2 == 0);
+
+    // reset read head
+    speech->buff_read_pos = 0;
+
+    RETURN->v_int = speech->buff_nframes;
+}
+
+CK_DLL_MFUN(soloud_speech_get_freq)
+{
+    SoLoud_Speech_Chugin *speech = (SoLoud_Speech_Chugin *)OBJ_MEMBER_INT(SELF, soloud_speech_data_offset);
+    RETURN->v_float = speech->freq;
+}
+
+CK_DLL_MFUN(soloud_speech_set_freq)
+{
+    SoLoud_Speech_Chugin *speech = (SoLoud_Speech_Chugin *)OBJ_MEMBER_INT(SELF, soloud_speech_data_offset);
+    speech->freq = GET_NEXT_FLOAT(ARGS);
+    RETURN->v_object = SELF;
+}
+
+CK_DLL_MFUN(soloud_speech_get_rate)
+{
+    SoLoud_Speech_Chugin *speech = (SoLoud_Speech_Chugin *)OBJ_MEMBER_INT(SELF, soloud_speech_data_offset);
+    RETURN->v_float = speech->rate;
+}
+
+CK_DLL_MFUN(soloud_speech_set_rate)
+{
+    SoLoud_Speech_Chugin *speech = (SoLoud_Speech_Chugin *)OBJ_MEMBER_INT(SELF, soloud_speech_data_offset);
+    speech->rate = GET_NEXT_FLOAT(ARGS);
+    RETURN->v_object = SELF;
+}
+
+CK_DLL_MFUN(soloud_speech_get_declination)
+{
+    SoLoud_Speech_Chugin *speech = (SoLoud_Speech_Chugin *)OBJ_MEMBER_INT(SELF, soloud_speech_data_offset);
+    RETURN->v_float = speech->declination;
+}
+
+CK_DLL_MFUN(soloud_speech_set_declination)
+{
+    SoLoud_Speech_Chugin *speech = (SoLoud_Speech_Chugin *)OBJ_MEMBER_INT(SELF, soloud_speech_data_offset);
+    speech->declination = GET_NEXT_FLOAT(ARGS);
+    RETURN->v_object = SELF;
 }
