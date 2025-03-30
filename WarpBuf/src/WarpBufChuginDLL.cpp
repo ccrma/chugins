@@ -34,6 +34,20 @@ CK_DLL_TICKF(warpbuf_tick);
 t_CKINT warpbuf_data_offset = 0;
 
 //-----------------------------------------------------------------------------
+// info function: ChucK calls this when loading/probing the chugin
+// NOTE: please customize these info fields below; they will be used for
+// chugins loading, probing, and package management and documentation
+//-----------------------------------------------------------------------------
+CK_DLL_INFO( WarpBuf )
+{
+    QUERY->setinfo( QUERY, CHUGIN_INFO_CHUGIN_VERSION, "v0.0.1" );
+    QUERY->setinfo( QUERY, CHUGIN_INFO_AUTHORS, "David Braun" );
+    QUERY->setinfo( QUERY, CHUGIN_INFO_DESCRIPTION, "A chugin which can timestretch and pitch-bend a sound buffer, thanks to the Rubber Band Library." );
+    QUERY->setinfo( QUERY, CHUGIN_INFO_URL, "https://github.com/ccrma/chugins" );
+    QUERY->setinfo( QUERY, CHUGIN_INFO_EMAIL, "braun@ccrma.stanford.edu" );
+}
+
+//-----------------------------------------------------------------------------
 // query function: chuck calls this when loading the Chugin
 //-----------------------------------------------------------------------------
 CK_DLL_QUERY(WarpBuf)
