@@ -117,3 +117,42 @@ install: $(CHUG)
 clean: 
 	rm -rf $(C_OBJECTS) $(CXX_OBJECTS) $(CHUG) $(WEBCHUG) Release Debug
 
+
+#-------------------------------------------------------------------
+# meson-build system
+# for cross-platform building including for Chump package management
+#-------------------------------------------------------------------
+
+#-----------  setting up the build -----------
+setup-mac-x86_64:
+	meson setup --buildtype=release --cross-file cross/x86_64-macos.txt builddir-x86_64
+
+setup-mac-arm64:
+	meson setup --buildtype=release --cross-file cross/arm64-macos.txt builddir-arm64
+
+setup-win:
+	meson setup --buildtype=release builddir-win --backend vs
+
+setup-linux:
+	meson setup --buildtype=release builddir-linux
+
+
+#-----------  building -----------
+build-mac-x86_64: setup-mac-x86_64
+	meson compile -C builddir-x86_64
+	cp builddir-x86_64/FluidSynth.chug FluidSynth-x86_64.chug
+
+build-mac-arm64: setup-mac-arm64
+	meson compile -C builddir-arm64
+	cp builddir-arm64/FluidSynth.chug FluidSynth-arm64.chug
+
+build-win: setup-win
+	meson compile -C builddir-win
+
+build-linux: setup-linux
+	meson compile -C builddir-linux
+
+# note: presently, Nick and Ge are able to build on windows using a combination of
+# cygwin (which make and can install meson, and can setup BUT not build) with
+# x64 Native Tools Command Prompt for VS 2022 (no 'make' at least on Ge's machine)
+# but can run the meson compile command directly

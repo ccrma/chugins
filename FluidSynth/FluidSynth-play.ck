@@ -1,10 +1,12 @@
+@import "FluidSynth"
+
 NRev rev => dac;
 0.01 => rev.mix;
 
 MidiFileIn min;
 MidiMsg msg;
 
-"HS_African_Percussion.sf2" => string sfont;
+me.dir() + "HS_African_Percussion.sf2" => string sfont;
 if(me.args() > 0) me.arg(0) => sfont;
 
 me.sourceDir() + "/bwv772.mid" => string filename;
