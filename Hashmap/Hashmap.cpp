@@ -40,9 +40,26 @@ CK_DLL_INFO(Hashmap)
 static Chuck_VM *g_vm = NULL;
 static CK_DL_API g_api = NULL;
 static Chuck_String *g_empty_string = NULL;
+static Chuck_Type *g_hm_type = NULL;
+static Chuck_Type *g_int_array_type = NULL;
+static Chuck_Type *g_object_array_type = NULL;
+static Chuck_Type *g_string_array_type = NULL;
 
 #define HM_ADD_REF(obj) (g_api->object->add_ref(obj))
 #define HM_RELEASE_REF(obj) (g_api->object->release(obj))
+
+// #ifndef NDEBUG
+#define ASSERT(expression)                                                      \
+    {                                                                           \
+        if (!(expression))                                                      \
+        {                                                                       \
+            printf("Assertion(%s) failed: file \"%s\", line %d\n", #expression, \
+                   __FILE__, __LINE__);                                         \
+        }                                                                       \
+    }
+// #else
+// #define ASSERT(expression) NULL;
+// #endif
 
 enum HM_Type : uint8_t
 {
@@ -69,7 +86,7 @@ struct HM_Entry
         t_CKINT ckint;
         t_CKFLOAT ckfloat; // supported for value only
         Chuck_Object *ckobj;
-        Chuck_String *ckstr;
+        const char *str_OWNED; // must be freed on delete and clear
     } as;
     HM_Type type;
 };
@@ -79,176 +96,133 @@ struct HM_Pair
 {
     HM_Entry key;
     HM_Entry value;
+
+    // returns 0 if equal.
+    static int compare(const void *a, const void *b, void *udata)
+    {
+        HM_Entry key_a = ((HM_Pair *)a)->key;
+        HM_Entry key_b = ((HM_Pair *)b)->key;
+
+        if (key_a.type != key_b.type)
+            return key_a.type - key_b.type;
+
+        switch (key_a.type)
+        {
+        case HM_INT:
+            return key_a.as.ckint - key_b.as.ckint;
+        case HM_OBJ:
+            return (uint8_t *)key_a.as.ckobj - (uint8_t *)key_b.as.ckobj;
+        case HM_STR:
+            return strcmp(key_a.as.str_OWNED, key_b.as.str_OWNED);
+        case HM_FLOAT: // not allowing float keys for now (due to precision issues)
+        default:
+            g_api->vm->em_log(1, "Hashmap: unsupported key type");
+            return 0;
+        }
+    }
+
+    static uint64_t hash(const void *item, uint64_t seed0, uint64_t seed1)
+    {
+        HM_Pair *pair = (HM_Pair *)item;
+
+        switch (pair->key.type)
+        {
+        case HM_INT:
+            return hashmap_xxhash3(&pair->key.as.ckint, sizeof(pair->key.as.ckint), seed0, seed1);
+        case HM_OBJ:
+            return hashmap_xxhash3(&pair->key.as.ckobj, sizeof(pair->key.as.ckobj), seed0, seed1);
+        case HM_STR:
+        {
+            const char *c_str = pair->key.as.str_OWNED;
+            return hashmap_xxhash3(c_str, strlen(c_str), seed0, seed1);
+        }
+        default:
+            g_api->vm->em_log(1, "Hashmap: unsupported key type");
+            return 0;
+        }
+        // return hashmap_sip(item, sizeof(int), seed0, seed1);
+        // return hashmap_murmur(item, sizeof(int), seed0, seed1);
+    }
+
+    static void releaseEntry(HM_Entry *entry)
+    {
+        if (entry == NULL)
+            return;
+
+        switch (entry->type)
+        {
+        case HM_OBJ:
+            HM_RELEASE_REF(entry->as.ckobj);
+            return;
+        case HM_STR:
+            free((char *)entry->as.str_OWNED);
+            return;
+        default:
+            return;
+        }
+    }
+
+    // called when deleting element from hashmap
+    static void releaseRef(void *item)
+    {
+        if (item == NULL)
+            return;
+
+        HM_Pair *pair = (HM_Pair *)item;
+
+        // release chuck objects
+        HM_Pair::releaseEntry(&pair->key);
+        HM_Pair::releaseEntry(&pair->value);
+    }
+
+    static void addRefEntry(HM_Entry *entry)
+    {
+        if (entry == NULL)
+            return;
+
+        if (entry->type == HM_OBJ)
+            HM_ADD_REF(entry->as.ckobj);
+    }
+
+    static void addRef(HM_Pair *pair)
+    {
+        if (pair == NULL)
+            return;
+
+        HM_Pair::addRefEntry(&pair->key);
+        HM_Pair::addRefEntry(&pair->value);
+    }
 };
-
-static int HM_Compare(const void *a, const void *b, void *udata)
-{
-    HM_Pair *ua = (HM_Pair *)a;
-    HM_Pair *ub = (HM_Pair *)b;
-
-    switch (ua->key.type)
-    {
-    case HM_INT:
-        return ua->key.as.ckint - ub->key.as.ckint;
-    case HM_OBJ:
-        return (uint8_t *)ua->key.as.ckobj - (uint8_t *)ub->key.as.ckobj;
-    case HM_STR:
-        return strcmp(g_api->object->str(ua->key.as.ckstr), g_api->object->str(ub->key.as.ckstr));
-        break;
-    case HM_FLOAT: // not allowing float keys for now (due to precision issues)
-    default:
-        g_api->vm->em_log(1, "Hashmap: unsupported key type");
-        return 0;
-    }
-}
-
-static uint64_t HM_hash(const void *item, uint64_t seed0, uint64_t seed1)
-{
-    HM_Pair *pair = (HM_Pair *)item;
-
-    switch (pair->key.type)
-    {
-    case HM_INT:
-        return hashmap_xxhash3(&pair->key.as.ckint, sizeof(pair->key.as.ckint), seed0, seed1);
-    case HM_OBJ:
-        return hashmap_xxhash3(&pair->key.as.ckobj, sizeof(pair->key.as.ckobj), seed0, seed1);
-    case HM_STR:
-    {
-        const char *c_str = g_api->object->str(pair->key.as.ckstr);
-        return hashmap_xxhash3(c_str, strlen(c_str), seed0, seed1);
-    }
-    default:
-        g_api->vm->em_log(1, "Hashmap: unsupported key type");
-        return 0;
-    }
-    // return hashmap_sip(item, sizeof(int), seed0, seed1);
-    // return hashmap_murmur(item, sizeof(int), seed0, seed1);
-}
-
-static void HM_ReleaseEntry(HM_Entry *entry)
-{
-    if (entry == NULL)
-        return;
-
-    switch (entry->type)
-    {
-    case HM_OBJ:
-        HM_RELEASE_REF(entry->as.ckobj);
-        return;
-    case HM_STR:
-        HM_RELEASE_REF((Chuck_Object *)entry->as.ckstr);
-        return;
-    default:
-        return;
-    }
-}
-
-// called when deleting element from hashmap
-static void HM_ReleasePair(void *item)
-{
-    if (item == NULL)
-        return;
-
-    HM_Pair *pair = (HM_Pair *)item;
-
-    // release chuck objects
-    HM_ReleaseEntry(&pair->key);
-    HM_ReleaseEntry(&pair->value);
-}
-
-static void HM_AddRefEntry(HM_Entry *entry)
-{
-    if (entry == NULL)
-        return;
-
-    switch (entry->type)
-    {
-    case HM_OBJ:
-        HM_ADD_REF(entry->as.ckobj);
-        return;
-    case HM_STR:
-        HM_ADD_REF((Chuck_Object *)entry->as.ckstr);
-        return;
-    default:
-        return;
-    }
-}
-
-static void HM_AddRefPair(HM_Pair *pair)
-{
-    if (pair == NULL)
-        return;
-
-    HM_AddRefEntry(&pair->key);
-    HM_AddRefEntry(&pair->value);
-}
-
-t_CKINT hashitem_ptr_offset = 0;
-t_CKINT hashpair_ptr_offset = 0;
-t_CKINT hashmap_ptr_offset = 0;
-
-// ==================================================================
-// hashitem impl
-// ==================================================================
-
-CK_DLL_CTOR(hashitem_ctor)
-{
-}
-
-CK_DLL_DTOR(hashitem_dtor)
-{
-}
-
-CK_DLL_MFUN(hashitem_get_type)
-{
-}
-
-CK_DLL_MFUN(hashitem_as_int)
-{
-}
-
-CK_DLL_MFUN(hashitem_as_float)
-{
-}
-
-CK_DLL_MFUN(hashitem_as_obj)
-{
-}
-
-CK_DLL_MFUN(hashitem_as_str)
-{
-}
-
-// ==================================================================
-// hashpair impl
-// ==================================================================
 
 // ==================================================================
 // hashmap impl
 // ==================================================================
 
-// basic
-CK_DLL_MFUN(hm_set);
-CK_DLL_MFUN(hm_get);
-CK_DLL_MFUN(hm_delete);
-CK_DLL_MFUN(hm_clear);
+t_CKINT hashmap_ptr_offset = 0;
 
-// iteration
-CK_DLL_MFUN(hm_iter);
+static void HM_Init(Chuck_Object *ck_obj)
+{
+    CK_DL_API API = g_api;
+    // create ck_obj if not provided
+    if (ck_obj == NULL)
+    {
+        ck_obj = g_api->object->create_without_shred(g_vm, g_hm_type, false); // NO add ref
+    }
+
+    int seed = time(NULL);
+    OBJ_MEMBER_UINT(ck_obj, hashmap_ptr_offset) = (t_CKUINT)hashmap_new(
+        sizeof(HM_Pair), 0, seed, seed, HM_Pair::hash, HM_Pair::compare, HM_Pair::releaseRef, NULL);
+}
 
 CK_DLL_CTOR(hm_ctor)
 {
-    int seed = time(NULL);
-    hashmap *map = hashmap_new(sizeof(HM_Pair), 0, seed, seed,
-                               HM_hash, HM_Compare, HM_ReleasePair, NULL);
-    OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset) = (t_CKUINT)map;
+    HM_Init(SELF);
 }
 
 CK_DLL_DTOR(hm_dtor)
 {
-    hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset);
-    hashmap_free(hm);
-    OBJ_MEMBER_INT(SELF, hashmap_ptr_offset) = 0;
+    hashmap_free((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset));
+    OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset) = 0;
 }
 
 CK_DLL_MFUN(hm_count)
@@ -257,8 +231,11 @@ CK_DLL_MFUN(hm_count)
     RETURN->v_int = hashmap_count(hm);
 }
 
-static void HM_SetImpl(hashmap *hm, HM_Type key_type, HM_Type value_type, void *ARGS)
+static void HM_SetImpl(Chuck_Object *ckobj, HM_Type key_type, HM_Type value_type, void *ARGS)
 {
+    CK_DL_API API = g_api;
+    hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(ckobj, hashmap_ptr_offset);
+
     HM_Pair pair = {};
     pair.key.type = key_type;
     pair.value.type = value_type;
@@ -272,8 +249,11 @@ static void HM_SetImpl(hashmap *hm, HM_Type key_type, HM_Type value_type, void *
         pair.key.as.ckobj = GET_NEXT_OBJECT(ARGS);
         break;
     case HM_STR:
-        pair.key.as.ckstr = GET_NEXT_STRING(ARGS);
-        break;
+    {
+        Chuck_String *ckstr = GET_NEXT_STRING(ARGS);
+        pair.key.as.str_OWNED = strdup(g_api->object->str(ckstr));
+    }
+    break;
     default:
         break;
     }
@@ -290,90 +270,84 @@ static void HM_SetImpl(hashmap *hm, HM_Type key_type, HM_Type value_type, void *
         pair.value.as.ckobj = GET_NEXT_OBJECT(ARGS);
         break;
     case HM_STR:
-        pair.value.as.ckstr = GET_NEXT_STRING(ARGS);
-        break;
+    {
+        Chuck_String *ckstr = GET_NEXT_STRING(ARGS);
+        pair.value.as.str_OWNED = strdup(g_api->object->str(ckstr));
+    }
+    break;
     default:
         break;
     }
 
-    HM_AddRefPair(&pair);
-    HM_ReleasePair((HM_Pair *)hashmap_set(hm, &pair));
+    HM_Pair::addRef(&pair);
+    HM_Pair::releaseRef((HM_Pair *)hashmap_set(hm, &pair));
 }
 
 CK_DLL_MFUN(hm_set_int_int)
 {
-    HM_SetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_INT, HM_INT, ARGS);
+    HM_SetImpl(SELF, HM_INT, HM_INT, ARGS);
 }
 
 CK_DLL_MFUN(hm_set_int_float)
 {
-    HM_SetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_INT, HM_FLOAT, ARGS);
+    HM_SetImpl(SELF, HM_INT, HM_FLOAT, ARGS);
 }
 
 CK_DLL_MFUN(hm_set_int_obj)
 {
-    HM_SetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_INT, HM_OBJ, ARGS);
+    HM_SetImpl(SELF, HM_INT, HM_OBJ, ARGS);
 }
 
 CK_DLL_MFUN(hm_set_int_str)
 {
-    HM_SetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_INT, HM_STR, ARGS);
+    HM_SetImpl(SELF, HM_INT, HM_STR, ARGS);
 }
 
 CK_DLL_MFUN(hm_set_obj_int)
 {
-    HM_SetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_OBJ, HM_INT, ARGS);
+    HM_SetImpl(SELF, HM_OBJ, HM_INT, ARGS);
 }
 
 CK_DLL_MFUN(hm_set_obj_float)
 {
-    HM_SetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_OBJ, HM_FLOAT, ARGS);
+    HM_SetImpl(SELF, HM_OBJ, HM_FLOAT, ARGS);
 }
 
 CK_DLL_MFUN(hm_set_obj_obj)
 {
-    HM_SetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_OBJ, HM_OBJ, ARGS);
+    HM_SetImpl(SELF, HM_OBJ, HM_OBJ, ARGS);
 }
 
 CK_DLL_MFUN(hm_set_obj_str)
 {
-    HM_SetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_OBJ, HM_STR, ARGS);
+    HM_SetImpl(SELF, HM_OBJ, HM_STR, ARGS);
 }
 
 CK_DLL_MFUN(hm_set_str_int)
 {
-    HM_SetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_STR, HM_INT, ARGS);
+    HM_SetImpl(SELF, HM_STR, HM_INT, ARGS);
 }
 
 CK_DLL_MFUN(hm_set_str_float)
 {
-    HM_SetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_STR, HM_FLOAT, ARGS);
+    HM_SetImpl(SELF, HM_STR, HM_FLOAT, ARGS);
 }
 
 CK_DLL_MFUN(hm_set_str_obj)
 {
-    HM_SetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_STR, HM_OBJ, ARGS);
+    HM_SetImpl(SELF, HM_STR, HM_OBJ, ARGS);
 }
 
 CK_DLL_MFUN(hm_set_str_str)
 {
-    HM_SetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_STR, HM_STR, ARGS);
+    HM_SetImpl(SELF, HM_STR, HM_STR, ARGS);
 }
 
-static void HM_GetImpl(hashmap *hm, HM_Type key_type, HM_Type value_type, void *ARGS, Chuck_VM_Shred *SHRED, Chuck_DL_Return *RETURN)
+static void HM_GetImpl(Chuck_Object *ckobj, HM_Type key_type, HM_Type value_type, void *ARGS, Chuck_VM_Shred *SHRED, Chuck_DL_Return *RETURN)
 {
+    CK_DL_API API = g_api;
+    hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(ckobj, hashmap_ptr_offset);
+
     HM_Pair pair = {};
     pair.key.type = key_type;
     // set key
@@ -386,8 +360,12 @@ static void HM_GetImpl(hashmap *hm, HM_Type key_type, HM_Type value_type, void *
         pair.key.as.ckobj = GET_NEXT_OBJECT(ARGS);
         break;
     case HM_STR:
-        pair.key.as.ckstr = GET_NEXT_STRING(ARGS);
-        break;
+    {
+        // don't strdup here because this is only a lookup key
+        Chuck_String *ckstr = GET_NEXT_STRING(ARGS);
+        pair.key.as.str_OWNED = (char *)g_api->object->str(ckstr);
+    }
+    break;
     default:
         break;
     }
@@ -426,6 +404,7 @@ static void HM_GetImpl(hashmap *hm, HM_Type key_type, HM_Type value_type, void *
                  "Expected Hashmap value of type %s, but type was %s",
                  HM_TypeNames[value_type],
                  HM_TypeNames[result->value.type]);
+        // TODO: log error rather than crash
         g_api->vm->throw_exception("HashmapGetTypeMismatch",
                                    err_msg,
                                    SHRED);
@@ -446,7 +425,7 @@ static void HM_GetImpl(hashmap *hm, HM_Type key_type, HM_Type value_type, void *
         RETURN->v_object = result->value.as.ckobj;
         break;
     case HM_STR:
-        RETURN->v_string = result->value.as.ckstr;
+        RETURN->v_string = g_api->object->create_string(g_vm, result->value.as.str_OWNED, false);
         break;
     default:
         break;
@@ -455,74 +434,63 @@ static void HM_GetImpl(hashmap *hm, HM_Type key_type, HM_Type value_type, void *
 
 CK_DLL_MFUN(hm_get_int_int)
 {
-    HM_GetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_INT, HM_INT, ARGS, SHRED, RETURN);
+    HM_GetImpl(SELF, HM_INT, HM_INT, ARGS, SHRED, RETURN);
 }
 
 CK_DLL_MFUN(hm_get_int_float)
 {
-    HM_GetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_INT, HM_FLOAT, ARGS, SHRED, RETURN);
+    HM_GetImpl(SELF, HM_INT, HM_FLOAT, ARGS, SHRED, RETURN);
 }
 
 CK_DLL_MFUN(hm_get_int_obj)
 {
-    HM_GetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_INT, HM_OBJ, ARGS, SHRED, RETURN);
+    HM_GetImpl(SELF, HM_INT, HM_OBJ, ARGS, SHRED, RETURN);
 }
 
 CK_DLL_MFUN(hm_get_int_str)
 {
-    HM_GetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
+    HM_GetImpl(SELF,
                HM_INT, HM_STR, ARGS, SHRED, RETURN);
 }
 
 CK_DLL_MFUN(hm_get_obj_int)
 {
-    HM_GetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_OBJ, HM_INT, ARGS, SHRED, RETURN);
+    HM_GetImpl(SELF, HM_OBJ, HM_INT, ARGS, SHRED, RETURN);
 }
 
 CK_DLL_MFUN(hm_get_obj_float)
 {
-    HM_GetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_OBJ, HM_FLOAT, ARGS, SHRED, RETURN);
+    HM_GetImpl(SELF, HM_OBJ, HM_FLOAT, ARGS, SHRED, RETURN);
 }
 
 CK_DLL_MFUN(hm_get_obj_obj)
 {
-    HM_GetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_OBJ, HM_OBJ, ARGS, SHRED, RETURN);
+    HM_GetImpl(SELF, HM_OBJ, HM_OBJ, ARGS, SHRED, RETURN);
 }
 
 CK_DLL_MFUN(hm_get_obj_str)
 {
-    HM_GetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_OBJ, HM_STR, ARGS, SHRED, RETURN);
+    HM_GetImpl(SELF, HM_OBJ, HM_STR, ARGS, SHRED, RETURN);
 }
 
 CK_DLL_MFUN(hm_get_str_int)
 {
-    HM_GetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_STR, HM_INT, ARGS, SHRED, RETURN);
+    HM_GetImpl(SELF, HM_STR, HM_INT, ARGS, SHRED, RETURN);
 }
 
 CK_DLL_MFUN(hm_get_str_float)
 {
-    HM_GetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_STR, HM_FLOAT, ARGS, SHRED, RETURN);
+    HM_GetImpl(SELF, HM_STR, HM_FLOAT, ARGS, SHRED, RETURN);
 }
 
 CK_DLL_MFUN(hm_get_str_obj)
 {
-    HM_GetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_STR, HM_OBJ, ARGS, SHRED, RETURN);
+    HM_GetImpl(SELF, HM_STR, HM_OBJ, ARGS, SHRED, RETURN);
 }
 
 CK_DLL_MFUN(hm_get_str_str)
 {
-    HM_GetImpl((hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset),
-               HM_STR, HM_STR, ARGS, SHRED, RETURN);
+    HM_GetImpl(SELF, HM_STR, HM_STR, ARGS, SHRED, RETURN);
 }
 
 CK_DLL_MFUN(hm_has_int)
@@ -556,7 +524,7 @@ CK_DLL_MFUN(hm_has_str)
 
     HM_Pair pair = {};
     pair.key.type = HM_STR;
-    pair.key.as.ckstr = key;
+    pair.key.as.str_OWNED = API->object->str(key);
 
     RETURN->v_int = hashmap_get(hm, &pair) ? 1 : 0;
 }
@@ -571,7 +539,7 @@ CK_DLL_MFUN(hm_del_int)
     pair.key.as.ckint = key;
 
     HM_Pair *deleted_pair = (HM_Pair *)hashmap_delete(hm, &pair);
-    HM_ReleasePair(deleted_pair);
+    HM_Pair::releaseRef(deleted_pair);
     RETURN->v_int = deleted_pair ? 1 : 0;
 }
 
@@ -585,7 +553,7 @@ CK_DLL_MFUN(hm_del_obj)
     pair.key.as.ckobj = key;
 
     HM_Pair *deleted_pair = (HM_Pair *)hashmap_delete(hm, &pair);
-    HM_ReleasePair(deleted_pair);
+    HM_Pair::releaseRef(deleted_pair);
     RETURN->v_int = deleted_pair ? 1 : 0;
 }
 
@@ -596,10 +564,10 @@ CK_DLL_MFUN(hm_del_str)
 
     HM_Pair pair = {};
     pair.key.type = HM_STR;
-    pair.key.as.ckstr = key;
+    pair.key.as.str_OWNED = API->object->str(key);
 
     HM_Pair *deleted_pair = (HM_Pair *)hashmap_delete(hm, &pair);
-    HM_ReleasePair(deleted_pair);
+    HM_Pair::releaseRef(deleted_pair);
     RETURN->v_int = deleted_pair ? 1 : 0;
 }
 
@@ -607,6 +575,99 @@ CK_DLL_MFUN(hm_clear)
 {
     hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset);
     hashmap_clear(hm, true);
+}
+
+CK_DLL_MFUN(hm_type_int)
+{
+    hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset);
+
+    HM_Pair pair = {};
+    pair.key.type = HM_INT;
+    pair.key.as.ckint = GET_NEXT_INT(ARGS);
+
+    // lookup
+    HM_Pair *result = (HM_Pair *)hashmap_get(hm, &pair);
+
+    RETURN->v_int = result ? result->value.type : 0;
+}
+
+CK_DLL_MFUN(hm_type_obj)
+{
+    hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset);
+
+    HM_Pair pair = {};
+    pair.key.type = HM_OBJ;
+    pair.key.as.ckobj = GET_NEXT_OBJECT(ARGS);
+
+    // lookup
+    HM_Pair *result = (HM_Pair *)hashmap_get(hm, &pair);
+
+    RETURN->v_int = result ? result->value.type : 0;
+}
+
+CK_DLL_MFUN(hm_type_str)
+{
+    hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset);
+
+    HM_Pair pair = {};
+    pair.key.type = HM_STR;
+    pair.key.as.str_OWNED = API->object->str(GET_NEXT_STRING(ARGS));
+
+    // lookup
+    HM_Pair *result = (HM_Pair *)hashmap_get(hm, &pair);
+
+    RETURN->v_int = result ? result->value.type : 0;
+}
+
+CK_DLL_MFUN(hm_keys_int)
+{
+    hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset);
+    Chuck_ArrayInt *ck_arr = (Chuck_ArrayInt *)g_api->object->create(SHRED, g_int_array_type, false);
+
+    size_t hashmap_idx_DONT_USE = 0;
+    HM_Pair *pair = NULL;
+    while (
+        hashmap_iter(hm, &hashmap_idx_DONT_USE, (void **)&pair))
+    {
+        if (pair->key.type == HM_INT)
+            g_api->object->array_int_push_back(ck_arr, pair->key.as.ckint);
+    }
+
+    RETURN->v_object = (Chuck_Object *)ck_arr;
+}
+
+CK_DLL_MFUN(hm_keys_obj)
+{
+    hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset);
+    Chuck_ArrayInt *ck_arr = (Chuck_ArrayInt *)g_api->object->create(SHRED, g_object_array_type, false);
+
+    size_t hashmap_idx_DONT_USE = 0;
+    HM_Pair *pair = NULL;
+    while (
+        hashmap_iter(hm, &hashmap_idx_DONT_USE, (void **)&pair))
+    {
+        if (pair->key.type == HM_OBJ)
+            g_api->object->array_int_push_back(ck_arr, (t_CKINT)pair->key.as.ckobj);
+    }
+
+    RETURN->v_object = (Chuck_Object *)ck_arr;
+}
+
+CK_DLL_MFUN(hm_keys_str)
+{
+    hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset);
+    Chuck_ArrayInt *ck_arr = (Chuck_ArrayInt *)g_api->object->create(SHRED, g_string_array_type, false);
+
+    size_t hashmap_idx_DONT_USE = 0;
+    HM_Pair *pair = NULL;
+    while (
+        hashmap_iter(hm, &hashmap_idx_DONT_USE, (void **)&pair))
+    {
+        if (pair->key.type == HM_STR)
+            g_api->object->array_int_push_back(ck_arr, (t_CKINT)g_api->object->create_string(g_vm, pair->key.as.str_OWNED, false));
+    }
+
+    RETURN->v_object = (Chuck_Object *)ck_arr;
 }
 
 CK_DLL_QUERY(Hashmap)
@@ -618,205 +679,202 @@ CK_DLL_QUERY(Hashmap)
 
     QUERY->setname(QUERY, "HashMapChugin");
 
-    // HashItem ----------------------------------------------
-    static t_CKINT HASH_ITEM_NULL = HM_NULL;
-    static t_CKINT HASH_ITEM_INT = HM_INT;
-    static t_CKINT HASH_ITEM_FLOAT = HM_FLOAT;
-    static t_CKINT HASH_ITEM_OBJ = HM_OBJ;
-    static t_CKINT HASH_ITEM_STR = HM_STR;
+    // Hash Type Enum ----------------------------------------------
+    static t_CKINT HASH_TYPE_NULL = HM_NULL;
+    static t_CKINT HASH_TYPE_INT = HM_INT;
+    static t_CKINT HASH_TYPE_FLOAT = HM_FLOAT;
+    static t_CKINT HASH_TYPE_OBJ = HM_OBJ;
+    static t_CKINT HASH_TYPE_STR = HM_STR;
 
-    // immutable generic return type
-    // QUERY->begin_class(QUERY, "HashItem", "Object");
-    // hashitem_ptr_offset = QUERY->add_mvar(QUERY, int", "@hashitem_ptr", false);
+    { // HashMap ----------------------------------------------
+        QUERY->begin_class(QUERY, "HashMap", "Object");
+        hashmap_ptr_offset = QUERY->add_mvar(QUERY, "int", "@hashmap_ptr", false);
 
-    // QUERY->add_svar(QUERY, "int", "HM_NULL", true, &HASH_ITEM_NULL);
-    // QUERY->add_svar(QUERY, "int", "HM_INT", true, &HASH_ITEM_INT);
-    // QUERY->add_svar(QUERY, "int", "HM_FLOAT", true, &HASH_ITEM_FLOAT);
-    // QUERY->add_svar(QUERY, "int", "HM_OBJ", true, &HASH_ITEM_OBJ);
-    // QUERY->add_svar(QUERY, "int", "HM_STR", true, &HASH_ITEM_STR);
+        QUERY->add_svar(QUERY, "int", "Type_None", true, &HASH_TYPE_NULL);
+        QUERY->add_svar(QUERY, "int", "Type_Int", true, &HASH_TYPE_INT);
+        QUERY->add_svar(QUERY, "int", "Type_Float", true, &HASH_TYPE_FLOAT);
+        QUERY->add_svar(QUERY, "int", "Type_Obj", true, &HASH_TYPE_OBJ);
+        QUERY->add_svar(QUERY, "int", "Type_Str", true, &HASH_TYPE_STR);
 
-    // QUERY->add_ctor(QUERY, hashitem_ctor);
-    // QUERY->add_dtor(QUERY, hashitem_dtor);
+        QUERY->add_ctor(QUERY, hm_ctor);
+        QUERY->add_dtor(QUERY, hm_dtor);
 
-    // QUERY->add_mfun(QUERY, hashitem_get_type, "int", "type");
-    // QUERY->doc_func(QUERY, "Get the type of the hashitem. Returns one of HashItem.NULL, HashItem.INT, HashItem.FLOAT, HashItem.OBJ, HashItem.STR");
+        QUERY->add_mfun(QUERY, hm_count, "int", "size");
+        QUERY->doc_func(QUERY, "Get the number of elements in the hashmap");
 
-    // QUERY->add_mfun(QUERY, hashitem_as_int, "int", "asInt");
-    // QUERY->doc_func(QUERY, "Get the value of the HashItem as an integer");
+        // ----- setters ----------------------------------------
+        // for now setters return void
+        // alternative is to allocate new hashitem and return previously stored value
+        QUERY->add_mfun(QUERY, hm_set_int_int, "void", "set");
+        QUERY->add_arg(QUERY, "int", "key");
+        QUERY->add_arg(QUERY, "int", "value");
+        QUERY->doc_func(QUERY, "Set an int key to an int value");
 
-    // QUERY->add_mfun(QUERY, hashitem_as_float, "float", "asFloat");
-    // QUERY->doc_func(QUERY, "Get the value of the HashItem as a float");
+        QUERY->add_mfun(QUERY, hm_set_int_float, "void", "set");
+        QUERY->add_arg(QUERY, "int", "key");
+        QUERY->add_arg(QUERY, "float", "value");
+        QUERY->doc_func(QUERY, "Set an int key to a float value");
 
-    // QUERY->add_mfun(QUERY, hashitem_as_obj, "Object", "asObj");
-    // QUERY->doc_func(QUERY, "Get the value of the HashItem as an Object");
+        QUERY->add_mfun(QUERY, hm_set_int_obj, "void", "set");
+        QUERY->add_arg(QUERY, "int", "key");
+        QUERY->add_arg(QUERY, "Object", "value");
+        QUERY->doc_func(QUERY, "Set an int key to an Object value");
 
-    // QUERY->add_mfun(QUERY, hashitem_as_str, "string", "asStr");
-    // QUERY->doc_func(QUERY, "Get the value of the HashItem as a string");
+        QUERY->add_mfun(QUERY, hm_set_int_str, "void", "set");
+        QUERY->add_arg(QUERY, "int", "key");
+        QUERY->add_arg(QUERY, "string", "value");
+        QUERY->doc_func(QUERY, "Set an int key to a string value");
 
-    // QUERY->end_class(QUERY);
+        QUERY->add_mfun(QUERY, hm_set_obj_int, "void", "set");
+        QUERY->add_arg(QUERY, "Object", "key");
+        QUERY->add_arg(QUERY, "int", "value");
+        QUERY->doc_func(QUERY, "Set an Object key to an int value");
 
-    // HashPair ----------------------------------------------
-    // QUERY->begin_class(QUERY, "HashPair", "Object");
-    // hashpair_ptr_offset = QUERY->add_mvar(QUERY, "int", "@hashpair_ptr", false);
+        QUERY->add_mfun(QUERY, hm_set_obj_float, "void", "set");
+        QUERY->add_arg(QUERY, "Object", "key");
+        QUERY->add_arg(QUERY, "float", "value");
+        QUERY->doc_func(QUERY, "Set an Object key to a float value");
 
-    // TODO: just contains 2 hashitems
+        QUERY->add_mfun(QUERY, hm_set_obj_obj, "void", "set");
+        QUERY->add_arg(QUERY, "Object", "key");
+        QUERY->add_arg(QUERY, "Object", "value");
+        QUERY->doc_func(QUERY, "Set an Object key to an Object value");
 
-    // QUERY->end_class(QUERY);
+        QUERY->add_mfun(QUERY, hm_set_obj_str, "void", "set");
+        QUERY->add_arg(QUERY, "Object", "key");
+        QUERY->add_arg(QUERY, "string", "value");
+        QUERY->doc_func(QUERY, "Set an Object key to a string value");
 
-    // HashMap ----------------------------------------------
+        QUERY->add_mfun(QUERY, hm_set_str_int, "void", "set");
+        QUERY->add_arg(QUERY, "string", "key");
+        QUERY->add_arg(QUERY, "int", "value");
+        QUERY->doc_func(QUERY, "Set a string key to an int value");
 
-    QUERY->begin_class(QUERY, "HashMap", "Object");
-    hashmap_ptr_offset = QUERY->add_mvar(QUERY, "int", "@hashmap_ptr", false);
+        QUERY->add_mfun(QUERY, hm_set_str_float, "void", "set");
+        QUERY->add_arg(QUERY, "string", "key");
+        QUERY->add_arg(QUERY, "float", "value");
+        QUERY->doc_func(QUERY, "Set a string key to a float value");
 
-    QUERY->add_ctor(QUERY, hm_ctor);
-    QUERY->add_dtor(QUERY, hm_dtor);
+        QUERY->add_mfun(QUERY, hm_set_str_obj, "void", "set");
+        QUERY->add_arg(QUERY, "string", "key");
+        QUERY->add_arg(QUERY, "Object", "value");
+        QUERY->doc_func(QUERY, "Set a string key to an Object value");
 
-    QUERY->add_mfun(QUERY, hm_count, "int", "size");
-    QUERY->doc_func(QUERY, "Get the number of elements in the hashmap");
+        QUERY->add_mfun(QUERY, hm_set_str_str, "void", "set");
+        QUERY->add_arg(QUERY, "string", "key");
+        QUERY->add_arg(QUERY, "string", "value");
+        QUERY->doc_func(QUERY, "Set a string key to a string value");
 
-    // ----- setters ----------------------------------------
-    // for now setters return void
-    // alternative is to allocate new hashitem and return previously stored value
-    QUERY->add_mfun(QUERY, hm_set_int_int, "void", "set");
-    QUERY->add_arg(QUERY, "int", "key");
-    QUERY->add_arg(QUERY, "int", "value");
-    QUERY->doc_func(QUERY, "Set an int key to an int value");
+        // ----- getters ----------------------------------------
+        QUERY->add_mfun(QUERY, hm_get_int_int, "int", "getInt");
+        QUERY->add_arg(QUERY, "int", "key");
+        QUERY->doc_func(QUERY, "Get an int value from an int key (default 0)");
 
-    QUERY->add_mfun(QUERY, hm_set_int_float, "void", "set");
-    QUERY->add_arg(QUERY, "int", "key");
-    QUERY->add_arg(QUERY, "float", "value");
-    QUERY->doc_func(QUERY, "Set an int key to a float value");
+        QUERY->add_mfun(QUERY, hm_get_int_float, "float", "getFloat");
+        QUERY->add_arg(QUERY, "int", "key");
+        QUERY->doc_func(QUERY, "Get a float value from an int key (default 0.0)");
 
-    QUERY->add_mfun(QUERY, hm_set_int_obj, "void", "set");
-    QUERY->add_arg(QUERY, "int", "key");
-    QUERY->add_arg(QUERY, "Object", "value");
-    QUERY->doc_func(QUERY, "Set an int key to an Object value");
+        QUERY->add_mfun(QUERY, hm_get_int_obj, "Object", "getObj");
+        QUERY->add_arg(QUERY, "int", "key");
+        QUERY->doc_func(QUERY, "Get an Object value from an int key (default NULL)");
 
-    QUERY->add_mfun(QUERY, hm_set_int_str, "void", "set");
-    QUERY->add_arg(QUERY, "int", "key");
-    QUERY->add_arg(QUERY, "string", "value");
-    QUERY->doc_func(QUERY, "Set an int key to a string value");
+        QUERY->add_mfun(QUERY, hm_get_int_str, "string", "getStr");
+        QUERY->add_arg(QUERY, "int", "key");
+        QUERY->doc_func(QUERY, "Get a string value from an int key (default \"\")");
 
-    QUERY->add_mfun(QUERY, hm_set_obj_int, "void", "set");
-    QUERY->add_arg(QUERY, "Object", "key");
-    QUERY->add_arg(QUERY, "int", "value");
-    QUERY->doc_func(QUERY, "Set an Object key to an int value");
+        QUERY->add_mfun(QUERY, hm_get_obj_int, "int", "getInt");
+        QUERY->add_arg(QUERY, "Object", "key");
+        QUERY->doc_func(QUERY, "Get an int value from an Object key (default 0)");
 
-    QUERY->add_mfun(QUERY, hm_set_obj_float, "void", "set");
-    QUERY->add_arg(QUERY, "Object", "key");
-    QUERY->add_arg(QUERY, "float", "value");
-    QUERY->doc_func(QUERY, "Set an Object key to a float value");
+        QUERY->add_mfun(QUERY, hm_get_obj_float, "float", "getFloat");
+        QUERY->add_arg(QUERY, "Object", "key");
+        QUERY->doc_func(QUERY, "Get a float value from an Object key (default 0.0)");
 
-    QUERY->add_mfun(QUERY, hm_set_obj_obj, "void", "set");
-    QUERY->add_arg(QUERY, "Object", "key");
-    QUERY->add_arg(QUERY, "Object", "value");
-    QUERY->doc_func(QUERY, "Set an Object key to an Object value");
+        QUERY->add_mfun(QUERY, hm_get_obj_obj, "Object", "getObj");
+        QUERY->add_arg(QUERY, "Object", "key");
+        QUERY->doc_func(QUERY, "Get an Object value from an Object key (default NULL)");
 
-    QUERY->add_mfun(QUERY, hm_set_obj_str, "void", "set");
-    QUERY->add_arg(QUERY, "Object", "key");
-    QUERY->add_arg(QUERY, "string", "value");
-    QUERY->doc_func(QUERY, "Set an Object key to a string value");
+        QUERY->add_mfun(QUERY, hm_get_obj_str, "string", "getStr");
+        QUERY->add_arg(QUERY, "Object", "key");
+        QUERY->doc_func(QUERY, "Get a string value from an Object key (default \"\")");
 
-    QUERY->add_mfun(QUERY, hm_set_str_int, "void", "set");
-    QUERY->add_arg(QUERY, "string", "key");
-    QUERY->add_arg(QUERY, "int", "value");
-    QUERY->doc_func(QUERY, "Set a string key to an int value");
+        QUERY->add_mfun(QUERY, hm_get_str_int, "int", "getInt");
+        QUERY->add_arg(QUERY, "string", "key");
+        QUERY->doc_func(QUERY, "Get an int value from a string key (default 0)");
 
-    QUERY->add_mfun(QUERY, hm_set_str_float, "void", "set");
-    QUERY->add_arg(QUERY, "string", "key");
-    QUERY->add_arg(QUERY, "float", "value");
-    QUERY->doc_func(QUERY, "Set a string key to a float value");
+        QUERY->add_mfun(QUERY, hm_get_str_float, "float", "getFloat");
+        QUERY->add_arg(QUERY, "string", "key");
+        QUERY->doc_func(QUERY, "Get a float value from a string key (default 0.0)");
 
-    QUERY->add_mfun(QUERY, hm_set_str_obj, "void", "set");
-    QUERY->add_arg(QUERY, "string", "key");
-    QUERY->add_arg(QUERY, "Object", "value");
-    QUERY->doc_func(QUERY, "Set a string key to an Object value");
+        QUERY->add_mfun(QUERY, hm_get_str_obj, "Object", "getObj");
+        QUERY->add_arg(QUERY, "string", "key");
+        QUERY->doc_func(QUERY, "Get an Object value from a string key (default NULL)");
 
-    QUERY->add_mfun(QUERY, hm_set_str_str, "void", "set");
-    QUERY->add_arg(QUERY, "string", "key");
-    QUERY->add_arg(QUERY, "string", "value");
-    QUERY->doc_func(QUERY, "Set a string key to a string value");
+        QUERY->add_mfun(QUERY, hm_get_str_str, "string", "getStr");
+        QUERY->add_arg(QUERY, "string", "key");
+        QUERY->doc_func(QUERY, "Get a string value from a string key (default \"\")");
 
-    // ----- getters ----------------------------------------
-    QUERY->add_mfun(QUERY, hm_get_int_int, "int", "getInt");
-    QUERY->add_arg(QUERY, "int", "key");
-    QUERY->doc_func(QUERY, "Get an int value from an int key (default 0)");
+        // ----- find ----------------------------------------
+        QUERY->add_mfun(QUERY, hm_has_int, "int", "has");
+        QUERY->add_arg(QUERY, "int", "key");
+        QUERY->doc_func(QUERY, "Check if an int key exists in the hashmap.");
 
-    QUERY->add_mfun(QUERY, hm_get_int_float, "float", "getFloat");
-    QUERY->add_arg(QUERY, "int", "key");
-    QUERY->doc_func(QUERY, "Get a float value from an int key (default 0.0)");
+        QUERY->add_mfun(QUERY, hm_has_obj, "int", "has");
+        QUERY->add_arg(QUERY, "Object", "key");
+        QUERY->doc_func(QUERY, "Check if an Object key exists in the hashmap.");
 
-    QUERY->add_mfun(QUERY, hm_get_int_obj, "Object", "getObj");
-    QUERY->add_arg(QUERY, "int", "key");
-    QUERY->doc_func(QUERY, "Get an Object value from an int key (default NULL)");
+        QUERY->add_mfun(QUERY, hm_has_str, "int", "has");
+        QUERY->add_arg(QUERY, "string", "key");
+        QUERY->doc_func(QUERY, "Check if a string key exists in the hashmap.");
 
-    QUERY->add_mfun(QUERY, hm_get_int_str, "string", "getStr");
-    QUERY->add_arg(QUERY, "int", "key");
-    QUERY->doc_func(QUERY, "Get a string value from an int key (default \"\")");
+        // ----- delete ----------------------------------------
+        QUERY->add_mfun(QUERY, hm_del_int, "int", "del");
+        QUERY->add_arg(QUERY, "int", "key");
+        QUERY->doc_func(QUERY, "Delete an int key from the hashmap. Returns 1 if key was found, 0 otherwise.");
 
-    QUERY->add_mfun(QUERY, hm_get_obj_int, "int", "getInt");
-    QUERY->add_arg(QUERY, "Object", "key");
-    QUERY->doc_func(QUERY, "Get an int value from an Object key (default 0)");
+        QUERY->add_mfun(QUERY, hm_del_obj, "int", "del");
+        QUERY->add_arg(QUERY, "Object", "key");
+        QUERY->doc_func(QUERY, "Delete an Object key from the hashmap. Returns 1 if key was found, 0 otherwise.");
 
-    QUERY->add_mfun(QUERY, hm_get_obj_float, "float", "getFloat");
-    QUERY->add_arg(QUERY, "Object", "key");
-    QUERY->doc_func(QUERY, "Get a float value from an Object key (default 0.0)");
+        QUERY->add_mfun(QUERY, hm_del_str, "int", "del");
+        QUERY->add_arg(QUERY, "string", "key");
+        QUERY->doc_func(QUERY, "Delete a string key from the hashmap. Returns 1 if key was found, 0 otherwise.");
 
-    QUERY->add_mfun(QUERY, hm_get_obj_obj, "Object", "getObj");
-    QUERY->add_arg(QUERY, "Object", "key");
-    QUERY->doc_func(QUERY, "Get an Object value from an Object key (default NULL)");
+        // ----- type ----------------------------------------
+        QUERY->add_mfun(QUERY, hm_type_int, "int", "type");
+        QUERY->add_arg(QUERY, "int", "key");
+        QUERY->doc_func(QUERY, "Get the type of the value that the given key maps to. Will return one of the HashMap.Type_XXX values. Returns 0 if key not found");
 
-    QUERY->add_mfun(QUERY, hm_get_obj_str, "string", "getStr");
-    QUERY->add_arg(QUERY, "Object", "key");
-    QUERY->doc_func(QUERY, "Get a string value from an Object key (default \"\")");
+        QUERY->add_mfun(QUERY, hm_type_obj, "int", "type");
+        QUERY->add_arg(QUERY, "Object", "key");
+        QUERY->doc_func(QUERY, "Get the type of the value that the given key maps to. Will return one of the HashMap.Type_XXX values. Returns 0 if key not found");
 
-    QUERY->add_mfun(QUERY, hm_get_str_int, "int", "getInt");
-    QUERY->add_arg(QUERY, "string", "key");
-    QUERY->doc_func(QUERY, "Get an int value from a string key (default 0)");
+        QUERY->add_mfun(QUERY, hm_type_str, "int", "type");
+        QUERY->add_arg(QUERY, "string", "key");
+        QUERY->doc_func(QUERY, "Get the type of the value that the given key maps to. Will return one of the HashMap.Type_XXX values. Returns 0 if key not found");
 
-    QUERY->add_mfun(QUERY, hm_get_str_float, "float", "getFloat");
-    QUERY->add_arg(QUERY, "string", "key");
-    QUERY->doc_func(QUERY, "Get a float value from a string key (default 0.0)");
+        // ----- keys -----------------------------------------
+        QUERY->add_mfun(QUERY, hm_keys_int, "int[]", "intKeys");
+        QUERY->doc_func(QUERY, "Get the integer keys of this map");
 
-    QUERY->add_mfun(QUERY, hm_get_str_obj, "Object", "getObj");
-    QUERY->add_arg(QUERY, "string", "key");
-    QUERY->doc_func(QUERY, "Get an Object value from a string key (default NULL)");
+        QUERY->add_mfun(QUERY, hm_keys_str, "string[]", "strKeys");
+        QUERY->doc_func(QUERY, "Get the string keys of this map");
 
-    QUERY->add_mfun(QUERY, hm_get_str_str, "string", "getStr");
-    QUERY->add_arg(QUERY, "string", "key");
-    QUERY->doc_func(QUERY, "Get a string value from a string key (default \"\")");
+        QUERY->add_mfun(QUERY, hm_keys_obj, "Object[]", "objKeys");
+        QUERY->doc_func(QUERY, "Get the Object keys of this map");
 
-    // ----- find ----------------------------------------
-    QUERY->add_mfun(QUERY, hm_has_int, "int", "has");
-    QUERY->add_arg(QUERY, "int", "key");
-    QUERY->doc_func(QUERY, "Check if an int key exists in the hashmap.");
+        // ----- clear ----------------------------------------
+        QUERY->add_mfun(QUERY, hm_clear, "void", "clear");
+        QUERY->doc_func(QUERY, "Clear all elements from the hashmap.");
 
-    QUERY->add_mfun(QUERY, hm_has_obj, "int", "has");
-    QUERY->add_arg(QUERY, "Object", "key");
-    QUERY->doc_func(QUERY, "Check if an Object key exists in the hashmap.");
+        QUERY->end_class(QUERY);
+    } // HashMap
 
-    QUERY->add_mfun(QUERY, hm_has_str, "int", "has");
-    QUERY->add_arg(QUERY, "string", "key");
-    QUERY->doc_func(QUERY, "Check if a string key exists in the hashmap.");
-
-    // ----- delete ----------------------------------------
-    QUERY->add_mfun(QUERY, hm_del_int, "int", "del");
-    QUERY->add_arg(QUERY, "int", "key");
-    QUERY->doc_func(QUERY, "Delete an int key from the hashmap. Returns 1 if key was found, 0 otherwise.");
-
-    QUERY->add_mfun(QUERY, hm_del_obj, "int", "del");
-    QUERY->add_arg(QUERY, "Object", "key");
-    QUERY->doc_func(QUERY, "Delete an Object key from the hashmap. Returns 1 if key was found, 0 otherwise.");
-
-    QUERY->add_mfun(QUERY, hm_del_str, "int", "del");
-    QUERY->add_arg(QUERY, "string", "key");
-    QUERY->doc_func(QUERY, "Delete a string key from the hashmap. Returns 1 if key was found, 0 otherwise.");
-
-    // ----- clear ----------------------------------------
-    QUERY->add_mfun(QUERY, hm_clear, "void", "clear");
-    QUERY->doc_func(QUERY, "Clear all elements from the hashmap.");
-
-    QUERY->end_class(QUERY);
+    // set type globals
+    g_hm_type = g_api->type->lookup(g_vm, "HashMap");
+    g_int_array_type = g_api->type->lookup(g_vm, "int[]");
+    g_object_array_type = g_api->type->lookup(g_vm, "Object[]");
+    g_string_array_type = g_api->type->lookup(g_vm, "string[]");
 
     return TRUE;
 }

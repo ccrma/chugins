@@ -31,7 +31,7 @@ public class T
 }
 
 class Foo {
-    0 => int x;
+    9999 => int x;
 }
 
 // Test all possible pairings of
@@ -85,6 +85,57 @@ fun void hm_test()
     T.assert(!hm.has(bar), "does not have Object");
     T.assert(!hm.has("bye"), "does not have string");
 
+    // Type ============================================================
+    T.assert(hm.Type_None == 0, "Type_None");
+    T.assert(hm.Type_Int == 1, "Type_Int");
+    T.assert(hm.Type_Float == 2, "Type_Float");
+    T.assert(hm.Type_Obj == 3, "Type_Obj");
+    T.assert(hm.Type_Str == 4, "Type_Str");
+
+    T.assert(hm.type(1337) == hm.Type_None, "missing key has none type");
+    hm.set(1337, 1);
+    T.assert(hm.type(1337) == hm.Type_Int, "key has int type");
+    hm.set(1337, 1.);
+    T.assert(hm.type(1337) == hm.Type_Float, "changing key to float type");
+    hm.set(1336, "what");
+    T.assert(hm.type(1336) == hm.Type_Str, "key to string type");
+    hm.set(1336, new Foo);
+    T.assert(hm.type(1336) == hm.Type_Obj, "change key to object type");
+    T.assert((hm.getObj(1336) $ Foo).x == 9999, "object stored correctly");
+    hm.del(1336);
+    T.assert(hm.type(1336) == hm.Type_None, "deleting key sets type to none");
+
+    // string copying ============================================================
+    "what" => string key;
+    hm.set(key, 100);
+    hm.set("a", key);
+    key + " x2" => key;
+    T.assert(hm.getStr("a") == "what", "changing string reference doesnt change hm value");
+    T.assert(hm.has("what"), "string key changed by reference");
+
+    // keys ============================================================
+    HashMap hm2;
+    Foo obj2;
+    T.assert(hm2.intKeys().size() == 0, "empty map int keys");
+    T.assert(hm2.strKeys().size() == 0, "empty map str keys");
+    T.assert(hm2.objKeys().size() == 0, "empty map obj keys");
+    hm2.set(1, "1");
+    hm2.set("2", 2.0);
+    hm2.set(obj2, "what");
+    T.assert(hm2.intKeys().size() == 1, "map int keys");
+    T.assert(hm2.strKeys().size() == 1, "map str keys");
+    T.assert(hm2.objKeys().size() == 1, "map obj keys");
+
+    T.assert(hm2.intKeys()[0] == 1, "map int key");
+    T.assert(hm2.strKeys()[0] == "2", "map str key");
+    T.assert(hm2.objKeys()[0] == obj2, "map obj key");
+    T.assert(Type.of(hm2.objKeys()[0]) == Type.of(obj2), "map obj key type equals");
+
+    hm2.clear();
+    T.assert(hm2.intKeys().size() == 0, "cleared map int keys");
+    T.assert(hm2.strKeys().size() == 0, "cleared map str keys");
+    T.assert(hm2.objKeys().size() == 0, "cleared map obj keys");
+
     // defaults ============================================================
     T.assert(hm.getInt(9999) == 0, "default int value for int key");
     T.assert(T.feq(hm.getFloat(9999), 0), "default float value for int key");
@@ -130,7 +181,3 @@ hm_test();
 // destructor called, bar and foo refcounts should be 1
 T.assert(Machine.refcount(bar) == 1, "bar refcount after scope");
 T.assert(Machine.refcount(foo) == 1, "foo refcount after scope");
-
-
-// <<< Machine.refcount(hm) >>>;
-<<< Machine.refcount(bar), Machine.refcount(foo) >>>;
