@@ -104,7 +104,7 @@ endif
 $(C_OBJECTS): %.o: %.c
 	$(CC) $(FLAGS) -c -o $@ $<
 
-$(CXX_OBJECTS): %.o: %.cpp $(CK_SRC_PATH)/chugin.h
+$(CXX_OBJECTS): %.o: %.cpp 
 	$(CXX) $(FLAGS) -c -o $@ $<
 
 # build as webchugin

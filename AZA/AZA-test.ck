@@ -48,7 +48,7 @@ Synthesis params:
 */
 
 Speech speech => dac;
-speech.freq(2000).rate(1.2).declination(5);
+speech.freq(3000).rate(1.2).declination(5);
 
 speech.say("hello world you will be assimilated") => int samples;
 <<< speech.freq(), speech.rate(), speech.declination() >>>;
@@ -57,8 +57,10 @@ speech.say("hello world you will be assimilated") => int samples;
 
 while (true) {
     Speech s => dac;
-    s.say("techno techno")::samp => now;
-    .5::second => now;
+    Speech s2 => dac;
+    s2.freq(1000).rate(.3);
+    // s.say("techno techno");
+    s2.say("wap wap a bap bap")::samp => now;
 }
 
 // repeat(100) {
