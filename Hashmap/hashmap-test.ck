@@ -104,6 +104,8 @@ fun void hm_test()
     T.assert((hm.getObj(1336) $ Foo).x == 9999, "object stored correctly");
     hm.del(1336);
     T.assert(hm.type(1336) == hm.Type_None, "deleting key sets type to none");
+    T.assert(hm.type("hello") == hm.Type_Str, "type of string key");
+    T.assert(hm.type(foo) == hm.Type_Str, "type of obj key");
 
     // string copying ============================================================
     "what" => string key;
