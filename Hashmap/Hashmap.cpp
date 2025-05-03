@@ -39,7 +39,6 @@ CK_DLL_INFO(Hashmap)
 
 static Chuck_VM *g_vm = NULL;
 static CK_DL_API g_api = NULL;
-static Chuck_String *g_empty_string = NULL;
 static Chuck_Type *g_hm_type = NULL;
 static Chuck_Type *g_int_array_type = NULL;
 static Chuck_Type *g_object_array_type = NULL;
@@ -388,7 +387,7 @@ static void HM_GetImpl(Chuck_Object *ckobj, HM_Type key_type, HM_Type value_type
             RETURN->v_object = NULL;
             break;
         case HM_STR:
-            RETURN->v_string = g_empty_string;
+            RETURN->v_string = g_api->object->create_string(g_vm, "", false);
             break;
         default:
             break;
@@ -675,7 +674,6 @@ CK_DLL_QUERY(Hashmap)
     // set globals
     g_api = QUERY->ck_api(QUERY);
     g_vm = QUERY->ck_vm(QUERY);
-    g_empty_string = g_api->object->create_string(g_vm, "", true);
 
     QUERY->setname(QUERY, "HashMapChugin");
 
