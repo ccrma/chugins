@@ -960,7 +960,7 @@ struct DynamicString
 char *itoa(int i)
 {
     static char str_buff[32];
-    memset(str_buff, 0, sizeof(str_buff));
+    // snprintf already appends null byte '/0'
     snprintf(str_buff, sizeof(str_buff), "%d", i);
     return str_buff;
 }
@@ -968,7 +968,7 @@ char *itoa(int i)
 char *ftoa(double d)
 {
     static char str_buff[32];
-    memset(str_buff, 0, sizeof(str_buff));
+    // snprintf already appends null byte '/0'
     snprintf(str_buff, sizeof(str_buff), "%lf", d);
     return str_buff;
 }
@@ -1049,7 +1049,8 @@ void HM_ToJson(Chuck_Object *hm_ckobj, DynamicString *d)
         {
         case HM_INT:
         {
-            int_keys.push_back(pair->key.as.ckint);
+            if (num_string_keys == 0) // only need to track int keys if NOT already a json obj
+                int_keys.push_back(pair->key.as.ckint);
         }
         break;
         case HM_OBJ:
@@ -1071,11 +1072,9 @@ void HM_ToJson(Chuck_Object *hm_ckobj, DynamicString *d)
     }
 
     // determine # contiguous int keys
-    bool is_empty_obj = (int_keys.size() == 0 && num_string_keys == 0);
     bool is_json_obj = (num_string_keys > 0);
-    bool is_json_arr = false;
     int contiguous_int_keys = 0;
-    if (!is_json_obj && !is_empty_obj)
+    if (!is_json_obj)
     {
         std::sort(int_keys.begin(), int_keys.end());
         for (int i = 0; i < int_keys.size(); i++)
@@ -1086,16 +1085,14 @@ void HM_ToJson(Chuck_Object *hm_ckobj, DynamicString *d)
                 break;
         }
     }
-    is_json_arr = (contiguous_int_keys > 0 && num_string_keys == 0);
-
-    ASSERT(!(is_empty_obj && is_json_arr && is_json_obj));
+    bool is_json_arr = (contiguous_int_keys > 0 && num_string_keys == 0);
+    bool is_empty_obj = (!is_json_obj && !is_json_arr);
 
     if (is_empty_obj)
     {
         d->append("{}");
     }
-
-    if (is_json_arr)
+    else if (is_json_arr)
     {
         // process JSON array
         d->append("[");
@@ -1114,8 +1111,7 @@ void HM_ToJson(Chuck_Object *hm_ckobj, DynamicString *d)
         }
         d->append("]");
     }
-
-    if (is_json_obj)
+    else if (is_json_obj)
     {
         d->append("{");
         // process JSON obj
@@ -1142,6 +1138,10 @@ void HM_ToJson(Chuck_Object *hm_ckobj, DynamicString *d)
         }
 
         d->append("}");
+    }
+    else
+    {
+        ASSERT(false);
     }
 }
 
@@ -1353,10 +1353,20 @@ CK_DLL_QUERY(Hashmap)
         // ----- json -----------------------------------------
         QUERY->add_sfun(QUERY, hm_from_json, "HashMap", "fromJson");
         QUERY->add_arg(QUERY, "string", "json");
-        QUERY->doc_func(QUERY, "convert the given JSON string to a HashMap");
+        QUERY->doc_func(QUERY,
+                        "Convert the given JSON string to a HashMap. "
+                        "JSON Arrays are turned into a HashMap with integer keys 0,1,... "
+                        "JSON Arrays are turned into a HashMap with string keys ");
 
         QUERY->add_mfun(QUERY, hm_to_json, "string", "toJson");
-        QUERY->doc_func(QUERY, "print out a JSON string representation of this HashMap");
+        QUERY->doc_func(QUERY,
+                        "Print out a JSON string representation of this HashMap. "
+                        "Applies the following rules: "
+                        "[1]: if there are *only* int keys, return JSON array. "
+                        "[2]: if there are *any* string keys, ignore all int keys and treat as JSON object. "
+                        "[3]: ignore all Object keys. "
+                        "[4]: if value is a HashMap, we will parse that too. "
+                        "[5]: Object values are converted to their classname string ");
 
         // ----- clear ----------------------------------------
         QUERY->add_mfun(QUERY, hm_clear, "void", "clear");

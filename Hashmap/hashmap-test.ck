@@ -225,6 +225,7 @@ fun void hm_test()
         new_hashmap.set(0, 99);
         new_hashmap.set(1, 100);
         new_hashmap.set(4, 99);
+        new_hashmap.set(new SinOsc, 99);
         json_json_hm.set("new hashmap", new_hashmap);
         <<< json_json_hm.toJson() >>>;
     }
