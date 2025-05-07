@@ -515,6 +515,19 @@ CK_DLL_MFUN(hm_get_str_hashmap)
     }
 }
 
+CK_DLL_MFUN(hm_get_int_hashmap)
+{
+    HM_GetImpl(SELF, HM_INT, HM_OBJ, ARGS, SHRED, RETURN);
+    if (RETURN->v_object != NULL)
+    {
+        Chuck_Type *obj_type = API->object->get_type(RETURN->v_object);
+        if (!API->type->isa(obj_type, g_hm_type))
+        {
+            g_api->vm->em_log(1, "HashMap.get(int): object at key is *not* a HashMap");
+        }
+    }
+}
+
 CK_DLL_MFUN(hm_has_int)
 {
     hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset);
@@ -1300,6 +1313,10 @@ CK_DLL_QUERY(Hashmap)
         QUERY->add_mfun(QUERY, hm_get_str_hashmap, "HashMap", "get");
         QUERY->add_arg(QUERY, "string", "key");
         QUERY->doc_func(QUERY, "Get a HashMap from a string key. Will warn if the object type is not HashMap");
+
+        QUERY->add_mfun(QUERY, hm_get_int_hashmap, "HashMap", "get");
+        QUERY->add_arg(QUERY, "int", "key");
+        QUERY->doc_func(QUERY, "Get a HashMap from an int key. Will warn if the object type is not HashMap");
 
         // ----- find ----------------------------------------
         QUERY->add_mfun(QUERY, hm_has_int, "int", "has");

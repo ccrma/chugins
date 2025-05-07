@@ -228,8 +228,8 @@ fun void hm_test()
         new_hashmap.set(new SinOsc, 99);
         json_json_hm.set("new hashmap", new_hashmap);
         <<< json_json_hm.toJson() >>>;
+        <<< "YOOO", (json_json_hm.get("andrew").get(3)).getInt("key") >>>;
     }
-    // <<< "YOOO", (json_hm.get("andrew").getObj(3) $ HashMap).getInt("key") >>>;
     // for (auto key : json_hm.strKeys()) {
     //     json_hm.get(key) @=> HashMap hm;
 
