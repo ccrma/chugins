@@ -54,5 +54,28 @@
   "C_Cpp_Runner.useLeakSanitizer": false,
   "C_Cpp_Runner.showCompilationTime": false,
   "C_Cpp_Runner.useLinkTimeOptimization": false,
-  "C_Cpp_Runner.msvcSecureNoWarnings": false
+  "C_Cpp_Runner.msvcSecureNoWarnings": false,
+  "files.associations": {
+    "__tree": "cpp",
+    "map": "cpp",
+    "type_traits": "cpp",
+    "__bit_reference": "cpp",
+    "bitset": "cpp",
+    "chrono": "cpp",
+    "__memory": "cpp",
+    "limits": "cpp",
+    "ratio": "cpp",
+    "tuple": "cpp",
+    "vector": "cpp",
+    "__node_handle": "cpp",
+    "__nullptr": "cpp",
+    "__hash_table": "cpp",
+    "__split_buffer": "cpp",
+    "array": "cpp",
+    "initializer_list": "cpp",
+    "string": "cpp",
+    "string_view": "cpp",
+    "unordered_map": "cpp",
+    "__mutex_base": "cpp"
+  }
 }
