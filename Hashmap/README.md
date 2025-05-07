@@ -42,6 +42,10 @@ Objects are hashed by reference (using their pointer address). Two different obj
 
 See `hashmap-test.ck` for (relatively) comprehensive unit tests. Refcounting is accounted for, at least for the current test coverage.
 
+## Known Bugs
+
+If hashmaps form a cyclic dependency (e.g. 2 hashmaps point to each other) the json functions `HashMap.toJson()` will crash.
+
 ## Benchmarks
 
 `hm_bench.cpp` contains benchmark hashmap tests. Performance is similar or better than `std::unordered_map`

@@ -945,7 +945,7 @@ struct DynamicString
     {
         int len = strlen(s);
 
-        if (len + this->curr > cap)
+        if (len + this->curr + 1 > cap)
         {
             int newsize = MAX(len + this->curr + 1, cap * 2);
             this->buff = (char *)realloc(this->buff, newsize);
