@@ -28,6 +28,13 @@ public class T
     fun static int feq(float a, float b) {
         return Math.fabs(a - b) < 0.0001;
     }
+
+    fun static print(string a[]) {
+        for (string s : a) {
+            chout <= s <= " ";
+        }
+        chout <= IO.nl();
+    }
 }
 
 class Foo {
@@ -176,6 +183,66 @@ fun void hm_test()
     hm.set(foo, 3);
     T.assert(Machine.refcount(bar) == 2, "bar refcount before scope");
     T.assert(Machine.refcount(foo) == 2, "foo refcount before scope");
+
+    // =================================================================
+    // 1. given json string, create a hashmap
+    // HashMap.fromJson(string json) @=> HashMap hm;
+    // 2. given a hashmap, return a json string
+    // hm.toJson() => string json;
+
+    // T.assert(HashMap.fromJson("invalid json") == null, "invalid json returns null obj");
+    <<< "ACTUAL JSON TEST ---------" >>>;
+
+    {
+        "
+        {
+            \"gregg\": [],
+            \"andrew\": [
+                1, 2, null,
+                {
+                    \"key\": 1337
+                }
+                false, true, \"string_value\",
+                1.234
+            ],
+            \"obj\": {
+                \"test\": 1.123456789,
+                \"test2\": { \"1\": 10 }
+            }
+        }
+        " => string json;
+        HashMap.fromJson(json) @=> HashMap@ json_hm;
+
+        <<< "1:------------" >>>;
+        json_hm.set("hello", new StifKarp);
+        <<< json_hm.toJson() >>>;
+
+        <<< "2:-------------" >>>;
+        HashMap.fromJson(json_hm.toJson()) @=> HashMap json_json_hm;
+        json_json_hm.set("foo", "bar");
+        HashMap new_hashmap;
+        // new_hashmap.set("hello", "yooooo");
+        new_hashmap.set(0, 99);
+        new_hashmap.set(1, 100);
+        new_hashmap.set(4, 99);
+        json_json_hm.set("new hashmap", new_hashmap);
+        <<< json_json_hm.toJson() >>>;
+    }
+    // <<< "YOOO", (json_hm.get("andrew").getObj(3) $ HashMap).getInt("key") >>>;
+    // for (auto key : json_hm.strKeys()) {
+    //     json_hm.get(key) @=> HashMap hm;
+
+    //     <<< key, hm.size() >>>;
+    //     if (key == "andrew") {
+    //         for (int i; i < hm.size(); i++) {
+    //             hm.type(i) => int type;
+    //             if (type == hm.Type_Int) <<< hm.getInt(i) >>>;
+    //             if (type == hm.Type_Float) <<< hm.getFloat(i) >>>;
+    //             if (type == hm.Type_Obj) <<< hm.getObj(i) >>>;
+    //             if (type == hm.Type_Str) <<< hm.getStr(i) >>>;
+    //         }
+    //     }
+    // }
 }
 
 hm_test();

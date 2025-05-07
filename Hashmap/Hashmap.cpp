@@ -20,8 +20,12 @@
 //      https://chuck.stanford.edu/extend/
 //-----------------------------------------------------------------------------
 
+#include <vector>
+#include <algorithm>
+
 #include "chugin.h"
 #include "hashmap.h"
+#include "jsmn.h"
 
 CK_DLL_INFO(Hashmap)
 {
@@ -47,6 +51,10 @@ static Chuck_Type *g_string_array_type = NULL;
 #define HM_ADD_REF(obj) (g_api->object->add_ref(obj))
 #define HM_RELEASE_REF(obj) (g_api->object->release(obj))
 
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define CLAMP(x, lo, hi) (MIN(hi, MAX(lo, x)))
+
 // #ifndef NDEBUG
 #define ASSERT(expression)                                                      \
     {                                                                           \
@@ -63,10 +71,10 @@ static Chuck_Type *g_string_array_type = NULL;
 enum HM_Type : uint8_t
 {
     HM_NULL = 0,
-    HM_INT,
-    HM_FLOAT,
-    HM_OBJ,
-    HM_STR,
+    HM_INT,   // 1
+    HM_FLOAT, // 2
+    HM_OBJ,   // 3
+    HM_STR,   // 4
 };
 
 const char *HM_TypeNames[] = {
@@ -199,7 +207,7 @@ struct HM_Pair
 
 t_CKINT hashmap_ptr_offset = 0;
 
-static void HM_Init(Chuck_Object *ck_obj)
+static Chuck_Object *HM_Init(Chuck_Object *ck_obj)
 {
     CK_DL_API API = g_api;
     // create ck_obj if not provided
@@ -211,6 +219,8 @@ static void HM_Init(Chuck_Object *ck_obj)
     int seed = time(NULL);
     OBJ_MEMBER_UINT(ck_obj, hashmap_ptr_offset) = (t_CKUINT)hashmap_new(
         sizeof(HM_Pair), 0, seed, seed, HM_Pair::hash, HM_Pair::compare, HM_Pair::releaseRef, NULL);
+
+    return ck_obj;
 }
 
 CK_DLL_CTOR(hm_ctor)
@@ -492,6 +502,19 @@ CK_DLL_MFUN(hm_get_str_str)
     HM_GetImpl(SELF, HM_STR, HM_STR, ARGS, SHRED, RETURN);
 }
 
+CK_DLL_MFUN(hm_get_str_hashmap)
+{
+    HM_GetImpl(SELF, HM_STR, HM_OBJ, ARGS, SHRED, RETURN);
+    if (RETURN->v_object != NULL)
+    {
+        Chuck_Type *obj_type = API->object->get_type(RETURN->v_object);
+        if (!API->type->isa(obj_type, g_hm_type))
+        {
+            g_api->vm->em_log(1, "HashMap.get(string): object at key is *not* a HashMap");
+        }
+    }
+}
+
 CK_DLL_MFUN(hm_has_int)
 {
     hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(SELF, hashmap_ptr_offset);
@@ -669,6 +692,468 @@ CK_DLL_MFUN(hm_keys_str)
     RETURN->v_object = (Chuck_Object *)ck_arr;
 }
 
+void print(jsmntok_t *token)
+{
+    printf("type: %d, start: %d, end: %d, size: %d\n",
+           token->type,
+           token->start,
+           token->end,
+           token->size);
+}
+
+char *copyJsonString(const char *json_string, jsmntok_t *token)
+{
+    ASSERT(token->type == JSMN_STRING);
+
+    // make string copy of key
+    int key_strlen = token->end - token->start;
+    char *key_copy = (char *)malloc(key_strlen + 1);
+    key_copy[key_strlen] = '\0';
+    strncpy(key_copy, json_string + token->start, key_strlen);
+    return key_copy;
+}
+
+// forward decl
+HM_Entry createHMValue(
+    const char *json_string, jsmntok_t *token_list, int *curr_token_idx);
+
+Chuck_Object *HM_FromJson(
+    const char *json_string,
+    jsmntok_t *token_list,
+    int *curr_token_idx)
+{
+    Chuck_Object *hm_ckobj = HM_Init(NULL);
+
+    jsmntok_t *token = &token_list[(*curr_token_idx)];
+    jsmntype_t type = token->type;
+
+    ASSERT(type == JSMN_ARRAY || type == JSMN_OBJECT);
+
+    int expected_size = token->size;
+
+    for (int json_elem_idx = 0; json_elem_idx < expected_size; json_elem_idx++)
+    {
+        HM_Pair pair = {};
+        if (type == JSMN_OBJECT)
+        {
+            jsmntok_t *key = &token_list[++(*curr_token_idx)];
+            ASSERT(key->type == JSMN_STRING && key->size == 1);
+
+            // register as value in curr hashmap
+            pair.key.type = HM_STR;
+            pair.key.as.str_OWNED = copyJsonString(json_string, key);
+
+            ++(*curr_token_idx);
+            pair.value = createHMValue(
+                json_string,
+                token_list,
+                curr_token_idx);
+
+            // jsmntype_t value_type = token_list[*curr_token_idx].type;
+            // if (value_type == JSMN_STRING || value_type == JSMN_PRIMITIVE)
+            // {
+            //     (*curr_token_idx)++;
+            // }
+        }
+        else if (type == JSMN_ARRAY)
+        {
+            // for arrays, key is always the integer index
+            pair.key.type = HM_INT;
+            pair.key.as.ckint = json_elem_idx;
+
+            ++(*curr_token_idx);
+            pair.value = createHMValue(
+                json_string,
+                token_list,
+                curr_token_idx);
+
+            // jsmntype_t value_type = token_list[*curr_token_idx].type;
+            // if (value_type == JSMN_STRING || value_type == JSMN_PRIMITIVE)
+            // {
+            //     (*curr_token_idx)++;
+            // }
+        }
+        else
+        {
+            ASSERT(false);
+        }
+
+        // reference count and add to hashmap
+        CK_DL_API API = g_api;
+        hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(hm_ckobj, hashmap_ptr_offset);
+        HM_Pair::addRef(&pair);
+        HM_Pair::releaseRef((HM_Pair *)hashmap_set(hm, &pair));
+    }
+
+    return hm_ckobj;
+}
+
+HM_Entry createHMValue(
+    const char *json_string, jsmntok_t *token_list,
+    int *curr_token_idx)
+{
+    jsmntok_t *token = &token_list[*curr_token_idx];
+
+    HM_Entry value = {};
+    switch (token->type)
+    {
+    case JSMN_OBJECT:
+    case JSMN_ARRAY:
+    {
+        Chuck_Object *nested_hm = HM_FromJson(
+            json_string,
+            token_list,
+            curr_token_idx);
+
+        value.type = HM_OBJ;
+        value.as.ckobj = nested_hm;
+    }
+    break;
+    case JSMN_STRING:
+    {
+        value.type = HM_STR;
+        value.as.str_OWNED = copyJsonString(json_string, token);
+    }
+    break;
+    case JSMN_PRIMITIVE:
+    {
+        char prim = json_string[token->start];
+
+        if (prim == 't' || prim == 'f')
+        { // boolean
+            value.type = HM_INT;
+            value.as.ckint = (prim == 't') ? 1 : 0;
+        }
+        else if (prim == 'n')
+        { // null
+            value.type = HM_OBJ;
+            value.as.ckobj = NULL;
+        }
+        else if (prim == '-' || (prim >= '0' && prim <= '9'))
+        { // number
+            // check for decimal
+            bool is_float = false;
+            for (int i = token->start; i < token->end; i++)
+            {
+                if (json_string[i] == '.')
+                {
+                    is_float = true;
+                    break;
+                }
+            }
+            if (is_float)
+            {
+                value.type = HM_FLOAT;
+                value.as.ckfloat = atof(&json_string[token->start]);
+            }
+            else
+            {
+                value.type = HM_INT;
+                value.as.ckint = atoi(&json_string[token->start]);
+            }
+        }
+        else
+        {
+            ASSERT(false)
+        }
+    }
+    break;
+    default:
+    {
+        ASSERT(false);
+    }
+    }
+    return value;
+}
+
+// (void) name( Chuck_Type * TYPE, void * ARGS, Chuck_DL_Return * RETURN, Chuck_VM * VM, Chuck_VM_Shred * SHRED, CK_DL_API API )
+CK_DLL_SFUN(hm_from_json)
+{
+    Chuck_String *ckstr = GET_NEXT_STRING(ARGS);
+    const char *json_str = API->object->str(ckstr);
+
+    RETURN->v_object = NULL;
+
+    int curr_token_idx = 0;
+
+    // determine number of tokens needed
+    jsmn_parser parser;
+    jsmn_init(&parser);
+    int num_tokens = jsmn_parse(&parser, json_str, strlen(json_str), NULL, 0);
+    jsmn_init(&parser);
+    jsmntok_t *tokens = (jsmntok_t *)malloc(sizeof(jsmntok_t) * num_tokens);
+    int parse_result = jsmn_parse(&parser, json_str, strlen(json_str), tokens, num_tokens);
+
+    // error handling
+    if (parse_result < 0)
+    {
+        switch (parse_result)
+        {
+        case JSMN_ERROR_NOMEM:
+        {
+            g_api->vm->em_log(1, "HashMap.fromJson: Out of memory, json too large");
+        }
+        break;
+        case JSMN_ERROR_INVAL:
+        case JSMN_ERROR_PART:
+        {
+            g_api->vm->em_log(1, "HashMap.fromJson: Invalid JSON");
+        }
+        break;
+        }
+        return;
+    }
+    else
+    {
+        ASSERT(parse_result == num_tokens);
+    }
+
+    // else parsed succesfully
+    RETURN->v_object = HM_FromJson(json_str, tokens, &curr_token_idx);
+
+    // free
+    free(tokens);
+}
+
+/*
+Exceptions
+- if there are *only* int keys, treat as JSON array
+- if there are *any* string keys, ignore all int keys and treat as JSON object
+- ignore all object keys
+- if value is a HashMap, we will parse that too.
+- other object values are converted to their classname string
+*/
+
+struct DynamicString
+{
+    char *buff;
+    int cap;
+    int curr;
+
+    void init(int size)
+    {
+        this->buff = (char *)malloc(size);
+        this->cap = size;
+    }
+
+    void release()
+    {
+        free(this->buff);
+    }
+
+    void append(const char *s)
+    {
+        int len = strlen(s);
+
+        if (len + this->curr > cap)
+        {
+            int newsize = MAX(len + this->curr + 1, cap * 2);
+            this->buff = (char *)realloc(this->buff, newsize);
+            this->cap = newsize;
+        }
+
+        strncpy(this->buff + this->curr, s, len + 1);
+        this->curr += len;
+    }
+};
+
+char *itoa(int i)
+{
+    static char str_buff[32];
+    memset(str_buff, 0, sizeof(str_buff));
+    snprintf(str_buff, sizeof(str_buff), "%d", i);
+    return str_buff;
+}
+
+char *ftoa(double d)
+{
+    static char str_buff[32];
+    memset(str_buff, 0, sizeof(str_buff));
+    snprintf(str_buff, sizeof(str_buff), "%lf", d);
+    return str_buff;
+}
+
+void HM_ToJson(Chuck_Object *hm_ckobj, DynamicString *d);
+
+void valueToJson(DynamicString *d, HM_Entry value)
+{
+    // append value
+    switch (value.type)
+    {
+    case HM_INT:
+    {
+        d->append(itoa(value.as.ckint));
+    }
+    break;
+    case HM_FLOAT:
+    {
+        // // Extract integer part
+        // int ipart = (int)value.as.ckint;
+        // // Extract floating part
+        // float fpart = value.as.ckint - (float)ipart;
+        d->append(ftoa(value.as.ckfloat));
+    }
+    break;
+    case HM_OBJ:
+    {
+        if (value.as.ckobj == NULL)
+        {
+            d->append("null");
+        }
+        else
+        {
+            Chuck_Type *obj_type = g_api->object->get_type(value.as.ckobj);
+            bool is_hashmap = g_api->type->isa(obj_type, g_hm_type);
+            if (is_hashmap)
+            {
+                HM_ToJson(value.as.ckobj, d);
+            }
+            else
+            {
+                d->append("\"");
+                d->append(g_api->type->name(obj_type));
+                d->append("\"");
+            }
+        }
+    }
+    break;
+    case HM_STR:
+    {
+        d->append("\"");
+        d->append(value.as.str_OWNED);
+        d->append("\"");
+    }
+    break;
+    default:
+        ASSERT(false);
+    }
+}
+
+void HM_ToJson(Chuck_Object *hm_ckobj, DynamicString *d)
+{
+    CK_DL_API API = g_api;
+    hashmap *hm = (hashmap *)OBJ_MEMBER_UINT(hm_ckobj, hashmap_ptr_offset);
+
+    size_t hashmap_idx_DONT_USE = 0;
+    HM_Pair *pair = NULL;
+
+    std::vector<int> int_keys;
+    int num_string_keys = 0;
+
+    while (
+        hashmap_iter(hm, &hashmap_idx_DONT_USE, (void **)&pair))
+    {
+        // if (pair->key.type == HM_OBJ)
+        //     g_api->object->array_int_push_back(ck_arr, (t_CKINT)pair->key.as.ckobj);
+        switch (pair->key.type)
+        {
+        case HM_INT:
+        {
+            int_keys.push_back(pair->key.as.ckint);
+        }
+        break;
+        case HM_OBJ:
+        {
+            g_api->vm->em_log(1, "HashMap.toJson(): object key will not be converted to json");
+        }
+        break;
+        case HM_STR:
+        {
+            ++num_string_keys;
+        }
+        break;
+        case HM_FLOAT: // not allowing float keys for now (due to precision issues)
+        default:
+        {
+            g_api->vm->em_log(1, "Hashmap: unsupported key type");
+        }
+        }
+    }
+
+    // determine # contiguous int keys
+    bool is_empty_obj = (int_keys.size() == 0 && num_string_keys == 0);
+    bool is_json_obj = (num_string_keys > 0);
+    bool is_json_arr = false;
+    int contiguous_int_keys = 0;
+    if (!is_json_obj && !is_empty_obj)
+    {
+        std::sort(int_keys.begin(), int_keys.end());
+        for (int i = 0; i < int_keys.size(); i++)
+        {
+            if (i == int_keys[i])
+                contiguous_int_keys++;
+            else
+                break;
+        }
+    }
+    is_json_arr = (contiguous_int_keys > 0 && num_string_keys == 0);
+
+    ASSERT(!(is_empty_obj && is_json_arr && is_json_obj));
+
+    if (is_empty_obj)
+    {
+        d->append("{}");
+    }
+
+    if (is_json_arr)
+    {
+        // process JSON array
+        d->append("[");
+        for (int i = 0; i < contiguous_int_keys; i++)
+        {
+            // get
+            HM_Pair lookup = {};
+            lookup.key.type = HM_INT;
+            lookup.key.as.ckint = i;
+
+            HM_Pair *result = (HM_Pair *)hashmap_get(hm, &lookup);
+            valueToJson(d, result->value);
+
+            if (i < contiguous_int_keys - 1)
+                d->append(", ");
+        }
+        d->append("]");
+    }
+
+    if (is_json_obj)
+    {
+        d->append("{");
+        // process JSON obj
+        hashmap_idx_DONT_USE = 0;
+        pair = NULL;
+        int curr_str_key = 0;
+        while (hashmap_iter(hm, &hashmap_idx_DONT_USE, (void **)&pair))
+        {
+            if (pair->key.type != HM_STR)
+                continue;
+
+            // for all string keys
+            d->append("\"");
+            d->append(pair->key.as.str_OWNED);
+            d->append("\": ");
+
+            valueToJson(d, pair->value);
+
+            // logic for comma
+            if (++curr_str_key < num_string_keys)
+            {
+                d->append(", ");
+            }
+        }
+
+        d->append("}");
+    }
+}
+
+CK_DLL_MFUN(hm_to_json)
+{
+    DynamicString d = {};
+    d.init(256);
+    HM_ToJson(SELF, &d);
+    RETURN->v_string = API->object->create_string(VM, d.buff, false);
+    d.release();
+}
+
 CK_DLL_QUERY(Hashmap)
 {
     // set globals
@@ -812,6 +1297,10 @@ CK_DLL_QUERY(Hashmap)
         QUERY->add_arg(QUERY, "string", "key");
         QUERY->doc_func(QUERY, "Get a string value from a string key (default \"\")");
 
+        QUERY->add_mfun(QUERY, hm_get_str_hashmap, "HashMap", "get");
+        QUERY->add_arg(QUERY, "string", "key");
+        QUERY->doc_func(QUERY, "Get a HashMap from a string key. Will warn if the object type is not HashMap");
+
         // ----- find ----------------------------------------
         QUERY->add_mfun(QUERY, hm_has_int, "int", "has");
         QUERY->add_arg(QUERY, "int", "key");
@@ -860,6 +1349,14 @@ CK_DLL_QUERY(Hashmap)
 
         QUERY->add_mfun(QUERY, hm_keys_obj, "Object[]", "objKeys");
         QUERY->doc_func(QUERY, "Get the Object keys of this map");
+
+        // ----- json -----------------------------------------
+        QUERY->add_sfun(QUERY, hm_from_json, "HashMap", "fromJson");
+        QUERY->add_arg(QUERY, "string", "json");
+        QUERY->doc_func(QUERY, "convert the given JSON string to a HashMap");
+
+        QUERY->add_mfun(QUERY, hm_to_json, "string", "toJson");
+        QUERY->doc_func(QUERY, "print out a JSON string representation of this HashMap");
 
         // ----- clear ----------------------------------------
         QUERY->add_mfun(QUERY, hm_clear, "void", "clear");
