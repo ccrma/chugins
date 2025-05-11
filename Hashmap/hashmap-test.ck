@@ -229,21 +229,11 @@ fun void hm_test()
         json_json_hm.set("new hashmap", new_hashmap);
         <<< json_json_hm.toJson() >>>;
         <<< "YOOO", (json_json_hm.get("andrew").get(3)).getInt("key") >>>;
-    }
-    // for (auto key : json_hm.strKeys()) {
-    //     json_hm.get(key) @=> HashMap hm;
 
-    //     <<< key, hm.size() >>>;
-    //     if (key == "andrew") {
-    //         for (int i; i < hm.size(); i++) {
-    //             hm.type(i) => int type;
-    //             if (type == hm.Type_Int) <<< hm.getInt(i) >>>;
-    //             if (type == hm.Type_Float) <<< hm.getFloat(i) >>>;
-    //             if (type == hm.Type_Obj) <<< hm.getObj(i) >>>;
-    //             if (type == hm.Type_Str) <<< hm.getStr(i) >>>;
-    //         }
-    //     }
-    // }
+        <<< "3:-------------" >>>;
+        HashMap.fromJsonFile("./json.json") @=> HashMap hm_from_file; 
+        T.println(hm_from_file.get(0).toJson());
+    }
 }
 
 hm_test();

@@ -68,6 +68,30 @@ static Chuck_Type *g_string_array_type = NULL;
 // #define ASSERT(expression) NULL;
 // #endif
 
+// ============================================================================
+// defer
+// Note: calls at end of *scope* not function
+// ============================================================================
+
+// clang-format off
+template <typename F>
+struct __privDefer {
+	F f;
+	__privDefer(F f) : f(f) {}
+	~__privDefer() { f(); }
+};
+
+template <typename F>
+__privDefer<F> __defer_func(F f) {
+	return __privDefer<F>(f);
+}
+// clang-format on
+
+#define DEFER_1(x, y) x##y
+#define DEFER_2(x, y) DEFER_1(x, y)
+#define DEFER_3(x) DEFER_2(x, __COUNTER__)
+#define defer(code) auto DEFER_3(_defer_) = __defer_func([&]() { code; })
+
 enum HM_Type : uint8_t
 {
     HM_NULL = 0,
@@ -879,28 +903,32 @@ HM_Entry createHMValue(
     return value;
 }
 
-// (void) name( Chuck_Type * TYPE, void * ARGS, Chuck_DL_Return * RETURN, Chuck_VM * VM, Chuck_VM_Shred * SHRED, CK_DL_API API )
-CK_DLL_SFUN(hm_from_json)
+void HM_perror(const char *format, ...)
 {
-    Chuck_String *ckstr = GET_NEXT_STRING(ARGS);
-    const char *json_str = API->object->str(ckstr);
+    static char err_msg[256] = {};
+    va_list args;
+    va_start(args, format);
 
-    RETURN->v_object = NULL;
+    vsnprintf(err_msg, sizeof(err_msg), format, args);
+    perror(err_msg);
+    printf("\n");
 
+    va_end(args);
+}
+
+Chuck_Object *HM_FromJsonImpl(const char *json_str)
+{
     int curr_token_idx = 0;
 
     // determine number of tokens needed
     jsmn_parser parser;
     jsmn_init(&parser);
     int num_tokens = jsmn_parse(&parser, json_str, strlen(json_str), NULL, 0);
-    jsmn_init(&parser);
-    jsmntok_t *tokens = (jsmntok_t *)malloc(sizeof(jsmntok_t) * num_tokens);
-    int parse_result = jsmn_parse(&parser, json_str, strlen(json_str), tokens, num_tokens);
 
     // error handling
-    if (parse_result < 0)
+    if (num_tokens < 0)
     {
-        switch (parse_result)
+        switch (num_tokens)
         {
         case JSMN_ERROR_NOMEM:
         {
@@ -914,18 +942,75 @@ CK_DLL_SFUN(hm_from_json)
         }
         break;
         }
-        return;
+        return NULL;
     }
-    else
+
+    jsmntok_t *tokens = (jsmntok_t *)malloc(sizeof(jsmntok_t) * num_tokens);
+    defer(free(tokens));
+
+    jsmn_init(&parser);
+    int parse_result = jsmn_parse(&parser, json_str, strlen(json_str), tokens, num_tokens);
+    if (parse_result != num_tokens)
     {
-        ASSERT(parse_result == num_tokens);
+        g_api->vm->em_log(1, "HashMap.fromJson: Error parsing JSON");
+        return NULL;
     }
 
     // else parsed succesfully
-    RETURN->v_object = HM_FromJson(json_str, tokens, &curr_token_idx);
+    return HM_FromJson(json_str, tokens, &curr_token_idx);
+}
 
-    // free
-    free(tokens);
+// (void) name( Chuck_Type * TYPE, void * ARGS, Chuck_DL_Return * RETURN, Chuck_VM * VM, Chuck_VM_Shred * SHRED, CK_DL_API API )
+CK_DLL_SFUN(hm_from_json)
+{
+    Chuck_String *ckstr = GET_NEXT_STRING(ARGS);
+    const char *json_str = API->object->str(ckstr);
+    RETURN->v_object = HM_FromJsonImpl(json_str);
+}
+
+CK_DLL_SFUN(hm_from_json_file)
+{
+    Chuck_String *ckstr = GET_NEXT_STRING(ARGS);
+    const char *json_fp = API->object->str(ckstr);
+    RETURN->v_object = NULL;
+
+    char *json_str = 0;
+    long length;
+    FILE *f = fopen(json_fp, "rb");
+
+    defer({
+        free(json_str);
+        if (f)
+            fclose(f);
+    });
+
+    // handle file not openable
+    if (!f)
+    {
+        HM_perror("HashMap.fromJsonFile(%s) L%d", json_fp, __LINE__);
+        return;
+    }
+
+    if (fseek(f, 0, SEEK_END) != 0)
+    {
+        HM_perror("HashMap.fromJsonFile(%s) L%d", json_fp, __LINE__);
+        return;
+    }
+
+    length = ftell(f);
+    rewind(f);
+
+    json_str = (char *)malloc(length + 1);
+    json_str[length] = '\0';
+    if (!json_str)
+    {
+        HM_perror("HashMap.fromJsonFile(%s) %d", json_fp, __LINE__);
+        return;
+    }
+
+    fread(json_str, 1, length, f);
+
+    RETURN->v_object = HM_FromJsonImpl(json_str);
 }
 
 /*
@@ -1000,10 +1085,6 @@ void valueToJson(DynamicString *d, HM_Entry value)
     break;
     case HM_FLOAT:
     {
-        // // Extract integer part
-        // int ipart = (int)value.as.ckint;
-        // // Extract floating part
-        // float fpart = value.as.ckint - (float)ipart;
         d->append(ftoa(value.as.ckfloat));
     }
     break;
@@ -1015,6 +1096,7 @@ void valueToJson(DynamicString *d, HM_Entry value)
         }
         else
         {
+
             Chuck_Type *obj_type = g_api->object->get_type(value.as.ckobj);
             bool is_hashmap = g_api->type->isa(obj_type, g_hm_type);
             if (is_hashmap)
@@ -1109,6 +1191,7 @@ void HM_ToJson(Chuck_Object *hm_ckobj, DynamicString *d)
     {
         // process JSON array
         d->append("[");
+
         for (int i = 0; i < contiguous_int_keys; i++)
         {
             // get
@@ -1120,7 +1203,9 @@ void HM_ToJson(Chuck_Object *hm_ckobj, DynamicString *d)
             valueToJson(d, result->value);
 
             if (i < contiguous_int_keys - 1)
+            {
                 d->append(", ");
+            }
         }
         d->append("]");
     }
@@ -1372,6 +1457,13 @@ CK_DLL_QUERY(Hashmap)
         QUERY->add_arg(QUERY, "string", "json");
         QUERY->doc_func(QUERY,
                         "Convert the given JSON string to a HashMap. "
+                        "JSON Arrays are turned into a HashMap with integer keys 0,1,... "
+                        "JSON Arrays are turned into a HashMap with string keys ");
+
+        QUERY->add_sfun(QUERY, hm_from_json_file, "HashMap", "fromJsonFile");
+        QUERY->add_arg(QUERY, "string", "filepath");
+        QUERY->doc_func(QUERY,
+                        "Convert the given JSON file to a HashMap. "
                         "JSON Arrays are turned into a HashMap with integer keys 0,1,... "
                         "JSON Arrays are turned into a HashMap with string keys ");
 

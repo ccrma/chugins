@@ -105,7 +105,7 @@ $(C_OBJECTS): %.o: %.c
 	$(CC) $(FLAGS) -c -o $@ $<
 
 $(CXX_OBJECTS): %.o: %.cpp 
-	$(CXX) $(FLAGS) -c -o $@ $<
+	$(CXX) -std=c++11 $(FLAGS) -c -o $@ $<
 
 # build as webchugin
 web:
