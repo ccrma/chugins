@@ -26,8 +26,41 @@ hm.del("sin");
 hm.has("sin"); // return false
 hm.getObj("sin"); // returns null
 
+// iterating over keys
+hm.intKeys() @=> int int_keys[];
+hm.strKeys() @=> string str_keys[];
+hm.objKeys() @=> Object obj_keys[];
+
+// checking type of value under a key
+hm.type(1) => int value_type;
+if (value_type == hm.Type_None) {
+    // key 1 does not exist
+}
+if (value_type == hm.Type_Int) {
+    // key 1 maps to an int
+    hm.getInt(1);
+}
+if (value_type == hm.Type_Float) {
+    // key 1 maps to a float
+    hm.getFloat(1);
+}
+if (value_type == hm.Type_Str) {
+    // key 1 maps to a string
+    hm.getStr(1);
+}
+if (value_type == hm.Type_Obj) {
+    // key 1 maps to an obj
+    hm.getObj(1);
+}
+
 // clear 
 hm.clear()
+
+// json reading and writing
+HashMap.fromJson("{ \"json\": \"string\" }") @=> HashMap@ json_hm;
+HashMap.fromJsonFile("./json.json") @=> HashMap@ json_hm_from_file;
+json_hm.toJson(); // generate a json string
+
 ```
 
 ## Details

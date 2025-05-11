@@ -6,6 +6,8 @@
 //    `chuck --chugin:HashMap.chug hashmap-test.ck -v3`
 //--------------------------------------------------------------------
 
+@import "HashMap"
+
 // Test Harness
 public class T 
 {
