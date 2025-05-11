@@ -224,7 +224,7 @@ fun void hm_test()
     // <<< json_json_hm.toJson() >>>;
 
     // loading json from a file
-    HashMap.fromJsonFile("./json.json") @=> HashMap hm_from_file; 
+    HashMap.fromJsonFile(me.dir() + "./json.json") @=> HashMap hm_from_file; 
     // T.println(hm_from_file.get(0).toJson());
 }
 
