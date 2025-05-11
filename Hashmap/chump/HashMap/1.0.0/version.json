@@ -1,0 +1,19 @@
+{
+    "arch": "universal",
+    "files": [
+        {
+            "checksum": "1af419a959fa7bd4ab0774c82f87212b017f4b335d14a41a29c177829c187ce4",
+            "file_type": "zip",
+            "local_dir": "./",
+            "url": "https://ccrma.stanford.edu/~azaday/HashMap.zip"
+        }
+    ],
+    "language_version_min": {
+        "major": 5,
+        "mega": 1,
+        "minor": 5,
+        "patch": 0
+    },
+    "os": "mac",
+    "version": "1.0.0"
+}

@@ -1,0 +1,17 @@
+{
+    "authors": [
+        "Andrew Zhu Aday",
+        "Gregg Oliva"
+    ],
+    "description": "Generic HashMap + JSON parser",
+    "homepage": "https://github.com/ccrma/chugins/tree/hashmap/Hashmap",
+    "keywords": [
+        "Data Structure",
+        "Utility",
+        "JSON",
+        "really cool"
+    ],
+    "license": "MIT",
+    "name": "HashMap",
+    "repository": "https://github.com/ccrma/chugins/tree/hashmap/Hashmap"
+}

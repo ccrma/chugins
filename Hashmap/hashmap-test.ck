@@ -190,50 +190,40 @@ fun void hm_test()
     // 2. given a hashmap, return a json string
     // hm.toJson() => string json;
 
-    // T.assert(HashMap.fromJson("invalid json") == null, "invalid json returns null obj");
-    <<< "ACTUAL JSON TEST ---------" >>>;
-
+    "
     {
-        "
-        {
-            \"gregg\": [],
-            \"andrew\": [
-                1, 2, null,
-                {
-                    \"key\": 1337
-                }
-                false, true, \"string_value\",
-                1.234
-            ],
-            \"obj\": {
-                \"test\": 1.123456789,
-                \"test2\": { \"1\": 10 }
+        \"gregg\": [],
+        \"andrew\": [
+            1, 2, null,
+            {
+                \"key\": 1337
             }
+            false, true, \"string_value\",
+            1.234
+        ],
+        \"obj\": {
+            \"test\": 1.123456789,
+            \"test2\": { \"1\": 10 }
         }
-        " => string json;
-        HashMap.fromJson(json) @=> HashMap@ json_hm;
-
-        <<< "1:------------" >>>;
-        json_hm.set("hello", new StifKarp);
-        <<< json_hm.toJson() >>>;
-
-        <<< "2:-------------" >>>;
-        HashMap.fromJson(json_hm.toJson()) @=> HashMap json_json_hm;
-        json_json_hm.set("foo", "bar");
-        HashMap new_hashmap;
-        // new_hashmap.set("hello", "yooooo");
-        new_hashmap.set(0, 99);
-        new_hashmap.set(1, 100);
-        new_hashmap.set(4, 99);
-        new_hashmap.set(new SinOsc, 99);
-        json_json_hm.set("new hashmap", new_hashmap);
-        <<< json_json_hm.toJson() >>>;
-        <<< "YOOO", (json_json_hm.get("andrew").get(3)).getInt("key") >>>;
-
-        <<< "3:-------------" >>>;
-        HashMap.fromJsonFile("./json.json") @=> HashMap hm_from_file; 
-        T.println(hm_from_file.get(0).toJson());
     }
+    " => string json;
+    HashMap.fromJson(json) @=> HashMap@ json_hm;
+    json_hm.set("hello", new StifKarp);
+    // <<< json_hm.toJson() >>>;
+
+    HashMap.fromJson(json_hm.toJson()) @=> HashMap json_json_hm;
+    json_json_hm.set("foo", "bar");
+    HashMap new_hashmap;
+    new_hashmap.set(0, 99);
+    new_hashmap.set(1, 100);
+    new_hashmap.set(4, 99); // won't be included, not contiguous
+    new_hashmap.set(new SinOsc, 99);
+    json_json_hm.set("new hashmap", new_hashmap);
+    // <<< json_json_hm.toJson() >>>;
+
+    // loading json from a file
+    HashMap.fromJsonFile("./json.json") @=> HashMap hm_from_file; 
+    // T.println(hm_from_file.get(0).toJson());
 }
 
 hm_test();
