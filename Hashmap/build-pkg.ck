@@ -65,5 +65,5 @@ ver.addExampleFile("json.json");
 // this zip file will be located at.
 ver.generateVersion("./chump", "HashMap", "https://ccrma.stanford.edu/~azaday/HashMap-" + os + ".zip");
 
-// Generate a version definition json file, stores this in "AwesomeEffect/<VerNo>/version.json"
-ver.generateVersionDefinition("version", "./chump");
+// Generate a version definition json file, stores this in "AwesomeEffect/<VerNo>/version-<os>.json"
+ver.generateVersionDefinition("version-" + os, "./chump");
