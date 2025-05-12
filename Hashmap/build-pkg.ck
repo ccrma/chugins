@@ -1,5 +1,17 @@
 @import "Chumpinate"
 
+if (me.args() != 1) {
+    <<< "Please specificy an os to package (mac, windows, linux). thx." >>>;
+    me.exit();
+}
+
+me.arg(0) => string os;
+
+if (!(os == "mac" || os == "windows" || os == "linux")) {
+    <<< "Please specificy an os to package (mac, windows, linux). thx." >>>;
+    me.exit();
+}
+
 // instantiate a Chumpinate package
 Package pkg("HashMap");
 
@@ -30,11 +42,20 @@ PackageVersion ver("HashMap", "1.0.0");
 // Because this is a ChucK file (and not a ChuGin, which is a complied
 // binary, this package is compatible with any operating systems and
 // all CPU architectures.
-"mac" => ver.os;
-"universal" => ver.arch;
+if (os == "mac") {
+    "mac" => ver.os;
+    "universal" => ver.arch;
+} else {
+    os => ver.os;
+    "x86_64" => ver.arch;
+}
 
 // add our package's files
-ver.addFile("HashMap.chug");
+if (os == "windows") {
+    ver.addFile("x64/Release/Hashmap.chug");
+} else {
+    ver.addFile("HashMap.chug");
+}
 
 // add our example, this will be stored in the package's `_examples` directory.
 ver.addExampleFile("hashmap-test.ck");
@@ -42,7 +63,7 @@ ver.addExampleFile("json.json");
 
 // zip up all our files into AwesomeEffect.zip, and tell Chumpinate what URL
 // this zip file will be located at.
-ver.generateVersion("./chump", "HashMap", "https://ccrma.stanford.edu/~azaday/HashMap.zip");
+ver.generateVersion("./chump", "HashMap", "https://ccrma.stanford.edu/~azaday/HashMap-" + os + ".zip");
 
-// pGenerate a version definition json file, stores this in "AwesomeEffect/<VerNo>/version.json"
+// Generate a version definition json file, stores this in "AwesomeEffect/<VerNo>/version.json"
 ver.generateVersionDefinition("version", "./chump");

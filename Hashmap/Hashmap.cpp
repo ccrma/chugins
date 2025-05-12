@@ -23,6 +23,11 @@
 #include <vector>
 #include <algorithm>
 
+#ifdef _WIN32
+#include <time.h>
+#include <stdarg.h>
+#endif
+
 #include "chugin.h"
 #include "hashmap.h"
 #include "jsmn.h"

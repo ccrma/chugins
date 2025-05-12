@@ -1,11 +1,11 @@
 {
-    "arch": "universal",
+    "arch": "x86_64",
     "files": [
         {
-            "checksum": "a8998ec798269b5b4e9dc4e7d1e1b5c797fef1677abfe158534e53223533079b",
+            "checksum": "82917312ce191f47fefc2b231b9912595e2f56b1ac6225fd36a349b7f9ef9bfd",
             "file_type": "zip",
             "local_dir": "./",
-            "url": "https://ccrma.stanford.edu/~azaday/HashMap.zip"
+            "url": "https://ccrma.stanford.edu/~azaday/HashMap-windows.zip"
         }
     ],
     "language_version_min": {
@@ -14,6 +14,6 @@
         "minor": 5,
         "patch": 0
     },
-    "os": "mac",
+    "os": "windows",
     "version": "1.0.0"
 }
