@@ -65,10 +65,10 @@ public:
 
     ~FluidSynth()
     {
-        delete_fluid_settings(m_settings);
-        m_settings = NULL;
         delete_fluid_synth(m_synth);
         m_synth = NULL;
+        delete_fluid_settings(m_settings);
+        m_settings = NULL;
     }
 
     // for Chugins extending UGen
@@ -119,7 +119,7 @@ public:
         }
 
         fluid_synth_activate_key_tuning(m_synth, 0, chan, "", tuningArr, false);
-        
+
         if (allChans) {
             for (chan = 0 ; chan<16 ; chan++) {
                 fluid_synth_activate_tuning(m_synth, chan, 0, 0, false);
@@ -141,10 +141,10 @@ public:
         tuningArr = new double[api->object->array_float_size(tuning)];
         for (int i = 0; i < api->object->array_float_size(tuning); i++) {
             tuningArr[i] = (double) api->object->array_float_get_idx(tuning,i);
-        }  
+        }
 
         fluid_synth_activate_octave_tuning(m_synth, 0, chan, "", tuningArr, false);
-        
+
         if (allChans) {
             for (chan = 0 ; chan<16 ; chan++) {
                 fluid_synth_activate_tuning(m_synth, chan, 0, 0, false);
@@ -172,9 +172,9 @@ public:
 
     void tuneNotes(Chuck_ArrayInt * noteNums, Chuck_ArrayFloat * pitches, int chan, CK_DL_API api)
     {
-        /* 
+        /*
         This ugly hack is required because Chuck_ArrayInt doesn't actually
-        contain 4-byte ints (at least on my 64-bit linux system). So we 
+        contain 4-byte ints (at least on my 64-bit linux system). So we
         need to copy the elements into an int array.
         */
         int * noteNumArr;
