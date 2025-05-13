@@ -15,7 +15,7 @@ Package pkg("FluidSynth");
 "https://github.com/ccrma/chugins" => pkg.repository;
 
 "MIT" => pkg.license;
-"A UGen for loading and rendering soundfont" => pkg.description;
+"A UGen for loading and rendering soundfonts" => pkg.description;
 
 ["MIDI", "FluidSynth", "UGen"] => pkg.keywords;
 
