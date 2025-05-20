@@ -66,7 +66,7 @@ CK_DLL_SFUN(get_time_of_day)
     //     time_t      tv_sec;     /* seconds */
     //     suseconds_t tv_usec;    /* microseconds */
     // };
-    printf("tv_sec: %ld, tv_usec %d\n", tv.tv_sec, tv.tv_usec);
+    // printf("tv_sec: %ld, tv_usec %d\n", tv.tv_sec, tv.tv_usec);
 
     RETURN->v_float = tv.tv_sec + (tv.tv_usec / 1000000.0);
 }
