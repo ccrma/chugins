@@ -29,7 +29,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
 
@@ -68,7 +68,7 @@ jobs:
         cmake --build build --config Release
         cmake --build build --config Release --target install
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: warpbuf-${{ matrix.name }}.zip
         path: "WarpBuf/package/warpbuf-${{ env.WARPBUF_VERSION }}"
