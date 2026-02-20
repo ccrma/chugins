@@ -1,4 +1,4 @@
-build/*
+build
 Debug/
 *.zip
 thirdparty/libsndfile-*win64

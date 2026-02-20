@@ -13,3 +13,10 @@ cd ../..
 cmake -Bbuild . -DCMAKE_VERBOSE_MAKEFILE=ON
 cmake --build build --config Release
 cmake --build build --config Release --target install
+
+# Copy the chugin to current directory
+if [ "$(uname)" == "Darwin" ]; then
+    cp package/warpbuf-*/WarpBuf.chug/Contents/MacOS/WarpBuf ./WarpBuf.chug
+else
+    cp package/warpbuf-*/WarpBuf.chug .
+fi

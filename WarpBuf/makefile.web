@@ -1,0 +1,66 @@
+# Makefile for Web (Emscripten)
+# Build as a side module for dynamic loading
+
+BUILD_DIR=build_web
+SNDFILE_DIR=thirdparty/libsndfile
+SNDFILE_BUILD_DIR=$(SNDFILE_DIR)/build_web
+SNDFILE_INSTALL_DIR=$(SNDFILE_DIR)/install_web
+SNDFILE_LIB=$(SNDFILE_INSTALL_DIR)/lib/libsndfile.a
+SNDFILE_INCLUDE=$(SNDFILE_INSTALL_DIR)/include
+
+CK_SRC_PATH?=../chuck/include
+
+FLAGS=-O3 -s SIDE_MODULE=1 -s DISABLE_EXCEPTION_CATCHING=0 -fPIC -Wformat=0 \
+    -I$(CK_SRC_PATH) \
+    -Ithirdparty/rubberband -Ithirdparty/rubberband/src \
+    -Ithirdparty/libsamplerate/src -Ithirdparty/libsamplerate/include \
+    -Ithirdparty/portable_endian/include \
+    -I$(SNDFILE_INCLUDE) \
+    -DHAVE_LIBSAMPLERATE -D__PLATFORM_LINUX__ -D__LINUX_ALSA__ -DNO_THREADING -DUSE_BUILTIN_FFT -DNO_TIMING \
+    -DENABLE_SINC_BEST_CONVERTER -DENABLE_SINC_MEDIUM_CONVERTER -DENABLE_SINC_FAST_CONVERTER \
+    -DPACKAGE=\"libsamplerate\" -DVERSION=\"0.1.9\" -DHAVE_STDBOOL_H
+
+C_SOURCES= \
+    thirdparty/libsamplerate/src/samplerate.c \
+    thirdparty/libsamplerate/src/src_linear.c \
+    thirdparty/libsamplerate/src/src_sinc.c \
+    thirdparty/libsamplerate/src/src_zoh.c
+
+CXX_SOURCES= \
+    src/WarpBufChugin.cpp \
+    src/WarpBufChuginDLL.cpp \
+    thirdparty/rubberband/src/RubberBandStretcher.cpp \
+    thirdparty/rubberband/src/common/StretchCalculator.cpp \
+    thirdparty/rubberband/src/common/Profiler.cpp \
+    thirdparty/rubberband/src/common/Resampler.cpp \
+    thirdparty/rubberband/src/common/FFT.cpp \
+    thirdparty/rubberband/src/common/Log.cpp \
+    thirdparty/rubberband/src/common/mathmisc.cpp \
+    thirdparty/rubberband/src/common/sysutils.cpp \
+    thirdparty/rubberband/src/common/Thread.cpp \
+    thirdparty/rubberband/src/faster/AudioCurveCalculator.cpp \
+    thirdparty/rubberband/src/faster/CompoundAudioCurve.cpp \
+    thirdparty/rubberband/src/faster/HighFrequencyAudioCurve.cpp \
+    thirdparty/rubberband/src/faster/R2Stretcher.cpp \
+    thirdparty/rubberband/src/faster/SilentAudioCurve.cpp \
+    thirdparty/rubberband/src/faster/PercussiveAudioCurve.cpp \
+    thirdparty/rubberband/src/faster/StretcherChannelData.cpp \
+    thirdparty/rubberband/src/faster/StretcherProcess.cpp \
+    thirdparty/rubberband/src/finer/R3Stretcher.cpp
+
+.PHONY: web clean
+
+web: WarpBuf.wasm
+
+WarpBuf.wasm: $(SNDFILE_LIB) $(C_SOURCES) $(CXX_SOURCES)
+	emcc $(FLAGS) $(C_SOURCES) $(CXX_SOURCES) $(SNDFILE_LIB) -o WarpBuf.chug.wasm
+
+$(SNDFILE_LIB):
+	mkdir -p $(SNDFILE_BUILD_DIR)
+	cd $(SNDFILE_DIR) && emcmake cmake -Bbuild_web -DCMAKE_VERBOSE_MAKEFILE=ON -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="./install_web" -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+	cd $(SNDFILE_DIR) && cmake --build build_web --config Release --target install
+
+clean:
+	rm -rf $(BUILD_DIR) 
+	rm -rf $(SNDFILE_BUILD_DIR) $(SNDFILE_INSTALL_DIR)
+	rm -f WarpBuf.wasm WarpBuf.js

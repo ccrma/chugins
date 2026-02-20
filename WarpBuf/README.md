@@ -74,3 +74,4 @@ WarpBuf uses [Rubber Band Library](https://github.com/breakfastquay/rubberband/)
 
 * Get/set the list of warp markers.
 * Optionally pre-read the entire audio buffer and hold it in a buffer.
+* Support different sample rate audio files.

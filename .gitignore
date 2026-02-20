@@ -14,6 +14,7 @@
 # Compiled Dynamic libraries
 *.so
 *.chug
+*.wasm
 
 # Compiled Static libraries
 *.lai
