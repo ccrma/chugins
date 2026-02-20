@@ -20,9 +20,9 @@ jobs:
       matrix:
         include:
           - name: ubuntu-x86_64
-            os: ubuntu-20.04
+            os: ubuntu-24.04
           - name: macos-x86_64
-            os: macos-11
+            os: macos-14
           - name: win64
             os: windows-2022
 
