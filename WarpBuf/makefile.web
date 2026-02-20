@@ -50,9 +50,9 @@ CXX_SOURCES= \
 
 .PHONY: web clean
 
-web: WarpBuf.wasm
+web: WarpBuf.chug.wasm
 
-WarpBuf.wasm: $(SNDFILE_LIB) $(C_SOURCES) $(CXX_SOURCES)
+WarpBuf.chug.wasm: $(SNDFILE_LIB) $(C_SOURCES) $(CXX_SOURCES)
 	emcc $(FLAGS) $(C_SOURCES) $(CXX_SOURCES) $(SNDFILE_LIB) -o WarpBuf.chug.wasm
 
 $(SNDFILE_LIB):
@@ -63,4 +63,4 @@ $(SNDFILE_LIB):
 clean:
 	rm -rf $(BUILD_DIR) 
 	rm -rf $(SNDFILE_BUILD_DIR) $(SNDFILE_INSTALL_DIR)
-	rm -f WarpBuf.wasm WarpBuf.js
+	rm -f WarpBuf.chug.wasm

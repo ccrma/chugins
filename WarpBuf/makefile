@@ -17,7 +17,7 @@ MAKECMDGOALS:=$(.DEFAULT_GOAL)
 endif
 endif
 
-.PHONY: web win32 mac linux
+.PHONY: web win32 mac linux clean clean-web
 
 web:
 	make -f makefile.web
@@ -31,7 +31,11 @@ mac:
 linux:
 	make -f makefile.linux
 
+clean-web:
+	make -f makefile.web clean
+
 clean:
 	rm -rf build package
+	rm -rf thirdparty/libsndfile/build thirdparty/libsndfile/install
 	rm -f *.chug
-	rm -f *.chug.wasm
+	make -f makefile.web clean
