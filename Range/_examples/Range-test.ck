@@ -1,3 +1,5 @@
+@import "../Range.chug"
+
 SinOsc sin => Range scale => blackhole;
 sin => Gain g => blackhole;
 

@@ -1,5 +1,5 @@
 // Use Range to make an easy vibrato
-
+@import "../Range.chug"
 
 // Range expects an input value from [-1,1] by default.
 // This maps the values from [-1,1] to the frequecies [430,450],
