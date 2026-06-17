@@ -1,0 +1,73 @@
+needs mod to chuginate/chuginate
+the two intsances of '\M' should change to be just 'M'
+
+take care not to use the same name as another stock Chuck UGen or existing chugin from this library, add only uniquely named new chugins
+
+for example, what if we want brass.dsp from faust/examples/physicalModeling
+copy it over, rename it to brassFaust.dsp and edit it so that
+declare name "Brass";
+is now 
+declare name "BrassFaust";
+run
+./faust2ck2web.sh brassFaust.dsp
+it will produce a BrassFaust directory
+containing
+BrassFaust.chug.wasm
+
+optionally, to produce a BrassFaust.chug
+cd into the BrassFaust directory
+make linux-alsa
+
+the compile script produces a list of parameters
+to see more about a particular one, for example, tubeLength
+grep tubeLength *
+
+copy the .wasm tp the directory being referenced in the .html page
+/home/cc/webchuck-github/indexFluteFaust.html references
+            {serverFilename: "./test/testFiles/FluteFaust.chug.wasm", virtualFilename: "/chugins/FluteFaust.chug.wasm"},
+so 
+cp FluteFaust.chug.wasm /home/cc/webchuck-github/test/testFiles/
+///////////////////////////////////////////////////////////////////////////////////////
+earlier notes on how to do this step-by-step
+  from wherever it lives in the universe, get started with a copy of 
+  your src .dsp in a scratch directory
+  for example starting from freeverbStereo.dsp in this repo
+  the .dsp name at this point can be capitalized or not
+cp freeverbStereo.dsp /tmp/
+
+  edit your src and make sure chugin name is capitalized
+gedit /tmp/freeverbStereo.dsp
+  [ declare name "FreeverbStereo"; ]
+
+  generate a template, matching the capitalized name, and cd into it
+chuginate/chuginate FreeverbStereo
+cd FreeverbStereo
+
+  copy your edited src and rename it to FreeverbStereoF
+cp /tmp/freeverbStereo.dsp FreeverbStereoF.dsp
+
+  compile the edited and renamed src in the working directory 
+faust2ck FreeverbStereoF.dsp
+
+  copy the new faust-generated .cpp file over the old chuginate template .cpp file
+cp FreeverbStereoF.dsp.cpp FreeverbStereo.cpp
+
+  if this is not the first make run, remove the .wasm so make will trigger again
+rm FreeverbStereo.chug.wasm
+  
+  compile the .wasm
+make web
+
+  copy the .wasm to where you'll be testing it with webchuck
+cp -p FreeverbStereo.chug.wasm ~/webchuck-github/test/testFiles/
+
+/////////////////////////////
+python -m http.server 8000
+http://localhost:8000/indexCC1.html
+(runs as a webapp)
+
+see https://github.com/ccrma/webchuck-ide/issues
+for adding a custom chugin to the IDE (doesn't work)
+
+
+

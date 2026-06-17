@@ -1,0 +1,27 @@
+#--------------------------------------
+# makefile.win32
+# Windows-specific build configurations
+# (supports 32-bit and 64-bit)
+#--------------------------------------
+
+# command line build tool
+MSBUILD=msbuild.exe
+
+# configuration
+ifneq (,$(CHUCK_DEBUG))
+CONFIG=Debug
+CHUG_BIN=Debug/FreeverbStereo.chug
+else
+CONFIG=Release
+CHUG_BIN=Release/FreeverbStereo.chug
+endif
+
+# targets
+default: $(CHUG_BIN)
+
+$(CHUG_BIN): 
+	$(MSBUILD) /p:Configuration=$(CONFIG) 
+
+clean:
+	$(MSBUILD) /p:Configuration=$(CONFIG) /t:Clean
+
