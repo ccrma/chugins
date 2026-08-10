@@ -85,6 +85,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_compile_options(-fPIC)
 
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15)
+
 if(APPLE)
 set_target_properties(${PROJECT_NAME} PROPERTIES
     LINK_FLAGS "-Wl,-U,_object_new_imp -Wl,-U,_object_method_imp"
@@ -157,7 +159,6 @@ else()
     pkg_check_modules(OPUS REQUIRED IMPORTED_TARGET opus)
     pkg_check_modules(MPG123 REQUIRED IMPORTED_TARGET libmpg123)
     if(APPLE)
-    execute_process(COMMAND find /usr/local/Cellar/lame -name libmp3lame.a OUTPUT_VARIABLE SNDFILE_STATIC_LIBS OUTPUT_STRIP_TRAILING_WHITESPACE)
     list(POP_BACK PKG_CONFIG_EXECUTABLE)  # undo the append above
     endif()
     target_link_libraries (${PROJECT_NAME} PRIVATE PkgConfig::SNDFILE PkgConfig::FLAC PkgConfig::VORBIS PkgConfig::OGG PkgConfig::OPUS PkgConfig::MPG123 ${SNDFILE_STATIC_LIBS})
