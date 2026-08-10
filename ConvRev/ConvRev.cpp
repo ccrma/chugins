@@ -12,23 +12,18 @@
 // vendor includes
 #include "FFTConvolver.h"
 
+// general includes
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+
 // local includes
 // #define CONV_REV_PROFILE // TODO: remove when building
 
 #ifdef CONV_REV_PROFILE
 #include "Timer.h"
 #endif
-
-// general includes
-#include <iostream>
-#include <mutex>
-#include <string>
-
-#if __EMSCRIPTEN__
-#include <thread>
-#endif
-
-#include <vector>
 
 #ifdef __EMSCRIPTEN__
 #define CONV_REV_BLOCKSIZE 512 // default FFT blocksize
@@ -54,10 +49,6 @@ CK_DLL_MFUN(convrev_getCoeff);
 // initialize convolution engine
 CK_DLL_MFUN(convrev_init);
 
-// load entire buffer at once  (see fluidsynth for how to take in array arg)
-// CK_DLL_MFUN(convrev_setIRBuffer);
-// Problems: no way to return an array, no way to get an array from sndbuf ugen
-
 // tick
 CK_DLL_TICK(convrev_tick);
 
@@ -74,134 +65,74 @@ private:                // internal data
     // internal buffers
     std::vector<fftconvolver::Sample> _ir_buffer;
 
-    // input double buffer
+    // input/output buffers (single buffer logic)
     std::vector<fftconvolver::Sample> _input_buffer;
-    std::vector<fftconvolver::Sample> _staging_in_buffer;
-    bool _which_input_buffer;
-
-    // output double buffer
-    fftconvolver::Sample *_output_buffer;
-    fftconvolver::Sample *_staging_out_buffer;
-    bool _which_output_buffer;
+    std::vector<fftconvolver::Sample> _output_buffer;
 
     fftconvolver::FFTConvolver _convolver; // convolution engine
 
     size_t _idx; // to track head of circular input buffer
 
-#ifndef __EMSCRIPTEN__
-    // threading
-    std::thread _conv_thr;
-#endif
-
-    // scale factor to normalize output
-    float _scale_factor;
-
 public:
     ConvRev(t_CKFLOAT fs)
         : _SR(fs), _blocksize(CONV_REV_BLOCKSIZE), _order(0), _convolver(),
-          _idx(0), _scale_factor(1.0f), _which_input_buffer(false), _which_output_buffer(false),
-          _output_buffer(nullptr), _staging_out_buffer(nullptr)
+          _idx(0)
     {
+        _input_buffer.resize(_blocksize, 0);
+        _output_buffer.resize(_blocksize, 0);
     }
 
     ~ConvRev()
     {
-#ifndef __EMSCRIPTEN__
-        if (_conv_thr.joinable())
-            _conv_thr.join();
-#endif
-        if (_output_buffer)
-            delete[] _output_buffer;
-        if (_staging_out_buffer)
-            delete[] _staging_out_buffer;
-    }
-
-    // double buffer getters
-    std::vector<fftconvolver::Sample> &getInputBuffer()
-    {
-        return _which_input_buffer ? _input_buffer : _staging_in_buffer;
-    }
-    std::vector<fftconvolver::Sample> &getStagingInputBuffer()
-    {
-        return _which_input_buffer ? _staging_in_buffer : _input_buffer;
-    }
-
-    fftconvolver::Sample *getOutputBuffer()
-    {
-        return _which_output_buffer ? _output_buffer : _staging_out_buffer;
-    }
-
-    fftconvolver::Sample *getStagingOutputBuffer()
-    {
-        return _which_output_buffer ? _staging_out_buffer : _output_buffer;
-    }
-
-    // buffer swappers
-    void swapBuffers()
-    {
-        _which_input_buffer = !_which_input_buffer;
-        _which_output_buffer = !_which_output_buffer;
     }
 
     // for Chugins extending UGen
     SAMPLE tick(SAMPLE in)
     {
-#ifdef CONV_REV_PROFILE
-        Timer timer("tick", _blocksize);
-#endif
-        getInputBuffer()[_idx] = in;
-        SAMPLE output = _scale_factor * (getOutputBuffer()[_idx]);
+        _input_buffer[_idx] = in;
+        
+        // Output computed value from previous block
+        // (This latency is inherent to block-based FFT convolution)
+        SAMPLE output = _output_buffer[_idx];
 
         // increment circular buffer head
         _idx++;
 
         if (_idx == _blocksize)
         {
-#ifdef CONV_REV_PROFILE
-            Timer timer("----tick at blocksize");
-#endif
             _idx = 0; // reset circular buffer head
 
-// wait for convolution engine to finish processing next block
-#ifndef __EMSCRIPTEN__
-            if (_conv_thr.joinable())
-                _conv_thr.join();
-#endif
-
-            // swap input and output buffers
-            swapBuffers();
-
-            // start processing the new input block
-            // on VR lab laptop drops average Tick time from 1.5ms --> 1.3ms
-            // shockingly low... but the more complex the ugen graph, the more
-            // we should see a benefit from puting the convolution engine on a
-            // separate thread
-
-#ifdef __EMSCRIPTEN__
-            _process(getStagingInputBuffer(), getStagingOutputBuffer());
-#else
-            _conv_thr = std::thread([&]()
-                                    { _process(getStagingInputBuffer(), getStagingOutputBuffer()); });
-#endif
+            // Process the block synchronously
+            // This is "real-time safe" in the sense that it doesn't allocate or lock,
+            // but it does spike CPU usage every _blocksize samples.
+            // This is standard behavior for simple partition convolvers.
+            _convolver.process(_input_buffer.data(), _output_buffer.data(), _blocksize);
         }
 
         return output;
     }
 
-    void _process(std::vector<fftconvolver::Sample> &input_buffer, fftconvolver::Sample *output_buffer)
-    {
-        // TODO process does not work with std::vector for output buffer. why??
-#ifdef CONV_REV_PROFILE
-        Timer timer("--------convolver.process()");
-#endif
-        _convolver.process(input_buffer.data(), output_buffer, _blocksize);
-    }
-
     // set parameter example
     t_CKFLOAT setBlockSize(t_CKFLOAT p)
     {
-        _blocksize = p;
-        return p;
+        // Ensure blocksize is a power of 2 and somewhat reasonable
+        int size = (int)p;
+        if (size < 32) size = 32;
+        int p2 = 1;
+        while (p2 < size) p2 <<= 1;
+        
+        _blocksize = p2;
+        
+        // Resize buffers
+        _input_buffer.resize(_blocksize, 0);
+        _output_buffer.resize(_blocksize, 0);
+        
+        // Reset state
+        std::fill(_input_buffer.begin(), _input_buffer.end(), 0.0f);
+        std::fill(_output_buffer.begin(), _output_buffer.end(), 0.0f);
+        _idx = 0;
+        
+        return _blocksize;
     }
 
     // get parameter example
@@ -220,38 +151,55 @@ public:
 
     void setCoeff(t_CKINT idx, t_CKFLOAT val)
     {
-        _ir_buffer[idx] = val;
+        if (idx >= 0 && idx < _ir_buffer.size()) {
+            _ir_buffer[idx] = val;
+        }
     }
 
-    t_CKFLOAT getCoeff(t_CKINT idx) { return _ir_buffer[idx]; }
+    t_CKFLOAT getCoeff(t_CKINT idx) { 
+        if (idx >= 0 && idx < _ir_buffer.size()) {
+            return _ir_buffer[idx]; 
+        }
+        return 0;
+    }
 
     t_CKVOID init()
     {
-        // resize buffers and zero buffers
-        _input_buffer.resize(_blocksize, 0);
-        _staging_in_buffer.resize(_blocksize, 0);
+        // Safety: Check for NaN/Inf in IR
+        bool hasPoly = false;
+        for (float f : _ir_buffer) {
+            if (std::isnan(f) || std::isinf(f)) {
+                 hasPoly = true;
+                 break;
+            }
+        }
+        
+        if (hasPoly) {
+            // zero out if bad data 
+            std::fill(_ir_buffer.begin(), _ir_buffer.end(), 0.0f);
+            std::cout << "[ConvRev]: Invalid IR data (NaN/Inf) detected. Zeroing buffer." << std::endl;
+        }
 
-        // free old buffer
-        if (_output_buffer)
-            delete[] _output_buffer;
-        if (_staging_out_buffer)
-            delete[] _staging_out_buffer;
-        // allocate new buffer
-        _output_buffer = new fftconvolver::Sample[_blocksize];
-        _staging_out_buffer = new fftconvolver::Sample[_blocksize];
-        // zero out new buffer
-        memset(_output_buffer, 0, _blocksize * sizeof(fftconvolver::Sample));
-        memset(_staging_out_buffer, 0, _blocksize * sizeof(fftconvolver::Sample));
+        // Safety: Peak Normalize to 0.5 (Conservative default)
+        // Convolution adds a lot of energy.
+        float max_val = 0.0f;
+        for (float f : _ir_buffer) {
+            if (std::abs(f) > max_val) max_val = std::abs(f);
+        }
+
+        if (max_val > 0.000001f) {
+            // Scale to 0.5 peak
+            float scale = 0.5f / max_val; 
+            for (size_t i=0; i<_ir_buffer.size(); ++i) _ir_buffer[i] *= scale;
+        }
+
+        // zero out buffers
+        std::fill(_input_buffer.begin(), _input_buffer.end(), 0.0f);
+        std::fill(_output_buffer.begin(), _output_buffer.end(), 0.0f);
+        _idx = 0;
 
         // initialize convolution engine
         _convolver.init(_blocksize, _ir_buffer.data(), _order);
-
-        // set normalization scale factor
-        _scale_factor = _SR / _order;
-        if (_scale_factor > 1)
-        {
-            _scale_factor = 1;
-        }
     }
 };
 
