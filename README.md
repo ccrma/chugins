@@ -82,6 +82,9 @@ List of Chugins in This Repository
   - soft clip saturating distortion, based on examples from Abel/Berners' Music 424 course at Stanford.
 - **Bitcrusher**
   - sample-width reducer + sample rate decimator, bringing to mind the sounds of your favorite low-fidelity vintage audio equipment.
+- **DrumBuf**
+  - by [@dbraun](https://github.com/dbraun)
+  - Granular sampler with pitch-shifting and time-stretching capabilities
 - **Elliptic**
   - by [@jwmatthys](https://github.com/jwmatthys)
   - Elliptic filter, capable of very steep slopes or interesting harmonic ripples
