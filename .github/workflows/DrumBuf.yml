@@ -1,0 +1,64 @@
+name: DrumBuf
+
+# DrumBuf depends on libsndfile, so like WarpBuf it builds in its own workflow
+# rather than the top-level CHUGINS matrix (which also feeds web/win32 targets).
+# Builds on Linux and macOS; on macOS also runs the headless test suite
+# against Homebrew's chuck (same chugin API major as chuck/include/chugin.h).
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'DrumBuf/**'
+      - '.github/workflows/DrumBuf.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'DrumBuf/**'
+      - '.github/workflows/DrumBuf.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rule: linux
+          - os: macos-latest
+            rule: mac
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install dependencies (Ubuntu)
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential pkg-config libsndfile1-dev libasound2-dev
+
+    - name: Install dependencies (macOS)
+      if: startsWith(matrix.os, 'macos')
+      run: brew install libsndfile pkg-config chuck
+
+    - name: Build DrumBuf (strict)
+      run: |
+        cd DrumBuf
+        CHUCK_STRICT=1 make ${{ matrix.rule }}
+        ls -la DrumBuf.chug
+
+    - name: Headless tests (macOS, Homebrew chuck)
+      if: startsWith(matrix.os, 'macos')
+      run: |
+        chuck --version
+        chuck --chugin-probe 2>&1 | head -5 || true
+        cd DrumBuf
+        tests/run-tests.sh
+
+    - name: Upload chugin
+      uses: actions/upload-artifact@v7
+      with:
+        name: DrumBuf-${{ matrix.rule }}
+        path: DrumBuf/DrumBuf.chug
