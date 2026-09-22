@@ -1,0 +1,2 @@
+# The root .gitignore excludes *.wav; the two small test samples ship with the tests.
+!*.wav
